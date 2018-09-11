@@ -1,6 +1,6 @@
-(*Require Coq.Bool.Sumbool.
+Require Coq.Bool.Sumbool.
 Require Import Coq.Arith.Peano_dec.
-Require Import Coq.Arith.EqNat.*)
+Require Import Coq.Arith.EqNat.
 
 (* Require Import Shared.*)
 
@@ -10,7 +10,7 @@ IDs
 ====
 *)
 
-(*
+
 Class ID (A : Type) :=
 {
   id_eq_dec : forall (x y : A), {x = y} + {x <> y}
@@ -20,22 +20,14 @@ Instance ID_nat : ID nat := {}.
   repeat decide equality.
 Qed.
 
-Inductive svar : Type :=
-  | SVar : nat -> svar.
+Inductive var : Type :=
+  | Var : nat -> var.
 
-Instance ID_svar : ID svar := {}.
+Instance ID_var : ID var := {}.
   repeat decide equality.
 Qed.
 
 
-
-Inductive dvar : Type :=
-  | DVar : nat -> dvar.
-
-Instance ID_dvar : ID dvar := {}.
-  repeat decide equality.
-Qed.
-*)
 
 Definition field_id := nat.
 Definition scalar_id := nat.
