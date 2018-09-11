@@ -1,6 +1,10 @@
 Require Import List.
 Import ListNotations.
 
+Require Coq.Bool.Sumbool.
+Require Import Coq.Arith.Peano_dec.
+Require Import Coq.Arith.EqNat.
+
 
 Require Export Meta.
 
@@ -17,7 +21,7 @@ Inductive ty : Type :=
 | TEnum : enum_id -> ty
 | TObject : object_id -> ty
 | TInterface : interface_id -> ty
-| TUnion : union_id -> ty                                 
+(*| TUnion : union_id -> ty    *)                             
 | TList : ty -> ty.
 
 
@@ -30,7 +34,7 @@ Program
 *)
 
 Inductive fieldDecl : Type :=
-  | Field : field_id -> list (svar * ty) -> ty -> fieldDecl.
+  | Field : field_id -> list (var * ty) -> ty -> fieldDecl.
 
 
 Inductive objectDecl : Type :=
@@ -44,73 +48,59 @@ Inductive scalarDecl : Type :=
   | Scalar : scalar_id -> scalarDecl.
 
 Inductive enumDecl : Type :=
-  | Enum : 
+  | Enum : list var -> enumDecl.   (* How to represent each val in enum? just a nat? *)
+
+(*Inductive unionDecl : Type :=
+  | Union : *)
+
+Definition schema := (list objectDecl * list interfaceDecl * list scalarDecl * list enumDecl)%type.	
 
 
-Definition schema := (list objectDecl * list interfaceDecl * expr)%type.	
 
-
-Definition classLookup(P : program)(c : class_id) : option classDecl :=
-  match P with
-    | (cs, _, _) =>
-      let c_eq c cls := match cls with
-                          | Cls c' _ _ _ => beq_nat c c'
+Definition objectLookup (S : schema) (obj : object_id) : option objectDecl :=
+  match S with
+    | (objs, _, _, _) =>
+      let o_eq o ob := match ob with
+                          | Object o' _ _ => beq_nat o o'
                         end
       in
-      find (c_eq c) cs
+      find (o_eq obj) objs
   end.
 
-Definition interfaceLookup(P : program)(i : interface_id) : option interfaceDecl :=
-  match P with
-    | (_, ids, _) =>
+Definition interfaceLookup (S : schema) (i : interface_id) : option interfaceDecl :=
+  match S with
+    | (_, ifs, _, _) =>
       let i_eq i intr := match intr with
                           | Interface i' _ => beq_nat i i'
-                          | ExtInterface i' _ _ => beq_nat i i'
                         end
       in
-      find (i_eq i) ids
+      find (i_eq i) ifs
   end.
 
-Definition fieldLookup(fs : list fieldDecl)(f : field_id) :=
+Definition fieldLookup (fs : list fieldDecl) (f : field_id) :=
   let f_eq f fld := match fld with
-                     | Field f' _ => beq_nat f f'
+                     | Field f' _ _ => beq_nat f f'
 		(*   | FieldWithArgs f' _ _ => beq_nat f f' *)
                     end
   in
   find (f_eq f) fs.
 
-Definition fields(P : program)(t : ty) :=
+Definition fields (S : schema) (t : ty) :=
   match t with
-    | TClass c => match classLookup P c with
-                    | Some (Cls _ _ fs _) => Some fs
-                    | None => None
+    | TObject o => match objectLookup S o with
+                  | Some (Object _ _ fs) => Some fs
+                  | None => None
                   end
+    | TInterface i => match interfaceLookup S i with
+                     | Some (Interface _ fs) => Some fs
+                     | None => None
+                     end
     | _ => None
   end.
 
+
+
 (*
-Definition methodLookup(ms : list methodDecl)(m : method_id) :=
-  let m_eq m mtd := match mtd with
-                      | Method m' _ _ _ => beq_nat m m'
-                    end
-  in
-  find (m_eq m) ms.
-
-Definition methods(P : program)(t : ty) :=
-  match t with
-    | TClass c => match classLookup P c with
-                    | Some (Cls _ _ _ ms) => Some ms
-                    | None => None
-                  end
-    | _ => None
-  end. 
-
-Definition methodSigLookup(ms : list methodSig)(m : method_id) :=
-  let m_eq m mtd := match mtd with
-                      | MethodSig m' _ _ => beq_nat m m'
-                    end
-  in
-  find (m_eq m) ms.
 
 Definition extractSigs(ms : list methodDecl) :=
   let extract := fun mtd => match mtd with
@@ -143,7 +133,7 @@ Fixpoint declsToFields (l : list fieldDecl) :=
     | nil => empty
     | fd :: fs =>
       match fd with
-        | Field f _ =>
+        | Field f _ _ =>
           extend (declsToFields fs) f VNull
       end
 end.
