@@ -17,6 +17,7 @@
 *.v.d
 *.vio
 *.vo
+*.v~
 .coq-native/
 .csdp.cache
 .lia.cache
