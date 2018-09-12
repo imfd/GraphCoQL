@@ -57,6 +57,8 @@ Definition schema := (list objectDecl * list interfaceDecl * list scalarDecl * l
 
 
 
+
+
 Definition objectLookup (S : schema) (obj : object_id) : option objectDecl :=
   match S with
     | (objs, _, _, _) =>
@@ -94,38 +96,10 @@ Definition fields (S : schema) (t : ty) :=
     | TInterface i => match interfaceLookup S i with
                      | Some (Interface _ fs) => Some fs
                      | None => None
-                     end
+                      end
+    (*| TList t' => fields S t'*)
     | _ => None
   end.
-
-
-
-(*
-
-Definition extractSigs(ms : list methodDecl) :=
-  let extract := fun mtd => match mtd with
-                              | Method m param t e => MethodSig m param t
-                            end
-  in
-  map extract ms.
-
-Inductive methodSigs(P : program) : ty -> list methodSig -> Prop :=
-  | MSigs_Class :
-      forall c i fs ms,
-        classLookup P c = Some (Cls c i fs ms) ->
-        methodSigs P (TClass c) (extractSigs ms)
-  | MSigs_Interface :
-      forall i msigs,
-        interfaceLookup P i = Some (Interface i msigs) ->
-        methodSigs P (TInterface i) msigs
-  | MSigs_ExtInterface :
-      forall i i1 i2 msigs1 msigs2,
-        interfaceLookup P i = Some (ExtInterface i i1 i2) ->
-        methodSigs P (TInterface i1) msigs1 ->
-        methodSigs P (TInterface i2) msigs2 ->
-        methodSigs P (TInterface i) (msigs1 ++ msigs2)
-  | MSigs_Unit :
-      methodSigs P TUnit []. *)
 
 
 Fixpoint declsToFields (l : list fieldDecl) :=

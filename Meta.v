@@ -1,6 +1,4 @@
-Require Coq.Bool.Sumbool.
-Require Import Coq.Arith.Peano_dec.
-Require Import Coq.Arith.EqNat.
+
 
 (* Require Import Shared.*)
 
@@ -44,7 +42,7 @@ Map
 ====
 *)
 
-(*
+
 Definition partial_map (from:Type) {eqd : ID from} (to:Type) := from -> option to.
 
 Definition empty {A B:Type} {eqd : ID A} : partial_map A B := (fun _ => None).
@@ -68,4 +66,4 @@ Hint Unfold drop.
 Definition fresh {A B:Type} {eqd : ID A} (Gamma : partial_map A B) (a:A) := Gamma a = None.
 
 Hint Unfold fresh.
-*)
+
