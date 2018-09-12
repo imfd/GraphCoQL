@@ -100,14 +100,3 @@ Definition fields (S : schema) (t : ty) :=
     (*| TList t' => fields S t'*)
     | _ => None
   end.
-
-
-Fixpoint declsToFields (l : list fieldDecl) :=
-  match l with
-    | nil => empty
-    | fd :: fs =>
-      match fd with
-        | Field f _ _ =>
-          extend (declsToFields fs) f VNull
-      end
-end.
