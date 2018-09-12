@@ -96,6 +96,18 @@ Definition fieldLookup (fs : list fieldDecl) (f : field_id) :=
   in
   find (f_eq f) fs.
 
+
+Inductive fields (S : schema) : ty -> list fieldDecl -> Prop :=
+| Fields_Object :
+  forall o i fs,
+    objectLookup S o = Some (Object o i fs) ->
+    fields S (TObject o) fs
+| Fields_Interface :
+    forall i fs,
+      interfaceLookup S i = Some (Interface i fs) ->
+      fields S (TInterface i) fs.
+
+(*
 Definition fields (S : schema) (t : ty) :=
   match t with
     | TObject o => match objectLookup S o with
@@ -108,10 +120,15 @@ Definition fields (S : schema) (t : ty) :=
                       end
     (*| TList t' => fields S t'*)
     | _ => None
-  end.
+  end. *)
 
 
 
+(*
+-------
+Types
+-------
+*)
 
 Inductive wfType (S : schema) : ty -> Prop :=
   | WF_TObject :
@@ -143,3 +160,40 @@ Inductive subtypeOf (S : schema) : ty -> ty -> Prop :=
         subtypeOf S t1 t2 ->
         subtypeOf S t2 t3 ->
         subtypeOf S t1 t3.
+
+
+(*
+-------
+ Well-formedness
+-------
+*)
+
+Inductive wfField (S : schema) : fieldDecl -> Prop :=
+  | WF_Field :
+      forall f args t,
+        (forall x, In x args -> wfType S (snd x)) ->   (* Otra forma? *)
+        wfType S t ->
+        wfField S (Field f args t).
+
+Inductive wfInterface (S : schema) : interfaceDecl -> Prop :=
+  | WF_Interface :
+      forall i fs,
+        Forall (wfField S) fs ->
+        wfInterface S (Interface i fs).
+ 
+
+
+Inductive wfObject (S : schema) : objectDecl -> Prop :=
+  | WF_Object :
+      forall o i fs ifs,
+        fields S (TInterface i) ifs ->
+        incl ifs fs ->
+        Forall (wfField S) fs ->
+        wfObject S (Object o i fs).
+
+Inductive wfSchema : schema -> Prop :=
+  | WF_Schema :
+      forall objs ifs scs ens,
+        Forall (wfObject (objs, ifs, scs, ens)) objs ->
+        Forall (wfInterface (objs, ifs, scs, ens)) ifs ->
+        wfSchema (objs, ifs, scs, ens).
