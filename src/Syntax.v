@@ -46,7 +46,7 @@ Inductive scalarDecl : Type :=
   | Scalar : scalar_id -> scalarDecl.
 
 Inductive enumDecl : Type :=
-  | Enum : list var -> enumDecl.   (* How to represent each val in enum? just a nat? *)
+  | Enum : enum_id -> enumDecl.   
 
 (*Inductive unionDecl : Type :=
   | Union : *)
@@ -87,12 +87,21 @@ Definition scalarLookup (S : schema) (s : scalar_id) : option scalarDecl :=
     find (s_eq s) ss
   end.
 
+Definition enumLookup (S : schema) (e : enum_id) : option enumDecl :=
+  match S with
+  | (_, _, _, ens) =>
+    let en_eq e enms := match enms with
+                          | Enum e' => beq_nat e e'
+                        end
+      in
+    find (en_eq e) ens
+  end.
+
 
 Definition fieldLookup (fs : list fieldDecl) (f : field_id) :=
   let f_eq f fld := match fld with
-                     | Field f' _ _ => beq_nat f f'
-		(*   | FieldWithArgs f' _ _ => beq_nat f f' *)
-                    end
+                   | Field f' _ _ => beq_nat f f'
+                   end
   in
   find (f_eq f) fs.
 
@@ -107,20 +116,20 @@ Inductive fields (S : schema) : ty -> list fieldDecl -> Prop :=
       interfaceLookup S i = Some (Interface i fs) ->
       fields S (TInterface i) fs.
 
-(*
-Definition fields (S : schema) (t : ty) :=
+
+Definition get_fields (S : schema) (t : ty) :=
   match t with
-    | TObject o => match objectLookup S o with
-                  | Some (Object _ _ fs) => Some fs
-                  | None => None
-                  end
-    | TInterface i => match interfaceLookup S i with
-                     | Some (Interface _ fs) => Some fs
-                     | None => None
-                      end
-    (*| TList t' => fields S t'*)
-    | _ => None
-  end. *)
+  | TObject o => match objectLookup S o with
+                | Some (Object _ _ fs) => Some fs
+                | None => None
+                end
+  | TInterface i => match interfaceLookup S i with
+                   | Some (Interface _ fs) => Some fs
+                   | None => None
+                   end
+  (*| TList t' => fields S t'*)
+  | _ => None
+  end. 
 
 
 
@@ -142,7 +151,11 @@ Inductive wfType (S : schema) : ty -> Prop :=
   | WF_TScalar :
       forall s,
         scalarLookup S s <> None ->
-        wfType S (TScalar s).
+        wfType S (TScalar s)
+  | WF_TEnum :
+      forall e,
+        enumLookup S e <> None ->
+        wfType S (TEnum e).
 
 
 Inductive subtypeOf (S : schema) : ty -> ty -> Prop :=
@@ -197,3 +210,18 @@ Inductive wfSchema : schema -> Prop :=
         Forall (wfObject (objs, ifs, scs, ens)) objs ->
         Forall (wfInterface (objs, ifs, scs, ens)) ifs ->
         wfSchema (objs, ifs, scs, ens).
+
+
+Notation "fn : t" := (Field fn [] t)
+                      (at level 99).
+
+Notation "fn args : t" := (Field fn args t)
+                           (at level 99).
+
+
+Notation "'type' O 'implements' I '{{' fds '}}'" := (Object O I fds)
+                                               (at level 80).
+
+Notation "'interface' I {{ fds }}" := (Interface I [fds])
+                                       (at level 79,
+                                        format "'[v    ' 'interface'  I  '{{' '/' '[' fds ']' '/' '}}' ']'").
