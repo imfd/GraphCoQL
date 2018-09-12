@@ -1,8 +1,6 @@
 Require Import List.
 Import ListNotations.
 
-Require Coq.Bool.Sumbool.
-Require Import Coq.Arith.Peano_dec.
 Require Import Coq.Arith.EqNat.
 
 
@@ -42,7 +40,7 @@ Inductive objectDecl : Type :=
 
 
 Inductive interfaceDecl : Type :=
-  | Interface : interface_id -> list fieldDecl -> interfaceDecl.	
+  | Interface : interface_id -> list fieldDecl -> interfaceDecl.  (* Omitting interface implementing other interfaces *)	
 
 Inductive scalarDecl : Type :=
   | Scalar : scalar_id -> scalarDecl.
@@ -79,6 +77,17 @@ Definition interfaceLookup (S : schema) (i : interface_id) : option interfaceDec
       find (i_eq i) ifs
   end.
 
+Definition scalarLookup (S : schema) (s : scalar_id) : option scalarDecl :=
+  match S with
+  | (_, _, ss, _) =>
+    let s_eq s sclr := match sclr with
+                          | Scalar s' => beq_nat s s'
+                        end
+      in
+    find (s_eq s) ss
+  end.
+
+
 Definition fieldLookup (fs : list fieldDecl) (f : field_id) :=
   let f_eq f fld := match fld with
                      | Field f' _ _ => beq_nat f f'
@@ -100,3 +109,37 @@ Definition fields (S : schema) (t : ty) :=
     (*| TList t' => fields S t'*)
     | _ => None
   end.
+
+
+
+
+Inductive wfType (S : schema) : ty -> Prop :=
+  | WF_TObject :
+      forall o,
+        objectLookup S o <> None ->
+        wfType S (TObject o)
+  | WF_TInterface :
+      forall i,
+        interfaceLookup S i <> None ->
+        wfType S (TInterface i)
+  | WF_TScalar :
+      forall s,
+        scalarLookup S s <> None ->
+        wfType S (TScalar s).
+
+
+Inductive subtypeOf (S : schema) : ty -> ty -> Prop :=
+  | Sub_Class :
+      forall o i fs,
+        objectLookup S o = Some (Object o i fs) ->
+        subtypeOf S (TObject o) (TInterface i)
+ 
+  | Sub_Refl :
+      forall t,
+        wfType S t ->
+        subtypeOf S t t
+  | Sub_Trans :
+      forall t1 t2 t3,
+        subtypeOf S t1 t2 ->
+        subtypeOf S t2 t3 ->
+        subtypeOf S t1 t3.
