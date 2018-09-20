@@ -15,7 +15,7 @@ Definition NamedType := Name.
 Inductive type : Type :=
 | NType : NamedType -> type
 | ListType : type -> type.
-
+ 
 
 Inductive InputValueDefinition : Type :=
 | InputValue : Name -> type -> InputValueDefinition.
@@ -55,7 +55,7 @@ Definition lookupInterface (doc : Document ) (name : Name) :=
 
 Definition lookupInterfaces doc names := map (lookupInterface doc) names.
 
-Definition lookupName (nt : Name) (doc : Document) :=
+Definition lookupName (nt : Name) (doc : Document) : option TypeDefinition :=
   match doc with
     | (_ , tdefs) =>
       let n_eq nt tdef := match tdef with
@@ -75,7 +75,7 @@ Fixpoint lookupType (ty : type) (doc : Document) :=
   | ListType ty' => lookupType ty' doc
   end.
 
-Definition typeName tdef :=
+Definition typeName tdef : Name :=
   match tdef with 
   | ScalarTypeDefinition name => name
   | ObjectTypeDefinition name _ _ => name
@@ -124,7 +124,12 @@ Inductive wfField (doc : Document) : FieldDefinition -> Prop :=
     IsOutputField doc outputType ->  
     Forall (wfInputValue doc) args ->
     wfField doc (Field name args outputType). 
-    
+
+Inductive subtype (doc : Document) : Name -> Name -> Prop :=
+| Same : forall name i ifs iflds flds,
+    lookupName name doc = Some (ObjectTypeDefinition name ifs flds) ->
+    In name (fiel
+
 Inductive wfTypeDefinition (doc : Document) : TypeDefinition -> Prop :=
 | WF_Scalar : forall name,
     lookupName name doc = Some (ScalarTypeDefinition name) ->
@@ -134,16 +139,35 @@ Inductive wfTypeDefinition (doc : Document) : TypeDefinition -> Prop :=
     fields <> [] ->
     NoDup (fieldsNames fields) ->
     Forall (wfField doc) fields ->
-    Forall (wfTypeDefinition doc) (lookupInterfaces doc interfaces) ->
-    (forall interface, In interface interfaces -> forall fld, In fld (getFields interface) ->
-                                                     In fld fields)
-    wfTypeDefinition doc (ObjectTypeDefinition name interfaces fields).
+   (* (interfaces <> [] ->
+     forall i iname flds,
+       In i interfaces ->
+       lookupName i doc = Some (InterfaceTypeDefinition iname flds) ->
+       wfTypeDefinition doc (InterfaceTypeDefinition iname flds) ->
+       forall f, In f flds -> In f fields ->
+            
+    ) ->*)
+    wfTypeDefinition doc (ObjectTypeDefinition name interfaces fields)
 | WF_Interface : forall name fields,
-    lookup name doc = Some (InterfaceTypeDefinition name fields) ->
+    lookupName name doc = Some (InterfaceTypeDefinition name fields) ->
     fields <> [] ->
-    NoDup (fieldNames fields) ->
+    NoDup (fieldsNames fields) ->
     Forall (wfField doc) fields ->
-    wfTypeDefinition doc (InterfaceTypeDefinition name fields).
+    wfTypeDefinition doc (InterfaceTypeDefinition name fields)
+| WF_Union : forall name members,
+    lookupName name doc = Some (UnionTypeDefinition name members) ->
+    members <> [] ->
+    NoDup members ->
+    (forall m oname ifs flds, In m members ->
+                         lookupName m doc = Some (ObjectTypeDefinition oname ifs flds) ->
+                         wfTypeDefinition doc (ObjectTypeDefinition oname ifs flds)) ->
+    wfTypeDefinition doc (UnionTypeDefinition name members)
+| WF_Enum : forall name enumValues,
+    lookupName name doc = Some (EnumTypeDefinition name enumValues) ->
+    enumValues <> [] ->
+    NoDup enumValues ->
+    wfTypeDefinition doc (EnumTypeDefinition name enumValues).
+    
            
 Inductive wfDocument : Document -> Prop :=
 | WF_Document : forall tdefs root,
@@ -155,208 +179,6 @@ Inductive wfDocument : Document -> Prop :=
 
 
 
-(*
-======
-Types
-======
-*)
-
-Inductive ty : Type :=
-| TScalar : scalar_id -> ty
-| TEnum : enum_id -> ty
-| TObject : object_id -> ty
-| TInterface : interface_id -> ty
-(*| TUnion : union_id -> ty    *)                             
-| TList : ty -> ty.
-
-
-
-
-(*
-========
-Program
-========
-*)
-
-Inductive fieldDecl : Type :=
-  | Field : field_id -> list (var * ty) -> ty -> fieldDecl.
-
-
-Inductive objectDecl : Type :=
-  | Object : object_id -> interface_id -> list fieldDecl -> objectDecl.	(* Only one interface *)
-
-
-Inductive interfaceDecl : Type :=
-  | Interface : interface_id -> list fieldDecl -> interfaceDecl.  (* Omitting interface implementing other interfaces *)	
-
-Inductive scalarDecl : Type :=
-  | Scalar : scalar_id -> scalarDecl.
-
-Inductive enumDecl : Type :=
-  | Enum : enum_id -> enumDecl.   
-
-(*Inductive unionDecl : Type :=
-  | Union : *)
-
-Definition schema := (list objectDecl * list interfaceDecl * list scalarDecl * list enumDecl)%type.	
-
-
-
-
-
-Definition objectLookup (S : schema) (obj : object_id) : option objectDecl :=
-  match S with
-    | (objs, _, _, _) =>
-      let o_eq o ob := match ob with
-                          | Object o' _ _ => beq_nat o o'
-                        end
-      in
-      find (o_eq obj) objs
-  end.
-
-Definition interfaceLookup (S : schema) (i : interface_id) : option interfaceDecl :=
-  match S with
-    | (_, ifs, _, _) =>
-      let i_eq i intr := match intr with
-                          | Interface i' _ => beq_nat i i'
-                        end
-      in
-      find (i_eq i) ifs
-  end.
-
-Definition scalarLookup (S : schema) (s : scalar_id) : option scalarDecl :=
-  match S with
-  | (_, _, ss, _) =>
-    let s_eq s sclr := match sclr with
-                          | Scalar s' => beq_nat s s'
-                        end
-      in
-    find (s_eq s) ss
-  end.
-
-Definition enumLookup (S : schema) (e : enum_id) : option enumDecl :=
-  match S with
-  | (_, _, _, ens) =>
-    let en_eq e enms := match enms with
-                          | Enum e' => beq_nat e e'
-                        end
-      in
-    find (en_eq e) ens
-  end.
-
-
-Definition fieldLookup (fs : list fieldDecl) (f : field_id) :=
-  let f_eq f fld := match fld with
-                   | Field f' _ _ => beq_nat f f'
-                   end
-  in
-  find (f_eq f) fs.
-
-
-Inductive fields (S : schema) : ty -> list fieldDecl -> Prop :=
-| Fields_Object :
-  forall o i fs,
-    objectLookup S o = Some (Object o i fs) ->
-    fields S (TObject o) fs
-| Fields_Interface :
-    forall i fs,
-      interfaceLookup S i = Some (Interface i fs) ->
-      fields S (TInterface i) fs.
-
-
-Definition get_fields (S : schema) (t : ty) :=
-  match t with
-  | TObject o => match objectLookup S o with
-                | Some (Object _ _ fs) => Some fs
-                | None => None
-                end
-  | TInterface i => match interfaceLookup S i with
-                   | Some (Interface _ fs) => Some fs
-                   | None => None
-                   end
-  (*| TList t' => fields S t'*)
-  | _ => None
-  end. 
-
-
-
-(*
--------
-Types
--------
-*)
-
-Inductive wfType (S : schema) : ty -> Prop :=
-  | WF_TObject :
-      forall o,
-        objectLookup S o <> None ->
-        wfType S (TObject o)
-  | WF_TInterface :
-      forall i,
-        interfaceLookup S i <> None ->
-        wfType S (TInterface i)
-  | WF_TScalar :
-      forall s,
-        scalarLookup S s <> None ->
-        wfType S (TScalar s)
-  | WF_TEnum :
-      forall e,
-        enumLookup S e <> None ->
-        wfType S (TEnum e).
-
-
-Inductive subtypeOf (S : schema) : ty -> ty -> Prop :=
-  | Sub_Class :
-      forall o i fs,
-        objectLookup S o = Some (Object o i fs) ->
-        subtypeOf S (TObject o) (TInterface i)
- 
-  | Sub_Refl :
-      forall t,
-        wfType S t ->
-        subtypeOf S t t
-  | Sub_Trans :
-      forall t1 t2 t3,
-        subtypeOf S t1 t2 ->
-        subtypeOf S t2 t3 ->
-        subtypeOf S t1 t3.
-
-
-(*
--------
- Well-formedness
--------
-*)
-
-Inductive wfField (S : schema) : fieldDecl -> Prop :=
-  | WF_Field :
-      forall f args t,
-        (forall x, In x args -> wfType S (snd x)) ->   (* Otra forma? *)
-        wfType S t ->
-        wfField S (Field f args t).
-
-Inductive wfInterface (S : schema) : interfaceDecl -> Prop :=
-  | WF_Interface :
-      forall i fs,
-        Forall (wfField S) fs ->
-        wfInterface S (Interface i fs).
- 
-
-
-Inductive wfObject (S : schema) : objectDecl -> Prop :=
-  | WF_Object :
-      forall o i fs ifs,
-        fields S (TInterface i) ifs ->
-        incl ifs fs ->
-        Forall (wfField S) fs ->
-        wfObject S (Object o i fs).
-
-Inductive wfSchema : schema -> Prop :=
-  | WF_Schema :
-      forall objs ifs scs ens,
-        Forall (wfObject (objs, ifs, scs, ens)) objs ->
-        Forall (wfInterface (objs, ifs, scs, ens)) ifs ->
-        wfSchema (objs, ifs, scs, ens).
 
 
 Notation "fn : t" := (Field fn [] t)
