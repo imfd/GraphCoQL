@@ -38,7 +38,7 @@ Inductive ImplementsInterfaces : Type :=
 Inductive TypeDefinition : Type :=
 | ScalarTypeDefinition : Name -> TypeDefinition
 | ObjectTypeDefinition : Name -> FieldsDefinition -> TypeDefinition
-| ObjectTypeWithInterfaces : Name -> FieldsDefinition -> ImplementsInterfaces -> TypeDefinition
+| ObjectTypeWithInterfaces : Name -> ImplementsInterfaces -> FieldsDefinition -> TypeDefinition
 | InterfaceTypeDefinition : Name -> FieldsDefinition -> TypeDefinition
 | UnionTypeDefinition : Name -> list Name -> TypeDefinition
 | EnumTypeDefinition : Name -> list EnumValue -> TypeDefinition.
@@ -50,28 +50,17 @@ Inductive TypeDefinition : Type :=
 
 As per the spec: Directives provide a way to describe alternate runtime execution and type validation behavior in a GraphQL document. 
  *)
-Definition Document := (NamedType * list TypeDefinition)%type.
+Definition Document := (Name * list TypeDefinition)%type.
 
 
-Definition lookupInterface (doc : Document ) (name : Name) :=
-  match doc with
-  | (_ , tdefs) =>
-    let i_eq n tdef := match tdef with
-                      | InterfaceTypeDefinition _ _ => true
-                      | _ => false
-                      end
-    in
-    find (i_eq name) tdefs
-  end.
-
-Definition lookupInterfaces doc names := map (lookupInterface doc) names.
 
 Definition lookupName (nt : Name) (doc : Document) : option TypeDefinition :=
   match doc with
     | (_ , tdefs) =>
       let n_eq nt tdef := match tdef with
                          | ScalarTypeDefinition name => beq_nat nt name
-                         | ObjectTypeDefinition name _ _ => beq_nat nt name
+                         | ObjectTypeDefinition name _  => beq_nat nt name
+                         | ObjectTypeWithInterfaces name _ _ => beq_nat nt name
                          | InterfaceTypeDefinition name _ => beq_nat nt name
                          | UnionTypeDefinition name _ => beq_nat nt name
                          | EnumTypeDefinition name _ => beq_nat nt name
@@ -82,14 +71,15 @@ Definition lookupName (nt : Name) (doc : Document) : option TypeDefinition :=
 
 Fixpoint lookupType (ty : type) (doc : Document) :=
   match ty with
-  | NType name => lookupName name doc
+  | NamedType name => lookupName name doc
   | ListType ty' => lookupType ty' doc
   end.
 
 Definition typeName tdef : Name :=
   match tdef with 
   | ScalarTypeDefinition name => name
-  | ObjectTypeDefinition name _ _ => name
+  | ObjectTypeDefinition name  _ => name
+  | ObjectTypeWithInterfaces name _ _ => name
   | InterfaceTypeDefinition name _ => name
   | UnionTypeDefinition name _ => name
   | EnumTypeDefinition name _ => name
@@ -97,23 +87,41 @@ Definition typeName tdef : Name :=
   
 Definition names tdefs :=  map typeName tdefs.
 
-Definition fieldName fld := match fld with | Field name _ _ => name end.
+Definition fieldName fld :=
+  match fld with
+  | Field name _ => name
+  | FieldArgs name _ _ => name
+  end.
 
 Definition fieldsNames flds := map fieldName flds.
 
 Definition getFields tdef :=
   match tdef with
-  | ObjectTypeDefinition _ _ fields => fields
-  | InterfaceTypeDefinition _ fields => fields
-  | _ => []
+  | ObjectTypeDefinition _ fields => Some fields
+  | ObjectTypeWithInterfaces _ _ fields => Some fields
+  | InterfaceTypeDefinition _ fields => Some fields
+  | _ => None
   end.
 
-Inductive IsInputField (doc : Document) : type -> Prop :=
-| ScalarInput : forall ty sname,
+
+Inductive ScalarType (doc : Document) : type -> Prop :=
+| Scalar : forall ty sname,
     lookupType ty doc = Some (ScalarTypeDefinition sname) ->
-    IsInputField doc ty
-| EnumInput : forall ty ename enums,
+    ScalarType doc ty.
+
+Inductive EnumType (doc : Document) : type -> Prop :=
+| Enum : forall ty ename enums,
     lookupType ty doc = Some (EnumTypeDefinition ename enums) ->
+    EnumType doc ty.
+
+
+
+Inductive IsInputField (doc : Document) : type -> Prop :=
+| ScalarInput : forall ty,
+    ScalarType doc ty ->
+    IsInputField doc ty
+| EnumInput : forall ty,
+    EnumType doc ty ->
     IsInputField doc ty.
     
 
@@ -124,61 +132,82 @@ Inductive IsOutputField (doc : Document) : type -> Prop :=
     IsOutputField doc ty.
 
 
+
+
 Inductive wfInputValue (doc : Document) : InputValueDefinition -> Prop :=
 | WF_InputValue : forall ty name,
     IsInputField doc ty ->
     wfInputValue doc (InputValue name ty).
 
+Inductive wfArgumentsDefinition (doc : Document) : ArgumentsDefinition -> Prop :=
+| WF_SingleArgument : forall arg,
+    wfInputValue doc arg ->
+    wfArgumentsDefinition doc (SingleArgument arg)
+| WF_MultipleArguments : forall arg args,
+    wfArgumentsDefinition doc args ->
+    wfInputValue doc arg ->
+    wfArgumentsDefinition doc (MultipleArguments arg args).
+    
 
 Inductive wfField (doc : Document) : FieldDefinition -> Prop :=
-| WF_Field : forall name args outputType,
-    IsOutputField doc outputType ->  
-    Forall (wfInputValue doc) args ->
-    wfField doc (Field name args outputType). 
+| WF_Field : forall name outputType,
+    IsOutputField doc outputType -> 
+    wfField doc (Field name outputType)
+| WF_FieldArgs : forall name args outputType,
+    IsOutputField doc outputType ->
+    wfArgumentsDefinition doc args ->
+    wfField doc (FieldArgs name args outputType).
 
-Inductive subtype (doc : Document) : Name -> Name -> Prop :=
-| Same : forall name i ifs iflds flds,
-    lookupName name doc = Some (ObjectTypeDefinition name ifs flds) ->
-    In name (fiel
+Inductive wfFieldsDefinition (doc : Document) : FieldsDefinition -> Prop :=
+| WF_SingleField : forall fld,
+    wfField doc fld ->
+    wfFieldsDefinition doc (SingleField fld)
+| WF_MultipleFields : forall fld fields,
+    wfFieldsDefinition doc fields ->
+    wfField doc fld ->
+    wfFieldsDefinition doc (MultipleFields fld fields).
+
+Inductive wfImplementsInterfaces (doc : Document) : ImplementsInterfaces -> Prop :=
+| WF_SingleInterface : forall name fields,
+    lookupName name doc = Some (InterfaceTypeDefinition name fields) -> 
+    wfImplementsInterfaces doc (SingleInterface name)
+| WF_MultipleInterfaces : forall name fields interfaces,
+    lookupName name doc = Some (InterfaceTypeDefinition name fields) ->
+    wfImplementsInterfaces doc interfaces ->
+    wfImplementsInterfaces doc (MultipleInterfaces name interfaces).
+                                                                            
+
 
 Inductive wfTypeDefinition (doc : Document) : TypeDefinition -> Prop :=
 | WF_Scalar : forall name,
     lookupName name doc = Some (ScalarTypeDefinition name) ->
     wfTypeDefinition doc (ScalarTypeDefinition name)
-| WF_Object : forall name interfaces fields,
-    lookupName name doc = Some (ObjectTypeDefinition name interfaces fields) ->
-    fields <> [] ->
-    NoDup (fieldsNames fields) ->
-    Forall (wfField doc) fields ->
-   (* (interfaces <> [] ->
-     forall i iname flds,
-       In i interfaces ->
-       lookupName i doc = Some (InterfaceTypeDefinition iname flds) ->
-       wfTypeDefinition doc (InterfaceTypeDefinition iname flds) ->
-       forall f, In f flds -> In f fields ->
-            
-    ) ->*)
-    wfTypeDefinition doc (ObjectTypeDefinition name interfaces fields)
+| WF_Object : forall name fields,
+    lookupName name doc = Some (ObjectTypeDefinition name fields) ->
+    wfFieldsDefinition doc fields ->
+    wfTypeDefinition doc (ObjectTypeDefinition name fields)
+| WF_ObjectWithInterfaces : forall name interfaces fields,
+    lookupName name doc = Some (ObjectTypeWithInterfaces name interfaces fields) ->
+    wfImplementsInterfaces doc interfaces ->
+    wfFieldsDefinition doc fields ->
+    wfTypeDefinition doc (ObjectTypeWithInterfaces name interfaces fields)
+    
 | WF_Interface : forall name fields,
     lookupName name doc = Some (InterfaceTypeDefinition name fields) ->
-    fields <> [] ->
-    NoDup (fieldsNames fields) ->
-    Forall (wfField doc) fields ->
+    wfFieldsDefinition doc fields ->
     wfTypeDefinition doc (InterfaceTypeDefinition name fields)
 | WF_Union : forall name members,
     lookupName name doc = Some (UnionTypeDefinition name members) ->
     members <> [] ->
     NoDup members ->
-    (forall m oname ifs flds, In m members ->
-                         lookupName m doc = Some (ObjectTypeDefinition oname ifs flds) ->
-                         wfTypeDefinition doc (ObjectTypeDefinition oname ifs flds)) ->
+    Forall (ObjectType doc) members ->
     wfTypeDefinition doc (UnionTypeDefinition name members)
 | WF_Enum : forall name enumValues,
     lookupName name doc = Some (EnumTypeDefinition name enumValues) ->
     enumValues <> [] ->
     NoDup enumValues ->
     wfTypeDefinition doc (EnumTypeDefinition name enumValues).
-    
+
            
 Inductive wfDocument : Document -> Prop :=
 | WF_Document : forall tdefs root,
@@ -190,18 +219,11 @@ Inductive wfDocument : Document -> Prop :=
 
 
 
-
-
-Notation "fn : t" := (Field fn [] t)
-                      (at level 99).
-
-Notation "fn args : t" := (Field fn args t)
-                           (at level 99).
-
-
-Notation "'type' O 'implements' I '{{' fds '}}'" := (Object O I fds)
-                                               (at level 80).
-
-Notation "'interface' I {{ fds }}" := (Interface I [fds])
-                                       (at level 79,
-                                        format "'[v    ' 'interface'  I  '{{' '/' '[' fds ']' '/' '}}' ']'").
+Inductive subtype (doc : Document) : type -> type -> Prop :=
+| ST_Refl : forall ty, subtype doc ty ty
+| ST_Trans : forall s u t,
+    subtype doc s u ->
+    subtype doc u t ->
+    subtype doc s t
+| ST_ObjectWidth : forall ty I,
+    lookupType ty doc = Some (ObjectTypeWithInterfaces oname  
