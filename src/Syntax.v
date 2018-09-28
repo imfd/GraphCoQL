@@ -4,32 +4,43 @@ Import ListNotations.
 Require Import Coq.Arith.EqNat.
 
 
-Require Export Meta.
-
-
 Definition Name := nat.
 Definition EnumValue := Name.
 
-Definition NamedType := Name.
 
 Inductive type : Type :=
-| NType : NamedType -> type
+| NamedType : Name -> type
 | ListType : type -> type.
  
 
 Inductive InputValueDefinition : Type :=
 | InputValue : Name -> type -> InputValueDefinition.
 
+Inductive ArgumentsDefinition : Type :=
+| SingleArgument : InputValueDefinition -> ArgumentsDefinition
+| MultipleArguments : InputValueDefinition -> ArgumentsDefinition -> ArgumentsDefinition.
+
 Inductive FieldDefinition : Type :=
-| Field : Name -> list InputValueDefinition -> type -> FieldDefinition.
+| Field : Name  -> type -> FieldDefinition
+| FieldArgs : Name -> ArgumentsDefinition -> type -> FieldDefinition.
+
+Inductive FieldsDefinition : Type :=
+| SingleField : FieldDefinition -> FieldsDefinition
+| MultipleFields : FieldDefinition -> FieldsDefinition -> FieldsDefinition.
+  
+
+Inductive ImplementsInterfaces : Type :=
+| SingleInterface : Name -> ImplementsInterfaces
+| MultipleInterfaces : Name -> ImplementsInterfaces -> ImplementsInterfaces.
 
 
 (* Omitting InputObjects for now, to make it simpler *)
 Inductive TypeDefinition : Type :=
 | ScalarTypeDefinition : Name -> TypeDefinition
-| ObjectTypeDefinition : Name -> list NamedType -> list FieldDefinition -> TypeDefinition
-| InterfaceTypeDefinition : Name -> list FieldDefinition -> TypeDefinition
-| UnionTypeDefinition : Name -> list NamedType -> TypeDefinition
+| ObjectTypeDefinition : Name -> FieldsDefinition -> TypeDefinition
+| ObjectTypeWithInterfaces : Name -> FieldsDefinition -> ImplementsInterfaces -> TypeDefinition
+| InterfaceTypeDefinition : Name -> FieldsDefinition -> TypeDefinition
+| UnionTypeDefinition : Name -> list Name -> TypeDefinition
 | EnumTypeDefinition : Name -> list EnumValue -> TypeDefinition.
                                            
 
