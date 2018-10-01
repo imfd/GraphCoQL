@@ -117,10 +117,6 @@ Inductive EnumType (doc : Document) : type -> Prop :=
 
 Inductive subtype (doc : Document) : type -> type -> Prop :=
 | ST_Refl : forall ty, subtype doc ty ty
-| ST_Trans : forall s u t,
-    subtype doc s u ->
-    subtype doc u t ->
-    subtype doc s t
 | ST_Object : forall name intfs iname fields ifields,
     lookupName name doc = Some (ObjectTypeWithInterfaces name intfs fields) ->
     In (NamedType iname) intfs ->
