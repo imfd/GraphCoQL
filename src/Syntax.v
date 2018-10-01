@@ -1,7 +1,12 @@
 Require Import List.
 Import ListNotations.
 
+
+
+
 Require Import Coq.Arith.EqNat.
+
+
 
 
 Definition Name := nat.
@@ -29,18 +34,19 @@ Inductive FieldsDefinition : Type :=
 | MultipleFields : FieldDefinition -> FieldsDefinition -> FieldsDefinition.
   
 
+(*
 Inductive ImplementsInterfaces : Type :=
-| SingleInterface : Name -> ImplementsInterfaces
-| MultipleInterfaces : Name -> ImplementsInterfaces -> ImplementsInterfaces.
-
+| SingleInterface : type -> ImplementsInterfaces
+| MultipleInterfaces : type -> ImplementsInterfaces -> ImplementsInterfaces.
+*)
 
 (* Omitting InputObjects for now, to make it simpler *)
 Inductive TypeDefinition : Type :=
 | ScalarTypeDefinition : Name -> TypeDefinition
 | ObjectTypeDefinition : Name -> FieldsDefinition -> TypeDefinition
-| ObjectTypeWithInterfaces : Name -> ImplementsInterfaces -> FieldsDefinition -> TypeDefinition
+| ObjectTypeWithInterfaces : Name -> list type -> FieldsDefinition -> TypeDefinition
 | InterfaceTypeDefinition : Name -> FieldsDefinition -> TypeDefinition
-| UnionTypeDefinition : Name -> list Name -> TypeDefinition
+| UnionTypeDefinition : Name -> list type -> TypeDefinition
 | EnumTypeDefinition : Name -> list EnumValue -> TypeDefinition.
                                            
 
@@ -50,7 +56,7 @@ Inductive TypeDefinition : Type :=
 
 As per the spec: Directives provide a way to describe alternate runtime execution and type validation behavior in a GraphQL document. 
  *)
-Definition Document := (Name * list TypeDefinition)%type.
+Definition Document := (type * list TypeDefinition)%type.
 
 
 
@@ -75,7 +81,56 @@ Fixpoint lookupType (ty : type) (doc : Document) :=
   | ListType ty' => lookupType ty' doc
   end.
 
-Definition typeName tdef : Name :=
+
+
+
+Inductive ScalarType (doc : Document) : type -> Prop :=
+| Scalar : forall sname,
+    lookupName sname doc = Some (ScalarTypeDefinition sname) ->
+    ScalarType doc (NamedType sname).
+
+Inductive ObjectType (doc : Document) : type -> Prop :=
+| Object : forall name fields,
+    lookupName name doc = Some (ObjectTypeDefinition name fields) ->
+    ObjectType doc (NamedType name)
+| ObjectWithInterfaces : forall name fields intfs,
+    lookupName name doc = Some (ObjectTypeWithInterfaces name intfs fields) ->
+    ObjectType doc (NamedType name).
+
+Inductive InterfaceType (doc : Document) : type -> Prop :=
+| Interface : forall name flds,
+    lookupName name doc = Some (InterfaceTypeDefinition name flds) ->
+    InterfaceType doc (NamedType name).
+
+
+Inductive UnionType (doc : Document) : type -> Prop :=
+| Union : forall name objs,
+    lookupName name doc = Some (UnionTypeDefinition name objs) ->
+    UnionType doc (NamedType name).
+
+Inductive EnumType (doc : Document) : type -> Prop :=
+| Enum : forall ename enums,
+    lookupName ename doc = Some (EnumTypeDefinition ename enums) ->
+    EnumType doc (NamedType ename).
+
+
+
+Inductive subtype (doc : Document) : type -> type -> Prop :=
+| ST_Refl : forall ty, subtype doc ty ty
+| ST_Trans : forall s u t,
+    subtype doc s u ->
+    subtype doc u t ->
+    subtype doc s t
+| ST_Object : forall name intfs iname fields ifields,
+    lookupName name doc = Some (ObjectTypeWithInterfaces name intfs fields) ->
+    In (NamedType iname) intfs ->
+    lookupName iname doc = Some (InterfaceTypeDefinition iname ifields) ->
+    subtype doc (NamedType name) (NamedType iname)
+| ST_ListType : forall ty ty',
+    subtype doc ty ty' ->
+    subtype doc (ListType ty) (ListType ty').
+    
+Definition name tdef : Name :=
   match tdef with 
   | ScalarTypeDefinition name => name
   | ObjectTypeDefinition name  _ => name
@@ -84,37 +139,16 @@ Definition typeName tdef : Name :=
   | UnionTypeDefinition name _ => name
   | EnumTypeDefinition name _ => name
   end.
-  
-Definition names tdefs :=  map typeName tdefs.
 
-Definition fieldName fld :=
-  match fld with
-  | Field name _ => name
-  | FieldArgs name _ _ => name
+Definition names tdefs := map name tdefs.
+
+Fixpoint unwrapTypeName (ty : type) : Name :=
+  match ty with
+  | NamedType name => name
+  | ListType ty' => unwrapTypeName ty'
   end.
 
-Definition fieldsNames flds := map fieldName flds.
-
-Definition getFields tdef :=
-  match tdef with
-  | ObjectTypeDefinition _ fields => Some fields
-  | ObjectTypeWithInterfaces _ _ fields => Some fields
-  | InterfaceTypeDefinition _ fields => Some fields
-  | _ => None
-  end.
-
-
-Inductive ScalarType (doc : Document) : type -> Prop :=
-| Scalar : forall ty sname,
-    lookupType ty doc = Some (ScalarTypeDefinition sname) ->
-    ScalarType doc ty.
-
-Inductive EnumType (doc : Document) : type -> Prop :=
-| Enum : forall ty ename enums,
-    lookupType ty doc = Some (EnumTypeDefinition ename enums) ->
-    EnumType doc ty.
-
-
+Definition typesNames tys := map unwrapTypeName tys.
 
 Inductive IsInputField (doc : Document) : type -> Prop :=
 | ScalarInput : forall ty,
@@ -166,44 +200,40 @@ Inductive wfFieldsDefinition (doc : Document) : FieldsDefinition -> Prop :=
     wfFieldsDefinition doc fields ->
     wfField doc fld ->
     wfFieldsDefinition doc (MultipleFields fld fields).
-
-Inductive wfImplementsInterfaces (doc : Document) : ImplementsInterfaces -> Prop :=
-| WF_SingleInterface : forall name fields,
-    lookupName name doc = Some (InterfaceTypeDefinition name fields) -> 
-    wfImplementsInterfaces doc (SingleInterface name)
-| WF_MultipleInterfaces : forall name fields interfaces,
-    lookupName name doc = Some (InterfaceTypeDefinition name fields) ->
-    wfImplementsInterfaces doc interfaces ->
-    wfImplementsInterfaces doc (MultipleInterfaces name interfaces).
-                                                                            
+                                                                
 
 
 Inductive wfTypeDefinition (doc : Document) : TypeDefinition -> Prop :=
 | WF_Scalar : forall name,
-    lookupName name doc = Some (ScalarTypeDefinition name) ->
+    ScalarType doc (NamedType name) ->
     wfTypeDefinition doc (ScalarTypeDefinition name)
+                     
 | WF_Object : forall name fields,
-    lookupName name doc = Some (ObjectTypeDefinition name fields) ->
+    ObjectType doc (NamedType name) ->
     wfFieldsDefinition doc fields ->
     wfTypeDefinition doc (ObjectTypeDefinition name fields)
+                     
 | WF_ObjectWithInterfaces : forall name interfaces fields,
-    lookupName name doc = Some (ObjectTypeWithInterfaces name interfaces fields) ->
-    wfImplementsInterfaces doc interfaces ->
+    ObjectType doc (NamedType name) ->
+    NoDup (typesNames interfaces) ->
+    Forall (InterfaceType doc) interfaces ->
     wfFieldsDefinition doc fields ->
     wfTypeDefinition doc (ObjectTypeWithInterfaces name interfaces fields)
     
 | WF_Interface : forall name fields,
-    lookupName name doc = Some (InterfaceTypeDefinition name fields) ->
+    InterfaceType doc (NamedType name) ->
     wfFieldsDefinition doc fields ->
     wfTypeDefinition doc (InterfaceTypeDefinition name fields)
+                     
 | WF_Union : forall name members,
-    lookupName name doc = Some (UnionTypeDefinition name members) ->
+    UnionType doc (NamedType name) ->
     members <> [] ->
-    NoDup members ->
+    NoDup (typesNames members) ->
     Forall (ObjectType doc) members ->
     wfTypeDefinition doc (UnionTypeDefinition name members)
+                     
 | WF_Enum : forall name enumValues,
-    lookupName name doc = Some (EnumTypeDefinition name enumValues) ->
+    EnumType doc (NamedType name) ->
     enumValues <> [] ->
     NoDup enumValues ->
     wfTypeDefinition doc (EnumTypeDefinition name enumValues).
@@ -213,17 +243,11 @@ Inductive wfDocument : Document -> Prop :=
 | WF_Document : forall tdefs root,
     NoDup (names tdefs) ->
     In root (names tdefs) -> 
-    Forall (wfTypeDefinition (root, tdefs)) tdefs ->
-    wfDocument (root, tdefs).
+    Forall (wfTypeDefinition ((NamedType root), tdefs)) tdefs ->
+    wfDocument ((NamedType root), tdefs).
 
 
 
 
-Inductive subtype (doc : Document) : type -> type -> Prop :=
-| ST_Refl : forall ty, subtype doc ty ty
-| ST_Trans : forall s u t,
-    subtype doc s u ->
-    subtype doc u t ->
-    subtype doc s t
-| ST_ObjectWidth : forall ty I,
-    lookupType ty doc = Some (ObjectTypeWithInterfaces oname  
+
+                                                      
