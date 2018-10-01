@@ -152,14 +152,20 @@ Inductive IsInputField (doc : Document) : type -> Prop :=
     IsInputField doc ty
 | EnumInput : forall ty,
     EnumType doc ty ->
-    IsInputField doc ty.
+    IsInputField doc ty
+| ListInput : forall ty,
+    IsInputField doc ty ->
+    IsInputField doc (ListType ty).
     
 
 (* Because we are not considering InputObjects, every type is valid if it is in the document *)
 Inductive IsOutputField (doc : Document) : type -> Prop :=
-| OutputField : forall ty tdef,
-    lookupType ty doc = Some tdef ->
-    IsOutputField doc ty.
+| OutputField : forall name tdef,
+    lookupName name doc = Some tdef ->
+    IsOutputField doc (NamedType name)
+| OutputListField : forall ty,
+    IsOutputField doc ty ->
+    IsOutputField doc (ListType ty).
 
 
 
