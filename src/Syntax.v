@@ -61,14 +61,6 @@ Definition lookupName (nt : Name) (doc : Document) : option TypeDefinition :=
       find (n_eq nt) tdefs
   end.
 
-Fixpoint lookupType (ty : type) (doc : Document) :=
-  match ty with
-  | NamedType name => lookupName name doc
-  | ListType ty' => lookupType ty' doc
-  end.
-
-
-
 
 Inductive ScalarType (doc : Document) : type -> Prop :=
 | Scalar : forall sname,
@@ -146,7 +138,7 @@ Definition fieldNames flds := map fieldName flds.
 
 
 Definition fields name doc :=
-  match lookupType name doc with
+  match lookupName name doc with
   | Some (ObjectTypeDefinition _ _ flds) => flds
   | Some (InterfaceTypeDefinition _ flds) => flds
   | _ => []
