@@ -236,11 +236,25 @@ Inductive fieldOk (doc : Document) : FieldDefinition -> FieldDefinition -> Prop 
     In ty objs ->
     incl args' args ->
     fieldOk doc (FieldArgs fname args ty) (FieldArgs fname args' (NamedType ename)).
-    
-Inductive implementsOK (doc : Document ) : name -> TypeDefinition -> Prop :=
-| AllSimpleFields : forall name iname fname ty ty',
-    declaresImplementation doc name iname ->
+
+
+(**
+   This checks whether an object type implemented correctly an interface, 
+   by properly defining every field defined in the interface.
+
+
+Doc(name) = type name ... iname ... { Flds }      
+
+**)
+Inductive implementsOK (doc : Document ) : type -> type -> Prop :=
+| ImplementsAll : forall name intfs fields iname ifields,
+    lookupName name doc = Some (ObjectTypeWithInterfaces name intfs fields) ->
+    In (NamedType iname) intfs ->
     lookupName iname doc = Some (InterfaceTypeDefinition iname ifields) ->
+    (forall ifld, In ifld ifields ->
+           exists ofld, In ofld fields ->
+                   fieldOk doc ofld ifld)  ->
+    implementsOK doc (NamedType name) (NamedType iname).
     
 
 Inductive wfTypeDefinition (doc : Document) : TypeDefinition -> Prop :=
