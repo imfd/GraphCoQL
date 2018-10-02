@@ -21,31 +21,19 @@ Inductive type : Type :=
 Inductive InputValueDefinition : Type :=
 | InputValue : Name -> type -> InputValueDefinition.
 
-Inductive ArgumentsDefinition : Type :=
-| SingleArgument : InputValueDefinition -> ArgumentsDefinition
-| MultipleArguments : InputValueDefinition -> ArgumentsDefinition -> ArgumentsDefinition.
 
 Inductive FieldDefinition : Type :=
 | Field : Name  -> type -> FieldDefinition
-| FieldArgs : Name -> ArgumentsDefinition -> type -> FieldDefinition.
+| FieldArgs : Name -> list InputValueDefinition -> type -> FieldDefinition.
 
-Inductive FieldsDefinition : Type :=
-| SingleField : FieldDefinition -> FieldsDefinition
-| MultipleFields : FieldDefinition -> FieldsDefinition -> FieldsDefinition.
-  
 
-(*
-Inductive ImplementsInterfaces : Type :=
-| SingleInterface : type -> ImplementsInterfaces
-| MultipleInterfaces : type -> ImplementsInterfaces -> ImplementsInterfaces.
-*)
 
 (* Omitting InputObjects for now, to make it simpler *)
 Inductive TypeDefinition : Type :=
 | ScalarTypeDefinition : Name -> TypeDefinition
-| ObjectTypeDefinition : Name -> FieldsDefinition -> TypeDefinition
-| ObjectTypeWithInterfaces : Name -> list type -> FieldsDefinition -> TypeDefinition
-| InterfaceTypeDefinition : Name -> FieldsDefinition -> TypeDefinition
+| ObjectTypeDefinition : Name -> list FieldDefinition -> TypeDefinition
+| ObjectTypeWithInterfaces : Name -> list type -> list FieldDefinition -> TypeDefinition
+| InterfaceTypeDefinition : Name -> list FieldDefinition -> TypeDefinition
 | UnionTypeDefinition : Name -> list type -> TypeDefinition
 | EnumTypeDefinition : Name -> list EnumValue -> TypeDefinition.
                                            
@@ -146,6 +134,14 @@ Fixpoint unwrapTypeName (ty : type) : Name :=
 
 Definition typesNames tys := map unwrapTypeName tys.
 
+Definition argNames args :=
+  let extract arg := match arg with
+                    | InputValue name _ => name
+                    end
+  in
+  map extract args.
+
+
 Inductive IsInputField (doc : Document) : type -> Prop :=
 | ScalarInput : forall ty,
     ScalarType doc ty ->
@@ -169,21 +165,11 @@ Inductive IsOutputField (doc : Document) : type -> Prop :=
 
 
 
-
 Inductive wfInputValue (doc : Document) : InputValueDefinition -> Prop :=
 | WF_InputValue : forall ty name,
     IsInputField doc ty ->
     wfInputValue doc (InputValue name ty).
 
-Inductive wfArgumentsDefinition (doc : Document) : ArgumentsDefinition -> Prop :=
-| WF_SingleArgument : forall arg,
-    wfInputValue doc arg ->
-    wfArgumentsDefinition doc (SingleArgument arg)
-| WF_MultipleArguments : forall arg args,
-    wfArgumentsDefinition doc args ->
-    wfInputValue doc arg ->
-    wfArgumentsDefinition doc (MultipleArguments arg args).
-    
 
 Inductive wfField (doc : Document) : FieldDefinition -> Prop :=
 | WF_Field : forall name outputType,
@@ -191,19 +177,71 @@ Inductive wfField (doc : Document) : FieldDefinition -> Prop :=
     wfField doc (Field name outputType)
 | WF_FieldArgs : forall name args outputType,
     IsOutputField doc outputType ->
-    wfArgumentsDefinition doc args ->
+    args <> [] ->
+    NoDup (argNames args) ->
+    Forall (wfInputValue doc) args ->
     wfField doc (FieldArgs name args outputType).
-
-Inductive wfFieldsDefinition (doc : Document) : FieldsDefinition -> Prop :=
-| WF_SingleField : forall fld,
-    wfField doc fld ->
-    wfFieldsDefinition doc (SingleField fld)
-| WF_MultipleFields : forall fld fields,
-    wfFieldsDefinition doc fields ->
-    wfField doc fld ->
-    wfFieldsDefinition doc (MultipleFields fld fields).
                                                                 
+Inductive declaresImplementation (doc : Document) : Name -> Name -> Prop :=
+| ImplementsInterface : forall name iname fields intfs,
+    lookupName name doc = Some (ObjectTypeWithInterfaces name intfs fields) ->
+    In (NamedType iname) intfs ->
+    InterfaceType doc (NamedType iname) ->
+    declaresImplementation doc name iname.
 
+
+(** This checks whether an object field is valid w/r to another from an implemented interface.
+The possible options are:
+
+    1.                  T <: U
+               -------------------------
+               (fname : T) OK (fname : U)
+
+    2.               T in unionTypes(U)
+                 -------------------------
+                (fname : T) OK (fname : U)
+
+    3.      T <: U     forall arg in args', arg in args          
+            -------------------------------------------
+             (fname (args) : T) OK (fname (args') : U)
+
+    4.      T in unionTypes(U)     forall arg in args', arg in args
+           --------------------------------------------------------
+                 (fname (args) : T) OK (fname (args') : U)
+
+
+The arguments have to be completed included, both their names and types (invariant).
+
+If we consider a Field  having a list of arguments, instead of two 
+constructors, we could simplify this definition I guess.
+
+**)
+Inductive fieldOk (doc : Document) : FieldDefinition -> FieldDefinition -> Prop :=
+  
+| SimpleInterfaceField : forall fname ty ty',
+    subtype doc ty ty' ->
+    fieldOk doc (Field fname ty) (Field fname ty')
+| SimpleUnionField : forall fname ename ty objs,
+    lookupName ename doc = Some (UnionTypeDefinition ename objs) ->
+    In ty objs ->
+    fieldOk doc (Field fname ty) (Field fname (NamedType ename))
+            
+| InterfaceFieldArgs : forall fname ty ty' args args',
+    subtype doc ty ty' ->
+    incl args' args ->
+    fieldOk doc (FieldArgs fname args ty) (FieldArgs fname args' ty')
+
+| UnionFieldArgs : forall fname ename ty args args' objs,
+    lookupName ename doc = Some (UnionTypeDefinition ename objs) ->
+    In ty objs ->
+    incl args' args ->
+    fieldOk doc (FieldArgs fname args ty) (FieldArgs fname args' (NamedType ename)).
+    
+Inductive implementsOK (doc : Document ) : name -> TypeDefinition -> Prop :=
+| AllSimpleFields : forall name iname fname ty ty',
+    declaresImplementation doc name iname ->
+    lookupName iname doc = Some (InterfaceTypeDefinition iname ifields) ->
+    
 
 Inductive wfTypeDefinition (doc : Document) : TypeDefinition -> Prop :=
 | WF_Scalar : forall name,
@@ -212,14 +250,19 @@ Inductive wfTypeDefinition (doc : Document) : TypeDefinition -> Prop :=
                      
 | WF_Object : forall name fields,
     ObjectType doc (NamedType name) ->
-    wfFieldsDefinition doc fields ->
+    fields <> [] ->
+    NoDup (fieldNames fields) ->
+    Forall (wfField doc) fields ->
     wfTypeDefinition doc (ObjectTypeDefinition name fields)
                      
 | WF_ObjectWithInterfaces : forall name interfaces fields,
     ObjectType doc (NamedType name) ->
+    fields <> [] ->
+    NoDup (fieldNames fields) ->
+    Forall (wfField doc) fields ->
     NoDup (typesNames interfaces) ->
     Forall (InterfaceType doc) interfaces ->
-    wfFieldsDefinition doc fields ->
+    Forall (implementsOK doc name) interfaces ->
     wfTypeDefinition doc (ObjectTypeWithInterfaces name interfaces fields)
     
 | WF_Interface : forall name fields,
