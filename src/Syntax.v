@@ -142,6 +142,17 @@ Definition argNames args :=
   map extract args.
 
 
+Definition fields name doc :=
+  match lookupType name doc with
+  | Some (ObjectTypeDefinition _  flds) => flds
+  | Some (ObjectTypeWithInterfaces _ _ flds) => flds
+  | Some (InterfaceTypeDefinition _ flds) => flds
+  | _ => []
+  end.
+
+
+
+
 Inductive IsInputField (doc : Document) : type -> Prop :=
 | ScalarInput : forall ty,
     ScalarType doc ty ->
@@ -197,15 +208,15 @@ The possible options are:
                -------------------------
                (fname : T) OK (fname : U)
 
-    2.               T in unionTypes(U)
+    2.               T ∈ unionTypes(U)
                  -------------------------
                 (fname : T) OK (fname : U)
 
-    3.      T <: U     forall arg in args', arg in args          
+    3.      T <: U     ∀ arg in args', arg ∈ args          
             -------------------------------------------
              (fname (args) : T) OK (fname (args') : U)
 
-    4.      T in unionTypes(U)     forall arg in args', arg in args
+    4.      T ∈ unionTypes(U)     ∀ arg in args', arg ∈ args
            --------------------------------------------------------
                  (fname (args) : T) OK (fname (args') : U)
 
@@ -239,11 +250,15 @@ Inductive fieldOk (doc : Document) : FieldDefinition -> FieldDefinition -> Prop 
 
 
 (**
-   This checks whether an object type implemented correctly an interface, 
+   This checks whether an object type implements correctly an interface, 
    by properly defining every field defined in the interface.
 
 
-Doc(name) = type name ... iname ... { Flds }      
+            Doc(name) = type name implements ... iname ... { Flds }   
+                    Doc(iname) = interface iname { Flds' }
+                 ∀ fld' ∈ Flds', ∃ fld ∈ Flds s.t fld OK fld'
+            ------------------------------------------------
+                        name implementsOK iname
 
 **)
 Inductive implementsOK (doc : Document ) : type -> type -> Prop :=
