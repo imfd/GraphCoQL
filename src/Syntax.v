@@ -2,14 +2,25 @@ Require Import List.
 Import ListNotations.
 
 
+From Coq Require Import Bool Ascii String.
+
+Definition eq_ascii (a1 a2 : ascii) :=
+  match a1, a2 with
+  | Ascii b1 b2 b3 b4 b5 b6 b7 b8, Ascii c1 c2 c3 c4 c5 c6 c7 c8 =>
+    (eqb b1 c1) && (eqb b2 c2) && (eqb b3 c3) && (eqb b4 c4) &&
+    (eqb b5 c5) && (eqb b6 c6) && (eqb b7 c7) && (eqb b8 c8)
+  end.
+
+Fixpoint eq_string (s1 s2 : string) :=
+  match s1, s2 with
+  | EmptyString,  EmptyString  => true
+  | String x1 s1, String x2 s2 => eq_ascii x1 x2 && eq_string s1 s2
+  | _, _                       => false
+  end.
 
 
-Require Import Coq.Arith.EqNat.
 
-
-
-
-Definition Name := nat.
+Definition Name := string.
 Definition EnumValue := Name.
 
 
@@ -51,11 +62,11 @@ Definition lookupName (nt : Name) (doc : Document) : option TypeDefinition :=
   match doc with
     | (_ , tdefs) =>
       let n_eq nt tdef := match tdef with
-                         | ScalarTypeDefinition name => beq_nat nt name
-                         | ObjectTypeDefinition name _  _ => beq_nat nt name
-                         | InterfaceTypeDefinition name _ => beq_nat nt name
-                         | UnionTypeDefinition name _ => beq_nat nt name
-                         | EnumTypeDefinition name _ => beq_nat nt name
+                         | ScalarTypeDefinition name => eq_string nt name
+                         | ObjectTypeDefinition name _  _ => eq_string nt name
+                         | InterfaceTypeDefinition name _ => eq_string nt name
+                         | UnionTypeDefinition name _ => eq_string nt name
+                         | EnumTypeDefinition name _ => eq_string nt name
                          end
       in
       find (n_eq nt) tdefs
@@ -350,7 +361,6 @@ Inductive wfDocument : Document -> Prop :=
     In root (names tdefs) -> 
     Forall (wfTypeDefinition ((NamedType root), tdefs)) tdefs ->
     wfDocument ((NamedType root), tdefs).
-
 
 
 
