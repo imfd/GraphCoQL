@@ -194,7 +194,7 @@ Inductive wfField (doc : Document) : FieldDefinition -> Prop :=
 | WF_FieldArgs : forall name args outputType,
     IsOutputField doc outputType ->
     args <> [] ->
-    NoDup (argNames args) ->
+    NoDup (argNames args) ->               (* This is not actually explicit in the spec I believe *)
     Forall (wfInputValue doc) args ->
     wfField doc (FieldArgs name args outputType).
                                                                 
