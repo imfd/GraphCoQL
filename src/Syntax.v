@@ -32,7 +32,13 @@ Inductive type : Type :=
 
 
 
-(** https://facebook.github.io/graphql/June2018/#sec-Field-Arguments **)
+(** In the specification it is named "InputValue" (InputValueDefinition) but 
+it is not very descriptive of what it is. Besides, it is constantly refered 
+as "argument", therefore it is named as FieldArgument (only fields can have
+arguments so it may sound redundant to name it like this but I feel it is
+more descriptive and reinforces this notion). 
+
+https://facebook.github.io/graphql/June2018/#sec-Field-Arguments **)
 Inductive FieldArgumentDefinition : Type :=
 | FieldArgument : Name -> type -> FieldArgumentDefinition.
 
@@ -161,7 +167,7 @@ Inductive subtype (doc : Document) : type -> type -> Prop :=
     subtype doc ty ty' ->
     subtype doc (ListType ty) (ListType ty').
 
-(** Get type definition's name.
+(** Get a type definition's name.
  Corresponds to the name one gives to an object, interface, etc. **)
 Definition name (tdef : TypeDefinition) : Name :=
   match tdef with 
@@ -176,7 +182,7 @@ Definition name (tdef : TypeDefinition) : Name :=
 Definition names (tdefs : list TypeDefinition) := map name tdefs.
 
 
-(** Get type's name.
+(** Get a type's name.
     Corresponds to named type actual name or the name used in a list type **)
 Fixpoint unwrapTypeName (ty : type) : Name :=
   match ty with
@@ -195,7 +201,7 @@ Definition argNames (args : list FieldArgumentDefinition) : list Name :=
   in
   map extract args.
 
-(** Get field's name **)
+(** Get a field's name **)
 Definition fieldName (fld : FieldDefinition) : Name :=
   match fld with
   | FieldWithoutArgs name _ => name
@@ -216,45 +222,55 @@ Definition fields (name : Name) (doc : Document) : list FieldDefinition :=
 
 
 
+(** The two following definitions describe whether a given type is a valid type
+for a field argument (IsValidArgumentType) and if it is a valid type for a field itself 
+(IsValidFieldType).
 
-Inductive IsInputField (doc : Document) : type -> Prop :=
-| ScalarInput : forall ty,
+In the spec they are correspondently named "IsInputField" and "IsOutputField".
+
+https://facebook.github.io/graphql/June2018/#sec-Input-and-Output-Types **)
+
+Inductive IsValidArgumentType (doc : Document) : type -> Prop :=
+| ScalarArgument : forall ty,
     ScalarType doc ty ->
-    IsInputField doc ty
-| EnumInput : forall ty,
+    IsValidArgumentType doc ty
+| EnumArgument : forall ty,
     EnumType doc ty ->
-    IsInputField doc ty
-| ListInput : forall ty,
-    IsInputField doc ty ->
-    IsInputField doc (ListType ty).
+    IsValidArgumentType doc ty
+| ListArgument : forall ty,
+    IsValidArgumentType doc ty ->
+    IsValidArgumentType doc (ListType ty).
     
 
-(* Because we are not considering InputObjects, every type is valid if it is in the document *)
-Inductive IsOutputField (doc : Document) : type -> Prop :=
-| OutputField : forall name tdef,
+(* Because we are not considering InputObjects, a field may have any type, 
+as long as it is declared in the document.
+
+Not really sure how to name this case... Named seems weird? *)
+Inductive IsValidFieldType (doc : Document) : type -> Prop :=
+| NamedField : forall name tdef,
     lookupName name doc = Some tdef ->
-    IsOutputField doc (NamedType name)
-| OutputListField : forall ty,
-    IsOutputField doc ty ->
-    IsOutputField doc (ListType ty).
+    IsValidFieldType doc (NamedType name)
+| ListField : forall ty,
+    IsValidFieldType doc ty ->
+    IsValidFieldType doc (ListType ty).
 
 
 
-Inductive wfInputValue (doc : Document) : FieldArgumentDefinition -> Prop :=
+Inductive wfFieldArgument (doc : Document) : FieldArgumentDefinition -> Prop :=
 | WF_InputValue : forall ty name,
-    IsInputField doc ty ->
-    wfInputValue doc (FieldArgument name ty).
+    IsValidArgumentType doc ty ->
+    wfFieldArgument doc (FieldArgument name ty).
 
 
 Inductive wfField (doc : Document) : FieldDefinition -> Prop :=
 | WF_Field : forall name outputType,
-    IsOutputField doc outputType -> 
+    IsValidFieldType doc outputType -> 
     wfField doc (FieldWithoutArgs name outputType)
 | WF_FieldArgs : forall name args outputType,
-    IsOutputField doc outputType ->
+    IsValidFieldType doc outputType ->
     args <> [] ->
     NoDup (argNames args) ->               (* This is not actually explicit in the spec I believe *)
-    Forall (wfInputValue doc) args ->
+    Forall (wfFieldArgument doc) args ->
     wfField doc (FieldWithArgs name args outputType).
                                                                 
 Inductive declaresImplementation (doc : Document) : Name -> Name -> Prop :=
