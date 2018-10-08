@@ -2,44 +2,66 @@ Require Import List.
 Import ListNotations.
 
 
-From Coq Require Import Bool Ascii String.
+From Coq Require Import Bool String.
 
-Definition eq_ascii (a1 a2 : ascii) :=
-  match a1, a2 with
-  | Ascii b1 b2 b3 b4 b5 b6 b7 b8, Ascii c1 c2 c3 c4 c5 c6 c7 c8 =>
-    (eqb b1 c1) && (eqb b2 c2) && (eqb b3 c3) && (eqb b4 c4) &&
-    (eqb b5 c5) && (eqb b6 c6) && (eqb b7 c7) && (eqb b8 c8)
-  end.
 
 Fixpoint eq_string (s1 s2 : string) :=
-  match s1, s2 with
-  | EmptyString,  EmptyString  => true
-  | String x1 s1, String x2 s2 => eq_ascii x1 x2 && eq_string s1 s2
-  | _, _                       => false
-  end.
+  if string_dec s1 s2 then true else false.
 
 
 
+(** Names for everything, from operations, fields, arguments, types, etc.
+
+   https://facebook.github.io/graphql/June2018/#sec-Names **)
 Definition Name := string.
+
+
+(** Same as names, except that it can't be true, false or null
+
+https://facebook.github.io/graphql/June2018/#EnumValue **)
 Definition EnumValue := Name.
 
+
+(** Types of data expected by query variables.
+
+https://facebook.github.io/graphql/June2018/#sec-Type-References **)
 
 Inductive type : Type :=
 | NamedType : Name -> type
 | ListType : type -> type.
- 
-
-Inductive InputValueDefinition : Type :=
-| InputValue : Name -> type -> InputValueDefinition.
 
 
+
+(** https://facebook.github.io/graphql/June2018/#sec-Field-Arguments **)
+Inductive FieldArgumentDefinition : Type :=
+| FieldArgument : Name -> type -> FieldArgumentDefinition.
+
+
+(** https://facebook.github.io/graphql/June2018/#FieldDefinition **)
+(* Actually, if we are using list of arguments, then a single constructor suffices, right? *)
 Inductive FieldDefinition : Type :=
-| Field : Name  -> type -> FieldDefinition
-| FieldArgs : Name -> list InputValueDefinition -> type -> FieldDefinition.
+| FieldWithoutArgs : Name  -> type -> FieldDefinition
+| FieldWithArgs : Name -> list FieldArgumentDefinition -> type -> FieldDefinition.
 
 
 
-(* Omitting InputObjects for now, to make it simpler *)
+(** Possible type definitions one can make in a GraphQL service. Some observations:
+
+    1. Objects' interfaces: Objects *may* declare one or more implemented interfaces. This is 
+    is implemented as a list of <type>, which can be empty or not. As it is, an
+    object may declare an interface as a list type (eg. "type A implements [B]"), therefore
+    in the wf property there is a check that restricts this declaration to a 
+    named type.
+
+    2. Fields: Objects and interfaces must declare at least one field but the current
+    definition allows an empty list of fields. In the wf property it is checked that
+    this list is not empty.
+
+    3. InputObjects: Currently not included to simplify the formalization.
+
+
+https://facebook.github.io/graphql/June2018/#TypeDefinition **)
+
 Inductive TypeDefinition : Type :=
 | ScalarTypeDefinition : Name -> TypeDefinition
 | ObjectTypeDefinition : Name -> list type -> list FieldDefinition -> TypeDefinition
@@ -57,7 +79,10 @@ As per the spec: Directives provide a way to describe alternate runtime executio
 Definition Document := (type * list TypeDefinition)%type.
 
 
-
+(**
+   Looks up a name in the given document, returning the type definition if it
+   was declared in the document.
+**)
 Definition lookupName (nt : Name) (doc : Document) : option TypeDefinition :=
   match doc with
     | (_ , tdefs) =>
@@ -101,6 +126,30 @@ Inductive EnumType (doc : Document) : type -> Prop :=
 
 
 
+(** Subtype relation
+
+   
+                 ----------------------- (ST_Refl)
+                       ty <: ty
+
+                  
+       Doc(O) = type O implements ... I ... { ... }
+                Doc(I) = interface I { ...}
+       ------------------------------------------- (ST_Object)
+                         O <: I
+
+           
+                         T <: U
+                ------------------------- (ST_ListType)
+                       [T] <: [U]
+
+
+Some observations:
+    1. Transitivity : There is no need to specify this because only objects can 
+    be subtype of an interface and not between objects. Interfaces cannot be
+    subtype of another interface.
+**)
+
 Inductive subtype (doc : Document) : type -> type -> Prop :=
 | ST_Refl : forall ty, subtype doc ty ty
 | ST_Object : forall name intfs iname fields ifields,
@@ -111,8 +160,10 @@ Inductive subtype (doc : Document) : type -> type -> Prop :=
 | ST_ListType : forall ty ty',
     subtype doc ty ty' ->
     subtype doc (ListType ty) (ListType ty').
-    
-Definition name tdef : Name :=
+
+(** Get type definition's name.
+ Corresponds to the name one gives to an object, interface, etc. **)
+Definition name (tdef : TypeDefinition) : Name :=
   match tdef with 
   | ScalarTypeDefinition name => name
   | ObjectTypeDefinition name _ _ => name
@@ -121,34 +172,42 @@ Definition name tdef : Name :=
   | EnumTypeDefinition name _ => name
   end.
 
-Definition names tdefs := map name tdefs.
+(** Get type definitions' names *)
+Definition names (tdefs : list TypeDefinition) := map name tdefs.
 
+
+(** Get type's name.
+    Corresponds to named type actual name or the name used in a list type **)
 Fixpoint unwrapTypeName (ty : type) : Name :=
   match ty with
   | NamedType name => name
   | ListType ty' => unwrapTypeName ty'
   end.
 
-Definition typesNames tys := map unwrapTypeName tys.
+(** Get types' names **)
+Definition typesNames (tys : list type) : list Name := map unwrapTypeName tys.
 
-Definition argNames args :=
+(** Get arguments' names **)
+Definition argNames (args : list FieldArgumentDefinition) : list Name :=
   let extract arg := match arg with
-                    | InputValue name _ => name
+                    | FieldArgument name _ => name
                     end
   in
   map extract args.
 
-
-Definition fieldName fld :=
+(** Get field's name **)
+Definition fieldName (fld : FieldDefinition) : Name :=
   match fld with
-  | Field name _ => name
-  | FieldArgs name _ _ => name
+  | FieldWithoutArgs name _ => name
+  | FieldWithArgs name _ _ => name
   end.
 
-Definition fieldNames flds := map fieldName flds.
+(** Get fields' names **)
+Definition fieldNames (flds : list FieldDefinition) : list Name := map fieldName flds.
 
 
-Definition fields name doc :=
+(** Get list of fields declared in an Object or Interface type definition **)
+Definition fields (name : Name) (doc : Document) : list FieldDefinition :=
   match lookupName name doc with
   | Some (ObjectTypeDefinition _ _ flds) => flds
   | Some (InterfaceTypeDefinition _ flds) => flds
@@ -181,22 +240,22 @@ Inductive IsOutputField (doc : Document) : type -> Prop :=
 
 
 
-Inductive wfInputValue (doc : Document) : InputValueDefinition -> Prop :=
+Inductive wfInputValue (doc : Document) : FieldArgumentDefinition -> Prop :=
 | WF_InputValue : forall ty name,
     IsInputField doc ty ->
-    wfInputValue doc (InputValue name ty).
+    wfInputValue doc (FieldArgument name ty).
 
 
 Inductive wfField (doc : Document) : FieldDefinition -> Prop :=
 | WF_Field : forall name outputType,
     IsOutputField doc outputType -> 
-    wfField doc (Field name outputType)
+    wfField doc (FieldWithoutArgs name outputType)
 | WF_FieldArgs : forall name args outputType,
     IsOutputField doc outputType ->
     args <> [] ->
     NoDup (argNames args) ->               (* This is not actually explicit in the spec I believe *)
     Forall (wfInputValue doc) args ->
-    wfField doc (FieldArgs name args outputType).
+    wfField doc (FieldWithArgs name args outputType).
                                                                 
 Inductive declaresImplementation (doc : Document) : Name -> Name -> Prop :=
 | ImplementsInterface : forall name iname fields intfs,
@@ -236,22 +295,22 @@ Inductive fieldOk (doc : Document) : FieldDefinition -> FieldDefinition -> Prop 
   
 | SimpleInterfaceField : forall fname ty ty',
     subtype doc ty ty' ->
-    fieldOk doc (Field fname ty) (Field fname ty')
+    fieldOk doc (FieldWithoutArgs fname ty) (FieldWithoutArgs fname ty')
 | SimpleUnionField : forall fname ename ty objs,
     lookupName ename doc = Some (UnionTypeDefinition ename objs) ->
     In ty objs ->
-    fieldOk doc (Field fname ty) (Field fname (NamedType ename))
+    fieldOk doc (FieldWithoutArgs fname ty) (FieldWithoutArgs fname (NamedType ename))
             
 | InterfaceFieldArgs : forall fname ty ty' args args',
     subtype doc ty ty' ->
     incl args' args ->
-    fieldOk doc (FieldArgs fname args ty) (FieldArgs fname args' ty')
+    fieldOk doc (FieldWithArgs fname args ty) (FieldWithArgs fname args' ty')
 
 | UnionFieldArgs : forall fname ename ty args args' objs,
     lookupName ename doc = Some (UnionTypeDefinition ename objs) ->
     In ty objs ->
     incl args' args ->
-    fieldOk doc (FieldArgs fname args ty) (FieldArgs fname args' (NamedType ename)).
+    fieldOk doc (FieldWithArgs fname args ty) (FieldWithArgs fname args' (NamedType ename)).
 
 
 
@@ -361,8 +420,6 @@ Inductive wfDocument : Document -> Prop :=
     In root (names tdefs) -> 
     Forall (wfTypeDefinition ((NamedType root), tdefs)) tdefs ->
     wfDocument ((NamedType root), tdefs).
-
-
 
 
                                                       
