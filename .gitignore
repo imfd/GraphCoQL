@@ -30,3 +30,5 @@ nia.cache
 nlia.cache
 nra.cache
 
+CoqMakefile*
+.coqdeps*
