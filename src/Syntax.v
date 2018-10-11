@@ -1,3 +1,8 @@
+From mathcomp Require Import all_ssreflect.
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
+
 Require Import List.
 Import ListNotations.
 
@@ -5,15 +10,12 @@ Import ListNotations.
 From Coq Require Import Bool String.
 
 
-Fixpoint eq_string (s1 s2 : string) :=
-  if string_dec s1 s2 then true else false.
-
-
+Section Schema.
 
 (** Names for everything, from operations, fields, arguments, types, etc.
 
    https://facebook.github.io/graphql/June2018/#sec-Names **)
-Definition Name := string.
+Variable Name : finType.
 
 
 (** Same as names, except that it can't be true, false or null
@@ -93,44 +95,66 @@ Definition lookupName (nt : Name) (doc : Document) : option TypeDefinition :=
   match doc with
     | (_ , tdefs) =>
       let n_eq nt tdef := match tdef with
-                         | ScalarTypeDefinition name => eq_string nt name
-                         | ObjectTypeDefinition name _  _ => eq_string nt name
-                         | InterfaceTypeDefinition name _ => eq_string nt name
-                         | UnionTypeDefinition name _ => eq_string nt name
-                         | EnumTypeDefinition name _ => eq_string nt name
+                         | ScalarTypeDefinition name =>  nt == name
+                         | ObjectTypeDefinition name _  _ =>  nt == name
+                         | InterfaceTypeDefinition name _ => nt == name
+                         | UnionTypeDefinition name _ => nt == name
+                         | EnumTypeDefinition name _ =>  nt == name
                          end
       in
       find (n_eq nt) tdefs
   end.
 
 
-Inductive ScalarType (doc : Document) : type -> Prop :=
-| Scalar : forall sname,
-    lookupName sname doc = Some (ScalarTypeDefinition sname) ->
-    ScalarType doc (NamedType sname).
+Definition ScalarType (doc : Document) (t : type) : bool :=
+  match t with
+  | (NamedType name) =>
+    match (lookupName name doc) with
+    | Some (ScalarTypeDefinition name) => true
+    | _ => false
+    end
+  | _ => false
+  end.
 
-Inductive ObjectType (doc : Document) : type -> Prop :=
-| Object : forall name intfs fields,
-    lookupName name doc = Some (ObjectTypeDefinition name intfs fields) ->
-    ObjectType doc (NamedType name).
+Definition ObjectType (doc : Document) (t : type) : bool :=
+  match t with
+  | (NamedType name) =>
+    match (lookupName name doc) with
+    | Some (ObjectTypeDefinition name _ _) => true
+    | _ => false
+    end
+  | _ => false
+  end.
 
-Inductive InterfaceType (doc : Document) : type -> Prop :=
-| Interface : forall name flds,
-    lookupName name doc = Some (InterfaceTypeDefinition name flds) ->
-    InterfaceType doc (NamedType name).
+Definition InterfaceType (doc : Document) (t : type) : bool :=
+  match t with
+  | (NamedType name) =>
+    match (lookupName name doc) with
+    | Some (InterfaceTypeDefinition name _) => true
+    | _ => false
+    end
+  | _ => false
+  end.
 
+Definition UnionType (doc : Document) (t : type) : bool :=
+  match t with
+  | (NamedType name) =>
+    match (lookupName name doc) with
+    | Some (UnionTypeDefinition name _) => true
+    | _ => false
+    end
+  | _ => false
+  end.
 
-Inductive UnionType (doc : Document) : type -> Prop :=
-| Union : forall name objs,
-    lookupName name doc = Some (UnionTypeDefinition name objs) ->
-    UnionType doc (NamedType name).
-
-Inductive EnumType (doc : Document) : type -> Prop :=
-| Enum : forall ename enums,
-    lookupName ename doc = Some (EnumTypeDefinition ename enums) ->
-    EnumType doc (NamedType ename).
-
-
+Definition EnumType (doc : Document) (t : type) : bool :=
+  match t with
+  | (NamedType name) =>
+    match (lookupName name doc) with
+    | Some (EnumTypeDefinition name _) => true
+    | _ => false
+    end
+  | _ => false
+  end.
 
 (** Subtype relation
 
@@ -438,4 +462,8 @@ Inductive wfDocument : Document -> Prop :=
     wfDocument ((NamedType root), tdefs).
 
 
-                                                      
+
+
+End Schema.
+
+Arguments Document [Name].
