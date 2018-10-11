@@ -1,0 +1,7 @@
+-arg "-w -notation-overridden"
+
+-R ./src GraphCoQL
+
+./src/Syntax.v
+./src/Graph.v
+./src/Conformance.v
