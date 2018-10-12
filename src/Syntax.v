@@ -314,11 +314,8 @@ Fixpoint isValidFieldType (doc : Document) (ty : type) : bool :=
 
 
 
-
-Inductive wfFieldArgument (doc : Document) : FieldArgumentDefinition -> Prop :=
-| WF_InputValue : forall ty name,
-    isValidArgumentType doc ty ->
-    wfFieldArgument doc (FieldArgument name ty).
+Definition wfFieldArgument (doc : Document) (argDef : FieldArgumentDefinition) : bool :=
+  let: FieldArgument aname ty := argDef in isValidArgumentType doc ty.
 
 
 Inductive wfField (doc : Document) : FieldDefinition -> Prop :=
