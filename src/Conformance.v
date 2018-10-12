@@ -14,20 +14,20 @@ Section Conformance.
 
   Variable vals_to_name : Vals -> Name.
 
-  Definition vals_to_scalar (doc : Document) :=
+  Definition vals_to_scalar (doc : Schema) :=
     forall (v : Vals),
       ScalarType doc (NamedType (vals_to_name v)) || EnumType doc (NamedType (vals_to_name v)).
 
 
- (* Definition root_type_conforms (r : root) (doc : Document) := tau (r) = root(doc). *)
+ (* Definition root_type_conforms (r : root) (doc : Schema) := tau (r) = root(doc). *)
 
-  Definition fieldTypeConforms (doc : Document) (fieldType targetType : Name) : bool :=
+  Definition fieldTypeConforms (doc : Schema) (fieldType targetType : Name) : bool :=
     (fieldType == targetType) ||
     (declaresImplementation doc targetType fieldType) ||
     (targetType \in (union doc fieldType))  .
 
     
-  Definition edgeConforms (g : graph N Name Name Vals) (t : tau) (doc : Document) :=
+  Definition edgeConforms (g : graph N Name Name Vals) (t : tau) (doc : Schema) :=
     forall (u v : N) (f : fld) (fieldType : type),
       g u f v ->
       lookupFieldType (label f) (t u) doc = Some fieldType ->
@@ -36,7 +36,7 @@ Section Conformance.
       forall w, g u f w -> w == v)
   .
   
-  Record conformed_graph (doc : Document) := ConformedGraph {
+  Record conformed_graph (doc : Schema) := ConformedGraph {
                                                 edges : graph N Name Name Vals;
                                                 t : tau;
                                                 wf_values : vals_to_scalar doc;

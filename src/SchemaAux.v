@@ -16,12 +16,12 @@ Section SchemaAux.
   Variable Name : finType.
 
   
-  Definition root (doc : @Document Name) : type := fst doc.
+  Definition root (doc : @Schema Name) : type := fst doc.
   (**
    Looks up a name in the given document, returning the type definition if it
    was declared in the document.
    **)
-  Definition lookupName (nt : Name) (doc : Document) : option TypeDefinition :=
+  Definition lookupName (nt : Name) (doc : Schema) : option TypeDefinition :=
     match doc with
     | (_ , tdefs) =>
       let n_eq nt tdef := match tdef with
@@ -36,7 +36,7 @@ Section SchemaAux.
     end.
 
 
-  Definition ScalarType (doc : Document) (t : type) : bool :=
+  Definition ScalarType (doc : Schema) (t : type) : bool :=
     match t with
     | (NamedType name) =>
       match (lookupName name doc) with
@@ -46,7 +46,7 @@ Section SchemaAux.
     | _ => false
     end.
 
-  Definition ObjectType (doc : Document) (t : type) : bool :=
+  Definition ObjectType (doc : Schema) (t : type) : bool :=
     match t with
     | (NamedType name) =>
       match (lookupName name doc) with
@@ -56,7 +56,7 @@ Section SchemaAux.
     | _ => false
     end.
 
-  Definition InterfaceType (doc : Document) (t : type) : bool :=
+  Definition InterfaceType (doc : Schema) (t : type) : bool :=
     match t with
     | (NamedType name) =>
       match (lookupName name doc) with
@@ -66,7 +66,7 @@ Section SchemaAux.
     | _ => false
     end.
 
-  Definition UnionType (doc : Document) (t : type) : bool :=
+  Definition UnionType (doc : Schema) (t : type) : bool :=
     match t with
     | (NamedType name) =>
       match (lookupName name doc) with
@@ -76,7 +76,7 @@ Section SchemaAux.
     | _ => false
     end.
 
-  Definition EnumType (doc : Document) (t : type) : bool :=
+  Definition EnumType (doc : Schema) (t : type) : bool :=
     match t with
     | (NamedType name) =>
       match (lookupName name doc) with
@@ -142,7 +142,7 @@ Section SchemaAux.
 
 
   (** Get list of fields declared in an Object or Interface type definition **)
-  Definition fields (name : Name) (doc : Document) : list FieldDefinition :=
+  Definition fields (name : Name) (doc : Schema) : list FieldDefinition :=
     match lookupName name doc with
     | Some (ObjectTypeDefinition _ _ flds) => flds
     | Some (InterfaceTypeDefinition _ flds) => flds
@@ -155,7 +155,7 @@ Section SchemaAux.
     | FieldWithArgs _ _ t => t
     end.
 
-  Definition lookupField (fname : Name) (tname : Name) (doc : Document) : option FieldDefinition :=
+  Definition lookupField (fname : Name) (tname : Name) (doc : Schema) : option FieldDefinition :=
     let n_eq nt fld := match fld with
                       | FieldWithoutArgs name _ => nt == name
                       | FieldWithArgs name _ _ => nt == name
@@ -163,14 +163,14 @@ Section SchemaAux.
     in
     find (n_eq fname) (fields tname doc).
 
-  Definition lookupFieldType (fname : Name) (tname : Name) (doc : Document) : option type :=
+  Definition lookupFieldType (fname : Name) (tname : Name) (doc : Schema) : option type :=
     match lookupField fname tname doc with
     | Some fieldDef => Some (fieldType fieldDef)
     | None => None
     end.
 
 
-  Definition union (doc : Document) (tname : Name) :=
+  Definition union (doc : Schema) (tname : Name) :=
     match lookupName tname doc with
     | Some (EnumTypeDefinition name mbs) => mbs
     | _ => []
@@ -178,7 +178,7 @@ Section SchemaAux.
 
 
   
-  Definition declaresImplementation (doc : Document) (name iname : Name) : bool :=
+  Definition declaresImplementation (doc : Schema) (name iname : Name) : bool :=
     match lookupName name doc with
     | Some (ObjectTypeDefinition _ intfs _) => existsb (fun el => ((unwrapTypeName el) == iname) && InterfaceType doc el) intfs
     | _ => false

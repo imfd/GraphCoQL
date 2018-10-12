@@ -39,7 +39,7 @@ Section WellFormedness.
         be subtype of an interface and not between objects. Interfaces cannot be
         subtype of another interface.
    **)
-  Inductive subtype (doc : Document) : type -> type -> Prop :=
+  Inductive subtype (doc : Schema) : type -> type -> Prop :=
   | ST_Refl : forall ty, subtype doc ty ty
   | ST_Object : forall name intfs iname fields ifields,
       lookupName name doc = Some (ObjectTypeDefinition name intfs fields) ->
@@ -59,7 +59,7 @@ Section WellFormedness.
 
       https://facebook.github.io/graphql/June2018/#sec-Input-and-Output-Types **)
 
-  Fixpoint isValidArgumentType (doc : Document) (ty : type) : bool :=
+  Fixpoint isValidArgumentType (doc : Schema) (ty : type) : bool :=
     match ty with
     | NamedType _ => ScalarType doc ty || @EnumType Name doc ty
     | ListType ty' => isValidArgumentType doc ty'
@@ -70,7 +70,7 @@ Section WellFormedness.
      as long as it is declared in the document.
 
      Not really sure how to name this case... Named seems weird? *)
-  Fixpoint isValidFieldType (doc : Document) (ty : type) : bool :=
+  Fixpoint isValidFieldType (doc : Schema) (ty : type) : bool :=
     match ty with
     | NamedType n => match @lookupName Name n doc with
                     | Some tdef => true
@@ -81,11 +81,11 @@ Section WellFormedness.
   
 
 
-  Definition wfFieldArgument (doc : Document) (argDef : FieldArgumentDefinition) : bool :=
+  Definition wfFieldArgument (doc : Schema) (argDef : FieldArgumentDefinition) : bool :=
     let: FieldArgument aname ty := argDef in isValidArgumentType doc ty.
 
   
-  Inductive wfField (doc : Document) : FieldDefinition -> Prop :=
+  Inductive wfField (doc : Schema) : FieldDefinition -> Prop :=
   | WF_Field : forall name outputType,
       isValidFieldType doc outputType -> 
       wfField doc (FieldWithoutArgs name outputType)
@@ -124,7 +124,7 @@ Section WellFormedness.
     constructors, we could simplify this definition I guess.
 
    **)
-  Inductive fieldOk (doc : Document) : FieldDefinition -> FieldDefinition -> Prop :=
+  Inductive fieldOk (doc : Schema) : FieldDefinition -> FieldDefinition -> Prop :=
   
   | SimpleInterfaceField : forall fname ty ty',
       subtype doc ty ty' ->
@@ -159,7 +159,7 @@ Section WellFormedness.
                         name implementsOK iname
 
    **)
-  Inductive implementsOK (doc : Document ) : type -> type -> Prop :=
+  Inductive implementsOK (doc : Schema ) : type -> type -> Prop :=
   | ImplementsAll : forall name intfs fields iname ifields,
       lookupName name doc = Some (ObjectTypeDefinition name intfs fields) ->
       In (NamedType iname) intfs ->
@@ -212,7 +212,7 @@ Section WellFormedness.
                           enum E { Evs } 
 
    **)
-  Inductive wfTypeDefinition (doc : Document) : TypeDefinition -> Prop :=
+  Inductive wfTypeDefinition (doc : Schema) : TypeDefinition -> Prop :=
   | WF_Scalar : forall name,
       ScalarType doc (NamedType name) ->
       wfTypeDefinition doc (ScalarTypeDefinition name)
@@ -247,12 +247,12 @@ Section WellFormedness.
       wfTypeDefinition doc (EnumTypeDefinition name enumValues).
   
            
-  Inductive wfDocument : Document -> Prop :=
-  | WF_Document : forall tdefs root,
+  Inductive wfSchema : Schema -> Prop :=
+  | WF_Schema : forall tdefs root,
       NoDup (names tdefs) ->
       In root (names tdefs) -> 
       Forall (wfTypeDefinition ((NamedType root), tdefs)) tdefs ->
-      wfDocument ((NamedType root), tdefs).
+      wfSchema ((NamedType root), tdefs).
 
 
 
