@@ -27,7 +27,7 @@ Section Conformance.
 
     
   Definition edgeConforms (g : graph N Name Name Vals) (t : tau) (doc : Document) :=
-    forall (u v : N) (f : fld) (fieldType : type Name),
+    forall (u v : N) (f : fld) (fieldType : type),
       g u f v ->
       lookupFieldType (label f) (t u) doc = Some fieldType ->
       (fieldTypeConforms doc fieldType (t v)) /\
