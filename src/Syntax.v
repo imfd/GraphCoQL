@@ -292,44 +292,41 @@ In the spec they are correspondently named "IsInputField" and "IsOutputField".
 
 https://facebook.github.io/graphql/June2018/#sec-Input-and-Output-Types **)
 
-Inductive IsValidArgumentType (doc : Document) : type -> Prop :=
-| ScalarArgument : forall ty,
-    ScalarType doc ty ->
-    IsValidArgumentType doc ty
-| EnumArgument : forall ty,
-    EnumType doc ty ->
-    IsValidArgumentType doc ty
-| ListArgument : forall ty,
-    IsValidArgumentType doc ty ->
-    IsValidArgumentType doc (ListType ty).
+Fixpoint isValidArgumentType (doc : Document) (ty : type) : bool :=
+  match ty with
+  | NamedType _ => ScalarType doc ty || EnumType doc ty
+  | ListType ty' => isValidArgumentType doc ty'
+  end.
     
 
 (* Because we are not considering InputObjects, a field may have any type, 
 as long as it is declared in the document.
 
 Not really sure how to name this case... Named seems weird? *)
-Inductive IsValidFieldType (doc : Document) : type -> Prop :=
-| NamedField : forall name tdef,
-    lookupName name doc = Some tdef ->
-    IsValidFieldType doc (NamedType name)
-| ListField : forall ty,
-    IsValidFieldType doc ty ->
-    IsValidFieldType doc (ListType ty).
+Fixpoint isValidFieldType (doc : Document) (ty : type) : bool :=
+  match ty with
+  | NamedType n => match lookupName n doc with
+                  | Some tdef => true
+                  | _ => false
+                  end
+  | ListType ty' => isValidFieldType doc ty'
+  end.
+
 
 
 
 Inductive wfFieldArgument (doc : Document) : FieldArgumentDefinition -> Prop :=
 | WF_InputValue : forall ty name,
-    IsValidArgumentType doc ty ->
+    isValidArgumentType doc ty ->
     wfFieldArgument doc (FieldArgument name ty).
 
 
 Inductive wfField (doc : Document) : FieldDefinition -> Prop :=
 | WF_Field : forall name outputType,
-    IsValidFieldType doc outputType -> 
+    isValidFieldType doc outputType -> 
     wfField doc (FieldWithoutArgs name outputType)
 | WF_FieldArgs : forall name args outputType,
-    IsValidFieldType doc outputType ->
+    isValidFieldType doc outputType ->
     args <> [] ->
     NoDup (argNames args) ->               (* This is not actually explicit in the spec I believe *)
     Forall (wfFieldArgument doc) args ->
