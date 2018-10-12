@@ -268,9 +268,9 @@ Definition lookupField (fname : Name) (tname : Name) (doc : Document) : option F
   in
   find (n_eq fname) (fields tname doc).
 
-Definition lookupFieldType (fname : Name) (tname : Name) (doc : Document) : option Name :=
+Definition lookupFieldType (fname : Name) (tname : Name) (doc : Document) : option type :=
    match lookupField fname tname doc with
-    | Some fieldDef => Some (unwrapTypeName (fieldType fieldDef))
+    | Some fieldDef => Some (fieldType fieldDef)
     | None => None
     end.
 
@@ -508,4 +508,5 @@ Arguments fields [Name].
 Arguments fieldType [Name].
 Arguments unwrapTypeName [Name].
 Arguments lookupField [Name].
+Arguments lookupFieldType [Name].
 Arguments union [Name].

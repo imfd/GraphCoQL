@@ -24,19 +24,22 @@ Section Conformance.
     (fieldType == targetType) ||
     (declaresImplementation doc targetType fieldType) ||
     (targetType \in (union doc fieldType))  .
-  
-  Definition edge_conforms (g : graph N Name Name Vals) (t : tau) (doc : Document) :=
-    forall (u v : N) (f : fld) (ftype : Name),
+
+    
+  Definition edgeConforms (g : graph N Name Name Vals) (t : tau) (doc : Document) :=
+    forall (u v : N) (f : fld) (fieldType : type Name),
       g u f v ->
       lookupFieldType (label f) (t u) doc = Some fieldType ->
-      fieldTypeConforms doc fieldType (t v)
+      (fieldTypeConforms doc fieldType (t v)) /\
+      (~~isListType fieldType ->
+      forall w, g u f w -> w == v)
   .
   
   Record conformed_graph (doc : Document) := ConformedGraph {
                                                 edges : graph N Name Name Vals;
                                                 t : tau;
                                                 wf_values : vals_to_scalar doc;
-                                                wf_edges : edge_conforms edges t doc
+                                                wf_edges : edgeConforms edges t doc
                                               }.
   
   
