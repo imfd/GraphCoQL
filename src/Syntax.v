@@ -158,6 +158,12 @@ Definition EnumType (doc : Document) (t : type) : bool :=
   | _ => false
   end.
 
+Definition isListType (t : type) : bool :=
+  match t with
+  | (ListType t') => true
+  | _ => false
+  end.
+
 (** Subtype relation
 
    
