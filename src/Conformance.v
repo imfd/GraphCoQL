@@ -16,7 +16,7 @@ Section Conformance.
 
   Definition vals_to_scalar (doc : Schema) :=
     forall (v : Vals),
-      ScalarType doc (NamedType (vals_to_name v)) || EnumType doc (NamedType (vals_to_name v)).
+      isScalarType doc (NamedType (vals_to_name v)) || isEnumType doc (NamedType (vals_to_name v)).
 
 
  (* Definition root_type_conforms (r : root) (doc : Schema) := tau (r) = root(doc). *)

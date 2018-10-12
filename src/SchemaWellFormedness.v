@@ -61,7 +61,7 @@ Section WellFormedness.
 
   Fixpoint isValidArgumentType (doc : Schema) (ty : type) : bool :=
     match ty with
-    | NamedType _ => ScalarType doc ty || @EnumType Name doc ty
+    | NamedType _ => isScalarType doc ty || @isEnumType Name doc ty
     | ListType ty' => isValidArgumentType doc ty'
     end.
     
@@ -214,7 +214,7 @@ Section WellFormedness.
    **)
   Inductive wfTypeDefinition (doc : Schema) : TypeDefinition -> Prop :=
   | WF_Scalar : forall name,
-      ScalarType doc (NamedType name) ->
+      isScalarType doc (NamedType name) ->
       wfTypeDefinition doc (ScalarTypeDefinition name)
                        
   | WF_ObjectWithInterfaces : forall name interfaces fields,
@@ -237,7 +237,7 @@ Section WellFormedness.
       lookupName name doc = Some (UnionTypeDefinition name members) ->
       members <> [] ->
       NoDup (typesNames members) ->
-      Forall (ObjectType doc) members ->
+      Forall (isObjectType doc) members ->
       wfTypeDefinition doc (UnionTypeDefinition name members)
                        
   | WF_Enum : forall name enumValues,

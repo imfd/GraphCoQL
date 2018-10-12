@@ -36,7 +36,7 @@ Section SchemaAux.
     end.
 
 
-  Definition ScalarType (doc : Schema) (t : type) : bool :=
+  Definition isScalarType (doc : Schema) (t : type) : bool :=
     match t with
     | (NamedType name) =>
       match (lookupName name doc) with
@@ -46,7 +46,7 @@ Section SchemaAux.
     | _ => false
     end.
 
-  Definition ObjectType (doc : Schema) (t : type) : bool :=
+  Definition isObjectType (doc : Schema) (t : type) : bool :=
     match t with
     | (NamedType name) =>
       match (lookupName name doc) with
@@ -56,7 +56,7 @@ Section SchemaAux.
     | _ => false
     end.
 
-  Definition InterfaceType (doc : Schema) (t : type) : bool :=
+  Definition isInterfaceType (doc : Schema) (t : type) : bool :=
     match t with
     | (NamedType name) =>
       match (lookupName name doc) with
@@ -66,7 +66,7 @@ Section SchemaAux.
     | _ => false
     end.
 
-  Definition UnionType (doc : Schema) (t : type) : bool :=
+  Definition isUnionType (doc : Schema) (t : type) : bool :=
     match t with
     | (NamedType name) =>
       match (lookupName name doc) with
@@ -76,7 +76,7 @@ Section SchemaAux.
     | _ => false
     end.
 
-  Definition EnumType (doc : Schema) (t : type) : bool :=
+  Definition isEnumType (doc : Schema) (t : type) : bool :=
     match t with
     | (NamedType name) =>
       match (lookupName name doc) with
@@ -180,7 +180,7 @@ Section SchemaAux.
   
   Definition declaresImplementation (doc : Schema) (name iname : Name) : bool :=
     match lookupName name doc with
-    | Some (ObjectTypeDefinition _ intfs _) => existsb (fun el => ((unwrapTypeName el) == iname) && InterfaceType doc el) intfs
+    | Some (ObjectTypeDefinition _ intfs _) => existsb (fun el => ((unwrapTypeName el) == iname) && isInterfaceType doc el) intfs
     | _ => false
     end.
 
@@ -191,7 +191,7 @@ End SchemaAux.
 
 Arguments root [Name].
 Arguments lookupName [Name].
-Arguments EnumType [Name].
+Arguments isEnumType [Name].
 Arguments fields [Name].
 Arguments fieldType [Name].
 Arguments unwrapTypeName [Name].
