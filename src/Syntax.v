@@ -222,6 +222,8 @@ Fixpoint unwrapTypeName (ty : type) : Name :=
   | ListType ty' => unwrapTypeName ty'
   end.
 
+Coercion unwrapTypeName : type >-> Finite.sort.
+
 (** Get types' names **)
 Definition typesNames (tys : list type) : list Name := map unwrapTypeName tys.
 
