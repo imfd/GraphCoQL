@@ -327,13 +327,11 @@ Inductive wfField (doc : Document) : FieldDefinition -> Prop :=
     Forall (wfFieldArgument doc) args ->
     wfField doc (FieldWithArgs name args outputType).
                                                                 
-Inductive declaresImplementation (doc : Document) : Name -> Name -> Prop :=
-| ImplementsInterface : forall name iname fields intfs,
-    lookupName name doc = Some (ObjectTypeDefinition name intfs fields) ->
-    In (NamedType iname) intfs ->
-    InterfaceType doc (NamedType iname) ->
-    declaresImplementation doc name iname.
-
+Definition declaresImplementation (doc : Document) (name iname : Name) : bool :=
+  match lookupName name doc with
+  | Some (ObjectTypeDefinition _ intfs _) => existsb (fun el => ((unwrapTypeName el) == iname) && InterfaceType doc el) intfs
+  | _ => false
+  end.
 
 (** This checks whether an object field is valid w/r to another from an implemented interface.
 The possible options are:

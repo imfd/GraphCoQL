@@ -20,19 +20,16 @@ Section Conformance.
 
  (* Definition root_type_conforms (r : root) (doc : Document) := tau (r) = root(doc). *)
 
-  Definition field_has_target_type (fname sname tname : Name) (doc : Document) : bool :=
-    match lookupField fname sname doc with
-    | Some fieldDef => (unwrapTypeName (fieldType fieldDef)) == tname
-    | None => false
-    end.
+  Definition fieldTypeConforms (doc : Document) (fieldType targetType : Name) : bool :=
+    (fieldType == targetType) ||
+    (declaresImplementation doc targetType fieldType) ||
+    (targetType \in (union doc fieldType))  .
   
   Definition edge_conforms (g : graph N Name Name Vals) (t : tau) (doc : Document) :=
     forall (u v : N) (f : fld) (ftype : Name),
       g u f v ->
-      lookupFieldType (label f) (t u) doc = Some ftype ->
-      (ftype == (t v)) \/
-      (declaresImplementation doc (t v) ftype) \/
-      ((t v) \in (union doc ftype))                               
+      lookupFieldType (label f) (t u) doc = Some fieldType ->
+      fieldTypeConforms doc fieldType (t v)
   .
   
   Record conformed_graph (doc : Document) := ConformedGraph {
