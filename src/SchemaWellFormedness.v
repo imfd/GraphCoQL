@@ -8,6 +8,7 @@ Require Import List.
 Import ListNotations.
 
 Require Import Syntax.
+Require Import SchemaAux.
 
 
 Section WellFormedness.

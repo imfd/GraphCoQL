@@ -3,6 +3,7 @@
 -R ./src GraphCoQL
 
 ./src/Syntax.v
+./src/SchemaAux.v
 ./src/SchemaWellFormedness.v
 ./src/Graph.v
 ./src/Conformance.v

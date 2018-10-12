@@ -4,6 +4,7 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 Require Import Syntax.
+Require Import SchemaAux.
 Require Import Graph.
 
 Section Conformance.
