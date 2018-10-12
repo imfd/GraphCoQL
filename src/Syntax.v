@@ -87,6 +87,8 @@ As per the spec: Directives provide a way to describe alternate runtime executio
 Definition Document := (type * list TypeDefinition)%type.
 
 
+
+Definition root (doc : Document) : type := fst doc.
 (**
    Looks up a name in the given document, returning the type definition if it
    was declared in the document.
@@ -243,6 +245,34 @@ Definition fields (name : Name) (doc : Document) : list FieldDefinition :=
   | Some (InterfaceTypeDefinition _ flds) => flds
   | _ => []
   end.
+
+Definition fieldType (f : FieldDefinition) :=
+  match f with
+  | FieldWithoutArgs _ t => t
+  | FieldWithArgs _ _ t => t
+  end.
+
+Definition lookupField (fname : Name) (tname : Name) (doc : Document) : option FieldDefinition :=
+  let n_eq nt fld := match fld with
+                    | FieldWithoutArgs name _ => nt == name
+                    | FieldWithArgs name _ _ => nt == name
+                    end
+  in
+  find (n_eq fname) (fields tname doc).
+
+Definition lookupFieldType (fname : Name) (tname : Name) (doc : Document) : option Name :=
+   match lookupField fname tname doc with
+    | Some fieldDef => Some (unwrapTypeName (fieldType fieldDef))
+    | None => None
+    end.
+
+
+Definition union (doc : Document) (tname : Name) :=
+  match lookupName tname doc with
+  | Some (EnumTypeDefinition name mbs) => mbs
+  | _ => []
+  end.
+
 
 
 
@@ -467,3 +497,9 @@ Inductive wfDocument : Document -> Prop :=
 End Schema.
 
 Arguments Document [Name].
+Arguments root [Name].
+Arguments fields [Name].
+Arguments fieldType [Name].
+Arguments unwrapTypeName [Name].
+Arguments lookupField [Name].
+Arguments union [Name].

@@ -12,12 +12,15 @@ Section PropertyLabeledGraph.
 
   (** Field **)
   Record fld := Field {
-                   name : F;
+                   label : F;
                    args : {ffun A -> option Vals}
                  }.
 
-  Definition prod_of_fld (f : fld) := let: Field n a := f in (n, a).
-  Definition fld_of_prod (p : prod F {ffun A -> option Vals}) := let: (n, a) := p in Field n a.
+
+  Coercion name_of_fld (f : fld) := let: Field l a := f in l.
+  
+  Definition prod_of_fld (f : fld) := let: Field l a := f in (l, a).
+  Definition fld_of_prod (p : prod F {ffun A -> option Vals}) := let: (l, a) := p in Field l a.
 
   Lemma can_fld_of_prod : cancel prod_of_fld fld_of_prod.
   Proof. by case. Qed.
@@ -65,11 +68,26 @@ Canonical egraph_subFinType   := Eval hnf in [subFinType of egraph].
   (** Tau : assigns a type to every node **)
   Inductive tau : Type := Tau of {ffun N -> T}.
 
+  Coercion fun_of_tau (t : tau) := let: Tau f := t in f.
+
+  Canonical tau_subType       := Eval hnf in [newType for fun_of_tau].
+  Canonical tau_eqType        := Eval hnf in EqType _     [eqMixin     of @tau by <: ].
+  
   (** Lambda : partial function that assigns a scalar value V to some pairs
       of the form (u, f[alpha]) **)
   Inductive lambda : Type := Lambda of {ffun N * fld -> option (Vals + (seq Vals)) }.
 
+  Coercion fun_of_lambda (l : lambda) := let: Lambda f := l in f.
+
+  Canonical lambda_subType       := Eval hnf in [newType for fun_of_lambda].
+  Canonical lambda_eqType        := Eval hnf in EqType _     [eqMixin     of @lambda by <: ].
   
 
 End PropertyLabeledGraph.
-      
+
+Check root.
+
+Arguments fld [F] [A] [Vals].
+Arguments tau [N] [T].
+
+  
