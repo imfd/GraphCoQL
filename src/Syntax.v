@@ -164,40 +164,7 @@ Definition isListType (t : type) : bool :=
   | _ => false
   end.
 
-(** Subtype relation
 
-   
-                 ----------------------- (ST_Refl)
-                       ty <: ty
-
-                  
-       Doc(O) = type O implements ... I ... { ... }
-                Doc(I) = interface I { ...}
-       ------------------------------------------- (ST_Object)
-                         O <: I
-
-           
-                         T <: U
-                ------------------------- (ST_ListType)
-                       [T] <: [U]
-
-
-Some observations:
-    1. Transitivity : There is no need to specify this because only objects can 
-    be subtype of an interface and not between objects. Interfaces cannot be
-    subtype of another interface.
-**)
-
-Inductive subtype (doc : Document) : type -> type -> Prop :=
-| ST_Refl : forall ty, subtype doc ty ty
-| ST_Object : forall name intfs iname fields ifields,
-    lookupName name doc = Some (ObjectTypeDefinition name intfs fields) ->
-    In (NamedType iname) intfs ->
-    lookupName iname doc = Some (InterfaceTypeDefinition iname ifields) ->
-    subtype doc (NamedType name) (NamedType iname)
-| ST_ListType : forall ty ty',
-    subtype doc ty ty' ->
-    subtype doc (ListType ty) (ListType ty').
 
 (** Get a type definition's name.
  Corresponds to the name one gives to an object, interface, etc. **)
