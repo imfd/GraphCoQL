@@ -18,6 +18,7 @@ Section PropertyLabeledGraph.
 
 
   Coercion name_of_fld (f : fld) := let: Field l a := f in l.
+  Coercion fun_of_fld (f : fld) := let: Field l a := f in a.
   
   Definition prod_of_fld (f : fld) := let: Field l a := f in (l, a).
   Definition fld_of_prod (p : prod F {ffun A -> option Vals}) := let: (l, a) := p in Field l a.
@@ -35,6 +36,7 @@ Section PropertyLabeledGraph.
   Canonical fld_finType := FinType fld fld_finMixin.
 
 
+  Definition fieldArgsSupport (f : fld) : {set A} := [set a | None != f a].
   
   (** A graph (actually edges...) is a set of 3-tuples: node * field * node **)
   Record graph := Graph { val : {set N * fld * N} }.
