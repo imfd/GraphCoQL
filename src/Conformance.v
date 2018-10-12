@@ -3,7 +3,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-Require Import Syntax.
+Require Import Schema.
 Require Import SchemaAux.
 Require Import Graph.
 

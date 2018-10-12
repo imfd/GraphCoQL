@@ -7,7 +7,7 @@ Unset Printing Implicit Defensive.
 Require Import List.
 Import ListNotations.
 
-Require Import Syntax.
+Require Import Schema.
 Require Import SchemaAux.
 
 
