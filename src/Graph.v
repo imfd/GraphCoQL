@@ -8,7 +8,6 @@ Section GraphQLGraph.
 
 
   Variables (N F A T Vals: finType).
-  Variable root: N.
 
   (** Field 
       It corresponds to a field's name and list of arguments but without
@@ -79,6 +78,17 @@ Canonical egraph_subFinType   := Eval hnf in [subFinType of egraph].
 
 
   
+  (** GraphQL Graph 
+      The collection of edges, tau, lambda and a root node 
+   **)
+  Record graphQLGraph := GraphQLGraph {
+                            root : N;
+                            E : edges;
+                            t : tau;
+                            lam : lambda
+                          }.
+
+  
 
   Coercion label_of_fld (f : fld) := let: Field l a := f in l.
   Coercion fun_of_fld (f : fld) := let: Field l a := f in a.
@@ -105,7 +115,11 @@ Canonical egraph_subFinType   := Eval hnf in [subFinType of egraph].
 
   Canonical lambda_subType       := Eval hnf in [newType for fun_of_lambda].
   Canonical lambda_eqType        := Eval hnf in EqType _     [eqMixin     of @lambda by <: ].
-  
+
+
+  Coercion root_of_graph (g : graphQLGraph) := let: GraphQLGraph r _ _ _ := g in r.
+  Coercion edges_of_graph (g : graphQLGraph) := let: GraphQLGraph _ E _ _ := g in E.
+
 
 End GraphQLGraph.
 
@@ -114,5 +128,6 @@ Check root.
 Arguments fld [F] [A] [Vals].
 Arguments tau [N] [T]. 
 Arguments lambda [N] [F] [A] [Vals].
+Arguments graphQLGraph [N] [F] [A] [T] [Vals].
 
   
