@@ -97,7 +97,7 @@ https://facebook.github.io/graphql/June2018/#TypeDefinition **)
    **)
   Record schema := Schema {
                       query : type;
-                      typeSystem : list TypeDefinition
+                      typeDefinitions : list TypeDefinition
                     }.
 
 

@@ -129,6 +129,8 @@ Section Conformance.
     forall (n : N),
       isObjectType schema (NamedType (t n)).
 
+
+
   (**
      A GraphQL graph conforms to a given Schema if:
      1. Its root conforms to the Schema.
