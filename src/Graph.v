@@ -82,7 +82,7 @@ Canonical egraph_subFinType   := Eval hnf in [subFinType of egraph].
       The collection of edges, tau, lambda and a root node 
    **)
   Record graphQLGraph := GraphQLGraph {
-                            root : N;
+                            r : N;
                             E : edges;
                             t : tau;
                             lam : lambda
