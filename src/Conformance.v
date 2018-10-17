@@ -113,17 +113,32 @@ Section Conformance.
 
 
   (**
+     It states whether τ conforms to the Schema.
+     
+     ∀ n ∈ N, τ(n) ∈ ObjectType(Schema) 
+
+     In the paper this is directly encoded in τ's signature (N → Ot), 
+     where they assume three distinct sets for type names: Ot, It and Ut.
+
+   **)
+  Definition tauConforms schema (t : tau) :=
+    forall (n : N),
+      isObjectType schema (NamedType (t n)).
+
+  (**
      A GraphQL graph conforms to a given Schema if:
      1. Its root conforms to the Schema.
      2. Its edges conform to the Schema.
      3. Its fields conform to the Schema.
+     4. Its τ conforms to the Schema.
 
    **)
   Record conformedGraph schema := ConformedGraph {
                                                 graph;
                                                 wf_root : rootTypeConforms schema graph;
                                                 wf_edges : edgeConforms schema (E graph) (t graph);
-                                                wf_fields : fieldConforms schema (t graph) (lam graph)
+                                                wf_fields : fieldConforms schema (t graph) (lam graph);
+                                                _ : tauConforms schema (t graph)
                                    }.
   
   
