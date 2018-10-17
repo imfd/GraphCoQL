@@ -17,7 +17,7 @@ Section PropertyLabeledGraph.
                  }.
 
 
-  Coercion name_of_fld (f : fld) := let: Field l a := f in l.
+  Coercion label_of_fld (f : fld) := let: Field l a := f in l.
   Coercion fun_of_fld (f : fld) := let: Field l a := f in a.
   
   Definition prod_of_fld (f : fld) := let: Field l a := f in (l, a).
@@ -39,10 +39,10 @@ Section PropertyLabeledGraph.
   Definition fieldArgsSupport (f : fld) : {set A} := [set a | None != f a].
   
   (** A graph (actually edges...) is a set of 3-tuples: node * field * node **)
-  Record graph := Graph { val : {set N * fld * N} }.
+  Record edges := Edges { val : {set N * fld * N} }.
 
 
-  Coercion set_of_graph (g : graph) := val g.
+  Coercion set_of_edges (E : edges) := val E.
 
   (*
   Definition graph_sub : @subType {set N * fld * N} xpredT.
@@ -59,12 +59,12 @@ Canonical egraph_finType      := Eval hnf in FinType    _ [finMixin    of @egrap
 Canonical egraph_subFinType   := Eval hnf in [subFinType of egraph]. 
 *)
 
-  Definition fun_of_graph (g : graph) := fun v1 f v2 => (v1, f, v2) \in val g.
-  Coercion fun_of_graph : graph >-> Funclass.
+  Definition fun_of_edges (E : edges) := fun v1 f v2 => (v1, f, v2) \in val E.
+  Coercion fun_of_edges : edges >-> Funclass.
 
-  Definition g0 := Graph set0.
+  Definition E0 := Edges set0.
 
-  Lemma graphE (g : graph) v1 f v2 : g v1 f v2 = ((v1, f, v2) \in g).
+  Lemma edgesE (E : edges) v1 f v2 : E v1 f v2 = ((v1, f, v2) \in E).
   Proof. by []. Qed.
   
   (** Tau : assigns a type to every node **)
@@ -90,6 +90,7 @@ End PropertyLabeledGraph.
 Check root.
 
 Arguments fld [F] [A] [Vals].
-Arguments tau [N] [T].
+Arguments tau [N] [T]. 
+Arguments lambda [N] [F] [A] [Vals].
 
   

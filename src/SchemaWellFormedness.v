@@ -13,7 +13,7 @@ Require Import SchemaAux.
 
 Section WellFormedness.
 
-  Variable Name : finType.
+  Variables Name Vals : finType.
 
   
   (** Subtype relation
@@ -86,15 +86,11 @@ Section WellFormedness.
 
   
   Inductive wfField (doc : Schema) : FieldDefinition -> Prop :=
-  | WF_Field : forall name outputType,
-      isValidFieldType doc outputType -> 
-      wfField doc (FieldWithoutArgs name outputType)
-  | WF_FieldArgs : forall name args outputType,
+  | WF_Field : forall name args outputType,
       isValidFieldType doc outputType ->
-      args <> [] ->
       NoDup (argNames args) ->               (* This is not actually explicit in the spec I believe *)
       Forall (wfFieldArgument doc) args ->
-      wfField doc (FieldWithArgs name args outputType).
+      wfField doc (Field name args outputType).
 
 
 
@@ -125,25 +121,25 @@ Section WellFormedness.
 
    **)
   Inductive fieldOk (doc : Schema) : FieldDefinition -> FieldDefinition -> Prop :=
-  
+(*  
   | SimpleInterfaceField : forall fname ty ty',
       subtype doc ty ty' ->
       fieldOk doc (FieldWithoutArgs fname ty) (FieldWithoutArgs fname ty')
   | SimpleUnionField : forall fname ename ty objs,
       lookupName ename doc = Some (UnionTypeDefinition ename objs) ->
       In ty objs ->
-      fieldOk doc (FieldWithoutArgs fname ty) (FieldWithoutArgs fname (NamedType ename))
+      fieldOk doc (FieldWithoutArgs fname ty) (FieldWithoutArgs fname (NamedType ename)) *)
               
-  | InterfaceFieldArgs : forall fname ty ty' args args',
+  | InterfaceField : forall fname ty ty' args args',
       subtype doc ty ty' ->
       incl args' args ->
-      fieldOk doc (FieldWithArgs fname args ty) (FieldWithArgs fname args' ty')
+      fieldOk doc (Field fname args ty) (Field fname args' ty')
               
-  | UnionFieldArgs : forall fname ename ty args args' objs,
+  | UnionField : forall fname ename ty args args' objs,
       lookupName ename doc = Some (UnionTypeDefinition ename objs) ->
       In ty objs ->
       incl args' args ->
-      fieldOk doc (FieldWithArgs fname args ty) (FieldWithArgs fname args' (@NamedType Name ename)).
+      fieldOk doc (Field fname args ty) (Field fname args' (@NamedType Name ename)).
 
 
 
@@ -247,14 +243,22 @@ Section WellFormedness.
       wfTypeDefinition doc (EnumTypeDefinition name enumValues).
   
            
-  Inductive wfSchema : Schema -> Prop :=
+  Inductive schemaIsWellFormed : Schema -> Prop :=
   | WF_Schema : forall tdefs root,
       NoDup (names tdefs) ->
       In root (names tdefs) -> 
       Forall (wfTypeDefinition ((NamedType root), tdefs)) tdefs ->
-      wfSchema ((NamedType root), tdefs).
+      schemaIsWellFormed ((NamedType root), tdefs).
+
+  
+  Record wfSchema := WFSchema {
+                        schema : @Schema Name ;
+                        hasType :  Name -> Vals -> bool;
+                        _ : schemaIsWellFormed schema;
+                      }.
 
 
-
+  Coercion schema_from_wfSchema (wfschema : wfSchema) := let: WFSchema schema _ _ := wfschema in schema.
 
 End WellFormedness.
+

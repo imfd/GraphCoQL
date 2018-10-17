@@ -46,10 +46,8 @@ Section Schema.
 
 
   (** https://facebook.github.io/graphql/June2018/#FieldDefinition **)
-  (* Actually, if we are using list of arguments, then a single constructor suffices, right? *)
   Inductive FieldDefinition : Type :=
-  | FieldWithoutArgs : Name  -> type -> FieldDefinition
-  | FieldWithArgs : Name -> list FieldArgumentDefinition -> type -> FieldDefinition.
+  | Field : Name  -> list FieldArgumentDefinition -> type -> FieldDefinition.
 
 
 

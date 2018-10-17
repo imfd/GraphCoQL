@@ -8,7 +8,7 @@ Import ListNotations.
 
 Require Import Schema.
 
-
+Set Implicit Arguments.
 
 Section SchemaAux.
 
@@ -16,7 +16,20 @@ Section SchemaAux.
   Variable Name : finType.
 
   
+  Fixpoint typeEq (ty ty' : @type Name) : bool :=
+    match ty, ty' with
+    | NamedType n, NamedType n' => n == n'
+    | ListType ty, ListType ty' => typeEq ty ty'
+    | _, _ => false
+    end.
+(*
+  Lemma typeEqP : Equality.axiom typeEq.
+  Proof.
+    move => ty ty'. apply (iffP idP). *)
+    
+  
   Definition root (doc : @Schema Name) : type := fst doc.
+  
   (**
    Looks up a name in the given document, returning the type definition if it
    was declared in the document.
@@ -132,39 +145,38 @@ Section SchemaAux.
 
   (** Get a field's name **)
   Definition fieldName (fld : FieldDefinition) : Name :=
-    match fld with
-    | FieldWithoutArgs name _ => name
-    | FieldWithArgs name _ _ => name
-    end.
+    let: Field name _ _ := fld in name.
 
   (** Get fields' names **)
   Definition fieldNames (flds : list FieldDefinition) : list Name := map fieldName flds.
 
 
   (** Get list of fields declared in an Object or Interface type definition **)
-  Definition fields (name : Name) (doc : Schema) : list FieldDefinition :=
+  Definition fieldDefinitions (name : Name) (doc : Schema) : list FieldDefinition :=
     match lookupName name doc with
     | Some (ObjectTypeDefinition _ _ flds) => flds
     | Some (InterfaceTypeDefinition _ flds) => flds
     | _ => []
     end.
 
-  Definition fieldType (f : FieldDefinition) : @type Name :=
-    match f with
-    | FieldWithoutArgs _ t => t
-    | FieldWithArgs _ _ t => t
+
+  Definition fields (schema : Schema) (name : Name) : list Name :=
+    match lookupName name schema with
+    | Some (ObjectTypeDefinition _ _ flds) => fieldNames flds
+    | Some (InterfaceTypeDefinition _ flds) => fieldNames flds
+    | _ => []
     end.
 
-  Definition lookupField (fname : Name) (tname : Name) (doc : Schema) : option FieldDefinition :=
-    let n_eq nt fld := match fld with
-                      | FieldWithoutArgs name _ => nt == name
-                      | FieldWithArgs name _ _ => nt == name
-                      end
-    in
-    find (n_eq fname) (fields tname doc).
+  Definition fieldType (fld : FieldDefinition) : @type Name :=
+    let: Field _ _ ty := fld in ty.
 
-  Definition lookupFieldType (fname : Name) (tname : Name) (doc : Schema) : option type :=
-    match lookupField fname tname doc with
+  Definition lookupField (schema : Schema) (tname fname : Name) : option FieldDefinition :=
+    let n_eq nt fld := let: Field name _ _ := fld in nt == name
+    in
+    find (n_eq fname) (fieldDefinitions tname schema).
+
+  Definition lookupFieldType (schema : Schema) (tname fname : Name)  : option type :=
+    match lookupField schema fname tname with
     | Some fieldDef => Some (fieldType fieldDef)
     | None => None
     end.
@@ -185,6 +197,13 @@ Section SchemaAux.
     end.
 
 
+  Definition lookupArgument (schema : Schema) (tname fname argname : Name) : option FieldArgumentDefinition :=
+    match lookupField schema tname fname with
+    | Some (Field fname args _) => let n_eq n arg := let: FieldArgument name _ := arg in n == name
+                                  in
+                                  find (n_eq argname) args
+    | _ => None
+    end.
 
 End SchemaAux.
 
