@@ -28,17 +28,6 @@ Section Conformance.
 
 
   (** 
-      
-
-   **)
-  Definition fieldTypeConforms schema (fieldType targetType : Name) : bool :=
-    (fieldType == targetType) ||
-    (declaresImplementation schema targetType fieldType) ||
-    (targetType \in (union schema fieldType)).
-
-
-  
-  (** 
       It states whether a given field's arguments conform to 
       what the Schema requires of them.
 
@@ -56,6 +45,21 @@ Section Conformance.
       (hasType schema) ty value.
     
 
+
+  
+  (** 
+      It checks whether a field's unwrapped type (if its List type) and a type 
+      conform.
+
+      This is used when checking that an edge conforms to a Schema (see next definition).
+   **)
+  Definition fieldTypeConforms schema (fieldType targetType : Name) : bool :=
+    (fieldType == targetType) ||
+    (declaresImplementation schema targetType fieldType) ||
+    (targetType \in (union schema fieldType)).
+
+
+  
   (**
      It states whether an edge conforms to the Schema.
      An edge corresponds to a type's field whose type is another Object, Interface or Union type.
