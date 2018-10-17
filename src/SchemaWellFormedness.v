@@ -80,10 +80,22 @@ Section WellFormedness.
   
 
 
+  (** 
+      It checks whether an argument is well-formed by checking that
+      its type is a valid type for an argument **)
   Definition wfFieldArgument schema (argDef : FieldArgumentDefinition) : bool :=
     let: FieldArgument aname ty := argDef in isValidArgumentType schema ty.
 
   
+  (**
+     It states whether a field is well-formed.
+
+                 ty isValidFieldType
+                  NoDuplicates args
+           ∀ arg ∈ args, arg isWellFormed
+           ------------------------------
+           (fname (args) : ty) isAWellFormedField
+  **)
   Inductive wfField schema : FieldDefinition -> Prop :=
   | WF_Field : forall name args outputType,
       isValidFieldType schema outputType ->
@@ -96,27 +108,17 @@ Section WellFormedness.
   (** This checks whether an object field is valid w/r to another from an implemented interface.
       The possible options are:
 
-    1.                  T <: U
-               -------------------------
-               (fname : T) OK (fname : U)
 
-    2.               T ∈ unionTypes(U)
-                 -------------------------
-                (fname : T) OK (fname : U)
-
-    3.      T <: U     ∀ arg in args', arg ∈ args          
+    3.      T <: U     ∀ arg ∈ args', arg ∈ args          
             -------------------------------------------
              (fname (args) : T) OK (fname (args') : U)
 
-    4.      T ∈ unionTypes(U)     ∀ arg in args', arg ∈ args
+    4.      T ∈ unionTypes(U)     ∀ arg ∈ args', arg ∈ args
            --------------------------------------------------------
                  (fname (args) : T) OK (fname (args') : U)
 
 
     The arguments have to be completed included, both their names and types (invariant).
-
-    If we consider a Field  having a list of arguments, instead of two 
-    constructors, we could simplify this definition I guess.
 
    **)
   Inductive fieldOk schema : FieldDefinition -> FieldDefinition -> Prop :=              
@@ -138,11 +140,11 @@ Section WellFormedness.
      by properly defining every field defined in the interface.
 
 
-            Schema(name) = type name implements ... iname ... { Flds }   
-                    Schema(iname) = interface iname { Flds' }
+            Schema(O) = type O implements ... I ... { Flds }   
+                    Schema(I) = interface I { Flds' }
                  ∀ fld' ∈ Flds', ∃ fld ∈ Flds s.t fld OK fld'
             ------------------------------------------------
-                        name implementsOK iname
+                        O implementsOK I
 
    **)
   Inductive implementsOK schema : type -> type -> Prop :=
