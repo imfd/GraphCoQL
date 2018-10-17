@@ -68,9 +68,7 @@ Section WellFormedness.
     
 
   (* Because we are not considering InputObjects, a field may have any type, 
-     as long as it is declared in the schemaument.
-
-     Not really sure how to name this case... Named seems weird? *)
+     as long as it is declared in the Schema. *)
   Fixpoint isValidFieldType schema (ty : type) : bool :=
     match ty with
     | NamedType n => match lookupName schema n with
@@ -121,16 +119,7 @@ Section WellFormedness.
     constructors, we could simplify this definition I guess.
 
    **)
-  Inductive fieldOk schema : FieldDefinition -> FieldDefinition -> Prop :=
-(*  
-  | SimpleInterfaceField : forall fname ty ty',
-      subtype schema ty ty' ->
-      fieldOk schema (FieldWithoutArgs fname ty) (FieldWithoutArgs fname ty')
-  | SimpleUnionField : forall fname ename ty objs,
-      lookupName ename schema = Some (UnionTypeDefinition ename objs) ->
-      In ty objs ->
-      fieldOk schema (FieldWithoutArgs fname ty) (FieldWithoutArgs fname (NamedType ename)) *)
-              
+  Inductive fieldOk schema : FieldDefinition -> FieldDefinition -> Prop :=              
   | InterfaceField : forall fname ty ty' args args',
       subtype schema ty ty' ->
       incl args' args ->
