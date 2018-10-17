@@ -15,6 +15,7 @@ Section WellFormedness.
 
   Variables Name Vals : finType.
 
+  Implicit Type schema : @schema Name.
   
   (** Subtype relation
 
@@ -39,16 +40,16 @@ Section WellFormedness.
         be subtype of an interface and not between objects. Interfaces cannot be
         subtype of another interface.
    **)
-  Inductive subtype (doc : Schema) : type -> type -> Prop :=
-  | ST_Refl : forall ty, subtype doc ty ty
+  Inductive subtype schema : type -> type -> Prop :=
+  | ST_Refl : forall ty, subtype schema ty ty
   | ST_Object : forall name intfs iname fields ifields,
-      lookupName name doc = Some (ObjectTypeDefinition name intfs fields) ->
+      lookupName schema name = Some (ObjectTypeDefinition name intfs fields) ->
       In (NamedType iname) intfs ->
-      lookupName iname doc = Some (InterfaceTypeDefinition iname ifields) ->
-      subtype doc (NamedType name) (NamedType iname)
+      lookupName schema iname = Some (InterfaceTypeDefinition iname ifields) ->
+      subtype schema (NamedType name) (NamedType iname)
   | ST_ListType : forall ty ty',
-      subtype doc ty ty' ->
-      subtype doc (ListType ty) (@ListType Name ty').
+      subtype schema ty ty' ->
+      subtype schema (ListType ty) (@ListType Name ty').
 
   
   (** The two following definitions describe whether a given type is a valid type
@@ -59,38 +60,38 @@ Section WellFormedness.
 
       https://facebook.github.io/graphql/June2018/#sec-Input-and-Output-Types **)
 
-  Fixpoint isValidArgumentType (doc : Schema) (ty : type) : bool :=
+  Fixpoint isValidArgumentType schema (ty : type) : bool :=
     match ty with
-    | NamedType _ => isScalarType doc ty || @isEnumType Name doc ty
-    | ListType ty' => isValidArgumentType doc ty'
+    | NamedType _ => isScalarType schema ty || @isEnumType Name schema ty
+    | ListType ty' => isValidArgumentType schema ty'
     end.
     
 
   (* Because we are not considering InputObjects, a field may have any type, 
-     as long as it is declared in the document.
+     as long as it is declared in the schemaument.
 
      Not really sure how to name this case... Named seems weird? *)
-  Fixpoint isValidFieldType (doc : Schema) (ty : type) : bool :=
+  Fixpoint isValidFieldType schema (ty : type) : bool :=
     match ty with
-    | NamedType n => match @lookupName Name n doc with
+    | NamedType n => match lookupName schema n with
                     | Some tdef => true
                     | _ => false
                     end
-    | ListType ty' => isValidFieldType doc ty'
+    | ListType ty' => isValidFieldType schema ty'
     end.
   
 
 
-  Definition wfFieldArgument (doc : Schema) (argDef : FieldArgumentDefinition) : bool :=
-    let: FieldArgument aname ty := argDef in isValidArgumentType doc ty.
+  Definition wfFieldArgument schema (argDef : FieldArgumentDefinition) : bool :=
+    let: FieldArgument aname ty := argDef in isValidArgumentType schema ty.
 
   
-  Inductive wfField (doc : Schema) : FieldDefinition -> Prop :=
+  Inductive wfField schema : FieldDefinition -> Prop :=
   | WF_Field : forall name args outputType,
-      isValidFieldType doc outputType ->
+      isValidFieldType schema outputType ->
       NoDup (argNames args) ->               (* This is not actually explicit in the spec I believe *)
-      Forall (wfFieldArgument doc) args ->
-      wfField doc (Field name args outputType).
+      Forall (wfFieldArgument schema) args ->
+      wfField schema (Field name args outputType).
 
 
 
@@ -120,26 +121,26 @@ Section WellFormedness.
     constructors, we could simplify this definition I guess.
 
    **)
-  Inductive fieldOk (doc : Schema) : FieldDefinition -> FieldDefinition -> Prop :=
+  Inductive fieldOk schema : FieldDefinition -> FieldDefinition -> Prop :=
 (*  
   | SimpleInterfaceField : forall fname ty ty',
-      subtype doc ty ty' ->
-      fieldOk doc (FieldWithoutArgs fname ty) (FieldWithoutArgs fname ty')
+      subtype schema ty ty' ->
+      fieldOk schema (FieldWithoutArgs fname ty) (FieldWithoutArgs fname ty')
   | SimpleUnionField : forall fname ename ty objs,
-      lookupName ename doc = Some (UnionTypeDefinition ename objs) ->
+      lookupName ename schema = Some (UnionTypeDefinition ename objs) ->
       In ty objs ->
-      fieldOk doc (FieldWithoutArgs fname ty) (FieldWithoutArgs fname (NamedType ename)) *)
+      fieldOk schema (FieldWithoutArgs fname ty) (FieldWithoutArgs fname (NamedType ename)) *)
               
   | InterfaceField : forall fname ty ty' args args',
-      subtype doc ty ty' ->
+      subtype schema ty ty' ->
       incl args' args ->
-      fieldOk doc (Field fname args ty) (Field fname args' ty')
+      fieldOk schema (Field fname args ty) (Field fname args' ty')
               
   | UnionField : forall fname ename ty args args' objs,
-      lookupName ename doc = Some (UnionTypeDefinition ename objs) ->
+      lookupName schema ename = Some (UnionTypeDefinition ename objs) ->
       In ty objs ->
       incl args' args ->
-      fieldOk doc (Field fname args ty) (Field fname args' (@NamedType Name ename)).
+      fieldOk schema (Field fname args ty) (Field fname args' (@NamedType Name ename)).
 
 
 
@@ -148,33 +149,33 @@ Section WellFormedness.
      by properly defining every field defined in the interface.
 
 
-            Doc(name) = type name implements ... iname ... { Flds }   
-                    Doc(iname) = interface iname { Flds' }
+            Schema(name) = type name implements ... iname ... { Flds }   
+                    Schema(iname) = interface iname { Flds' }
                  ∀ fld' ∈ Flds', ∃ fld ∈ Flds s.t fld OK fld'
             ------------------------------------------------
                         name implementsOK iname
 
    **)
-  Inductive implementsOK (doc : Schema ) : type -> type -> Prop :=
+  Inductive implementsOK schema : type -> type -> Prop :=
   | ImplementsAll : forall name intfs fields iname ifields,
-      lookupName name doc = Some (ObjectTypeDefinition name intfs fields) ->
+      lookupName schema name = Some (ObjectTypeDefinition name intfs fields) ->
       In (NamedType iname) intfs ->
-      lookupName iname doc = Some (InterfaceTypeDefinition iname ifields) ->
+      lookupName schema iname = Some (InterfaceTypeDefinition iname ifields) ->
       (forall ifld, In ifld ifields ->
                exists ofld, In ofld fields ->
-                       fieldOk doc ofld ifld)  ->
-      implementsOK doc (NamedType name) (NamedType iname).
+                       fieldOk schema ofld ifld)  ->
+      implementsOK schema (NamedType name) (NamedType iname).
   
 
 
   (**
 
-                       Doc(S) = scalar S 
+                       Schema(S) = scalar S 
                        -----------------------
                            scalar S OK
 
 
-                 Doc(O) = type O implements Ifs { Flds }
+                 Schema(O) = type O implements Ifs { Flds }
                            notEmpty Flds
                          NoDuplicates Flds
                             Flds OK in O
@@ -184,7 +185,7 @@ Section WellFormedness.
 
 
 
-                    Doc(I) = interface I { Flds }
+                    Schema(I) = interface I { Flds }
                            notEmpty Flds
                          NoDuplicates Flds
                             Flds OK in I
@@ -193,7 +194,7 @@ Section WellFormedness.
 
 
 
-                       Doc(U) = union U { Mbs }
+                       Schema(U) = union U { Mbs }
                            notEmpty Mbs
                          NoDuplicates Mbs
                      ∀ mb ∈ Mbs, mb ObjectType
@@ -201,58 +202,58 @@ Section WellFormedness.
                           union U { Mbs } 
 
 
-                       Doc(E) = enum E { Evs }
+                       Schema(E) = enum E { Evs }
                            notEmpty Evs
                          NoDuplicates Evs
                 -----------------------------------------
                           enum E { Evs } 
 
    **)
-  Inductive wfTypeDefinition (doc : Schema) : TypeDefinition -> Prop :=
+  Inductive wfTypeDefinition schema : TypeDefinition -> Prop :=
   | WF_Scalar : forall name,
-      isScalarType doc (NamedType name) ->
-      wfTypeDefinition doc (ScalarTypeDefinition name)
+      isScalarType schema (NamedType name) ->
+      wfTypeDefinition schema (ScalarTypeDefinition name)
                        
   | WF_ObjectWithInterfaces : forall name interfaces fields,
-      lookupName name doc = Some (ObjectTypeDefinition name interfaces fields) ->
+      lookupName schema name = Some (ObjectTypeDefinition name interfaces fields) ->
       fields <> [] ->
       NoDup (fieldNames fields) ->
-      Forall (wfField doc) fields ->
+      Forall (wfField schema) fields ->
       NoDup (typesNames interfaces) ->
-      Forall (implementsOK doc (NamedType name)) interfaces ->
-      wfTypeDefinition doc (ObjectTypeDefinition name interfaces fields)
+      Forall (implementsOK schema (NamedType name)) interfaces ->
+      wfTypeDefinition schema (ObjectTypeDefinition name interfaces fields)
                        
   | WF_Interface : forall name fields,
-      lookupName name doc = Some (InterfaceTypeDefinition name fields) ->
+      lookupName schema name = Some (InterfaceTypeDefinition name fields) ->
       fields <> [] ->
       NoDup (fieldNames fields) ->
-      Forall (wfField doc) fields ->
-      wfTypeDefinition doc (InterfaceTypeDefinition name fields)
+      Forall (wfField schema) fields ->
+      wfTypeDefinition schema (InterfaceTypeDefinition name fields)
                        
   | WF_Union : forall name members,
-      lookupName name doc = Some (UnionTypeDefinition name members) ->
+      lookupName schema name = Some (UnionTypeDefinition name members) ->
       members <> [] ->
       NoDup (typesNames members) ->
-      Forall (isObjectType doc) members ->
-      wfTypeDefinition doc (UnionTypeDefinition name members)
+      Forall (isObjectType schema) members ->
+      wfTypeDefinition schema (UnionTypeDefinition name members)
                        
   | WF_Enum : forall name enumValues,
-      lookupName name doc = Some (EnumTypeDefinition name enumValues) ->
+      lookupName schema name = Some (EnumTypeDefinition name enumValues) ->
       enumValues <> [] ->
       NoDup enumValues ->
-      wfTypeDefinition doc (EnumTypeDefinition name enumValues).
+      wfTypeDefinition schema (EnumTypeDefinition name enumValues).
   
            
-  Inductive schemaIsWellFormed : Schema -> Prop :=
+  Inductive schemaIsWellFormed : @schema Name -> Prop :=
   | WF_Schema : forall tdefs root,
-      NoDup (names tdefs) ->
-      In root (names tdefs) -> 
-      Forall (wfTypeDefinition ((NamedType root), tdefs)) tdefs ->
-      schemaIsWellFormed ((NamedType root), tdefs).
+      NoDup (typeDefsNames tdefs) ->
+      In root (typeDefsNames tdefs) -> 
+      Forall (wfTypeDefinition (Schema (NamedType root) tdefs)) tdefs ->
+      schemaIsWellFormed (Schema (NamedType root) tdefs).
 
   
   Record wfSchema := WFSchema {
-                        schema : @Schema Name ;
+                        schema : @schema Name ;
                         hasType :  Name -> Vals -> bool;
                         _ : schemaIsWellFormed schema;
                       }.

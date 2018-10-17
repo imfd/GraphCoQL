@@ -18,7 +18,8 @@ Section Schema.
   Variable Name : finType.
 
 
-  (** Same as names, except that it can't be true, false or null
+  (** Same as names, except that it can't be true, false or null. 
+      Right now it is just the same as Name.
 
       https://facebook.github.io/graphql/June2018/#EnumValue **)
   Definition EnumValue := Name.
@@ -47,7 +48,7 @@ Section Schema.
 
   (** https://facebook.github.io/graphql/June2018/#FieldDefinition **)
   Inductive FieldDefinition : Type :=
-  | Field : Name  -> list FieldArgumentDefinition -> type -> FieldDefinition.
+  | Field : Name -> list FieldArgumentDefinition -> type -> FieldDefinition.
 
 
 
@@ -94,13 +95,10 @@ https://facebook.github.io/graphql/June2018/#TypeDefinition **)
 
 
    **)
-  (* 
- - Omitting mutations and suscriptions, therefore only leaving query as possible operation
- - Omitting directives for simplicity
-
-As per the spec: Directives provide a way to describe alternate runtime execution and type validation behavior in a GraphQL document. 
-   *)
-  Definition Schema := (type * list TypeDefinition)%type.
+  Record schema := Schema {
+                      query : type;
+                      typeSystem : list TypeDefinition
+                    }.
 
 
 
