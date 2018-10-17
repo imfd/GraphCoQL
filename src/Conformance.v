@@ -34,13 +34,13 @@ Section Conformance.
   
 
   Definition argumentsConform schema (src : Name) (f : fld) :=
-    forall a value ty,
-      (f a) = Some value ->
-      lookupArgument schema src a f = Some (FieldArgument a ty) ->
+    forall arg value ty,
+      (f arg) = Some value ->
+      lookupArgument schema src arg f = Some (FieldArgument arg ty) ->
       (hasType schema) ty value.
     
     
-  Definition edgeConforms (E : edges N Name Name Vals) (t : tau) schema  :=
+  Definition edgeConforms schema (E : edges N Name Name Vals) (t : tau)   :=
     forall (u v : N) (f : fld) (fieldType : type),
       E u f v ->              
       lookupFieldType schema (t u) (label f) = Some fieldType ->    (* This covers the field \in fields (t(u)) *)
@@ -61,7 +61,9 @@ Section Conformance.
   Record conformed_graph schema := ConformedGraph {
                                                 E : edges N Name Name Vals;
                                                 t : tau;
-                                                wf_edges : edgeConforms E t schema;
+                                                l : lambda;
+                                                wf_edges : edgeConforms schema E t;
+                                                wf_fields : fieldConforms schema t l
                                                (* wf_root : rootConforms schema t *)
                                               }.
   
