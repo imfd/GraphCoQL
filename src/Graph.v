@@ -4,7 +4,7 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 
-Section PropertyLabeledGraph.
+Section GraphQLGraph.
 
 
   Variables (N F A T Vals: finType).
@@ -85,7 +85,7 @@ Canonical egraph_subFinType   := Eval hnf in [subFinType of egraph].
   Canonical lambda_eqType        := Eval hnf in EqType _     [eqMixin     of @lambda by <: ].
   
 
-End PropertyLabeledGraph.
+End GraphQLGraph.
 
 Check root.
 
