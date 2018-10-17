@@ -18,8 +18,9 @@ Section Conformance.
   Variables (N Vals Name : finType).
 
   Implicit Type schema : @wfSchema Name Vals.
+  Implicit Type graph : @graphQLGraph N Name Name Name Vals. 
   
- (* Definition root_type_conforms (r : root) (doc : Schema) := tau (r) = root(doc). *)
+  Definition rootTypeConforms schema graph  := (t graph (r graph)) = root(schema).
 
   Definition fieldTypeConforms schema (fieldType targetType : Name) : bool :=
     (fieldType == targetType) ||
@@ -58,14 +59,12 @@ Section Conformance.
       (hasType schema) ty value \/ Forall (hasType schema ty) lvalue ->
       argumentsConform schema (t u) f.
   
-  Record conformed_graph schema := ConformedGraph {
-                                                E : edges N Name Name Vals;
-                                                t : tau;
-                                                l : lambda;
-                                                wf_edges : edgeConforms schema E t;
-                                                wf_fields : fieldConforms schema t l
-                                               (* wf_root : rootConforms schema t *)
-                                              }.
+  Record conformedGraph schema := ConformedGraph {
+                                                graph;
+                                                wf_root : rootTypeConforms schema graph;
+                                                wf_edges : edgeConforms schema (E graph) (t graph);
+                                                wf_fields : fieldConforms schema (t graph) (lam graph)
+                                   }.
   
   
 
