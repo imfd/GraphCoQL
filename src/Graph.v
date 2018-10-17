@@ -10,15 +10,17 @@ Section GraphQLGraph.
   Variables (N F A T Vals: finType).
   Variable root: N.
 
-  (** Field **)
+  (** Field 
+      It corresponds to a field's name and list of arguments but without
+      its associated value.
+   **)
   Record fld := Field {
                    label : F;
                    args : {ffun A -> option Vals}
                  }.
 
 
-  Coercion label_of_fld (f : fld) := let: Field l a := f in l.
-  Coercion fun_of_fld (f : fld) := let: Field l a := f in a.
+
   
   Definition prod_of_fld (f : fld) := let: Field l a := f in (l, a).
   Definition fld_of_prod (p : prod F {ffun A -> option Vals}) := let: (l, a) := p in Field l a.
@@ -36,9 +38,11 @@ Section GraphQLGraph.
   Canonical fld_finType := FinType fld fld_finMixin.
 
 
-  Definition fieldArgsSupport (f : fld) : {set A} := [set a | None != f a].
   
-  (** A graph (actually edges...) is a set of 3-tuples: node * field * node **)
+  (** Edges 
+      Directed and "labeled" edges of a graph.
+      It is a set of 3-tuples: node * fld * node
+   **)
   Record edges := Edges { val : {set N * fld * N} }.
 
 
@@ -59,6 +63,30 @@ Canonical egraph_finType      := Eval hnf in FinType    _ [finMixin    of @egrap
 Canonical egraph_subFinType   := Eval hnf in [subFinType of egraph]. 
 *)
 
+  
+  (** Tau
+      A function that assigns a type name to every node
+   **)
+  Inductive tau : Type := Tau of {ffun N -> T}.
+
+  
+  (** Lambda
+      A partial function that assigns a scalar value or list of scalar values to some pairs
+      of the form (u, f[alpha]), where u ∈ N and f ∈ fld.
+   **)
+  Inductive lambda : Type := Lambda of {ffun N * fld -> option (Vals + (seq Vals)) }.
+
+
+
+  
+
+  Coercion label_of_fld (f : fld) := let: Field l a := f in l.
+  Coercion fun_of_fld (f : fld) := let: Field l a := f in a.
+
+  Definition fieldArgsSupport (f : fld) : {set A} := [set a | None != f a].
+
+    
+
   Definition fun_of_edges (E : edges) := fun v1 f v2 => (v1, f, v2) \in val E.
   Coercion fun_of_edges : edges >-> Funclass.
 
@@ -66,19 +94,13 @@ Canonical egraph_subFinType   := Eval hnf in [subFinType of egraph].
 
   Lemma edgesE (E : edges) v1 f v2 : E v1 f v2 = ((v1, f, v2) \in E).
   Proof. by []. Qed.
-  
-  (** Tau : assigns a type to every node **)
-  Inductive tau : Type := Tau of {ffun N -> T}.
 
   Coercion fun_of_tau (t : tau) := let: Tau f := t in f.
 
   Canonical tau_subType       := Eval hnf in [newType for fun_of_tau].
   Canonical tau_eqType        := Eval hnf in EqType _     [eqMixin     of @tau by <: ].
-  
-  (** Lambda : partial function that assigns a scalar value V to some pairs
-      of the form (u, f[alpha]) **)
-  Inductive lambda : Type := Lambda of {ffun N * fld -> option (Vals + (seq Vals)) }.
 
+  
   Coercion fun_of_lambda (l : lambda) := let: Lambda f := l in f.
 
   Canonical lambda_subType       := Eval hnf in [newType for fun_of_lambda].
