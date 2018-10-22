@@ -7,3 +7,4 @@
 ./src/SchemaWellFormedness.v
 ./src/Graph.v
 ./src/Conformance.v
+./src/Query.v

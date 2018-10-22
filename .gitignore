@@ -32,3 +32,8 @@ nra.cache
 
 CoqMakefile*
 .coqdeps*
+
+
+
+# autosave files from emacs
+\#*
