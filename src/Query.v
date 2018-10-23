@@ -11,7 +11,7 @@ Section Query.
   Variables  F A T Vals : finType.
   
   Inductive Query : Type :=
-  | Field : F -> {ffun A -> Vals} -> Query
+  | SingleField : F -> {ffun A -> Vals} -> Query
   | LabeledField : F -> F -> {ffun A -> Vals} -> Query
   | NestedField : F -> {ffun A -> Vals} -> Query -> Query
   | NestedLabeledField : F -> F -> {ffun A -> Vals} -> Query -> Query
@@ -32,3 +32,10 @@ Section Query.
   
 End Query.
 
+Arguments Query [F] [A] [T] [Vals].
+Arguments SingleField [F] [A] [T] [Vals].
+Arguments LabeledField [F] [A] [T] [Vals].
+Arguments NestedField [F] [A] [T] [Vals].
+Arguments NestedLabeledField [F] [A] [T] [Vals].
+Arguments InlineFragment [F] [A] [T] [Vals].
+Arguments SelectionSet [F] [A] [T] [Vals].
