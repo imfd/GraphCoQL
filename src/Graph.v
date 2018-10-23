@@ -84,8 +84,8 @@ Canonical egraph_subFinType   := Eval hnf in [subFinType of egraph].
   Record graphQLGraph := GraphQLGraph {
                             r : N;
                             E : edges;
-                            t : tau;
-                            lam : lambda
+                            τ : {ffun N -> T};
+                            λ : {ffun N * fld -> option (Vals + (seq Vals)) }
                           }.
 
   
@@ -105,20 +105,10 @@ Canonical egraph_subFinType   := Eval hnf in [subFinType of egraph].
   Lemma edgesE (E : edges) v1 f v2 : E v1 f v2 = ((v1, f, v2) \in E).
   Proof. by []. Qed.
 
-  Coercion fun_of_tau (t : tau) := let: Tau f := t in f.
-
-  Canonical tau_subType       := Eval hnf in [newType for fun_of_tau].
-  Canonical tau_eqType        := Eval hnf in EqType _     [eqMixin     of @tau by <: ].
-
-  
-  Coercion fun_of_lambda (l : lambda) := let: Lambda f := l in f.
-
-  Canonical lambda_subType       := Eval hnf in [newType for fun_of_lambda].
-  Canonical lambda_eqType        := Eval hnf in EqType _     [eqMixin     of @lambda by <: ].
-
 
   Coercion root_of_graph (g : graphQLGraph) := let: GraphQLGraph r _ _ _ := g in r.
   Coercion edges_of_graph (g : graphQLGraph) := let: GraphQLGraph _ E _ _ := g in E.
+
 
 
 End GraphQLGraph.

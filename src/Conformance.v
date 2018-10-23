@@ -24,7 +24,7 @@ Section Conformance.
   (** 
       It states that a Graph's root must have the same type as the Schema's root
    **)
-  Definition rootTypeConforms schema graph  := (t graph (r graph)) = root(schema).
+  Definition rootTypeConforms schema graph  := (τ graph (r graph)) = root(schema).
 
 
   (** 
@@ -84,7 +84,7 @@ Section Conformance.
         that given field.
 
    **)
-  Definition edgeConforms schema (E : edges N Name Name Vals) (t : tau)   :=
+  Definition edgeConforms schema (E : edges N Name Name Vals) (t : {ffun N -> Name})   :=
     forall (u v : N) (f : fld) (fieldType : type),
       E u f v ->              
       lookupFieldType schema (t u) (label f) = Some fieldType ->    (* This covers the field \in fields (t(u)) *)
@@ -108,7 +108,7 @@ Section Conformance.
      3. The arguments of 'f' must conform to what the Schema requires of them.
 
    **)
-  Definition fieldConforms schema (t : tau) (l : lambda) :=
+  Definition fieldConforms schema (t : {ffun N -> Name}) (l : {ffun N * fld -> option (Vals + seq.seq Vals)}) :=
     forall (u : N) (f : fld) (ty : type) (value : Vals) (lvalue : list Vals),
       (l (u,f) = Some (inl value)) \/ (l (u, f) = Some (inr lvalue)) ->
       lookupFieldType schema (t u) f = Some ty ->
@@ -125,7 +125,7 @@ Section Conformance.
      where they assume three distinct sets for type names: Ot, It and Ut.
 
    **)
-  Definition tauConforms schema (t : tau) :=
+  Definition tauConforms schema (t : {ffun N -> Name}) :=
     forall (n : N),
       isObjectType schema (NamedType (t n)).
 
@@ -142,11 +142,12 @@ Section Conformance.
   Record conformedGraph schema := ConformedGraph {
                                                 graph;
                                                 wf_root : rootTypeConforms schema graph;
-                                                wf_edges : edgeConforms schema (E graph) (t graph);
-                                                wf_fields : fieldConforms schema (t graph) (lam graph);
-                                                _ : tauConforms schema (t graph)
+                                                wf_edges : edgeConforms schema (E graph) (τ graph);
+                                                wf_fields : fieldConforms schema (τ graph) (λ graph);
+                                                _ : tauConforms schema (τ graph)
                                    }.
   
+  Coercion graph_of_wfgraph schema (graph : @conformedGraph schema) := let: ConformedGraph g _ _ _ _ := graph in g.
   
 
 End Conformance.

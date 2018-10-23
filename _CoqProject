@@ -10,3 +10,4 @@
 ./src/Query.v
 ./src/QueryAux.v
 ./src/QueryConformance.v
+./src/QuerySemantic.v

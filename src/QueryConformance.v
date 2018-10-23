@@ -18,13 +18,16 @@ Section QueryConformance.
   Implicit Type schema : @wfSchema Name Vals.
 
 
-  Definition argumentConforms schema (α : {ffun Name -> Vals}) (arg : FieldArgumentDefinition) : bool :=
+  Definition argumentConforms schema (α : {ffun Name -> option Vals}) (arg : FieldArgumentDefinition) : bool :=
     match arg with
-    | (FieldArgument argname ty) => (hasType schema) ty (α argname)
+    | (FieldArgument argname ty) => match (α argname) with
+                                   | Some value => (hasType schema) ty value
+                                   | _ => false
+                                   end
     end.
   
 
-  Definition argumentsConform schema (α : {ffun Name -> Vals}) (args : list FieldArgumentDefinition) : bool :=
+  Definition argumentsConform schema (α : {ffun Name -> option Vals}) (args : list FieldArgumentDefinition) : bool :=
     forallb (argumentConforms schema α) args.
      
     
@@ -59,7 +62,7 @@ Section QueryConformance.
   .
 
 
-  Record wfQuery schema := WFQuery {
+  Record wfQuery (schema : @wfSchema Name Vals) := WFQuery {
                               query : @Query Name Name Name Vals;
                               queryConforms : SelectionConforms schema query (root schema)
                             }.
