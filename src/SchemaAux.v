@@ -53,7 +53,17 @@ Section SchemaAux.
    Canonical arg_eqType := EqType FieldArgumentDefinition arg_eqMixin.
 
 
-    
+
+   Definition prod_of_field (f : @FieldDefinition Name) := let: Field n args t := f in (n, args, t).
+   Definition field_of_prod (p : Name * (seq.seq FieldArgumentDefinition) * type)  := let: (n, args, t) := p in Field n args t.
+
+   Lemma prod_of_fieldK : cancel prod_of_field field_of_prod.
+   Proof. by case. Qed.
+
+   Definition field_eqMixin := CanEqMixin prod_of_fieldK.
+   Canonical field_eqType := EqType FieldDefinition field_eqMixin.
+
+   
   Implicit Type schema : @schema Name.
   
   Definition root schema : type := query schema.
