@@ -186,19 +186,15 @@ Section WellFormedness.
       implementsOK schema (NamedType name) (NamedType iname).
 
 *)
-  Definition implementsOK schema (ty ty' : type) : bool :=
-    match ty, ty' with
-    | (NamedType name), (NamedType name') =>
-      match lookupName schema name with
-      | Some (ObjectTypeDefinition _ intfs fields) =>
-        (ty' \in intfs) &&
-                      match lookupName schema name' with
-                      | Some (InterfaceTypeDefinition name' ifields) =>
-                        all (fun f => has (fun f' => isFieldOK schema f f') ifields) fields
-                      | _ => false
-                      end
-      | _ => false
-      end
+  Definition implementsOK schema (objTDef : TypeDefinition) (ty' : type) : bool :=
+    match objTDef, ty' with
+    | (ObjectTypeDefinition _ intfs fields), (NamedType name') =>
+      (ty' \in intfs)
+        &&  match lookupName schema name' with
+            | Some (InterfaceTypeDefinition name' ifields) =>
+              all (fun f' => has (fun f => isFieldOK schema f f') fields) ifields
+            | _ => false
+            end
     | _, _ => false
     end.
 
@@ -244,7 +240,7 @@ Section WellFormedness.
                           enum E { Evs } 
 
    **)
-  Inductive wfTypeDefinition schema : TypeDefinition -> Prop :=
+ (* Inductive wfTypeDefinition schema : TypeDefinition -> Prop :=
   | WF_Scalar : forall name,
       isScalarType schema (NamedType name) ->
       wfTypeDefinition schema (ScalarTypeDefinition name)
@@ -276,29 +272,50 @@ Section WellFormedness.
       lookupName schema name = Some (EnumTypeDefinition name enumValues) ->
       enumValues <> [] ->
       uniq enumValues ->
-      wfTypeDefinition schema (EnumTypeDefinition name enumValues).
-  
+      wfTypeDefinition schema (EnumTypeDefinition name enumValues).*)
 
-  Fixpoint typeIsWF schema (ty : TypeDefinition) : bool :=
-    match ty with
-    | ScalarTypeDefinition name => isScalarType schema (NamedType name)
+
+  Fixpoint isWFTypeDef schema (tdef : TypeDefinition) : bool :=
+    match tdef with
+    | ScalarTypeDefinition _ => true
     | ObjectTypeDefinition name interfaces fields =>
+      (fields != [::])
+        && uniq (fieldNames fields)
+        && all (wfField schema) fields
+        && uniq (typesNames interfaces)
+        && all (implementsOK schema tdef) interfaces
+    | InterfaceTypeDefinition _ fields =>
+      (fields != [::])
+        &&  uniq (fieldNames fields)
+        && all (wfField schema) fields
+    | UnionTypeDefinition name members =>
+      (members != [::])
+        && uniq (typesNames members)
+        && all (isObjectType schema) members
+    | EnumTypeDefinition _ enumValues =>
+      (enumValues != [::]) && uniq enumValues
+        
+    end.
+                
+                                     
+
+                 
+  Definition schemaIsWF schema : bool :=
+    match schema with
+    | Schema query tdefs => match query with
+                           | (NamedType root) =>
+                             (root \in (typeDefsNames tdefs)) &&
+                             uniq (typeDefsNames tdefs) &&                              
+                             all (isWFTypeDef schema) tdefs                                                            
+                           | _ => false
+                           end
+    end.
       
-
-
-    
-  Inductive schemaIsWellFormed : @schema Name -> Prop :=
-  | WF_Schema : forall tdefs root,
-      uniq (typeDefsNames tdefs) ->
-      root \in (typeDefsNames tdefs) -> 
-      Forall (wfTypeDefinition (Schema (NamedType root) tdefs)) tdefs ->
-      schemaIsWellFormed (Schema (NamedType root) tdefs).
-
   
   Record wfSchema := WFSchema {
                         schema : @schema Name ;
                         hasType :  Name -> Vals -> bool;
-                        _ : schemaIsWellFormed schema;
+                        _ : schemaIsWF schema;
                       }.
 
 
