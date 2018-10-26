@@ -13,7 +13,7 @@ Set Implicit Arguments.
 Section SchemaAux.
 
 
-  Variable Name : finType.
+  Variable Name : eqType.
 
   
   Fixpoint typeEq (ty ty' : @type Name) : bool :=
@@ -22,11 +22,38 @@ Section SchemaAux.
     | ListType ty, ListType ty' => typeEq ty ty'
     | _, _ => false
     end.
-(*
+
+  
+  
   Lemma typeEqP : Equality.axiom typeEq.
   Proof.
-    move => ty ty'. apply (iffP idP). *)
+    rewrite /Equality.axiom.
+    move => ty ty'; apply: (iffP idP).
+    elim:  ty ty' => [n | t IHt] [n' | t' IHt'] //=.
+      by move/eqP => ->.
+      simpl in IHt'.
+      move : (IHt _ IHt').
+        by move => H ; rewrite H.
+        move => H ; rewrite H.
+          elim ty' => [//=|//=].
+  Qed.
 
+  Definition type_eqMixin := Equality.Mixin typeEqP.
+  Canonical type_eqType := EqType type type_eqMixin.
+        
+
+
+  Definition prod_of_arg (arg : @FieldArgumentDefinition Name) := let: FieldArgument n t := arg in (n, t).
+  Definition arg_of_prod (p : prod Name type) := let: (n, t) := p in FieldArgument n t.
+
+  Lemma prod_of_argK : cancel prod_of_arg arg_of_prod.
+  Proof. by case. Qed.
+
+   Definition arg_eqMixin := CanEqMixin prod_of_argK.
+   Canonical arg_eqType := EqType FieldArgumentDefinition arg_eqMixin.
+
+
+    
   Implicit Type schema : @schema Name.
   
   Definition root schema : type := query schema.
@@ -131,7 +158,7 @@ Section SchemaAux.
     | ListType ty' => unwrapTypeName ty'
     end.
 
-  Coercion unwrapTypeName : type >-> Finite.sort.
+  Coercion unwrapTypeName : type >-> Equality.sort.
 
   (** Get types' names **)
   Definition typesNames (tys : list type) : list Name := map unwrapTypeName tys.

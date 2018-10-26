@@ -15,7 +15,7 @@ Section Schema.
   (** Names for everything, from operations, fields, arguments, types, etc.
 
       https://facebook.github.io/graphql/June2018/#sec-Names **)
-  Variable Name : finType.
+  Variable Name : eqType.
 
 
   (** Same as names, except that it can't be true, false or null. 
