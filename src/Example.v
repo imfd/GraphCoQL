@@ -25,6 +25,7 @@ Require Import Graph.
 
 Section Example.
 
+  Variable Vals : finType.
   
   Local Open Scope string_scope.
 
@@ -45,37 +46,39 @@ Section Example.
   Notation "f : t" := (Schema.Field f [::] t).
 
 
+  Coercion namedType_of_string (s : string) := NamedType s.
+  
   Let IDType := scalar "ID".
   Let StringType := scalar "String".
   Let FloatType := scalar "Float".
 
   Let StarshipType := (ObjectTypeDefinition "Starship" [::]
-                                           [:: ("id" : (NamedType "ID"));
-                                              ("name" : (NamedType "String"));
-                                              ("length" : (NamedType "Float"))
+                                           [:: ("id" : "ID");
+                                              ("name" : "String");
+                                              ("length" : "Float")
                      ]).
 
   Let CharacterType := interface "Character" {{ [::
-                                                 ("id" : (NamedType "ID"));
-                                                 ("name" : (NamedType "String"));
-                                                 ("friends" : (ListType (NamedType "Character")))]
+                                                 ("id" : "ID");
+                                                 ("name" : "String");
+                                                 ("friends" : (ListType "Character"))]
                                             }}.
 
   
   Let DroidType := type "Droid" implements [:: (NamedType "Character")] {{[::
-                                                                            ("id" : (NamedType "ID"));
-                                                                            ("name" : (NamedType "String"));
-                                                                            ("friends" : (ListType (NamedType "Character")));
-                                                                            ("primaryFunction" : (NamedType "String"))
+                                                                            ("id" : "ID");
+                                                                            ("name" : "String");
+                                                                            ("friends" : (ListType "Character"));
+                                                                            ("primaryFunction" : "String")
                                                                                
                                                                        ]}}.
   
   
   Let HumanType := type "Human" implements [:: (NamedType "Character")] {{[::
-                                                                            ("id" : (NamedType "ID"));
-                                                                            ("name" : (NamedType "String"));
-                                                                            ("friends" : (ListType (NamedType "Character")));
-                                                                            ("starships" : (ListType (NamedType "Starship")))
+                                                                            ("id" : "ID");
+                                                                            ("name" : "String");
+                                                                            ("friends" : (ListType "Character"));
+                                                                            ("starships" : (ListType "Starship"))
                                                                                
                                                                        ]}}.
 
@@ -90,30 +93,14 @@ Section Example.
                                                      (Schema.Field "search" [:: (FieldArgument "text" (NamedType "String"))] (ListType (NamedType "SearchResult")))]
                                                }}.
 
-  Let schema  := {| query := (NamedType "Query") ; typeDefinitions :=  [:: IDType; StringType; FloatType;  StarshipType;  CharacterType; DroidType; HumanType; EpisodeType; SearchResultType; QueryType] |}.
+  Let schema : @Schema.schema string_eqType  := {| query := "Query" ; typeDefinitions :=  [:: IDType; StringType; FloatType;  StarshipType;  CharacterType; DroidType; HumanType; EpisodeType; SearchResultType; QueryType] |}.
 
 
+  Lemma sdf : schemaIsWF schema.
+  Proof. by []. Qed.
   
-  Eval compute in  match schema with
-                   | Schema query tdefs => match query with
-                                          | (NamedType root) =>
-                                            (root \in (typeDefsNames tdefs))
-                                              && uniq (typeDefsNames tdefs)
-                                              && all (isWFTypeDef schema) tdefs
-                                                                             
-                           | _ => false
-                           end
-                   end.
-    
-    - by [].
-    - by [].
-    - apply Forall_forall.
-      move => tdef H. simpl in H;   destruct H.
-    - rewrite <- H;  apply WF_Scalar. reflexivity.
-    - destruct H. rewrite <- H; apply WF_Scalar. reflexivity.
-    - destruct H. rewrite <- H; apply WF_Scalar; reflexivity.
-    - destruct H. rewrite <- H. apply WF_ObjectWithInterfaces.
-      by []. by []. by []. apply Forall_forall. move => fdef. auto. by [].
+  Definition wf_schema : @wfSchema string_eqType Vals   := WFSchema (fun n v => true) sdf.
+
   
  
   
