@@ -45,7 +45,8 @@ Section Example.
   
   Notation "f : t" := (Schema.Field f [::] t).
 
-
+  Notation "'[' s ']'" := (ListType s) (at level 0, s at next level).
+  
   Coercion namedType_of_string (s : string) := NamedType s.
   
   Let IDType := scalar "ID".
@@ -61,14 +62,14 @@ Section Example.
   Let CharacterType := interface "Character" {{ [::
                                                  ("id" : "ID");
                                                  ("name" : "String");
-                                                 ("friends" : (ListType "Character"))]
+                                                 ("friends" : ["Character"])]
                                             }}.
 
   
   Let DroidType := type "Droid" implements [:: (NamedType "Character")] {{[::
                                                                             ("id" : "ID");
                                                                             ("name" : "String");
-                                                                            ("friends" : (ListType "Character"));
+                                                                            ("friends" : ["Character"]);
                                                                             ("primaryFunction" : "String")
                                                                                
                                                                        ]}}.
@@ -77,8 +78,8 @@ Section Example.
   Let HumanType := type "Human" implements [:: (NamedType "Character")] {{[::
                                                                             ("id" : "ID");
                                                                             ("name" : "String");
-                                                                            ("friends" : (ListType "Character"));
-                                                                            ("starships" : (ListType "Starship"))
+                                                                            ("friends" : ["Character"]);
+                                                                            ("starships" : ["Starship"])
                                                                                
                                                                        ]}}.
 
@@ -89,8 +90,8 @@ Section Example.
 
 
   Let QueryType := type "Query" implements [::] {{ [::
-                                                     (Schema.Field "hero" [:: (FieldArgument "episode" (NamedType "Episode"))] (NamedType "Character"));
-                                                     (Schema.Field "search" [:: (FieldArgument "text" (NamedType "String"))] (ListType (NamedType "SearchResult")))]
+                                                     (Schema.Field "hero" [:: (FieldArgument "episode" "Episode")] "Character");
+                                                     (Schema.Field "search" [:: (FieldArgument "text" "String")] ["SearchResult"])]
                                                }}.
 
   Let schema : @Schema.schema string_eqType  := {| query := "Query" ; typeDefinitions :=  [:: IDType; StringType; FloatType;  StarshipType;  CharacterType; DroidType; HumanType; EpisodeType; SearchResultType; QueryType] |}.
@@ -101,7 +102,7 @@ Section Example.
   
   Definition wf_schema : @wfSchema string_eqType Vals   := WFSchema (fun n v => true) sdf.
 
-  
+ 
  
   
   
