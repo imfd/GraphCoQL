@@ -3,6 +3,8 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+From extructures Require Import ord.
+
 Require Import List.
 Import ListNotations.
 
@@ -13,7 +15,7 @@ Set Implicit Arguments.
 Section SchemaAux.
 
 
-  Variable Name : eqType.
+  Variable Name : ordType.
 
   
   Fixpoint typeEq (ty ty' : @type Name) : bool :=
@@ -168,7 +170,7 @@ Section SchemaAux.
     | ListType ty' => unwrapTypeName ty'
     end.
 
-  Coercion unwrapTypeName : type >-> Equality.sort.
+  Coercion unwrapTypeName : type >-> Ord.sort.
 
   (** Get types' names **)
   Definition typesNames (tys : list type) : list Name := map unwrapTypeName tys.

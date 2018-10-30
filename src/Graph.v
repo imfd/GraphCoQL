@@ -3,26 +3,26 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+From extructures Require Import ord fset fmap.
 
 Section GraphQLGraph.
 
-
-  Variables (N F A T Vals: finType).
-
+  Variables (N F A T Vals : ordType).
+  
   (** Field 
       It corresponds to a field's name and list of arguments but without
       its associated value.
    **)
   Record fld := Field {
                    label : F;
-                   args : {ffun A -> option Vals}
+                   args : {fmap A -> Vals}
                  }.
 
 
 
   
   Definition prod_of_fld (f : fld) := let: Field l a := f in (l, a).
-  Definition fld_of_prod (p : prod F {ffun A -> option Vals}) := let: (l, a) := p in Field l a.
+  Definition fld_of_prod (p : prod F {fmap A -> Vals}) := let: (l, a) := p in Field l a.
 
   Lemma can_fld_of_prod : cancel prod_of_fld fld_of_prod.
   Proof. by case. Qed.
@@ -31,21 +31,13 @@ Section GraphQLGraph.
   Canonical fld_eqType := EqType fld fld_eqMixin.
   Definition fld_choiceMixin := CanChoiceMixin can_fld_of_prod.
   Canonical fld_choiceType := ChoiceType fld fld_choiceMixin.
-  Definition fld_countMixin := CanCountMixin can_fld_of_prod.
-  Canonical fld_countType := CountType fld fld_countMixin.
-  Definition fld_finMixin := CanFinMixin can_fld_of_prod.
-  Canonical fld_finType := FinType fld fld_finMixin.
+  Definition fld_ordMixin := CanOrdMixin can_fld_of_prod.
+  Canonical fld_ordType := OrdType fld fld_ordMixin.
+  
 
 
   
-  (** Edges 
-      Directed and "labeled" edges of a graph.
-      It is a set of 3-tuples: node * fld * node
-   **)
-  Record edges := Edges { val : {set N * fld * N} }.
 
-
-  Coercion set_of_edges (E : edges) := val E.
 
   (*
   Definition graph_sub : @subType {set N * fld * N} xpredT.
@@ -63,19 +55,6 @@ Canonical egraph_subFinType   := Eval hnf in [subFinType of egraph].
 *)
 
   
-  (** Tau
-      A function that assigns a type name to every node
-   **)
-  Inductive tau : Type := Tau of {ffun N -> T}.
-
-  
-  (** Lambda
-      A partial function that assigns a scalar value or list of scalar values to some pairs
-      of the form (u, f[alpha]), where u ∈ N and f ∈ fld.
-   **)
-  Inductive lambda : Type := Lambda of {ffun N * fld -> option (Vals + (seq Vals)) }.
-
-
 
   
   (** GraphQL Graph 
@@ -83,39 +62,38 @@ Canonical egraph_subFinType   := Eval hnf in [subFinType of egraph].
    **)
   Record graphQLGraph := GraphQLGraph {
                             r : N;
-                            E : edges;
-                            t : tau;
-                            lam : lambda
+                            E : {fset N * fld * N};
+                            τ : {fmap N -> T};
+                            λ : {fmap prod_ordType N fld_ordType -> (Vals + (seq Vals)) }
                           }.
 
   
 
+  Definition prod_of_graph (g : graphQLGraph) := let: GraphQLGraph r e t l := g in (r, e, t, l).
+  Definition graph_of_prod (p : N * {fset N * fld * N} * {fmap N -> T} * {fmap (N * fld) -> (Vals + (seq Vals)) }) :=
+    let: (r, e, t, l) := p in GraphQLGraph r e t l.
+
+  Definition prod_of_graphK : cancel prod_of_graph graph_of_prod.
+  Proof. by case. Qed.
+  
+  Definition graph_eqMixin := CanEqMixin prod_of_graphK.
+  Canonical graph_eqType := EqType graphQLGraph graph_eqMixin.
+  Definition graph_choiceMixin := CanChoiceMixin prod_of_graphK.
+  Canonical graph_choiceType := ChoiceType graphQLGraph graph_choiceMixin.
+  Definition graph_ordMixin := CanOrdMixin prod_of_graphK.
+  Canonical graph_ordType := OrdType graphQLGraph graph_ordMixin.
+  
+  
   Coercion label_of_fld (f : fld) := let: Field l a := f in l.
   Coercion fun_of_fld (f : fld) := let: Field l a := f in a.
 
-  Definition fieldArgsSupport (f : fld) : {set A} := [set a | None != f a].
-
+  
     
 
-  Definition fun_of_edges (E : edges) := fun v1 f v2 => (v1, f, v2) \in val E.
-  Coercion fun_of_edges : edges >-> Funclass.
+  Definition fun_of_edges (E : {fset N * fld * N}) := fun v1 f v2 => (v1, f, v2) \in val E.
+ 
 
-  Definition E0 := Edges set0.
-
-  Lemma edgesE (E : edges) v1 f v2 : E v1 f v2 = ((v1, f, v2) \in E).
-  Proof. by []. Qed.
-
-  Coercion fun_of_tau (t : tau) := let: Tau f := t in f.
-
-  Canonical tau_subType       := Eval hnf in [newType for fun_of_tau].
-  Canonical tau_eqType        := Eval hnf in EqType _     [eqMixin     of @tau by <: ].
-
-  
-  Coercion fun_of_lambda (l : lambda) := let: Lambda f := l in f.
-
-  Canonical lambda_subType       := Eval hnf in [newType for fun_of_lambda].
-  Canonical lambda_eqType        := Eval hnf in EqType _     [eqMixin     of @lambda by <: ].
-
+ 
 
   Coercion root_of_graph (g : graphQLGraph) := let: GraphQLGraph r _ _ _ := g in r.
   Coercion edges_of_graph (g : graphQLGraph) := let: GraphQLGraph _ E _ _ := g in E.
@@ -126,8 +104,6 @@ End GraphQLGraph.
 Check root.
 
 Arguments fld [F] [A] [Vals].
-Arguments tau [N] [T]. 
-Arguments lambda [N] [F] [A] [Vals].
 Arguments graphQLGraph [N] [F] [A] [T] [Vals].
 
   

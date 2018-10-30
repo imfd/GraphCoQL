@@ -4,6 +4,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+From extructures Require Import ord fset fmap.
 
 From Coq Require Import String Ascii List.
 From CoqUtils Require Import string.
@@ -13,7 +14,7 @@ Require Import Schema.
 Require Import SchemaAux.
 Require Import SchemaWellFormedness.
 Require Import Graph.
-(* Require Import Conformance. *)
+Require Import Conformance.
 
 
 
@@ -25,7 +26,6 @@ Require Import Graph.
 
 Section Example.
 
-  Variable Vals : finType.
   
   Local Open Scope string_scope.
 
@@ -94,17 +94,72 @@ Section Example.
                                                      (Schema.Field "search" [:: (FieldArgument "text" "String")] ["SearchResult"])]
                                                }}.
 
-  Let schema : @Schema.schema string_eqType  := {| query := "Query" ; typeDefinitions :=  [:: IDType; StringType; FloatType;  StarshipType;  CharacterType; DroidType; HumanType; EpisodeType; SearchResultType; QueryType] |}.
+  Let schema : @Schema.schema string_ordType  := {| query := "Query" ; typeDefinitions :=  [:: IDType; StringType; FloatType;  StarshipType;  CharacterType; DroidType; HumanType; EpisodeType; SearchResultType; QueryType] |}.
 
 
   Lemma sdf : schemaIsWF schema.
   Proof. by []. Qed.
   
-  Definition wf_schema : @wfSchema string_eqType Vals   := WFSchema (fun n v => true) sdf.
 
- 
- 
+
+
+  Let wf_schema : @wfSchema string_ordType string_ordType   := WFSchema (fun n v => true) sdf.
+
+
+
+  Let edges := fset [:: (0, Graph.Field "search" [fmap ("text", "L")], 4);
+                      (0,  Graph.Field "search" [fmap ("text", "L")], 1);
+                      (0,  Graph.Field "hero" [fmap ("episode", "EMPIRE")], 1);
+                      (0,  Graph.Field "hero" [fmap ("episode", "NEWHOPE")], 2);
+                      (1,  Graph.Field "friends" emptym, 2);
+                      (2,  Graph.Field "friends" emptym, 1);
+                      (1,  Graph.Field "friends" emptym, 3);
+                      (3,  Graph.Field "friends" emptym, 1);
+                      (3,  Graph.Field "starships" emptym, 4)
+                   ].
+  Let r := 0.
+
+  Let tau :=  mkfmap [:: (0, "Query");
+                       (1, "Human");
+                       (2, "Droid");
+                       (3, "Human");
+                       (4, "Starship")].
+
+  Let lambda : {fmap nat * (@fld string_ordType string_ordType string_ordType) -> string + seq.seq string} :=
+    [fmap ((1, Graph.Field "id" emptym), (inl "1000"));
+       ((1, Graph.Field "name" emptym), (inl "Luke"));
+       ((2, Graph.Field "id" emptym), (inl "2001"));
+       ((2, Graph.Field "name" emptym), (inl "R2-D2"));
+       ((2, Graph.Field "primaryFunction" emptym), (inl "Astromech"));
+       ((3, Graph.Field "id" emptym), (inl "1002"));
+       ((3, Graph.Field "name" emptym), (inl "Han"));
+       ((4, Graph.Field "id" emptym), (inl "3000"));
+       ((4, Graph.Field "name" emptym), (inl "Falcon")); 
+       ((4, Graph.Field "length" emptym), (inl "34.37"))].
   
-  
+
+  Let g := GraphQLGraph r edges tau lambda.
+
+
+  Lemma rasf : rootTypeConforms wf_schema g.
+  Proof.
+      by move => t /=; case.
+  Qed.
+
+
+  Lemma ec : edgeConforms wf_schema edges tau.
+  Proof.
+    by [].
+  Qed.
+
+  Lemma fc : fieldConforms wf_schema tau lambda.
+  Proof.
+      by []. Qed.
+
+  Lemma tc : tauConforms wf_schema tau.
+  Proof. by []. Qed.
+    
+
+  Let wf_graph := ConformedGraph rasf ec fc tc. 
 
 End Example.

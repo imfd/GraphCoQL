@@ -3,6 +3,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+From extructures Require Import ord fset fmap.
 
 Require Import List.
 Import ListNotations.
@@ -15,7 +16,7 @@ Require Import Graph.
 Section Conformance.
 
 
-  Variables (N Vals Name : finType).
+  Variables (N  Name Vals: ordType).
 
   Implicit Type schema : @wfSchema Name Vals.
   Implicit Type graph : @graphQLGraph N Name Name Name Vals. 
@@ -24,7 +25,12 @@ Section Conformance.
   (** 
       It states that a Graph's root must have the same type as the Schema's root
    **)
-  Definition rootTypeConforms schema graph  := (t graph (r graph)) = root(schema).
+  Definition rootTypeConforms schema graph := forall t, (graph.(τ) graph.(r)) = Some t -> t = root(schema).
+  (*
+    match (graph.(τ) graph.(r)) with
+    | Some t => t == unwrapTypeName (root(schema))
+    | _ => false
+    end. *)
 
 
   (** 
@@ -84,14 +90,16 @@ Section Conformance.
         that given field.
 
    **)
-  Definition edgeConforms schema (E : edges N Name Name Vals) (t : tau)   :=
-    forall (u v : N) (f : fld) (fieldType : type),
-      E u f v ->              
-      lookupFieldType schema (t u) (label f) = Some fieldType ->    (* This covers the field \in fields (t(u)) *)
-      (fieldTypeConforms schema (unwrapTypeName fieldType) (t v)) /\
+  Definition edgeConforms schema (E : {fset N * fld * N}) (t : {fmap N -> Name})   :=
+    forall (u v : N) (f : fld) (fieldType : type) (ty ty': Name),
+      (u, f, v) \in E ->
+                    (t u) = Some ty ->
+                    lookupFieldType schema ty (label f) = Some fieldType ->    (* This covers the field \in fields (t(u)) *)
+                    (t v) = Some ty' ->
+      (fieldTypeConforms schema (unwrapTypeName fieldType) ty') ->
       (~~isListType fieldType ->
-       forall w, E u f w -> w == v) /\
-      argumentsConform schema (t u) f.
+       forall w, (u, f, w) \in E -> w == v) ->
+      argumentsConform schema ty f.
 
   
   (**
@@ -108,12 +116,13 @@ Section Conformance.
      3. The arguments of 'f' must conform to what the Schema requires of them.
 
    **)
-  Definition fieldConforms schema (t : tau) (l : lambda) :=
-    forall (u : N) (f : fld) (ty : type) (value : Vals) (lvalue : list Vals),
-      (l (u,f) = Some (inl value)) \/ (l (u, f) = Some (inr lvalue)) ->
-      lookupFieldType schema (t u) f = Some ty ->
-      (hasType schema) ty value \/ Forall (hasType schema ty) lvalue ->
-      argumentsConform schema (t u) f.
+  Definition fieldConforms schema (τ : {fmap N -> Name}) (λ : {fmap N * fld -> Vals + seq.seq Vals}) :=
+    forall (u : N) (f : fld) (ty : type) (value : Vals) (lvalue : list Vals) (name : Name),
+      (λ (u,f) = Some (inl value)) \/ (λ (u, f) = Some (inr lvalue)) ->
+      (τ u) = Some name ->
+      lookupFieldType schema name f = Some ty ->
+      (hasType schema) ty value || all (hasType schema ty) lvalue ->
+      argumentsConform schema ty f.
 
 
   (**
@@ -125,10 +134,9 @@ Section Conformance.
      where they assume three distinct sets for type names: Ot, It and Ut.
 
    **)
-  Definition tauConforms schema (t : tau) :=
-    forall (n : N),
-      isObjectType schema (NamedType (t n)).
-
+  Definition tauConforms schema (τ : {fmap N -> Name}) : bool :=
+    all (fun nt => let: (n, t) := nt in isObjectType schema (NamedType t)) τ.
+ 
 
 
   (**
@@ -141,12 +149,11 @@ Section Conformance.
    **)
   Record conformedGraph schema := ConformedGraph {
                                                 graph;
-                                                wf_root : rootTypeConforms schema graph;
-                                                wf_edges : edgeConforms schema (E graph) (t graph);
-                                                wf_fields : fieldConforms schema (t graph) (lam graph);
-                                                _ : tauConforms schema (t graph)
+                                                _ : rootTypeConforms schema graph;
+                                                _ : edgeConforms schema (E graph) graph.(τ);
+                                                _ : fieldConforms schema graph.(τ) graph.(λ);
+                                                _ : tauConforms schema graph.(τ)
                                    }.
-  
-  
+
 
 End Conformance.

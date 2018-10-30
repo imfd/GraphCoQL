@@ -2,7 +2,7 @@ From mathcomp Require Import all_ssreflect.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-
+From extructures Require Import ord.
 
 Require Import List.
 Import ListNotations.
@@ -13,8 +13,7 @@ Require Import SchemaAux.
 
 Section WellFormedness.
 
-  Variable Name : eqType.
-  Variable Vals : finType.
+  Variables (Name Vals : ordType).
 
   Implicit Type schema : @schema Name.
   
