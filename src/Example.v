@@ -14,6 +14,7 @@ Require Import Schema.
 Require Import SchemaAux.
 Require Import SchemaWellFormedness.
 Require Import Graph.
+Require Import GraphAux.
 Require Import Conformance.
 
 
@@ -59,7 +60,7 @@ Section Example.
                                               ("length" : "Float")
                      ]).
 
-  Let CharacterType := interface "Character" {{ [::
+  Let CharacterType := interface "Character" {{[::
                                                  ("id" : "ID");
                                                  ("name" : "String");
                                                  ("friends" : ["Character"])]
@@ -94,7 +95,7 @@ Section Example.
                                                      (Schema.Field "search" [:: (FieldArgument "text" "String")] ["SearchResult"])]
                                                }}.
 
-  Let schema : @Schema.schema string_ordType  := {| query := "Query" ; typeDefinitions :=  [:: IDType; StringType; FloatType;  StarshipType;  CharacterType; DroidType; HumanType; EpisodeType; SearchResultType; QueryType] |}.
+  Let schema  := {| query := "Query" ; typeDefinitions :=  [:: IDType; StringType; FloatType;  StarshipType;  CharacterType; DroidType; HumanType; EpisodeType; SearchResultType; QueryType] |}.
 
 
   Lemma sdf : schemaIsWF schema.
@@ -107,59 +108,87 @@ Section Example.
 
 
 
-  Let edges := fset [:: (0, Graph.Field "search" [fmap ("text", "L")], 4);
-                      (0,  Graph.Field "search" [fmap ("text", "L")], 1);
-                      (0,  Graph.Field "hero" [fmap ("episode", "EMPIRE")], 1);
-                      (0,  Graph.Field "hero" [fmap ("episode", "NEWHOPE")], 2);
-                      (1,  Graph.Field "friends" emptym, 2);
-                      (2,  Graph.Field "friends" emptym, 1);
-                      (1,  Graph.Field "friends" emptym, 3);
-                      (3,  Graph.Field "friends" emptym, 1);
-                      (3,  Graph.Field "starships" emptym, 4)
-                   ].
-  Let r := 0.
-
-  Let tau :=  mkfmap [:: (0, "Query");
-                       (1, "Human");
-                       (2, "Droid");
-                       (3, "Human");
-                       (4, "Starship")].
-
-  Let lambda : {fmap nat * (@fld string_ordType string_ordType string_ordType) -> string + seq.seq string} :=
-    [fmap ((1, Graph.Field "id" emptym), (inl "1000"));
-       ((1, Graph.Field "name" emptym), (inl "Luke"));
-       ((2, Graph.Field "id" emptym), (inl "2001"));
-       ((2, Graph.Field "name" emptym), (inl "R2-D2"));
-       ((2, Graph.Field "primaryFunction" emptym), (inl "Astromech"));
-       ((3, Graph.Field "id" emptym), (inl "1002"));
-       ((3, Graph.Field "name" emptym), (inl "Han"));
-       ((4, Graph.Field "id" emptym), (inl "3000"));
-       ((4, Graph.Field "name" emptym), (inl "Falcon")); 
-       ((4, Graph.Field "length" emptym), (inl "34.37"))].
+  Let edges : {fset node * fld * node} :=
+    fset [:: (Graph.Node 0 "Query" emptym ,
+              Graph.Field "search" [fmap ("text", "L")],
+              Graph.Node 4 "Starship" [fmap (Graph.Field "id" emptym, (inl "3000"));
+                                         (Graph.Field "name" emptym, (inl "Falcon")); 
+                                         (Graph.Field "length" emptym, (inl "34.37"))]);
+            (Graph.Node 0 "Query" emptym,
+             Graph.Field "search" [fmap ("text", "L")],
+             Graph.Node 1 "Human" [fmap (Graph.Field "id" emptym, (inl "1000"));
+                                     (Graph.Field "name" emptym, (inl "Luke"))]);
+            (Graph.Node 0 "Query" emptym,
+             Graph.Field "hero" [fmap ("episode", "EMPIRE")],
+             Graph.Node 1 "Human" [fmap (Graph.Field "id" emptym, (inl "1000"));
+                                     (Graph.Field "name" emptym, (inl "Luke"))]);
+            (Graph.Node 0 "Query" emptym,
+             Graph.Field "hero" [fmap ("episode", "NEWHOPE")],
+             Graph.Node 2 "Droid" [fmap  (Graph.Field "id" emptym, (inl "2001"));
+                                     (Graph.Field "name" emptym, (inl "R2-D2"));
+                                     (Graph.Field "primaryFunction" emptym, (inl "Astromech"))]);
+            (Node 1 "Human" [fmap (Graph.Field "id" emptym, (inl "1000"));
+                               (Graph.Field "name" emptym, (inl "Luke"))],
+             Graph.Field "friends" emptym,
+                       Graph.Node 2 "Droid" [fmap  (Graph.Field "id" emptym, (inl "2001"));
+                                               (Graph.Field "name" emptym, (inl "R2-D2"));
+                                               (Graph.Field "primaryFunction" emptym, (inl "Astromech"))]);
+            (Node 2 "Droid" [fmap  (Graph.Field "id" emptym, (inl "2001"));
+                               (Graph.Field "name" emptym, (inl "R2-D2"));
+                               (Graph.Field "primaryFunction" emptym, (inl "Astromech"))],
+             Graph.Field "friends" emptym,
+             Graph.Node 1 "Human" [fmap (Graph.Field "id" emptym, (inl "1000"));
+                                     (Graph.Field "name" emptym, (inl "Luke"))]);
+            (Graph.Node 1 "Human" [fmap (Graph.Field "id" emptym, (inl "1000"));
+                                     (Graph.Field "name" emptym, (inl "Luke"))],
+             Graph.Field "friends" emptym,
+             Graph.Node 3 "Human" [fmap (Graph.Field "id" emptym, (inl "1002"));
+                                     (Graph.Field "name" emptym, (inl "Han"))]);
+            (Graph.Node 3 "Human" [fmap (Graph.Field "id" emptym, (inl "1002"));
+                                     (Graph.Field "name" emptym, (inl "Han"))],
+             Graph.Field "friends" emptym,
+             Graph.Node 1 "Human" [fmap (Graph.Field "id" emptym, (inl "1000"));
+                                     (Graph.Field "name" emptym, (inl "Luke"))]);
+            (Graph.Node 3 "Human" [fmap (Graph.Field "id" emptym, (inl "1002"));
+                                     (Graph.Field "name" emptym, (inl "Han"))],
+             Graph.Field "starships" emptym,
+             Graph.Node 4 "Starship" [fmap (Graph.Field "id" emptym, (inl "3000"));
+                                        (Graph.Field "name" emptym, (inl "Falcon")); 
+                                        (Graph.Field "length" emptym, (inl "34.37"))])
+            ].
+  
+  
+  Let r : @node nat_ordType string_ordType string_ordType := Graph.Node 0 "Query" emptym.
   
 
-  Let g := GraphQLGraph r edges tau lambda.
+  Let g := GraphQLGraph r edges.
 
 
-  Lemma rasf : rootTypeConforms wf_schema g.
+  Lemma rtc : rootTypeConforms wf_schema g.
+  Proof.    by [].  Qed.
+
+ 
+  Lemma ec : edgesConform wf_schema edges.
   Proof.
-      by move => t /=; case.
+    by rewrite /edgesConform /edges [fset]unlock.
   Qed.
 
-
-  Lemma ec : edgeConforms wf_schema edges tau.
+  Lemma fc : fieldsConform wf_schema g.
   Proof.
-    by [].
+    rewrite /fieldsConform.
+    rewrite /graph_s_nodes /=.
+    rewrite /edges.
+      by rewrite [fset]unlock /=. Qed.
+
+  Lemma nhot : nodes_have_object_type wf_schema g.
+  Proof.
+    rewrite /nodes_have_object_type.
+    rewrite /graph_s_nodes /=.
+    rewrite /edges.
+      by rewrite [fset]unlock.
   Qed.
-
-  Lemma fc : fieldConforms wf_schema tau lambda.
-  Proof.
-      by []. Qed.
-
-  Lemma tc : tauConforms wf_schema tau.
-  Proof. by []. Qed.
     
 
-  Let wf_graph := ConformedGraph rasf ec fc tc. 
+  Let wf_graph := ConformedGraph rtc ec fc nhot.
 
 End Example.

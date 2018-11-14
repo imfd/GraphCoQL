@@ -7,22 +7,22 @@ From extructures Require Import ord fset fmap.
 
 Section GraphQLGraph.
 
-  Variables (N F A T Vals : ordType).
+  Variables (N S Vals : ordType).
   
   (** Field 
       It corresponds to a field's name and list of arguments but without
       its associated value.
    **)
   Record fld := Field {
-                   label : F;
-                   args : {fmap A -> Vals}
+                   label : S;
+                   args : {fmap S -> Vals}
                  }.
 
 
 
   
   Definition prod_of_fld (f : fld) := let: Field l a := f in (l, a).
-  Definition fld_of_prod (p : prod F {fmap A -> Vals}) := let: (l, a) := p in Field l a.
+  Definition fld_of_prod (p : prod S {fmap S -> Vals}) := let: (l, a) := p in Field l a.
 
   Lemma can_fld_of_prod : cancel prod_of_fld fld_of_prod.
   Proof. by case. Qed.
@@ -39,13 +39,13 @@ Section GraphQLGraph.
   
   Record node := Node {
                     id: N;
-                    type: T;
+                    type: S;
                     fields: {fmap fld -> (Vals + (seq Vals))}
                     
                   }.
 
   Definition prod_of_node (n : node) := let: Node i t f := n in (i, t, f).
-  Definition node_of_prod (p : N * T *  {fmap fld -> (Vals + (seq Vals)) }) :=
+  Definition node_of_prod (p : N * S *  {fmap fld -> (Vals + (seq Vals)) }) :=
     let: (i, t, f) := p in Node i t f.
 
   Definition prod_of_nodeK : cancel prod_of_node node_of_prod.
@@ -106,8 +106,8 @@ Section GraphQLGraph.
 End GraphQLGraph.
 
 
-Arguments fld [F] [A] [Vals].
-Arguments node [N F A T Vals].
-Arguments graphQLGraph [N] [F] [A] [T] [Vals].
+Arguments fld [S Vals].
+Arguments node [N S Vals].
+Arguments graphQLGraph [N S Vals].
 
   

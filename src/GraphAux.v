@@ -10,38 +10,37 @@ Require Import Graph.
 
 Section GraphAux.
 
-  Variables (N F A T Vals : ordType).
+  Variables (N S Vals : ordType).
 
-  Definition is_src_in_edge (edge : N * @fld F A Vals * N) (node : N) :=
+  Definition is_src_in_edge (edge : N * @fld S Vals * N) (node : N) :=
     let: (n, f, v) := edge in n == node.
   
   Definition node_edges (E : seq (N * fld * N)) (node : N)  :=
     [seq edge <- E | is_src_in_edge edge node].
 
-  Definition node_labels (E : seq (N * @fld F A Vals * N)) (node : N) : seq F :=
+  Definition node_labels (E : seq (N * @fld S Vals * N)) (node : N) : seq S :=
     map (fun edge => let: (_, f, _) := edge in
                   let: Field label _ := f in label) (node_edges E node).
 
-  Definition label_ocurrences_for_node (E : seq (N * @fld F A Vals * N)) (node : N) (label : F) :=
+  Definition label_ocurrences_for_node (E : seq (N * @fld S Vals * N)) (node : N) (label : S) :=
     count (fun l => l == label) (node_labels E node).
 
 
   (** 
       Checks whether a label 
    **)
-  Definition is_label_unique_for_src_node (E : seq (N * @fld F A Vals * N)) (src_node : N) (label : F) :=
+  Definition is_label_unique_for_src_node (E : seq (N * @fld S Vals * N)) (src_node : N) (f : fld) :=
     let nb_of_ocurrences := foldr (fun edge acc =>
-                                    let: (u, f, _) := edge in
+                                    let: (u, f', _) := edge in
                                     if u == src_node then
-                                      let: Field l _ := f in
-                                      if l == label then acc + 1 else acc
+                                      if f == f' then acc + 1 else acc
                                     else
                                       acc) 0 E
     in
     nb_of_ocurrences == 1.
 
 
-  Definition graph_s_nodes (graph : @graphQLGraph N F A T Vals) : seq node :=
+  Definition graph_s_nodes (graph : @graphQLGraph N S Vals) : seq node :=
     undup (unzip1 (map (fun edge => let: (u, _, v) := edge in (u, v)) graph.(E))).
 
 

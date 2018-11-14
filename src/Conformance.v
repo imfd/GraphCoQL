@@ -17,10 +17,10 @@ Require Import GraphAux.
 Section Conformance.
 
 
-  Variables (N  Name Vals: ordType).
+  Variables (N Name Vals: ordType).
 
   Implicit Type schema : @wfSchema Name Vals.
-  Implicit Type graph : @graphQLGraph N Name Name Name Vals. 
+  Implicit Type graph : @graphQLGraph N Name Vals. 
 
 
   (** 
@@ -40,10 +40,10 @@ Section Conformance.
       2. v ∈ values (type (arg)) : The value must be of the type declared for that argument in the schema.  
  
    **)
-  Definition argumentsConform schema (srcNode : @node N Name Name Name Vals) (f : fld) :=
+  Definition argumentsConform schema (srcNode : @node N Name Vals) (f : fld) :=
     let argumentConforms arg :=
         let: (argname, value) := arg in
-        match lookupArgument schema srcNode.(type) argname f with
+        match lookupArgument schema srcNode.(type) f argname with
         | Some (FieldArgument _ ty) => (hasType schema) ty value    (* If the argument is declared then check its value's type *)
         | _ => false
         end
@@ -96,7 +96,7 @@ Section Conformance.
         let: (u, f, v) := edge in
         match lookupFieldType schema u.(type) f.(label) with    (* Check if field is declared in type *)
         | Some fieldType => (fieldTypeConforms schema (unwrapTypeName fieldType) v.(type)) &&
-                           (isListType fieldType || is_label_unique_for_src_node E u f.(label)) &&
+                           (isListType fieldType || is_label_unique_for_src_node E u f) &&
                            argumentsConform schema u f
         | _ => false
         end
@@ -139,7 +139,7 @@ Section Conformance.
 
 
   
-  Definition nodeHasObjectType schema (n : @node N Name Name Name Vals) :=
+  Definition nodeHasObjectType schema (n : @node N Name Vals) :=
     let: Node _ t _ := n in isObjectType schema (NamedType t).
 
   
@@ -167,3 +167,5 @@ Section Conformance.
 
 
 End Conformance.
+
+Arguments conformedGraph [N Name Vals]. 
