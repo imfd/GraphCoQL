@@ -216,7 +216,7 @@ Section SchemaAux.
     find (n_eq fname) (fieldDefinitions schema tname).
 
   Definition lookupFieldType schema (tname fname : Name)  : option type :=
-    match lookupField schema fname tname with
+    match lookupField schema tname fname with
     | Some fieldDef => Some (fieldType fieldDef)
     | None => None
     end.
@@ -224,7 +224,7 @@ Section SchemaAux.
 
   Definition union schema (tname : Name) :=
     match lookupName schema tname with
-    | Some (EnumTypeDefinition name mbs) => mbs
+    | Some (UnionTypeDefinition name mbs) => map unwrapTypeName mbs
     | _ => []
     end.
 
