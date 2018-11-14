@@ -4,40 +4,41 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 
+From extructures Require Import ord fmap.
 
 Section Query.
 
 
-  Variables  F A T Vals : finType.
+  Variables S Vals : ordType.
   
   Inductive Query : Type :=
-  | SingleField : F -> {ffun A -> option Vals} -> Query
-  | LabeledField : F -> F -> {ffun A -> option Vals} -> Query
-  | NestedField : F -> {ffun A -> option Vals} -> Query -> Query
-  | NestedLabeledField : F -> F -> {ffun A -> option Vals} -> Query -> Query
-  | InlineFragment : T -> Query -> Query
+  | SingleField : S -> {fmap S -> Vals} -> Query
+  | LabeledField : S -> S -> {fmap S -> Vals} -> Query
+  | NestedField : S -> {fmap S -> Vals} -> Query -> Query
+  | NestedLabeledField : S -> S -> {fmap S -> Vals} -> Query -> Query
+  | InlineFragment : S -> Query -> Query
   | SelectionSet : Query -> Query -> Query.
 
 
   Inductive ResponseObject : Type :=
   | Empty : ResponseObject
-  | Null : F -> ResponseObject
-  | SingleResult : F -> Vals -> ResponseObject
-  | ListResult : F -> list Vals -> ResponseObject
-  | NestedResult : F -> ResponseObject -> ResponseObject
-  | NestedListResult : F -> list ResponseObject -> ResponseObject
+  | Null : S -> ResponseObject
+  | SingleResult : S -> Vals -> ResponseObject
+  | ListResult : S -> list Vals -> ResponseObject
+  | NestedResult : S -> ResponseObject -> ResponseObject
+  | NestedListResult : S -> list ResponseObject -> ResponseObject
   | ResponseList : ResponseObject -> ResponseObject -> ResponseObject.
 
 
   
 End Query.
 
-Arguments Query [F] [A] [T] [Vals].
-Arguments SingleField [F] [A] [T] [Vals].
-Arguments LabeledField [F] [A] [T] [Vals].
-Arguments NestedField [F] [A] [T] [Vals].
-Arguments NestedLabeledField [F] [A] [T] [Vals].
-Arguments InlineFragment [F] [A] [T] [Vals].
-Arguments SelectionSet [F] [A] [T] [Vals].
+Arguments Query [S Vals].
+Arguments SingleField [S Vals].
+Arguments LabeledField [S Vals].
+Arguments NestedField [S Vals].
+Arguments NestedLabeledField [S Vals].
+Arguments InlineFragment [S Vals].
+Arguments SelectionSet [S Vals].
 
-Arguments Null [F] [Vals].
+Arguments Null [S Vals].

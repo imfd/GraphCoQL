@@ -3,15 +3,18 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+
+From extructures Require Import ord.
+
 Require Import Query.
 
 
 
 Section QueryAux.
 
-  Variables F A T Vals : finType.
+  Variables S Vals : ordType.
 
-  Implicit Type query : @Query F A T Vals.
+  Implicit Type query : @Query S Vals.
   
   Fixpoint size query : nat :=
     match query with

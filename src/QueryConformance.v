@@ -5,6 +5,9 @@ Unset Printing Implicit Defensive.
 
 Require Import List.
 
+
+From extructures Require Import ord fmap.
+
 Require Import Schema.
 Require Import SchemaAux.
 Require Import Query.
@@ -13,43 +16,43 @@ Require Import SchemaWellFormedness.
 
 Section QueryConformance.
 
-  Variables Name Vals : finType.
+  Variables Name Vals : ordType.
 
   Implicit Type schema : @wfSchema Name Vals.
 
 
-  Definition argumentConforms schema (α : {ffun Name -> option Vals}) (arg : FieldArgumentDefinition) : bool :=
+  Definition argumentConforms schema (α : {fmap Name -> Vals}) (arg : FieldArgumentDefinition) : bool :=
     match arg with
     | (FieldArgument argname ty) => match (α argname) with
-                                   | Some value => (hasType schema) ty value
+                                   | Some value => schema.(hasType) ty value
                                    | _ => false
                                    end
     end.
   
 
-  Definition argumentsConform schema (α : {ffun Name -> option Vals}) (args : list FieldArgumentDefinition) : bool :=
-    forallb (argumentConforms schema α) args.
+  Definition argumentsConform schema (α : {fmap Name -> Vals}) (args : seq.seq FieldArgumentDefinition) : bool :=
+    all (argumentConforms schema α) args.
      
     
-  Inductive SelectionConforms schema : @Query Name Name Name Vals -> Name -> Prop :=
+  Inductive SelectionConforms schema : Query -> type -> Prop :=
   | FieldConforms : forall tname fname α args ty,
       lookupField schema tname fname = Some (Field fname args ty) ->
       argumentsConform schema α args ->
-      SelectionConforms schema (SingleField fname α) tname
+      SelectionConforms schema (SingleField fname α) (NamedType tname)
   | LabeledFieldConforms : forall tname fname α args ty label,
       lookupField schema tname fname = Some (Field fname args ty) ->
       argumentsConform schema α args ->
-      SelectionConforms schema (LabeledField label fname α) tname
+      SelectionConforms schema (LabeledField label fname α) (NamedType tname)
   | NestedFieldConforms : forall tname fname α ϕ args ty,
       lookupField schema tname fname = Some (Field fname args ty) ->
       argumentsConform schema α args ->
       SelectionConforms schema ϕ ty ->
-      SelectionConforms schema (NestedField fname α ϕ) tname
+      SelectionConforms schema (NestedField fname α ϕ) (NamedType tname)
   | NestedLabeledFieldConforms : forall tname fname α ϕ args ty label,
       lookupField schema tname fname = Some (Field fname args ty) ->
       argumentsConform schema α args ->
       SelectionConforms schema ϕ ty ->
-      SelectionConforms schema (NestedLabeledField label fname α ϕ) tname
+      SelectionConforms schema (NestedLabeledField label fname α ϕ) (NamedType tname)
   | InlineFragmentConforms : forall ty ty' ϕ,
       isObjectType schema ty || isInterfaceType schema ty || isUnionType schema ty -> 
       subtype schema ty ty' ->
@@ -63,8 +66,8 @@ Section QueryConformance.
 
 
   Record wfQuery (schema : @wfSchema Name Vals) := WFQuery {
-                              query : @Query Name Name Name Vals;
-                              queryConforms : SelectionConforms schema query (root schema)
+                              query : Query;
+                              queryConforms : SelectionConforms schema query schema.(root)
                             }.
 
 
