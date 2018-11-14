@@ -12,6 +12,7 @@ Require Import Schema.
 Require Import SchemaWellFormedness.
 Require Import SchemaAux.
 Require Import Graph.
+Require Import GraphAux.
 
 Section Conformance.
 
@@ -39,7 +40,7 @@ Section Conformance.
       2. v ∈ values (type (arg)) : The value must be of the type declared for that argument in the schema.  
  
    **)
-  Definition argumentsConform schema (srcNode : @node Name Name Name Name Vals) (f : fld) :=
+  Definition argumentsConform schema (srcNode : @node N Name Name Name Vals) (f : fld) :=
     let argumentConforms arg :=
         let: (argname, value) := arg in
         match lookupArgument schema srcNode.(type) argname f with
@@ -90,16 +91,17 @@ Section Conformance.
         that given field.
 
    **)
-  Definition edgeConforms schema (E : {fset N * fld * N}) (t : {fmap N -> Name})   :=
-    forall (u v : N) (f : fld) (fieldType : type) (ty ty': Name),
-      (u, f, v) \in E ->
-                    (t u) = Some ty ->
-                    lookupFieldType schema ty (label f) = Some fieldType ->    (* This covers the field \in fields (t(u)) *)
-                    (t v) = Some ty' ->
-      (fieldTypeConforms schema (unwrapTypeName fieldType) ty') ->
-      (~~isListType fieldType ->
-       forall w, (u, f, w) \in E -> w == v) ->
-      argumentsConform schema ty f.
+  Definition edgesConform schema (E : {fset node * fld * node}) :=
+    let edgeConforms edge :=
+        let: (u, f, v) := edge in
+        match lookupFieldType schema u.(type) f.(label) with    (* Check if field is declared in type *)
+        | Some fieldType => (fieldTypeConforms schema (unwrapTypeName fieldType) v.(type)) &&
+                           (isListType fieldType || is_label_unique_for_src_node E u f.(label)) &&
+                           argumentsConform schema u f
+        | _ => false
+        end
+    in
+    all edgeConforms E.
 
   
   (**
@@ -116,43 +118,51 @@ Section Conformance.
      3. The arguments of 'f' must conform to what the Schema requires of them.
 
    **)
-  Definition fieldConforms schema (τ : {fmap N -> Name}) (λ : {fmap N * fld -> Vals + seq.seq Vals}) :=
-    forall (u : N) (f : fld) (ty : type) (value : Vals) (lvalue : list Vals) (name : Name),
-      (λ (u,f) = Some (inl value)) \/ (λ (u, f) = Some (inr lvalue)) ->
-      (τ u) = Some name ->
-      lookupFieldType schema name f = Some ty ->
-      (hasType schema) ty value || all (hasType schema ty) lvalue ->
-      argumentsConform schema ty f.
+  Definition node_s_fields_conform schema (u : node) :=
+    let fieldConforms f :=
+        let: (f', vals) := f in
+        match lookupFieldType schema u.(type) f'.(label) with
+        | Some fieldType =>                (* Field is declared in the node's type *)
+          argumentsConform schema  u f' &&    
+                           match vals with
+                           | (inl value) => hasType schema fieldType value
+                           | (inr values) => all (hasType schema fieldType) values
+                           end
+        | _ => false
+        end
+    in
+    all fieldConforms u.(fields).
+
+  
+  Definition fieldsConform schema graph :=
+    all (node_s_fields_conform schema) (graph_s_nodes graph).
 
 
-  (**
-     It states whether τ conforms to the Schema.
-     
-     ∀ n ∈ N, τ(n) ∈ ObjectType(Schema) 
+  
+  Definition nodeHasObjectType schema (n : @node N Name Name Name Vals) :=
+    let: Node _ t _ := n in isObjectType schema (NamedType t).
 
-     In the paper this is directly encoded in τ's signature (N → Ot), 
-     where they assume three distinct sets for type names: Ot, It and Ut.
+  
 
-   **)
-  Definition tauConforms schema (τ : {fmap N -> Name}) : bool :=
-    all (fun nt => let: (n, t) := nt in isObjectType schema (NamedType t)) τ.
- 
+  Definition nodes_have_object_type schema graph :=
+    all (nodeHasObjectType schema) (graph_s_nodes graph).
 
+                                                                     
 
   (**
      A GraphQL graph conforms to a given Schema if:
      1. Its root conforms to the Schema.
      2. Its edges conform to the Schema.
      3. Its fields conform to the Schema.
-     4. Its τ conforms to the Schema.
+     4. Its nodes conform to the Schema.
 
    **)
   Record conformedGraph schema := ConformedGraph {
                                                 graph;
                                                 _ : rootTypeConforms schema graph;
-                                                _ : edgeConforms schema (E graph) graph.(τ);
-                                                _ : fieldConforms schema graph.(τ) graph.(λ);
-                                                _ : tauConforms schema graph.(τ)
+                                                _ : edgesConform schema graph.(E);
+                                                _ : fieldsConform schema graph;
+                                                _ : nodes_have_object_type schema graph
                                    }.
 
 
