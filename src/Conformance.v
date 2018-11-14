@@ -25,13 +25,8 @@ Section Conformance.
   (** 
       It states that a Graph's root must have the same type as the Schema's root
    **)
-  Definition rootTypeConforms schema graph := forall t, (graph.(τ) graph.(r)) = Some t -> t = root(schema).
-  (*
-    match (graph.(τ) graph.(r)) with
-    | Some t => t == unwrapTypeName (root(schema))
-    | _ => false
-    end. *)
-
+  Definition rootTypeConforms schema graph := graph.(root).(type) = SchemaAux.root(schema).
+  
 
   (** 
       It states whether a given field's arguments conform to 
