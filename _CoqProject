@@ -6,8 +6,10 @@
 ./src/SchemaAux.v
 ./src/SchemaWellFormedness.v
 ./src/Graph.v
+./src/GraphAux.v
 ./src/Conformance.v
 ./src/Query.v
 ./src/QueryAux.v
 ./src/QueryConformance.v
 ./src/QuerySemantic.v
+./src/Example.v

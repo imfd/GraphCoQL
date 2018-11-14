@@ -3,6 +3,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+From extructures Require Import ord fset fmap.
 
 Require Import List.
 Import ListNotations.
@@ -11,20 +12,22 @@ Require Import Schema.
 Require Import SchemaWellFormedness.
 Require Import SchemaAux.
 Require Import Graph.
+Require Import GraphAux.
 
 Section Conformance.
 
 
-  Variables (N Vals Name : finType).
+  Variables (N Name Vals: ordType).
 
   Implicit Type schema : @wfSchema Name Vals.
-  Implicit Type graph : @graphQLGraph N Name Name Name Vals. 
+  Implicit Type graph : @graphQLGraph N Name Vals. 
 
 
   (** 
       It states that a Graph's root must have the same type as the Schema's root
    **)
-  Definition rootTypeConforms schema graph  := (τ graph (r graph)) = root(schema).
+  Definition rootTypeConforms schema graph := graph.(root).(type) = SchemaAux.root(schema).
+  
 
 
   (** 
@@ -38,11 +41,16 @@ Section Conformance.
       2. v ∈ values (type (arg)) : The value must be of the type declared for that argument in the schema.  
  
    **)
-  Definition argumentsConform schema (src : Name) (f : fld) : Prop :=
-    forall arg value ty,
-      (f arg) = Some value ->
-      lookupArgument schema src arg f = Some (FieldArgument arg ty) ->
-      (hasType schema) ty value.
+  Definition argumentsConform schema (srcNode : @node N Name Vals) (f : fld) :=
+    let argumentConforms arg :=
+        let: (argname, value) := arg in
+        match lookupArgument schema srcNode.(type) f argname with
+        | Some (FieldArgument _ ty) => (hasType schema) ty value    (* If the argument is declared then check its value's type *)
+        | _ => false
+        end
+    in
+    all argumentConforms f.(args).
+  
     
 
 
@@ -84,14 +92,17 @@ Section Conformance.
         that given field.
 
    **)
-  Definition edgeConforms schema (E : edges N Name Name Vals) (t : {ffun N -> Name})   :=
-    forall (u v : N) (f : fld) (fieldType : type),
-      E u f v ->              
-      lookupFieldType schema (t u) (label f) = Some fieldType ->    (* This covers the field \in fields (t(u)) *)
-      (fieldTypeConforms schema (unwrapTypeName fieldType) (t v)) /\
-      (~~isListType fieldType ->
-       forall w, E u f w -> w == v) /\
-      argumentsConform schema (t u) f.
+  Definition edgesConform schema (E : {fset node * fld * node}) :=
+    let edgeConforms edge :=
+        let: (u, f, v) := edge in
+        match lookupFieldType schema u.(type) f.(label) with    (* Check if field is declared in type *)
+        | Some fieldType => (fieldTypeConforms schema (unwrapTypeName fieldType) v.(type)) &&
+                           (isListType fieldType || is_label_unique_for_src_node E u f) &&
+                           argumentsConform schema u f
+        | _ => false
+        end
+    in
+    all edgeConforms E.
 
   
   (**
@@ -108,46 +119,54 @@ Section Conformance.
      3. The arguments of 'f' must conform to what the Schema requires of them.
 
    **)
-  Definition fieldConforms schema (t : {ffun N -> Name}) (l : {ffun N * fld -> option (Vals + seq.seq Vals)}) :=
-    forall (u : N) (f : fld) (ty : type) (value : Vals) (lvalue : list Vals),
-      (l (u,f) = Some (inl value)) \/ (l (u, f) = Some (inr lvalue)) ->
-      lookupFieldType schema (t u) f = Some ty ->
-      (hasType schema) ty value \/ Forall (hasType schema ty) lvalue ->
-      argumentsConform schema (t u) f.
+  Definition node_s_fields_conform schema (u : node) :=
+    let fieldConforms f :=
+        let: (f', vals) := f in
+        match lookupFieldType schema u.(type) f'.(label) with
+        | Some fieldType =>                (* Field is declared in the node's type *)
+          argumentsConform schema  u f' &&    
+                           match vals with
+                           | (inl value) => hasType schema fieldType value
+                           | (inr values) => all (hasType schema fieldType) values
+                           end
+        | _ => false
+        end
+    in
+    all fieldConforms u.(fields).
+
+  
+  Definition fieldsConform schema graph :=
+    all (node_s_fields_conform schema) (graph_s_nodes graph).
 
 
-  (**
-     It states whether τ conforms to the Schema.
-     
-     ∀ n ∈ N, τ(n) ∈ ObjectType(Schema) 
-
-     In the paper this is directly encoded in τ's signature (N → Ot), 
-     where they assume three distinct sets for type names: Ot, It and Ut.
-
-   **)
-  Definition tauConforms schema (t : {ffun N -> Name}) :=
-    forall (n : N),
-      isObjectType schema (NamedType (t n)).
+  
+  Definition nodeHasObjectType schema (n : @node N Name Vals) :=
+    let: Node _ t _ := n in isObjectType schema (NamedType t).
 
 
+
+  Definition nodes_have_object_type schema graph :=
+    all (nodeHasObjectType schema) (graph_s_nodes graph).
+
+                                                                     
 
   (**
      A GraphQL graph conforms to a given Schema if:
      1. Its root conforms to the Schema.
      2. Its edges conform to the Schema.
      3. Its fields conform to the Schema.
-     4. Its τ conforms to the Schema.
+     4. Its nodes conform to the Schema.
 
    **)
   Record conformedGraph schema := ConformedGraph {
                                                 graph;
-                                                wf_root : rootTypeConforms schema graph;
-                                                wf_edges : edgeConforms schema (E graph) (τ graph);
-                                                wf_fields : fieldConforms schema (τ graph) (λ graph);
-                                                _ : tauConforms schema (τ graph)
+                                                _ : rootTypeConforms schema graph;
+                                                _ : edgesConform schema graph.(E);
+                                                _ : fieldsConform schema graph;
+                                                _ : nodes_have_object_type schema graph
                                    }.
-  
-  Coercion graph_of_wfgraph schema (graph : @conformedGraph schema) := let: ConformedGraph g _ _ _ _ := graph in g.
-  
+
 
 End Conformance.
+
+Arguments conformedGraph [N Name Vals]. 
