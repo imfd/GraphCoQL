@@ -175,17 +175,11 @@ Section Example.
 
   Lemma fc : fieldsConform wf_schema g.
   Proof.
-    rewrite /fieldsConform.
-    rewrite /graph_s_nodes /=.
-    rewrite /edges.
-      by rewrite [fset]unlock /=. Qed.
+    by rewrite /fieldsConform /graph_s_nodes /= /edges [fset]unlock /=. Qed.
 
   Lemma nhot : nodes_have_object_type wf_schema g.
   Proof.
-    rewrite /nodes_have_object_type.
-    rewrite /graph_s_nodes /=.
-    rewrite /edges.
-      by rewrite [fset]unlock.
+    by rewrite /nodes_have_object_type /graph_s_nodes /= /edges [fset]unlock.
   Qed.
     
 
