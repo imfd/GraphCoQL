@@ -3,6 +3,8 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+From extructures Require Import ord.
+
 Require Import List.
 Import ListNotations.
 
@@ -15,7 +17,7 @@ Section Schema.
   (** Names for everything, from operations, fields, arguments, types, etc.
 
       https://facebook.github.io/graphql/June2018/#sec-Names **)
-  Variable Name : finType.
+  Variable Name : ordType.
 
 
   (** Same as names, except that it can't be true, false or null. 

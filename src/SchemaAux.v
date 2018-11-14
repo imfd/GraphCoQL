@@ -3,6 +3,8 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+From extructures Require Import ord.
+
 Require Import List.
 Import ListNotations.
 
@@ -13,7 +15,7 @@ Set Implicit Arguments.
 Section SchemaAux.
 
 
-  Variable Name : finType.
+  Variable Name : ordType.
 
   
   Fixpoint typeEq (ty ty' : @type Name) : bool :=
@@ -22,11 +24,48 @@ Section SchemaAux.
     | ListType ty, ListType ty' => typeEq ty ty'
     | _, _ => false
     end.
-(*
+
+  
+  
   Lemma typeEqP : Equality.axiom typeEq.
   Proof.
-    move => ty ty'. apply (iffP idP). *)
+    rewrite /Equality.axiom.
+    move => ty ty'; apply: (iffP idP).
+    elim:  ty ty' => [n | t IHt] [n' | t' IHt'] //=.
+      by move/eqP => ->.
+      simpl in IHt'.
+      move : (IHt _ IHt').
+        by move => H ; rewrite H.
+        move => H ; rewrite H.
+          elim ty' => [//=|//=].
+  Qed.
 
+  Definition type_eqMixin := Equality.Mixin typeEqP.
+  Canonical type_eqType := EqType type type_eqMixin.
+        
+
+
+  Definition prod_of_arg (arg : @FieldArgumentDefinition Name) := let: FieldArgument n t := arg in (n, t).
+  Definition arg_of_prod (p : prod Name type) := let: (n, t) := p in FieldArgument n t.
+
+  Lemma prod_of_argK : cancel prod_of_arg arg_of_prod.
+  Proof. by case. Qed.
+
+   Definition arg_eqMixin := CanEqMixin prod_of_argK.
+   Canonical arg_eqType := EqType FieldArgumentDefinition arg_eqMixin.
+
+
+
+   Definition prod_of_field (f : @FieldDefinition Name) := let: Field n args t := f in (n, args, t).
+   Definition field_of_prod (p : Name * (seq.seq FieldArgumentDefinition) * type)  := let: (n, args, t) := p in Field n args t.
+
+   Lemma prod_of_fieldK : cancel prod_of_field field_of_prod.
+   Proof. by case. Qed.
+
+   Definition field_eqMixin := CanEqMixin prod_of_fieldK.
+   Canonical field_eqType := EqType FieldDefinition field_eqMixin.
+
+   
   Implicit Type schema : @schema Name.
   
   Definition root schema : type := query schema.
@@ -131,7 +170,7 @@ Section SchemaAux.
     | ListType ty' => unwrapTypeName ty'
     end.
 
-  Coercion unwrapTypeName : type >-> Finite.sort.
+  Coercion unwrapTypeName : type >-> Ord.sort.
 
   (** Get types' names **)
   Definition typesNames (tys : list type) : list Name := map unwrapTypeName tys.
@@ -177,7 +216,7 @@ Section SchemaAux.
     find (n_eq fname) (fieldDefinitions schema tname).
 
   Definition lookupFieldType schema (tname fname : Name)  : option type :=
-    match lookupField schema fname tname with
+    match lookupField schema tname fname with
     | Some fieldDef => Some (fieldType fieldDef)
     | None => None
     end.
@@ -185,7 +224,7 @@ Section SchemaAux.
 
   Definition union schema (tname : Name) :=
     match lookupName schema tname with
-    | Some (EnumTypeDefinition name mbs) => mbs
+    | Some (UnionTypeDefinition name mbs) => map unwrapTypeName mbs
     | _ => []
     end.
 

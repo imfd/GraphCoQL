@@ -6,4 +6,6 @@
 ./src/SchemaAux.v
 ./src/SchemaWellFormedness.v
 ./src/Graph.v
+./src/GraphAux.v
 ./src/Conformance.v
+./src/Example.v
