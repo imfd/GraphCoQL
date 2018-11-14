@@ -39,11 +39,16 @@ Section Conformance.
       2. v ∈ values (type (arg)) : The value must be of the type declared for that argument in the schema.  
  
    **)
-  Definition argumentsConform schema (src : Name) (f : fld) : Prop :=
-    forall arg value ty,
-      (f arg) = Some value ->
-      lookupArgument schema src arg f = Some (FieldArgument arg ty) ->
-      (hasType schema) ty value.
+  Definition argumentsConform schema (srcNode : @node Name Name Name Name Vals) (f : fld) :=
+    let argumentConforms arg :=
+        let: (argname, value) := arg in
+        match lookupArgument schema srcNode.(type) argname f with
+        | Some (FieldArgument _ ty) => (hasType schema) ty value    (* If the argument is declared then check its value's type *)
+        | _ => false
+        end
+    in
+    all argumentConforms f.(args).
+  
     
 
 
