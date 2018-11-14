@@ -37,41 +37,45 @@ Section GraphQLGraph.
 
 
   
+  Record node := Node {
+                    id: N;
+                    type: T;
+                    fields: {fmap fld -> (Vals + (seq Vals))}
+                    
+                  }.
 
+  Definition prod_of_node (n : node) := let: Node i t f := n in (i, t, f).
+  Definition node_of_prod (p : N * T *  {fmap fld -> (Vals + (seq Vals)) }) :=
+    let: (i, t, f) := p in Node i t f.
 
-  (*
-  Definition graph_sub : @subType {set N * fld * N} xpredT.
-    apply: (@NewType _ _ set_of_graph Graph); last by case.
-    by move=> P K s; have := K s.
-  Defined.
-
-Canonical egraph_subType      := Eval hnf in egraph_sub.
-Canonical egraph_eqType       := Eval hnf in EqType _     [eqMixin     of @egraph by <: ].
-Canonical egraph_choiceType   := Eval hnf in ChoiceType _ [choiceMixin of @egraph by <: ].
-Canonical egraph_countType    := Eval hnf in CountType  _ [countMixin  of @egraph by <: ].
-Canonical egraph_subCountType := Eval hnf in [subCountType of egraph].
-Canonical egraph_finType      := Eval hnf in FinType    _ [finMixin    of @egraph by <: ].
-Canonical egraph_subFinType   := Eval hnf in [subFinType of egraph]. 
-*)
-
+  Definition prod_of_nodeK : cancel prod_of_node node_of_prod.
+  Proof. by case. Qed.
+  
+  Definition node_eqMixin := CanEqMixin prod_of_nodeK.
+  Canonical node_eqType := EqType node node_eqMixin.
+  Definition node_choiceMixin := CanChoiceMixin prod_of_nodeK.
+  Canonical node_choiceType := ChoiceType node node_choiceMixin.
+  Definition node_ordMixin := CanOrdMixin prod_of_nodeK.
+  Canonical node_ordType := OrdType node node_ordMixin.
   
 
+
+  
   
   (** GraphQL Graph 
       The collection of edges, tau, lambda and a root node 
    **)
   Record graphQLGraph := GraphQLGraph {
-                            r : N;
-                            E : {fset N * fld * N};
-                            τ : {fmap N -> T};
-                            λ : {fmap prod_ordType N fld_ordType -> (Vals + (seq Vals)) }
+                            root : node;
+                            E : {fset node * fld * node};
                           }.
+                                    
 
   
 
-  Definition prod_of_graph (g : graphQLGraph) := let: GraphQLGraph r e t l := g in (r, e, t, l).
-  Definition graph_of_prod (p : N * {fset N * fld * N} * {fmap N -> T} * {fmap (N * fld) -> (Vals + (seq Vals)) }) :=
-    let: (r, e, t, l) := p in GraphQLGraph r e t l.
+  Definition prod_of_graph (g : graphQLGraph) := let: GraphQLGraph r e := g in (r, e).
+  Definition graph_of_prod (p : node * {fset node * fld * node}) :=
+    let: (r, e) := p in GraphQLGraph r e.
 
   Definition prod_of_graphK : cancel prod_of_graph graph_of_prod.
   Proof. by case. Qed.
@@ -84,26 +88,26 @@ Canonical egraph_subFinType   := Eval hnf in [subFinType of egraph].
   Canonical graph_ordType := OrdType graphQLGraph graph_ordMixin.
   
   
-  Coercion label_of_fld (f : fld) := let: Field l a := f in l.
-  Coercion fun_of_fld (f : fld) := let: Field l a := f in a.
+  Coercion label_of_fld (f : fld) := let: Field l _ := f in l.
+  Coercion fun_of_fld (f : fld) := let: Field _ a := f in a.
 
+  Coercion type_of_node (n : node) := let: Node _ t _ := n in t.
+  Coercion fun_of_node (n : node) := let: Node _ _ f := n in f.
   
     
 
-  Definition fun_of_edges (E : {fset N * fld * N}) := fun v1 f v2 => (v1, f, v2) \in val E.
- 
+  Definition fun_of_edges (E : {fset node * fld * node}) := fun v1 f v2 => (v1, f, v2) \in val E.
 
- 
 
-  Coercion root_of_graph (g : graphQLGraph) := let: GraphQLGraph r _ _ _ := g in r.
-  Coercion edges_of_graph (g : graphQLGraph) := let: GraphQLGraph _ E _ _ := g in E.
+  Coercion root_of_graph (g : graphQLGraph) := let: GraphQLGraph r _  := g in r.
+
 
 
 End GraphQLGraph.
 
-Check root.
 
 Arguments fld [F] [A] [Vals].
+Arguments node [N F A T Vals].
 Arguments graphQLGraph [N] [F] [A] [T] [Vals].
 
   
