@@ -222,7 +222,7 @@ Section SchemaAux.
     end.
 
 
-  Definition union schema (tname : Name) :=
+  Definition union schema (tname : Name) : seq.seq Name :=
     match lookupName schema tname with
     | Some (UnionTypeDefinition name mbs) => map unwrapTypeName mbs
     | _ => []
@@ -244,6 +244,27 @@ Section SchemaAux.
                                   find (n_eq argname) args
     | _ => None
     end.
+
+  Definition get_possible_types schema (ty : type) : seq.seq Name  :=
+    let get_types n :=
+        match lookupName schema n with
+        | Some (ObjectTypeDefinition _ _ _) => [:: n]
+        | Some (InterfaceTypeDefinition _ _) =>
+          typeDefsNames (filter (fun tdef => match tdef with
+                            | (ObjectTypeDefinition _ intfs _) => has (fun i => (unwrapTypeName i) == n) intfs
+                            | _ => false
+                           end) schema.(typeDefinitions))
+        | Some (UnionTypeDefinition _ mbs) =>
+          typeDefsNames (filter (fun tdef => match tdef with
+                                          | (ObjectTypeDefinition name _ _) => (NamedType name) \in mbs
+                                          | _ => false
+                                          end) schema.(typeDefinitions))
+        | _ => [::]
+        end
+    in
+    get_types (unwrapTypeName ty).
+    
+        
 
 End SchemaAux.
 

@@ -17,6 +17,7 @@ Require Import Graph.
 Require Import GraphAux.
 Require Import Conformance.
 Require Import Query.
+Require Import QueryConformance.
 
 
 
@@ -186,6 +187,81 @@ Section Example.
 
     Let wf_graph := ConformedGraph rtc ec fc nhot.
 
+
+
+
+    
+  Let q := (NestedField "hero" [fmap ("episode", "EMPIRE")]
+                       (SelectionSet
+                          (SingleField "name" emptym)
+                          (NestedField "friends" emptym
+                                       (SelectionSet
+                                          (InlineFragment "Human"
+                                                          (SelectionSet
+                                                             (LabeledField "humanFriend" "name" emptym)
+                                                             (NestedField "starships" emptym
+                                                                          (SelectionSet
+                                                                             (LabeledField "starship" "name" emptym)
+                                                                             (SingleField "length" emptym)
+                                                                          )
+                                                             )
+                                                          )
+                                          )
+                                          (InlineFragment "Droid"
+                                                          (SelectionSet
+                                                             (LabeledField "droidFriend" "name" emptym)
+                                                             (SingleField "primaryFunction" emptym)
+                                                          )
+                                          )
+                                       )
+                          )
+                       )
+          ).
+
+  Lemma qc : SelectionConforms wf_schema q wf_schema.(query).
+  Proof.
+    apply: NestedFieldConforms.
+      by rewrite /lookupField /=.
+      by [].
+    apply: SelectionSetConforms.
+    apply: FieldConforms.  
+      by rewrite /lookupField /=.
+      by [].
+    apply: NestedFieldConforms.
+      by rewrite /lookupField /=.
+      by [].
+    apply: SelectionSetConforms; rewrite /unwrapTypeName /=.
+
+    apply: InlineFragmentConforms.
+      by [].
+      by exists "Human".
+      apply: SelectionSetConforms.
+      apply: LabeledFieldConforms.
+        by rewrite /lookupField /=.
+        by [].
+      apply: NestedFieldConforms.
+        by rewrite /lookupField /=.
+        by [].
+      apply: SelectionSetConforms.
+      apply: LabeledFieldConforms.
+        by rewrite /lookupField /=.
+        by [].
+      apply: FieldConforms.
+        by rewrite /lookupField /=.
+        by [].
+    apply: InlineFragmentConforms.
+      by [].
+      by exists "Droid".
+      apply: SelectionSetConforms.
+      apply: LabeledFieldConforms.
+         by rewrite /lookupField /=.
+         by [].
+      apply: FieldConforms.
+         by rewrite /lookupField /=.
+         by [].
+  Qed.
+
+  
   End HP.
   
 
@@ -202,7 +278,7 @@ Section Example.
     Let g := GraphQLGraph r1 edges1.
 
     Example rtNc : ~ rootTypeConforms wf_schema g.
-    Proof. by []. Qed.
+    Proof. by []. Qed.3
 
 
 
@@ -276,5 +352,8 @@ Section Example.
     Proof. rewrite /fieldsConform /graph_s_nodes /= /edges5 [fset]unlock //=. Qed.
     
   End WrongGraph.
+
+
+                       
 
 End Example.

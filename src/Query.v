@@ -6,27 +6,29 @@ Unset Printing Implicit Defensive.
 
 From extructures Require Import ord fmap.
 
+Require Import Schema.
+
 Section Query.
 
 
-  Variables L Vals : ordType.
+  Variables Name Vals : ordType.
   
   Inductive Query : Type :=
-  | SingleField : L -> {fmap L -> Vals} -> Query
-  | LabeledField : L -> L -> {fmap L -> Vals} -> Query
-  | NestedField : L -> {fmap L -> Vals} -> Query -> Query
-  | NestedLabeledField : L -> L -> {fmap L -> Vals} -> Query -> Query
-  | InlineFragment : L -> Query -> Query
+  | SingleField : Name -> {fmap Name -> Vals} -> Query
+  | LabeledField : Name -> Name -> {fmap Name -> Vals} -> Query
+  | NestedField : Name -> {fmap Name -> Vals} -> Query -> Query
+  | NestedLabeledField : Name -> Name -> {fmap Name -> Vals} -> Query -> Query
+  | InlineFragment : @type Name -> Query -> Query
   | SelectionSet : Query -> Query -> Query.   (* seq Query but not empty... *)
 
 
   Inductive ResponseObject : Type :=
   | Empty : ResponseObject
-  | Null : L -> ResponseObject
-  | SingleResult : L -> Vals -> ResponseObject
-  | ListResult : L -> list Vals -> ResponseObject
-  | NestedResult : L -> ResponseObject -> ResponseObject
-  | NestedListResult : L -> list ResponseObject -> ResponseObject
+  | Null : Name -> ResponseObject
+  | SingleResult : Name -> Vals -> ResponseObject
+  | ListResult : Name -> list Vals -> ResponseObject
+  | NestedResult : Name -> ResponseObject -> ResponseObject
+  | NestedListResult : Name -> list ResponseObject -> ResponseObject
   | ResponseList : ResponseObject -> ResponseObject -> ResponseObject.
 
 
@@ -87,12 +89,12 @@ Section Query.
   
 End Query.
 
-Arguments Query [L Vals].
-Arguments SingleField [L Vals].
-Arguments LabeledField [L Vals].
-Arguments NestedField [L Vals].
-Arguments NestedLabeledField [L Vals].
-Arguments InlineFragment [L Vals].
-Arguments SelectionSet [L Vals].
+Arguments Query [Name Vals].
+Arguments SingleField [Name Vals].
+Arguments LabeledField [Name Vals].
+Arguments NestedField [Name Vals].
+Arguments NestedLabeledField [Name Vals].
+Arguments InlineFragment [Name Vals].
+Arguments SelectionSet [Name Vals].
 
-Arguments Null [L Vals].
+Arguments Null [Name Vals].

@@ -48,25 +48,25 @@ Section QueryConformance.
   | NestedFieldConforms : forall tname fname α ϕ args ty,
       lookupField schema tname fname = Some (Field fname args ty) ->
       argumentsConform schema α args ->
-      SelectionConforms schema ϕ ty ->
+      SelectionConforms schema ϕ (NamedType ty) ->
       SelectionConforms schema (NestedField fname α ϕ) (NamedType tname)
                         
   | NestedLabeledFieldConforms : forall tname fname α ϕ args ty label,
       lookupField schema tname fname = Some (Field fname args ty) ->
       argumentsConform schema α args ->
-      SelectionConforms schema ϕ ty ->
+      SelectionConforms schema ϕ (NamedType ty) ->
       SelectionConforms schema (NestedLabeledField label fname α ϕ) (NamedType tname)
                         
   | InlineFragmentConforms : forall ty ty' ϕ,
       isObjectType schema ty || isInterfaceType schema ty || isUnionType schema ty -> 
-      subtype schema ty ty' ->
-      SelectionConforms schema ϕ ty ->
+      (exists name, (name \in get_possible_types schema ty) && (name \in get_possible_types schema ty')) ->
+      SelectionConforms schema ϕ (NamedType ty) ->
       SelectionConforms schema (InlineFragment ty ϕ) ty'
                         
   | SelectionSetConforms : forall ϕ ϕ' ty,
-      SelectionConforms schema ϕ' ty ->
-      SelectionConforms schema ϕ ty ->
-      SelectionConforms schema (SelectionSet ϕ ϕ') ty 
+      SelectionConforms schema ϕ (NamedType ty) ->
+      SelectionConforms schema ϕ' (NamedType ty) ->
+      SelectionConforms schema (SelectionSet ϕ ϕ') (NamedType ty) 
   .
 
 
