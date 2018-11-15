@@ -39,25 +39,30 @@ Section QueryConformance.
       lookupField schema tname fname = Some (Field fname args ty) ->
       argumentsConform schema α args ->
       SelectionConforms schema (SingleField fname α) (NamedType tname)
+                        
   | LabeledFieldConforms : forall tname fname α args ty label,
       lookupField schema tname fname = Some (Field fname args ty) ->
       argumentsConform schema α args ->
       SelectionConforms schema (LabeledField label fname α) (NamedType tname)
+                        
   | NestedFieldConforms : forall tname fname α ϕ args ty,
       lookupField schema tname fname = Some (Field fname args ty) ->
       argumentsConform schema α args ->
       SelectionConforms schema ϕ ty ->
       SelectionConforms schema (NestedField fname α ϕ) (NamedType tname)
+                        
   | NestedLabeledFieldConforms : forall tname fname α ϕ args ty label,
       lookupField schema tname fname = Some (Field fname args ty) ->
       argumentsConform schema α args ->
       SelectionConforms schema ϕ ty ->
       SelectionConforms schema (NestedLabeledField label fname α ϕ) (NamedType tname)
+                        
   | InlineFragmentConforms : forall ty ty' ϕ,
       isObjectType schema ty || isInterfaceType schema ty || isUnionType schema ty -> 
       subtype schema ty ty' ->
       SelectionConforms schema ϕ ty ->
       SelectionConforms schema (InlineFragment ty ϕ) ty'
+                        
   | SelectionSetConforms : forall ϕ ϕ' ty,
       SelectionConforms schema ϕ' ty ->
       SelectionConforms schema ϕ ty ->
@@ -65,10 +70,14 @@ Section QueryConformance.
   .
 
 
+  (*
   Record wfQuery (schema : @wfSchema Name Vals) := WFQuery {
                               query : Query;
-                              queryConforms : SelectionConforms schema query schema.(root)
+                              queryConforms : SelectionConforms schema query (root schema)
                             }.
 
 
+  Coercion query_from_wf_query (q : wfQuery schema) := let: WFQuery q' _ := q in q'.
+   *)
+  
 End QueryConformance.
