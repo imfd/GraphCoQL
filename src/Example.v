@@ -278,7 +278,7 @@ Section Example.
     Let g := GraphQLGraph r1 edges1.
 
     Example rtNc : ~ rootTypeConforms wf_schema g.
-    Proof. by []. Qed.3
+    Proof. by []. Qed.
 
 
 
@@ -354,6 +354,96 @@ Section Example.
   End WrongGraph.
 
 
-                       
-
 End Example.
+
+
+Section GraphQLSpecExamples.
+
+
+  Local Open Scope string_scope.
+  
+
+  Delimit Scope schema_scope with schema.
+  Open Scope schema_scope.
+  
+  Notation "'type' O 'implements' I { F }" := (ObjectTypeDefinition O I F) (at level 0, O at next level, I at next level, F at next level, no associativity) : schema_scope.
+
+  Notation "'interface' I { F }" := (InterfaceTypeDefinition I F) (at level 0, I at next level, F at next level, no associativity) : schema_scope.
+
+  Notation "'enum' E { EV }" := (EnumTypeDefinition E EV) (at level 0, E at next level,  EV at level 0) : schema_scope.
+
+  Notation "'union' U 'of' Uv" := (UnionTypeDefinition U Uv) (at level 0, no associativity) : schema_scope.
+
+  Notation "'scalar' S" := (ScalarTypeDefinition S) (at level 60).
+  
+  Notation "f : t" := (Schema.Field f [::] t).
+
+  Notation "'[' s ']'" := (ListType s) (at level 0, s at next level).
+  
+  
+  Let StringScalar := scalar "String".
+  Let BooleanScalar := scalar "Boolean".
+  Let IntScalar := scalar "Int".
+
+
+  Let QueryType := type "Query" implements [::] {[::
+                                                   ("dog" : "Dog")
+                                               ]}.
+  
+  Let DogCommandEnum := enum "DogCommand" {[:: "SIT"; "DOWN"; "HEEL"]}.
+
+  Let DogType := type "Dog" implements [:: (NamedType "Pet")] {[::
+                                                     ("name" : "String");
+                                                     ("nickname" : "String");
+                                                     ("barkVolume" : "Int");
+                                                     (Schema.Field "doesKnowCommand" [:: (FieldArgument "dogCommand" "DogCommand")] "Boolean");
+                                                     (Schema.Field "isHousetrained" [:: (FieldArgument "atOtherHomes" "Boolean")] "Boolean");
+                                                     ("owner" : "Human")
+                                                             ]}.
+
+  Let SentientInterface := interface "Sentient" {[::
+                                                   ("name" : "String")
+                                               ]}.
+  Let PetInterface := interface "Pet" {[::
+                                    ("name" : "String")
+                                ]}.
+
+
+
+  Let AlienType := type "Alien" implements [:: (NamedType "Sentient")] {[::
+                                                                          ("name" : "String");
+                                                                          ("homePlanet" : "String")
+                                                                       ]}.
+
+  Let HumanType := type "Human" implements [:: (NamedType "Sentient")] {[::
+                                                                          ("name" : "String")
+                                                                      ]}.
+
+  Let CatCommandEnum := enum "CatCommand" {[:: "JUMP" ]}.
+
+  Let CatType := type "Cat" implements [:: (NamedType "Pet")] {[::
+                                                                 ("name" : "String");
+                                                                 ("nickname" : "String");
+                                                                 (Schema.Field "doesKnowCommand" [:: (FieldArgument "catCommand" "CatCommand")] "Boolean");
+                                                                 ("meowVolume" : "Int")
+                                                             ]}.
+
+  Let CatOrDogUnion := union "CatOrDog" of [:: (NamedType "Cat"); (NamedType "Dog")].
+
+  Let DogOrHumanUnion := union "DogOrHuman" of [:: (NamedType "Dog"); (NamedType "Human")].
+
+  Let HumanOrAlienUnion := union "HumanOrAlien" of [:: (NamedType "Human"); (NamedType "Alien")].
+  
+
+  Let schema := Schema "Query" [:: StringScalar; BooleanScalar; IntScalar;
+                                 QueryType;
+                                 DogCommandEnum; DogType;
+                                   SentientInterface; PetInterface;
+                                     AlienType; HumanType;
+                                       CatCommandEnum; CatType;
+                                         CatOrDogUnion; DogOrHumanUnion; HumanOrAlienUnion].
+
+  Lemma schwf : schemaIsWF schema.
+    Proof. by []. Qed.
+  
+End GraphQLSpecExamples.
