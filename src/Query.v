@@ -73,6 +73,17 @@ Section Query.
       GroundTypedNormalForm ϕ ->
       GroundTypedNormalForm ϕ' ->
       GroundTypedNormalForm (SelectionSet ϕ ϕ').
+
+  Fixpoint is_ground_typed_normal_form query :=
+    match query with
+    | NestedField _ _ ϕ => is_ground_typed_normal_form ϕ
+    | NestedLabeledField _ _ _ ϕ => is_ground_typed_normal_form ϕ
+    | InlineFragment _ ϕ => isFieldSelection ϕ && is_ground_typed_normal_form ϕ
+    | SelectionSet ϕ ϕ' => ((isFieldSelection ϕ && isFieldSelection ϕ')
+                           || (isInlineFragmentSelection ϕ && isInlineFragmentSelection ϕ'))
+                            && is_ground_typed_normal_form ϕ && is_ground_typed_normal_form ϕ'
+    | _ => true
+    end.
   
 End Query.
 
