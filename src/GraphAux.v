@@ -40,8 +40,14 @@ Section GraphAux.
     nb_of_ocurrences == 1.
 
 
+  Fixpoint unzip T (s : seq (T * T)) : seq T :=
+    match s with
+    | (x, y) :: tl => x :: y :: unzip tl
+    | _ => [::]
+    end.
+  
   Definition graph_s_nodes (graph : @graphQLGraph N S Vals) : seq node :=
-    undup (unzip1 (map (fun edge => let: (u, _, v) := edge in (u, v)) graph.(E))).
+    undup (unzip (map (fun edge => let: (u, _, v) := edge in (u, v)) graph.(E))).
 
 
 End GraphAux.
