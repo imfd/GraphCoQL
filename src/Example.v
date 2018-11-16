@@ -261,6 +261,8 @@ Section Example.
          by [].
   Qed.
 
+  Lemma qbc : selection_conforms wf_schema q wf_schema.(query).
+    Proof. by []. Qed.
   
   End HP.
   
@@ -444,6 +446,32 @@ Section GraphQLSpecExamples.
                                          CatOrDogUnion; DogOrHumanUnion; HumanOrAlienUnion].
 
   Lemma schwf : schemaIsWF schema.
-    Proof. by []. Qed.
+  Proof. by []. Qed.
+
+  Let wf_schema : @wfSchema string_ordType string_ordType   := WFSchema (fun n v => true) schwf.
+
+  Let example102 : @Query string_ordType string_ordType := (InlineFragment "Dog" (SingleField "meowVolume" emptym)).
+  Let example102' :  @Query string_ordType string_ordType := (InlineFragment "Dog" (LabeledField "barkVolume" "kawVolume" emptym)).
+
+  Example e102 : ~ selection_conforms wf_schema example102 "Dog" /\ (~ selection_conforms wf_schema example102' "Dog").
+  Proof. by []. Qed.
+
+  Example e102' :  ~ selection_conforms wf_schema example102 "Query" /\ (~ selection_conforms wf_schema example102' "Query").
+  Proof. by []. Qed.
+
+
+  Let example103 : @Query string_ordType string_ordType := (InlineFragment "Pet" (SingleField "name" emptym)).
+
+  Example e103 : selection_conforms wf_schema example103 "Dog".
+  Proof. by []. Qed.
+
+  Example e103' : ~ selection_conforms wf_schema example103 "Query".
+  Proof. by []. Qed.
+
+
+  Let example104 : @Query string_ordType string_ordType := (InlineFragment "Pet" (SingleField "nickname" emptym)).
+
+  Example e104 : ~ selection_conforms wf_schema example104 "Dog".
+  Proof. by []. Qed.
   
 End GraphQLSpecExamples.

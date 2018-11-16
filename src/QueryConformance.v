@@ -70,6 +70,35 @@ Section QueryConformance.
   .
 
 
+  Fixpoint selection_conforms schema (query : Query) (ty : type) :=
+    match query with
+    | SingleField fname α => match lookupField schema ty fname with
+                            | Some (Field fname args ty) => argumentsConform schema α args
+                            | _ => false
+                            end
+    | LabeledField _ fname α =>  match lookupField schema ty fname with
+                                    | Some (Field fname args ty) => argumentsConform schema α args
+                                    | _ => false
+                                    end
+    | NestedField fname α ϕ =>  match lookupField schema ty fname with
+                               | Some (Field fname args ty') => argumentsConform schema α args && selection_conforms schema ϕ ty'
+                               | _ => false
+                               end
+    | NestedLabeledField _ fname α ϕ =>  match lookupField schema ty fname with
+                                        | Some (Field fname args ty') => argumentsConform schema α args && selection_conforms schema ϕ ty'
+                                        | _ => false
+                                        end
+    | InlineFragment t ϕ => if isObjectType schema t || isInterfaceType schema t || isUnionType schema t then
+                             let possible_t_types := get_possible_types schema t in
+                             let possible_ty_types := get_possible_types schema ty in
+                             (has (fun x => x \in possible_ty_types) possible_t_types) &&
+                               selection_conforms schema ϕ t
+                           else
+                             false 
+    | SelectionSet ϕ ϕ' => selection_conforms schema ϕ ty && selection_conforms schema ϕ' ty
+    end.
+
+    
   (*
   Record wfQuery (schema : @wfSchema Name Vals) := WFQuery {
                               query : Query;
