@@ -18,6 +18,7 @@ Require Import GraphAux.
 Require Import Conformance.
 Require Import Query.
 Require Import QueryConformance.
+Require Import QuerySemantic.
 
 
 
@@ -96,7 +97,7 @@ Section Example.
                                                      (Schema.Field "search" [:: (FieldArgument "text" "String")] ["SearchResult"])]
                                                }}.
 
-  Let schema  := {| query := "Query" ; typeDefinitions :=  [:: IDType; StringType; FloatType;  StarshipType;  CharacterType; DroidType; HumanType; EpisodeType; SearchResultType; QueryType] |}.
+  Let schema  := Schema "Query"  [:: IDType; StringType; FloatType;  StarshipType;  CharacterType; DroidType; HumanType; EpisodeType; SearchResultType; QueryType].
 
 
   Lemma sdf : schemaIsWF schema.
@@ -218,7 +219,7 @@ Section Example.
                        )
           ).
 
-  Lemma qc : SelectionConforms wf_schema q wf_schema.(query).
+  Lemma qc : SelectionConforms wf_schema q wf_schema.(query_type).
   Proof.
     apply: NestedFieldConforms.
       by rewrite /lookupField /=.
@@ -261,9 +262,52 @@ Section Example.
          by [].
   Qed.
 
-  Lemma qbc : selection_conforms wf_schema q wf_schema.(query).
+  Lemma qbc : selection_conforms wf_schema q wf_schema.(query_type).
     Proof. by []. Qed.
-  
+
+
+
+    Let wf_query := WFQuery qc. 
+
+
+
+
+    Let query_response := (NestedResult "hero"
+                                       (ResponseList
+                                          (SingleResult "name" "Luke")
+                                          (NestedListResult "friends"
+                                                            [::
+                                                               (ResponseList Empty
+                                                                             (ResponseList
+                                                                                (SingleResult "droidFriend" "R2-D2")
+                                                                                (SingleResult "primaryFunction" "Astromech")
+                                                                             )
+                                                               );
+                                                               (ResponseList
+                                                                   (ResponseList
+                                                                      (SingleResult "humanFriend" "Han")
+                                                                      (NestedListResult "starships"
+                                                                                        [:: (ResponseList
+                                                                                               (SingleResult "starship" "Falcon")
+                                                                                               (SingleResult "length" "34.37"))
+                                                                                        ]))
+                                                                  Empty
+                                                                )
+                                                               
+                                                            ]
+                                          )
+                                       )
+                         ).
+
+    Lemma ev_query_eq_response : eval_query  wf_graph wf_query = query_response.
+    Proof.
+      rewrite /eval_query /=.
+      rewrite /get_target_nodes_with_field /=.
+      rewrite /edges [fset]unlock /=.
+      rewrite /query_response.
+        by [].
+    Qed.
+    
   End HP.
   
 
@@ -472,6 +516,23 @@ Section GraphQLSpecExamples.
   Let example104 : @Query string_ordType string_ordType := (InlineFragment "Pet" (SingleField "nickname" emptym)).
 
   Example e104 : ~ selection_conforms wf_schema example104 "Dog".
+  Proof. by []. Qed.
+
+
+  Let example105 : @Query string_ordType string_ordType :=
+    (InlineFragment "CatOrDog" (SelectionSet
+                                  (InlineFragment "Pet" (SingleField "name" emptym))
+                                  (InlineFragment "Dog" (SingleField "barkVolume" emptym)))).
+
+  Example e105 : selection_conforms wf_schema example105 "CatOrDog".
+  Proof. by []. Qed.
+
+  Let example106 : @Query string_ordType string_ordType :=
+    (InlineFragment "CatOrDog" (SelectionSet
+                                  (SingleField "name" emptym)
+                                  (SingleField "barkVolume" emptym))).
+
+  Example e106 : ~ selection_conforms wf_schema example106 "CatOrDog".
   Proof. by []. Qed.
   
 End GraphQLSpecExamples.

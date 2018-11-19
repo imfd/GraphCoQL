@@ -68,7 +68,7 @@ Section SchemaAux.
    
   Implicit Type schema : @schema Name.
   
-  Definition root schema : type := query schema.
+  Definition root schema : type := schema.(query_type).
   
   (**
    Looks up a name in the given document, returning the type definition if it

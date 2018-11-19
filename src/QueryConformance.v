@@ -99,14 +99,11 @@ Section QueryConformance.
     end.
 
     
-  (*
-  Record wfQuery (schema : @wfSchema Name Vals) := WFQuery {
+  
+  Structure wfQuery (schema : @wfSchema Name Vals) := WFQuery {
                               query : Query;
                               queryConforms : SelectionConforms schema query (root schema)
                             }.
 
 
-  Coercion query_from_wf_query (q : wfQuery schema) := let: WFQuery q' _ := q in q'.
-   *)
-  
 End QueryConformance.

@@ -18,7 +18,7 @@ Section Query.
   | LabeledField : Name -> Name -> {fmap Name -> Vals} -> Query
   | NestedField : Name -> {fmap Name -> Vals} -> Query -> Query
   | NestedLabeledField : Name -> Name -> {fmap Name -> Vals} -> Query -> Query
-  | InlineFragment : @type Name -> Query -> Query
+  | InlineFragment : @type Name -> Query -> Query    (* Check it's named type and not list *)
   | SelectionSet : Query -> Query -> Query.   (* seq Query but not empty... *)
 
 
@@ -98,3 +98,4 @@ Arguments InlineFragment [Name Vals].
 Arguments SelectionSet [Name Vals].
 
 Arguments Null [Name Vals].
+Arguments Empty [Name Vals].

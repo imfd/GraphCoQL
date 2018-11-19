@@ -50,4 +50,11 @@ Section GraphAux.
     undup (unzip (map (fun edge => let: (u, _, v) := edge in (u, v)) graph.(E))).
 
 
+  Definition get_target_nodes_with_field (graph : @graphQLGraph N S Vals) (u : node) (f : fld) :=
+    let edges_with_field :=
+        filter (fun e => let: (u', f', _) := e in (u' == u) && (f' == f)) graph.(E)
+    in
+    map (fun e => let: (_, _, v) := e in v) edges_with_field.
+    
+
 End GraphAux.
