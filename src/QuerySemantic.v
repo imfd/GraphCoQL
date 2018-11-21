@@ -56,7 +56,7 @@ Section QuerySemantic.
                                 | _ => Null name         
                                 end
     | InlineFragment t ϕ => match lookupName schema t with
-                           | Some (ObjectTypeDefinition _ _ _) => if t == (NamedType u.(type)) then
+                           | Some (ObjectTypeDefinition _ _ _) => if t == u.(type) then
                                                                    eval schema g u ϕ
                                                                  else
                                                                    Empty

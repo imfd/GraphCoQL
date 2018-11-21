@@ -58,10 +58,10 @@ Section QueryConformance.
       SelectionConforms schema (NestedLabeledField label fname α ϕ) (NamedType tname)
                         
   | InlineFragmentConforms : forall ty ty' ϕ,
-      isObjectType schema ty || isInterfaceType schema ty || isUnionType schema ty -> 
-      (exists name, (name \in get_possible_types schema ty) && (name \in get_possible_types schema ty')) ->
+      isObjectType schema (NamedType ty) || isInterfaceType schema (NamedType ty) || isUnionType schema (NamedType ty) -> 
+      (exists name, (name \in get_possible_types schema (NamedType ty)) && (name \in get_possible_types schema (NamedType ty'))) ->
       SelectionConforms schema ϕ (NamedType ty) ->
-      SelectionConforms schema (InlineFragment ty ϕ) ty'
+      SelectionConforms schema (InlineFragment ty ϕ) (NamedType ty')
                         
   | SelectionSetConforms : forall ϕ ϕ' ty,
       SelectionConforms schema ϕ (NamedType ty) ->
@@ -88,11 +88,11 @@ Section QueryConformance.
                                         | Some (Field fname args ty') => argumentsConform schema α args && selection_conforms schema ϕ ty'
                                         | _ => false
                                         end
-    | InlineFragment t ϕ => if isObjectType schema t || isInterfaceType schema t || isUnionType schema t then
-                             let possible_t_types := get_possible_types schema t in
+    | InlineFragment t ϕ => if isObjectType schema (NamedType t) || isInterfaceType schema (NamedType t) || isUnionType schema (NamedType t) then
+                             let possible_t_types := get_possible_types schema (NamedType t) in
                              let possible_ty_types := get_possible_types schema ty in
                              (has (fun x => x \in possible_ty_types) possible_t_types) &&
-                               selection_conforms schema ϕ t
+                               selection_conforms schema ϕ (NamedType t)
                            else
                              false 
     | SelectionSet ϕ ϕ' => selection_conforms schema ϕ ty && selection_conforms schema ϕ' ty
