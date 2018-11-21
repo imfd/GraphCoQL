@@ -1,5 +1,10 @@
 -arg "-w -notation-overridden"
 
+-R ./lib Lib
+
+./lib/treeordtype.v
+
+
 -R ./src GraphCoQL
 
 ./src/Schema.v
