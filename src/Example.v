@@ -299,9 +299,9 @@ Section Example.
                                        )
                          ).
 
-    Lemma ev_query_eq_response : response_eq (eval_query  wf_graph wf_query) query_response.
+    Lemma ev_query_eq_response :  (eval_query  wf_graph wf_query) = query_response.
     Proof.
-      move=> /=.
+      rewrite /eval_query /=.
       rewrite /get_target_nodes_with_field /=.
       by rewrite /edges [fset]unlock /=.
     Qed.

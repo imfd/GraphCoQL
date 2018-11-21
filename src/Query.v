@@ -26,6 +26,7 @@ Section Query.
   | SelectionSet : Query -> Query -> Query.   (* seq Query but not empty... *)
 
 
+  Unset Elimination Schemes.
   Inductive ResponseObject : Type :=
   | Empty : ResponseObject
   | Null : Name -> ResponseObject
@@ -34,9 +35,44 @@ Section Query.
   | NestedResult : Name -> ResponseObject -> ResponseObject
   | NestedListResult : Name -> list ResponseObject -> ResponseObject
   | ResponseList : ResponseObject -> ResponseObject -> ResponseObject.
+  Set Elimination Schemes.
 
+  Definition ResponseObject_rect P IH_Empty IH_Null IH_SingleResult IH_ListResult IH_NestedResult IH_NestedListResult IH_ResponseList :=
+    fix loop (r : ResponseObject) : P r :=
+      match r with
+      | Empty => IH_Empty
+      | Null l => IH_Null l
+      | SingleResult l v => IH_SingleResult l v
+      | ListResult l vals => IH_ListResult l vals
+      | NestedResult l r' => IH_NestedResult l r' (loop r')
+      | NestedListResult l rs =>
+        let fix iter_pair rs : foldr (fun r => prod (P r)) unit rs :=
+            if rs is r :: rs' then (loop r, iter_pair rs') else tt
+        in
+        IH_NestedListResult l rs (iter_pair rs)
+      | ResponseList r r' => IH_ResponseList r (loop r) r' (loop r')
+      end.
 
+  Definition ResponseObject_rec (P : ResponseObject -> Set) := @ResponseObject_rect P.
 
+  Definition ResponseObject_ind P IH_Empty IH_Null IH_SingleResult IH_ListResult IH_NestedResult IH_NestedListResult IH_ResponseList :=
+     fix loop (r : ResponseObject) : P r : Prop :=
+      match r with
+      | Empty => IH_Empty
+      | Null l => IH_Null l
+      | SingleResult l v => IH_SingleResult l v
+      | ListResult l vals => IH_ListResult l vals
+      | NestedResult l r' => IH_NestedResult l r' (loop r')
+      | NestedListResult l rs =>
+        let fix iter_conj rs : foldr (fun r => and (P r)) True rs :=
+            if rs is r :: rs' then conj (loop r) (iter_conj rs') else Logic.I
+        in
+        IH_NestedListResult l rs (iter_conj rs)
+      | ResponseList r r' => IH_ResponseList r (loop r) r' (loop r')
+      end.
+
+  
+  
   (* Right now it is returning a GenTree.tree (Name * Name * {fmap Name -> Vals})
      
      The tuple represents (label, field name, args) but for the case of unlabeled fields
@@ -104,7 +140,7 @@ Section Query.
 
 
 
-
+(*
    Fixpoint response_eq r1 r2 :=
      match r1, r2 with
      | Empty, Empty => true
@@ -125,8 +161,28 @@ Section Query.
      | _, _ => false
      end.
 
-     
-   (*
+
+   Lemma response_eqP : Equality.axiom response_eq.
+   Proof.
+     rewrite /Equality.axiom => x y.
+     apply: (iffP idP) => [|<-].
+     move: y;  induction x using mResponseObject_ind.   
+       by case.
+       by case=> //; move=> l' /=; move/eqP=> ->.
+       by case=> // l' v' /=; by move/andP=> [/eqP -> /eqP ->].
+       by case=> // l' vals' /=; move/andP=> [/eqP -> /eqP ->].
+       case=> // l' r' /=; move/andP=> [/eqP -> H].
+         by apply IHx in H; rewrite H.
+       case=> // l' rs' /=; move/andP=> [/eqP ->].        
+         elim: rs rs' => [| r0 rs0 IH] [|r1 rs1] //=. 
+         case (response_eq r0 r1) => //. apply IH in IH'.
+         rewrite (_ : rs0 = rs1) in H.
+         rewrite (_ : (r0 :: rs0) = (r1 :: rs1)) //.
+*)
+
+
+       
+   
    Fixpoint tree_of_response response : GenTree.tree (Name + (Vals + seq Vals)) :=
      match response with
      | Empty => GenTree.Node 0 [::]
@@ -155,9 +211,17 @@ Section Query.
    Proof.
      elim=> //.
        by move=> s r /= ->.
-       move=> s rs /=. rewrite map_nseq.
-       
-  Qed. *)
+       move=> s rs IH /=. elim: rs IH => [|r rs' IH] //=.
+       by move=> [-> /IH {IH} IH]; case: IH => ->.
+       by move=> r IH r' IH' /=; rewrite IH IH'.
+   Qed.
+
+   Definition response_eqMixin := CanEqMixin tree_of_responseK.
+   Canonical response_eqType := EqType ResponseObject response_eqMixin.
+   Definition response_choiceMixin := CanChoiceMixin tree_of_responseK.
+   Canonical response_choiceType := ChoiceType ResponseObject response_choiceMixin.
+   Definition response_ordMixin := CanOrdMixin tree_of_responseK.
+   Canonical response_ordType := OrdType ResponseObject response_ordMixin.
    
   (*
   Fixpoint query_eq q1 q2 :=
