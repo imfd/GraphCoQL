@@ -6,7 +6,7 @@ Unset Printing Implicit Defensive.
 From extructures Require Import ord fmap.
 
 Require Import SchemaWellFormedness.
-Require Import Conformance.
+Require Import GraphConformance.
 Require Import QueryConformance.
 Require Import SchemaAux.
 Require Import GraphAux.

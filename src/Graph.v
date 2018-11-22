@@ -5,15 +5,18 @@ Unset Printing Implicit Defensive.
 
 From extructures Require Import ord fset fmap.
 
+
+
 Section GraphQLGraph.
 
   Variables (N S Vals : ordType).
-  
+
+
   (** Field 
       It corresponds to a field's name and list of arguments but without
       its associated value.
    **)
-  Record fld := Field {
+  Structure fld := Field {
                    label : S;
                    args : {fmap S -> Vals}
                  }.
@@ -36,14 +39,20 @@ Section GraphQLGraph.
   
 
 
-  
-  Record node := Node {
+  (** Node
+      It corresponds to a node in a graph, containing
+      an identifier, its type and its fields (as a partial mapping between
+      Fields and values).
+   **)
+  Structure node := Node {
                     id: N;
                     type: S;
                     fields: {fmap fld -> (Vals + (seq Vals))}
                     
                   }.
 
+
+  
   Definition prod_of_node (n : node) := let: Node i t f := n in (i, t, f).
   Definition node_of_prod (p : N * S *  {fmap fld -> (Vals + (seq Vals)) }) :=
     let: (i, t, f) := p in Node i t f.
@@ -63,7 +72,7 @@ Section GraphQLGraph.
   
   
   (** GraphQL Graph 
-      The collection of edges, tau, lambda and a root node 
+      The collection of edges, and a root node 
    **)
   Record graphQLGraph := GraphQLGraph {
                             root : node;
