@@ -40,16 +40,16 @@ Section WellFormedness.
         be subtype of an interface and not between objects. Interfaces cannot be
         subtype of another interface.
    **)
-  Inductive subtype schema : type -> type -> Prop :=
+ (* Inductive subtype schema : type -> type -> Prop :=
   | ST_Refl : forall ty, subtype schema ty ty
-  | ST_Object : forall name intfs iname fields ifields,
-      lookupName schema name = Some (ObjectTypeDefinition name intfs fields) ->
-      In (NamedType iname) intfs ->
-      lookupName schema iname = Some (InterfaceTypeDefinition iname ifields) ->
-      subtype schema (NamedType name) (NamedType iname)
+  | ST_Object : forall ty ty' name iname intfs fields ifields,
+      lookup_type schema name = Some (@ObjectTypeDefinition Name name intfs fields) ->
+      ty' \in intfs ->
+      lookup_type schema ty' = Some (InterfaceTypeDefinition iname ifields) ->
+      subtype schema (NamedType name) (NamedType Name iname)
   | ST_ListType : forall ty ty',
       subtype schema ty ty' ->
-      subtype schema (ListType ty) (@ListType Name ty').
+      subtype schema (ListType ty) (@ListType Name ty'). *)
 
   Fixpoint isSubtype schema (ty ty' : type) : bool :=
     match ty, ty' with
@@ -57,9 +57,9 @@ Section WellFormedness.
     | (NamedType name), (NamedType name') => if name == name' then
                                               true
                                             else
-                                              match lookupName schema name with
-                                              | Some (ObjectTypeDefinition name intfs _) =>
-                                                (ty' \in intfs)  && isInterfaceType schema ty'
+                                              match lookup_type schema ty with
+                                              | Some (ObjectTypeDefinition _ intfs _) =>
+                                                (ty' \in intfs)  && is_interface_type schema ty'
                                               | _ => false
                                               end
     | _, _ => false
@@ -76,7 +76,7 @@ Section WellFormedness.
 
   Fixpoint isValidArgumentType schema (ty : type) : bool :=
     match ty with
-    | NamedType _ => isScalarType schema ty || @isEnumType Name schema ty
+    | NamedType _ => is_scalar_type schema ty || is_enum_type schema ty
     | ListType ty' => isValidArgumentType schema ty'
     end.
     
@@ -85,7 +85,7 @@ Section WellFormedness.
      as long as it is declared in the Schema. *)
   Fixpoint isValidFieldType schema (ty : type) : bool :=
     match ty with
-    | NamedType n => match lookupName schema n with
+    | NamedType _ => match lookup_type schema ty with
                     | Some tdef => true
                     | _ => false
                     end
@@ -113,7 +113,7 @@ Section WellFormedness.
   Definition wfField schema (fld : FieldDefinition) : bool :=
     let: Field name args outputType := fld in
     isValidFieldType schema outputType &&
-                     uniq (argNames args) &&
+                     uniq (arguments_names args) &&
                      all (wfFieldArgument schema) args.
 
 
@@ -141,8 +141,8 @@ Section WellFormedness.
       fieldOk schema (Field fname args ty) (Field fname args' ty')
               
   | UnionField : forall fname ename ty args args' objs,
-      lookupName schema ename = Some (UnionTypeDefinition ename objs) ->
-      In ty objs ->
+      lookup_type schema ename = Some (UnionTypeDefinition ename objs) ->
+      ty \in objs ->
       incl args' args ->
       fieldOk schema (Field fname args ty) (Field fname args' (@NamedType Name ename)).
 
@@ -152,7 +152,7 @@ Section WellFormedness.
       if fname == fname' then
         all (fun x => x \in args) args' &&
             match ty' with
-            | (NamedType tname) => match lookupName schema tname with
+            | (NamedType _) => match lookup_type schema ty' with
                                   | Some (UnionTypeDefinition _ objs) => ty \in objs
                                   | _ => isSubtype schema ty ty'
                                   end
@@ -189,7 +189,7 @@ Section WellFormedness.
     match objTDef, ty' with
     | (ObjectTypeDefinition _ intfs fields), (NamedType name') =>
       (ty' \in intfs)
-        &&  match lookupName schema name' with
+        &&  match lookup_type schema ty' with
             | Some (InterfaceTypeDefinition name' ifields) =>
               all (fun f' => has (fun f => isFieldOK schema f f') fields) ifields
             | _ => false
@@ -279,18 +279,18 @@ Section WellFormedness.
     | ScalarTypeDefinition _ => true
     | ObjectTypeDefinition name interfaces fields =>
       (fields != [::])
-        && uniq (fieldNames fields)
+        && uniq (fields_names fields)
         && all (wfField schema) fields
-        && uniq (typesNames interfaces)
+        && uniq (types_names interfaces)
         && all (implementsOK schema tdef) interfaces
     | InterfaceTypeDefinition _ fields =>
       (fields != [::])
-        &&  uniq (fieldNames fields)
+        &&  uniq (fields_names fields)
         && all (wfField schema) fields
     | UnionTypeDefinition name members =>
       (members != [::])
-        && uniq (typesNames members)
-        && all (isObjectType schema) members
+        && uniq (types_names members)
+        && all (is_object_type schema) members
     | EnumTypeDefinition _ enumValues =>
       (enumValues != [::]) && uniq enumValues
         
@@ -303,15 +303,15 @@ Section WellFormedness.
     match schema with
     | Schema query tdefs => match query with
                            | (NamedType root) =>
-                             (root \in (typeDefsNames tdefs)) &&
-                             uniq (typeDefsNames tdefs) &&                              
+                             (root \in (type_defs_names tdefs)) &&
+                             uniq (type_defs_names tdefs) &&                              
                              all (isWFTypeDef schema) tdefs                                                            
                            | _ => false
                            end
     end.
       
   
-  Record wfSchema := WFSchema {
+  Structure wfSchema := WFSchema {
                         schema : @schema Name ;
                         hasType :  Name -> Vals -> bool;
                         _ : schemaIsWF schema;

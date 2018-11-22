@@ -5,11 +5,6 @@ Unset Printing Implicit Defensive.
 
 From extructures Require Import ord.
 
-Require Import List.
-Import ListNotations.
-
-
-From Coq Require Import Bool String.
 
 
 Section Schema.
@@ -30,14 +25,29 @@ Section Schema.
   (** Types of data expected by query variables.
 
       https://facebook.github.io/graphql/June2018/#sec-Type-References **)
-
   Inductive type : Type :=
   | NamedType : Name -> type
   | ListType : type -> type.
 
 
+  
+  (** Get a type's wrapped name.
+      Corresponds to a named type's actual name or the name used in a list type
 
-  (** In the specification it is named "InputValue" (InputValueDefinition) but 
+      https://facebook.github.io/graphql/June2018/#sec-Type-References
+      https://facebook.github.io/graphql/June2018/#sec-Wrapping-Types
+   **)
+  Fixpoint name_of_type (ty : type) : Name :=
+    match ty with
+    | NamedType name => name
+    | ListType ty' => name_of_type ty'
+    end.
+
+  Coercion name_of_type : type >-> Ord.sort.
+  
+  (** Argument for a field.
+
+      In the specification it is named "InputValue" (InputValueDefinition) but 
       it is not very descriptive of what it is. Besides, it is constantly refered 
       as "argument", therefore it is named as FieldArgument (only fields can have
       arguments so it may sound redundant to name it like this but I feel it is
@@ -48,11 +58,19 @@ Section Schema.
   | FieldArgument : Name -> type -> FieldArgumentDefinition.
 
 
+ 
+  
   (** https://facebook.github.io/graphql/June2018/#FieldDefinition **)
   Inductive FieldDefinition : Type :=
-  | Field : Name -> list FieldArgumentDefinition -> type -> FieldDefinition.
+  | Field : Name -> seq FieldArgumentDefinition -> type -> FieldDefinition.
 
 
+  Definition name_of_field (fld : FieldDefinition) : Name :=
+    let: Field n _ _ := fld in n.
+  Definition type_of_field (fld : FieldDefinition) : type :=
+    let: Field _ _ ty := fld in ty.
+
+  Coercion type_of_field : FieldDefinition >-> type.
 
   (** Possible type definitions one can make in a GraphQL service. Some observations:
 
@@ -69,14 +87,15 @@ Section Schema.
     3. InputObjects: Currently not included to simplify the formalization.
 
 
-https://facebook.github.io/graphql/June2018/#TypeDefinition **)
+    https://facebook.github.io/graphql/June2018/#TypeDefinition
+   **)
 
   Inductive TypeDefinition : Type :=
   | ScalarTypeDefinition : Name -> TypeDefinition
-  | ObjectTypeDefinition : Name -> list type -> list FieldDefinition -> TypeDefinition
-  | InterfaceTypeDefinition : Name -> list FieldDefinition -> TypeDefinition
-  | UnionTypeDefinition : Name -> list type -> TypeDefinition
-  | EnumTypeDefinition : Name -> list EnumValue -> TypeDefinition.
+  | ObjectTypeDefinition : Name -> seq type -> list FieldDefinition -> TypeDefinition
+  | InterfaceTypeDefinition : Name -> seq FieldDefinition -> TypeDefinition
+  | UnionTypeDefinition : Name -> seq type -> TypeDefinition
+  | EnumTypeDefinition : Name -> seq EnumValue -> TypeDefinition.
   
 
   (** 
@@ -97,11 +116,69 @@ https://facebook.github.io/graphql/June2018/#TypeDefinition **)
 
 
    **)
-  Record schema := Schema {
+  Structure schema := Schema {
                       query_type : type;
-                      typeDefinitions : list TypeDefinition
+                      typeDefinitions : seq TypeDefinition
                     }.
 
+
+  
+ 
+    (** Establishing eqType for different structures: type, arguments, fields **)
+
+    
+    (** Get a tree out of a type **)
+    Fixpoint tree_of_type (ty : type) : GenTree.tree Name :=
+      match ty with
+      | NamedType n => GenTree.Leaf n
+      | ListType ty' => GenTree.Node 0 [:: tree_of_type ty']
+      end.
+
+    (** Get a type out of a tree or none **)
+    Fixpoint type_of_tree (t : GenTree.tree Name) : option type :=
+      match t with
+      | GenTree.Leaf n => Some (NamedType n)
+      | GenTree.Node 0 [:: t'] => if (type_of_tree t') is Some ty then
+                                   Some (ListType ty)
+                                 else
+                                   None
+      | _ => None
+      end.
+
+    Lemma pcan_tree_of_type : pcancel tree_of_type type_of_tree.
+    Proof.
+        by elim=> [| t /= ->].
+    Qed.
+
+    Definition type_eqMixin := PcanEqMixin pcan_tree_of_type.
+    Canonical type_eqType := EqType type type_eqMixin.
+    Definition type_choiceMixin := PcanChoiceMixin pcan_tree_of_type.
+    Canonical type_choiceType := ChoiceType type type_choiceMixin.
+
+    (*Definition type_ordMixin := PcanOrdMixin pcan_tree_of_type.
+    Canonical type_ordType := OrdType type type_ordMixin.*)
+    
+
+
+    Definition prod_of_arg (arg : FieldArgumentDefinition) := let: FieldArgument n t := arg in (n, t).
+    Definition arg_of_prod (p : prod Name type) := let: (n, t) := p in FieldArgument n t.
+
+    Lemma prod_of_argK : cancel prod_of_arg arg_of_prod.
+    Proof. by case. Qed.
+
+    Definition arg_eqMixin := CanEqMixin prod_of_argK.
+    Canonical arg_eqType := EqType FieldArgumentDefinition arg_eqMixin.
+
+
+
+    Definition prod_of_field (f : FieldDefinition) := let: Field n args t := f in (n, args, t).
+    Definition field_of_prod (p : Name * (seq.seq FieldArgumentDefinition) * type)  := let: (n, args, t) := p in Field n args t.
+
+    Lemma prod_of_fieldK : cancel prod_of_field field_of_prod.
+    Proof. by case. Qed.
+
+    Definition field_eqMixin := CanEqMixin prod_of_fieldK.
+    Canonical field_eqType := EqType FieldDefinition field_eqMixin.
 
 
 End Schema.
@@ -111,3 +188,7 @@ Arguments FieldArgumentDefinition [Name].
 Arguments FieldDefinition [Name].
 Arguments TypeDefinition [Name].
 Arguments Schema [Name].
+
+Arguments name_of_type [Name].
+Arguments name_of_field [Name].
+Arguments type_of_field [Name].
