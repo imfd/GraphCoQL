@@ -129,11 +129,7 @@ Section SchemaAux.
 
   (** Get names from a list of arguments **)
   Definition arguments_names (args : seq.seq FieldArgumentDefinition) : seq.seq Name :=
-    let extract arg := match arg with
-                      | FieldArgument name _ => name
-                      end
-    in
-    map extract args.
+    map (@name_of_argument Name) args.
 
  
   (** Get list of fields declared in an Object or Interface type definition **)
@@ -147,21 +143,11 @@ Section SchemaAux.
 
   Definition fields_names (flds : seq.seq FieldDefinition) : seq.seq Name := map (@name_of_field Name) flds.
 
-  (**
-     Gets the set of fields' names from a given type, if it is declared 
-     in the Schema and it corresponds to a type with 
-
-   **)
-  Definition fields_names_of_type schema (ty : type) : seq.seq Name :=
-    match lookup_type schema ty with
-    | Some (ObjectTypeDefinition _ _ flds) => fields_names flds
-    | Some (InterfaceTypeDefinition _ flds) => fields_names flds
-    | _ => []
-    end. 
-
+  
   
   (**
-     Gets the first field definition from a given type that matches the given field name. If the type is not declared in the Schema or the field does not belong to the type, then it returns None.
+     Gets the first field definition from a given type that matches the given field name. 
+     If the type is not declared in the Schema or the field does not belong to the type, then it returns None.
    **)
   Definition lookup_field_in_type schema (ty : type) (fname : Name) : option FieldDefinition :=
     let n_eq nt fld := let: Field name _ _ := fld in nt == name
@@ -170,7 +156,8 @@ Section SchemaAux.
 
 
   (** 
-      Gets the type of the first field definition from a given type that matches the given field name. If the type is not declared in the Schema or the field does not belong to the type, then it returns None.
+      Gets the type of the first field definition from a given type that matches the given field name. 
+      If the type is not declared in the Schema or the field does not belong to the type, then it returns None.
 
    **)
   Definition lookup_field_type schema (ty : type) (fname : Name)  : option type :=
@@ -227,10 +214,10 @@ Section SchemaAux.
   Definition get_possible_types schema (ty : type) : seq.seq type  :=
     match lookup_type schema ty with
     | Some (ObjectTypeDefinition _ _ _) => [:: ty]
-    | Some (InterfaceTypeDefinition _ _) =>
+    | Some (InterfaceTypeDefinition iname _) =>
       map (fun n => NamedType n)
           (type_defs_names (filter (fun tdef => match tdef with
-                                             | (ObjectTypeDefinition _ intfs _) => has (fun i => i == ty) intfs
+                                             | (ObjectTypeDefinition _ intfs _) => has (fun i => (name_of_type i) == iname) intfs
                                              | _ => false
                                              end) schema.(typeDefinitions)))
     | Some (UnionTypeDefinition _ mbs) => mbs

@@ -167,18 +167,18 @@ Section Example.
     Let g := GraphQLGraph r edges.
 
 
-    Lemma rtc : rootTypeConforms wf_schema g.
+    Lemma rtc : root_type_conforms wf_schema g.
     Proof.    by [].  Qed.
 
     
-    Lemma ec : edgesConform wf_schema edges.
+    Lemma ec : edges_conform wf_schema edges.
     Proof.
-        by rewrite /edgesConform /edges [fset]unlock.
+        by rewrite /edges_conform /edges [fset]unlock.
     Qed.
 
-    Lemma fc : fieldsConform wf_schema g.
+    Lemma fc : fields_conform wf_schema g.
     Proof.
-        by rewrite /fieldsConform /graph_s_nodes /= /edges [fset]unlock /=. Qed.
+        by rewrite /fields_conform /graph_s_nodes /= /edges [fset]unlock /=. Qed.
 
     Lemma nhot : nodes_have_object_type wf_schema g.
     Proof.
@@ -187,8 +187,6 @@ Section Example.
     
 
     Let wf_graph := ConformedGraph rtc ec fc nhot.
-
-
 
 
     
@@ -219,55 +217,57 @@ Section Example.
                        )
           ).
 
+  (*
   Lemma qc : SelectionConforms wf_schema q wf_schema.(query_type).
   Proof.
+    rewrite /q /query_type /=.
     apply: NestedFieldConforms.
-      by rewrite /lookupField /=.
+      by rewrite /lookup_field_in_type /=.
       by [].
     apply: SelectionSetConforms.
     apply: FieldConforms.  
-      by rewrite /lookupField /=.
+      by rewrite /lookup_field_in_type /=.
       by [].
     apply: NestedFieldConforms.
-      by rewrite /lookupField /=.
+      by rewrite /lookup_field_in_type /=.
       by [].
-    apply: SelectionSetConforms; rewrite /unwrapTypeName /=.
+    apply: SelectionSetConforms; rewrite /name_of_type /=.
 
-    apply: InlineFragmentConforms.
+    apply: InlineFragmentConforms "Human" _ _.
       by [].
       by exists "Human".
       apply: SelectionSetConforms.
       apply: LabeledFieldConforms.
-        by rewrite /lookupField /=.
+        by rewrite /lookup_field_in_type /=.
         by [].
       apply: NestedFieldConforms.
-        by rewrite /lookupField /=.
+        by rewrite /lookup_field_in_type /=.
         by [].
       apply: SelectionSetConforms.
       apply: LabeledFieldConforms.
-        by rewrite /lookupField /=.
+        by rewrite /lookup_field_in_type /=.
         by [].
       apply: FieldConforms.
-        by rewrite /lookupField /=.
+        by rewrite /lookup_field_in_type /=.
         by [].
     apply: InlineFragmentConforms.
       by [].
       by exists "Droid".
       apply: SelectionSetConforms.
       apply: LabeledFieldConforms.
-         by rewrite /lookupField /=.
+         by rewrite /lookup_field_in_type /=.
          by [].
       apply: FieldConforms.
-         by rewrite /lookupField /=.
+         by rewrite /lookup_field_in_type /=.
          by [].
-  Qed.
+  Qed.  *)
 
   Lemma qbc : selection_conforms wf_schema q wf_schema.(query_type).
-    Proof. by []. Qed.
+  Proof. by []. Qed.
 
 
 
-    Let wf_query := WFQuery qc. 
+    Let wf_query := WFQuery qbc. 
 
 
 

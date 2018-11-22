@@ -58,6 +58,8 @@ Section Schema.
   | FieldArgument : Name -> type -> FieldArgumentDefinition.
 
 
+  Definition name_of_argument (arg : FieldArgumentDefinition) := let: FieldArgument n _ := arg in n.
+  Definition type_of_argument (arg : FieldArgumentDefinition) := let: FieldArgument _ ty := arg in ty.
  
   
   (** https://facebook.github.io/graphql/June2018/#FieldDefinition **)
@@ -190,5 +192,9 @@ Arguments TypeDefinition [Name].
 Arguments Schema [Name].
 
 Arguments name_of_type [Name].
+
+Arguments name_of_argument [Name].
+Arguments type_of_argument [Name].
+
 Arguments name_of_field [Name].
 Arguments type_of_field [Name].

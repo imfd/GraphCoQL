@@ -35,60 +35,60 @@ Section QueryConformance.
      
     
   Inductive SelectionConforms schema : Query -> type -> Prop :=
-  | FieldConforms : forall tname fname α args ty,
-      lookupField schema tname fname = Some (Field fname args ty) ->
+  | FieldConforms : forall tname fty fname α args,
+      lookup_field_in_type schema (NamedType tname) fname = Some (Field fname args fty) ->
       argumentsConform schema α args ->
       SelectionConforms schema (SingleField fname α) (NamedType tname)
                         
   | LabeledFieldConforms : forall tname fname α args ty label,
-      lookupField schema tname fname = Some (Field fname args ty) ->
+      lookup_field_in_type schema tname fname = Some (Field fname args ty) ->
       argumentsConform schema α args ->
       SelectionConforms schema (LabeledField label fname α) (NamedType tname)
                         
-  | NestedFieldConforms : forall tname fname α ϕ args ty,
-      lookupField schema tname fname = Some (Field fname args ty) ->
+  | NestedFieldConforms : forall ty fty fname α ϕ args,
+      lookup_field_in_type schema ty fname = Some (Field fname args fty) ->
       argumentsConform schema α args ->
-      SelectionConforms schema ϕ (NamedType ty) ->
-      SelectionConforms schema (NestedField fname α ϕ) (NamedType tname)
+      SelectionConforms schema ϕ fty ->
+      SelectionConforms schema (NestedField fname α ϕ) ty
                         
   | NestedLabeledFieldConforms : forall tname fname α ϕ args ty label,
-      lookupField schema tname fname = Some (Field fname args ty) ->
+      lookup_field_in_type schema tname fname = Some (Field fname args ty) ->
       argumentsConform schema α args ->
       SelectionConforms schema ϕ (NamedType ty) ->
       SelectionConforms schema (NestedLabeledField label fname α ϕ) (NamedType tname)
                         
   | InlineFragmentConforms : forall ty ty' ϕ,
-      isObjectType schema (NamedType ty) || isInterfaceType schema (NamedType ty) || isUnionType schema (NamedType ty) -> 
+      is_object_type schema (NamedType ty) || is_interface_type schema (NamedType ty) || is_union_type schema (NamedType ty) -> 
       (exists name, (name \in get_possible_types schema (NamedType ty)) && (name \in get_possible_types schema (NamedType ty'))) ->
       SelectionConforms schema ϕ (NamedType ty) ->
       SelectionConforms schema (InlineFragment ty ϕ) (NamedType ty')
                         
   | SelectionSetConforms : forall ϕ ϕ' ty,
-      SelectionConforms schema ϕ (NamedType ty) ->
-      SelectionConforms schema ϕ' (NamedType ty) ->
-      SelectionConforms schema (SelectionSet ϕ ϕ') (NamedType ty) 
+      SelectionConforms schema ϕ ty ->
+      SelectionConforms schema ϕ' ty ->
+      SelectionConforms schema (SelectionSet ϕ ϕ') ty 
   .
 
 
   Fixpoint selection_conforms schema (query : Query) (ty : type) :=
     match query with
-    | SingleField fname α => match lookupField schema ty fname with
+    | SingleField fname α => match lookup_field_in_type schema ty fname with
                             | Some (Field fname args ty) => argumentsConform schema α args
                             | _ => false
                             end
-    | LabeledField _ fname α =>  match lookupField schema ty fname with
+    | LabeledField _ fname α =>  match lookup_field_in_type schema ty fname with
                                     | Some (Field fname args ty) => argumentsConform schema α args
                                     | _ => false
                                     end
-    | NestedField fname α ϕ =>  match lookupField schema ty fname with
+    | NestedField fname α ϕ =>  match lookup_field_in_type schema ty fname with
                                | Some (Field fname args ty') => argumentsConform schema α args && selection_conforms schema ϕ ty'
                                | _ => false
                                end
-    | NestedLabeledField _ fname α ϕ =>  match lookupField schema ty fname with
+    | NestedLabeledField _ fname α ϕ =>  match lookup_field_in_type schema ty fname with
                                         | Some (Field fname args ty') => argumentsConform schema α args && selection_conforms schema ϕ ty'
                                         | _ => false
                                         end
-    | InlineFragment t ϕ => if isObjectType schema (NamedType t) || isInterfaceType schema (NamedType t) || isUnionType schema (NamedType t) then
+    | InlineFragment t ϕ => if is_object_type schema (NamedType t) || is_interface_type schema (NamedType t) || is_union_type schema (NamedType t) then
                              let possible_t_types := get_possible_types schema (NamedType t) in
                              let possible_ty_types := get_possible_types schema ty in
                              (has (fun x => x \in possible_ty_types) possible_t_types) &&
@@ -102,7 +102,7 @@ Section QueryConformance.
   
   Structure wfQuery (schema : @wfSchema Name Vals) := WFQuery {
                               query : Query;
-                              queryConforms : SelectionConforms schema query (root schema)
+                              queryConforms : selection_conforms schema query schema.(query_root)
                             }.
 
 
