@@ -140,7 +140,7 @@ Section Query.
 
 
 
-(*
+
    Fixpoint response_eq r1 r2 :=
      match r1, r2 with
      | Empty, Empty => true
@@ -161,27 +161,42 @@ Section Query.
      | _, _ => false
      end.
 
-
+(*
    Lemma response_eqP : Equality.axiom response_eq.
    Proof.
      rewrite /Equality.axiom => x y.
      apply: (iffP idP) => [|<-].
-     move: y;  induction x using mResponseObject_ind.   
+     move: y;  elim: x.   
        by case.
-       by case=> //; move=> l' /=; move/eqP=> ->.
-       by case=> // l' v' /=; by move/andP=> [/eqP -> /eqP ->].
-       by case=> // l' vals' /=; move/andP=> [/eqP -> /eqP ->].
-       case=> // l' r' /=; move/andP=> [/eqP -> H].
-         by apply IHx in H; rewrite H.
-       case=> // l' rs' /=; move/andP=> [/eqP ->].        
-         elim: rs rs' => [| r0 rs0 IH] [|r1 rs1] //=. 
-         case (response_eq r0 r1) => //. apply IH in IH'.
-         rewrite (_ : rs0 = rs1) in H.
-         rewrite (_ : (r0 :: rs0) = (r1 :: rs1)) //.
-*)
+       by move=> l; case=> //; move=> l' /=; move/eqP=> ->.
+       by move=> l v; case=> // l' v' /=; by move/andP=> [/eqP -> /eqP ->].
+       by move=> l vals; case=> // l' vals' /=; move/andP=> [/eqP -> /eqP ->].
+       move=> l r IH; case=> // l' r' /=; move/andP=> [/eqP -> H].
+         by apply IH in H; rewrite H.
+       move=> l rs IH. case=> // l' rs' /=.
+         move/andP=> [/eqP ->].
+         elim: rs rs' IH => [| r0 rs0 IH] [| r1 rs1] //=.
+         move=> [H /IH {IH} IH] /=.
+         case E : (response_eq r0 r1) => //= /IH.
+         apply H in E; rewrite E.
+         by case=> ->.
+       move=> r IH r' IH'; case=> // => r2 r2' /=; move/andP=> [H1 H2].
+         by apply IH in H1; apply IH' in H2; rewrite H1 H2.
+     elim: x => //=.
+       by move=> l v; rewrite !eqxx.    
+       by move=> l vals; rewrite !eqxx.
+       by move=> l r; rewrite !eqxx.
+       move=> l vals IH /=; elim: vals IH => [| r rs IH] //=.
+         by rewrite !eqxx.
+         by move=> [H]; rewrite H.
+       by move=> r IH r' IH'; rewrite IH IH'.
+   Qed.
 
-
-       
+   
+   Definition response_eqMixin := Equality.Mixin response_eqP.
+   Canonical response_eqType := EqType ResponseObject response_eqMixin.
+   
+ *)
    
    Fixpoint tree_of_response response : GenTree.tree (Name + (Vals + seq Vals)) :=
      match response with
@@ -222,7 +237,8 @@ Section Query.
    Canonical response_choiceType := ChoiceType ResponseObject response_choiceMixin.
    Definition response_ordMixin := CanOrdMixin tree_of_responseK.
    Canonical response_ordType := OrdType ResponseObject response_ordMixin.
-   
+
+
   (*
   Fixpoint query_eq q1 q2 :=
     match q1, q2 with
