@@ -1,0 +1,20 @@
+-arg "-w -notation-overridden"
+
+-R ./lib Lib
+
+./lib/treeordtype.v
+
+
+-R ./src GraphCoQL
+
+./src/Schema.v
+./src/SchemaAux.v
+./src/SchemaWellFormedness.v
+./src/Graph.v
+./src/GraphAux.v
+./src/Conformance.v
+./src/Query.v
+./src/QueryAux.v
+./src/QueryConformance.v
+./src/QuerySemantic.v
+./src/Example.v
