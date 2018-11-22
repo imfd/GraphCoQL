@@ -9,6 +9,7 @@ Require Import List.
 Import ListNotations.
 
 Require Import Schema.
+Require Import treeordtype.
 
 Set Implicit Arguments.
 
@@ -18,30 +19,33 @@ Section SchemaAux.
   Variable Name : ordType.
 
   
-  Fixpoint typeEq (ty ty' : @type Name) : bool :=
-    match ty, ty' with
-    | NamedType n, NamedType n' => n == n'
-    | ListType ty, ListType ty' => typeEq ty ty'
-    | _, _ => false
+  Fixpoint tree_of_type (ty : type) : GenTree.tree Name :=
+    match ty with
+    | NamedType n => GenTree.Leaf n
+    | ListType ty' => GenTree.Node 0 [:: tree_of_type ty']
     end.
 
-  
-  
-  Lemma typeEqP : Equality.axiom typeEq.
+  Fixpoint type_of_tree (t : GenTree.tree Name) :=
+    match t with
+    | GenTree.Leaf n => Some (NamedType n)
+    | GenTree.Node 0 [:: t'] => if (type_of_tree t') is Some ty then
+                            Some (ListType ty)
+                          else
+                            None
+    | _ => None
+    end.
+
+  Lemma pcan_tree_of_type : pcancel tree_of_type type_of_tree.
   Proof.
-    rewrite /Equality.axiom.
-    move => ty ty'; apply: (iffP idP).
-    elim:  ty ty' => [n | t IHt] [n' | t' IHt'] //=.
-      by move/eqP => ->.
-      simpl in IHt'.
-      move : (IHt _ IHt').
-        by move => H ; rewrite H.
-        move => H ; rewrite H.
-          elim ty' => [//=|//=].
+    by elim=> [| t /= ->].
   Qed.
 
-  Definition type_eqMixin := Equality.Mixin typeEqP.
+  Definition type_eqMixin := PcanEqMixin pcan_tree_of_type.
   Canonical type_eqType := EqType type type_eqMixin.
+  Definition type_choiceMixin := PcanChoiceMixin pcan_tree_of_type.
+  Canonical type_choiceType := ChoiceType type type_choiceMixin.
+  (* Definition type_ordMixin := PcanOrdMixin pcan_tree_of_type.
+  Canonical type_ordType := OrdType type type_ordMixin. *)
         
 
 
