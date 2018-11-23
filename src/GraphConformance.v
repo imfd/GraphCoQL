@@ -62,7 +62,7 @@ Section Conformance.
   Definition field_type_conforms schema (fieldType targetType : Name) : bool :=
     (fieldType == targetType) ||
     (declares_implementation schema (NamedType targetType) (NamedType fieldType)) ||
-    (targetType \in (union_members schema (NamedType fieldType))).
+    ((NamedType targetType) \in (union_members schema (NamedType fieldType))).
 
 
   

@@ -100,7 +100,7 @@ Section Example.
   Let schema  := Schema "Query"  [:: IDType; StringType; FloatType;  StarshipType;  CharacterType; DroidType; HumanType; EpisodeType; SearchResultType; QueryType].
 
 
-  Lemma sdf : schemaIsWF schema.
+  Lemma sdf : is_schema_wf schema.
   Proof. by []. Qed.
   
 
@@ -487,7 +487,7 @@ Section GraphQLSpecExamples.
                                        CatCommandEnum; CatType;
                                          CatOrDogUnion; DogOrHumanUnion; HumanOrAlienUnion].
 
-  Lemma schwf : schemaIsWF schema.
+  Lemma schwf : is_schema_wf schema.
   Proof. by []. Qed.
 
   Let wf_schema : @wfSchema string_ordType string_ordType   := WFSchema (fun n v => true) schwf.

@@ -109,7 +109,7 @@ Section SchemaAux.
 
 
 
-  Definition types_names (tys : seq.seq type) := map (@name_of_type Name) tys.
+  Definition types_names (tys : seq.seq type) : seq.seq Name := map (@name_of_type Name) tys.
 
   (** Get a type definition's name.
       Corresponds to the name one gives to an object, interface, etc.
@@ -124,7 +124,7 @@ Section SchemaAux.
     end.
 
   (** Get type definitions' names *)
-  Definition type_defs_names (tdefs : seq.seq TypeDefinition) := map type_def_name tdefs.
+  Definition type_defs_names (tdefs : seq.seq TypeDefinition) : seq.seq Name := map type_def_name tdefs.
 
 
   (** Get names from a list of arguments **)
@@ -171,9 +171,9 @@ Section SchemaAux.
      Get the union's types' names.
      If the type is not declared as Union in the Schema, then returns None.
    **)
-  Definition union_members schema (ty : type) : seq.seq Name :=
+  Definition union_members schema (ty : type) : seq.seq type :=
     match lookup_type schema ty with
-    | Some (UnionTypeDefinition name mbs) => map (@name_of_type Name) mbs
+    | Some (UnionTypeDefinition name mbs) => mbs
     | _ => []
     end.
 
