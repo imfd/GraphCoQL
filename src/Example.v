@@ -321,7 +321,7 @@ Section Example.
     
     Let g := GraphQLGraph r1 edges1.
 
-    Example rtNc : ~ rootTypeConforms wf_schema g.
+    Example rtNc : ~ root_type_conforms wf_schema g.
     Proof. by []. Qed.
 
 
@@ -339,8 +339,8 @@ Section Example.
     
     Let g2 := GraphQLGraph r edges2.
     
-    Example eNc : ~ edgesConform wf_schema edges2.
-    Proof. by rewrite /edgesConform /edges2 [fset]unlock. Qed. 
+    Example eNc : ~ edges_conform wf_schema edges2.
+    Proof. by rewrite /edges_conform /edges2 [fset]unlock. Qed. 
     
     
     (** Types are incorrect **)
@@ -357,8 +357,8 @@ Section Example.
     
     Let g3 := GraphQLGraph r edges3.
     
-    Example eNc3 : ~ edgesConform wf_schema edges3.
-    Proof. by rewrite /edgesConform /edges3 [fset]unlock. Qed.
+    Example eNc3 : ~ edges_conform wf_schema edges3.
+    Proof. by rewrite /edges_conform /edges3 [fset]unlock. Qed.
 
 
 
@@ -374,8 +374,8 @@ Section Example.
 
     Let g4 := GraphQLGraph r edges4.
     
-    Example eNc4 : ~ edgesConform wf_schema edges4.
-    Proof. by rewrite /edgesConform /edges4 [fset]unlock. Qed.
+    Example eNc4 : ~ edges_conform wf_schema edges4.
+    Proof. by rewrite /edges_conform /edges4 [fset]unlock. Qed.
 
 
 
@@ -392,8 +392,8 @@ Section Example.
     Let g5 := GraphQLGraph r edges5.
 
     
-    Example fNc : ~ fieldsConform wf_schema g5.
-    Proof. rewrite /fieldsConform /graph_s_nodes /= /edges5 [fset]unlock //=. Qed.
+    Example fNc : ~ fields_conform wf_schema g5.
+    Proof. rewrite /fields_conform /graph_s_nodes /= /edges5 [fset]unlock //=. Qed.
     
   End WrongGraph.
 

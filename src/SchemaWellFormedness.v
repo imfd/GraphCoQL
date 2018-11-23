@@ -40,32 +40,48 @@ Section WellFormedness.
         be subtype of an interface and not between objects. Interfaces cannot be
         subtype of another interface.
    **)
- (* Inductive subtype schema : type -> type -> Prop :=
+  Inductive subtype schema : type -> type -> Prop :=
   | ST_Refl : forall ty, subtype schema ty ty
-  | ST_Object : forall ty ty' name iname intfs fields ifields,
-      lookup_type schema name = Some (@ObjectTypeDefinition Name name intfs fields) ->
-      ty' \in intfs ->
-      lookup_type schema ty' = Some (InterfaceTypeDefinition iname ifields) ->
-      subtype schema (NamedType name) (NamedType Name iname)
+  | ST_Object : forall n n',
+      declares_implementation schema (NamedType n) (NamedType n') ->
+      subtype schema (NamedType n) (NamedType n')
   | ST_ListType : forall ty ty',
       subtype schema ty ty' ->
-      subtype schema (ListType ty) (@ListType Name ty'). *)
+      subtype schema (ListType ty) (ListType ty'). 
 
-  Fixpoint isSubtype schema (ty ty' : type) : bool :=
+  Fixpoint is_subtype schema (ty ty' : type) : bool :=
     match ty, ty' with
-    | (ListType lty), (ListType lty') => isSubtype schema lty lty'
+    | (ListType lty), (ListType lty') => is_subtype schema lty lty'
     | (NamedType name), (NamedType name') => if name == name' then
                                               true
                                             else
-                                              match lookup_type schema ty with
-                                              | Some (ObjectTypeDefinition _ intfs _) =>
-                                                (ty' \in intfs)  && is_interface_type schema ty'
-                                              | _ => false
-                                              end
+                                              declares_implementation schema ty ty'
     | _, _ => false
     end.
-                                                                                                                
-  
+
+
+  Variable sch : @schema Name.
+
+  Lemma subtypeP : forall ty ty', reflect (subtype sch ty ty') (is_subtype sch ty ty').
+  Proof.
+    move=> ty ty'; apply: (iffP idP).
+    move: ty'; elim: ty => n.
+    case => //.
+      move=> n' /=.
+      case E: (n == n').
+        by move/eqP: E => -> _; apply ST_Refl.
+        by apply ST_Object.
+      by move=> IH; case=> // => t' /= /IH; apply ST_ListType.
+    elim.
+      elim=> //.
+        by move=> n /=; rewrite (_ : n == n).
+      move=> n n' H /=.
+        by case (n == n').
+      by [].
+  Qed.
+      
+
+        
   (** The two following definitions describe whether a given type is a valid type
       for a field argument (IsValidArgumentType) and if it is a valid type for a field itself 
       (IsValidFieldType).
@@ -136,7 +152,7 @@ Section WellFormedness.
    **)
   Inductive fieldOk schema : FieldDefinition -> FieldDefinition -> Prop :=              
   | InterfaceField : forall fname ty ty' args args',
-      isSubtype schema ty ty' ->
+      is_subtype schema ty ty' ->
       incl args' args ->
       fieldOk schema (Field fname args ty) (Field fname args' ty')
               
@@ -154,9 +170,9 @@ Section WellFormedness.
             match ty' with
             | (NamedType _) => match lookup_type schema ty' with
                                   | Some (UnionTypeDefinition _ objs) => ty \in objs
-                                  | _ => isSubtype schema ty ty'
+                                  | _ => is_subtype schema ty ty'
                                   end
-            | _ => isSubtype schema ty ty'
+            | _ => is_subtype schema ty ty'
             end
       else
         false
