@@ -286,33 +286,33 @@ Section WellFormedness.
                           enum E { Evs } 
 
    **)
-  Inductive wfTypeDefinition schema : TypeDefinition -> Prop :=
-  | WF_Scalar : forall name, wfTypeDefinition schema (ScalarTypeDefinition name)
+  Inductive wf_type_definition schema : TypeDefinition -> Prop :=
+  | WF_Scalar : forall name, wf_type_definition schema (ScalarTypeDefinition name)
                        
   | WF_Object : forall name interfaces fields,
-      fields <> [] ->
+      fields != [::] ->
       uniq (fields_names fields) ->
       all (is_field_wf schema) fields ->
       uniq (types_names interfaces) ->
       all (implements_interface_correctly schema (ObjectTypeDefinition name interfaces fields)) interfaces ->
-      wfTypeDefinition schema (ObjectTypeDefinition name interfaces fields)
+      wf_type_definition schema (ObjectTypeDefinition name interfaces fields)
                        
   | WF_Interface : forall name fields,
-      fields <> [] ->
+      fields != [::] ->
       uniq (fields_names fields) ->
       all (is_field_wf schema) fields ->
-      wfTypeDefinition schema (InterfaceTypeDefinition name fields)
+      wf_type_definition schema (InterfaceTypeDefinition name fields)
                        
   | WF_Union : forall name members,
-      members <> [] ->
+      members != [::] ->
       uniq (types_names members) ->
       all (is_object_type schema) members ->
-      wfTypeDefinition schema (UnionTypeDefinition name members)
+      wf_type_definition schema (UnionTypeDefinition name members)
                        
   | WF_Enum : forall name enumValues,
-      enumValues <> [] ->
+      enumValues != [::] ->
       uniq enumValues ->
-      wfTypeDefinition schema (EnumTypeDefinition name enumValues).
+      wf_type_definition schema (EnumTypeDefinition name enumValues).
 
 
   Fixpoint is_type_def_wf schema (tdef : TypeDefinition) : bool :=
@@ -336,10 +336,20 @@ Section WellFormedness.
       (enumValues != [::]) && uniq enumValues
         
     end.
-                
-                                     
 
-                 
+
+  Lemma wf_type_definitionP schema : forall tdef, reflect (wf_type_definition sch tdef) (is_type_def_wf sch tdef).
+  Proof.
+    move=> tdef; apply (iffP idP).
+    case: tdef; move=> n //=.
+      by move=> _; apply WF_Scalar.
+      by move=> intfs flds; move/andP=> [/andP [/andP [/andP [H1 H2] H3] H4] H']; apply WF_Object.
+      by move=> flds; move/andP=> [/andP [H1 H2] H3]; apply WF_Interface.  
+      by move=> mbs; move/andP=> [/andP [H1 H2] H3]; apply WF_Union.
+      by move=> es; move/andP=> [H1 H2]; apply WF_Enum.
+    case => //.
+    Admitted.
+    
   Definition is_schema_wf schema : bool :=
     let: Schema query_type tdefs := schema in
     match query_type with
