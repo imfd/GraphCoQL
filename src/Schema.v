@@ -183,6 +183,32 @@ Section Schema.
     Canonical field_eqType := EqType FieldDefinition field_eqMixin.
 
 
+    Definition type_definition_eq tdef1 tdef2 :=
+      match tdef1, tdef2 with
+      | ScalarTypeDefinition n, ScalarTypeDefinition n' => n == n'
+      | ObjectTypeDefinition n tys flds, ObjectTypeDefinition n' tys' flds' => (n == n') && (tys == tys') && (flds == flds')
+      | InterfaceTypeDefinition n flds, InterfaceTypeDefinition n' flds' => (n == n') && (flds == flds')
+      | UnionTypeDefinition n mbs, UnionTypeDefinition n' mbs' => (n == n') && (mbs == mbs')
+      | EnumTypeDefinition n es, EnumTypeDefinition n' es' => (n == n') && (es == es')
+      | _, _ => false
+      end.
+  
+
+    Lemma type_definition_eqP : Equality.axiom type_definition_eq.
+    Proof.
+      move=> t1 t2; apply: (iffP idP) => [|<-].
+      elim: t1; elim: t2 => //.
+        by move=> n n' /= /eqP => ->.
+        by move=> n tys flds n' tys' flds' /=; move/andP=> [/andP [/eqP -> /eqP ->] /eqP ->].
+        by move=> n flds n' flds' /=; move/andP=> [/eqP -> /eqP ->].  
+        by move=> n mbs n' mbs'; move/andP=> [/eqP -> /eqP ->].
+        by move=> n es n' es'; move/andP=> [/eqP -> /eqP ->].
+      by elim: t1 => [s | s tys flds | s flds | s mbs | s es] /=; rewrite !eqxx. 
+    Qed.
+
+    Definition type_definition_eqMixin := EqMixin type_definition_eqP.
+    Canonical type_definition_eqType := EqType TypeDefinition type_definition_eqMixin.
+      
 End Schema.
 
 Arguments type [Name].
