@@ -90,31 +90,67 @@ Section WellFormedness.
 
       https://facebook.github.io/graphql/June2018/#sec-Input-and-Output-Types **)
 
-  Fixpoint isValidArgumentType schema (ty : type) : bool :=
+  Inductive valid_argument_type schema : type -> Prop :=
+  | VScalar_Arg : forall ty,
+      is_scalar_type schema ty ->
+      valid_argument_type schema ty
+  | VEnum_Arg : forall ty,
+      is_enum_type schema ty ->
+      valid_argument_type schema ty
+  | VList_Arg : forall ty,
+      valid_argument_type schema ty ->
+      valid_argument_type schema (ListType ty).
+  
+  Fixpoint is_valid_argument_type schema (ty : type) : bool :=
     match ty with
     | NamedType _ => is_scalar_type schema ty || is_enum_type schema ty
-    | ListType ty' => isValidArgumentType schema ty'
+    | ListType ty' => is_valid_argument_type schema ty'
     end.
-    
 
+
+  Lemma valid_argument_typeP : forall ty, reflect (valid_argument_type sch ty) (is_valid_argument_type sch ty).
+  Proof.
+    move=> ty; apply: (iffP idP).
+    elim: ty.
+      by move=> n; move/orP=> [Hs | He]; [apply (VScalar_Arg Hs) | apply (VEnum_Arg He)].
+      by move=> t IH /= /IH; apply VList_Arg.
+    elim.
+       by case=> //; move=> n H; apply Bool.orb_true_iff; left.
+       by case=> //; move=> n H; apply Bool.orb_true_iff; right.
+       by case.
+  Qed.
+  
   (* Because we are not considering InputObjects, a field may have any type, 
      as long as it is declared in the Schema. *)
-  Fixpoint isValidFieldType schema (ty : type) : bool :=
+  Inductive valid_field_type schema : type -> Prop :=
+  | VBase_Type : forall n,
+      lookup_type schema (NamedType n) != None ->
+      valid_field_type schema (NamedType n)      
+  | VList_Type : forall ty,
+      valid_field_type schema ty ->
+      valid_field_type schema (ListType ty).
+  
+  Fixpoint is_valid_field_type schema (ty : type) : bool :=
     match ty with
-    | NamedType _ => match lookup_type schema ty with
-                    | Some tdef => true
-                    | _ => false
-                    end
-    | ListType ty' => isValidFieldType schema ty'
+    | NamedType _ => ~~ ((lookup_type schema ty) == None)
+    | ListType ty' => is_valid_field_type schema ty'
     end.
   
 
+  Lemma valid_field_typeP : forall ty, reflect (valid_field_type sch ty) (is_valid_field_type sch ty).
+  Proof.
+    move=> ty; apply: (iffP idP); last by elim.
+    elim: ty.
+      move=> n /=. apply VBase_Type.
+      move=> t H /= /H; apply VList_Type.
+  Qed.
 
+  
   (** 
       It checks whether an argument is well-formed by checking that
       its type is a valid type for an argument **)
   Definition wfFieldArgument schema (argDef : FieldArgumentDefinition) : bool :=
-    let: FieldArgument aname ty := argDef in isValidArgumentType schema ty.
+    let: FieldArgument aname ty := argDef in is_valid_argument_type schema ty.
 
   
   (**
@@ -125,10 +161,10 @@ Section WellFormedness.
            ∀ arg ∈ args, arg isWellFormed
            ------------------------------
            (fname (args) : ty) isAWellFormedField
-  **)
+   **)
   Definition wfField schema (fld : FieldDefinition) : bool :=
     let: Field name args outputType := fld in
-    isValidFieldType schema outputType &&
+    is_valid_field_type schema outputType &&
                      uniq (arguments_names args) &&
                      all (wfFieldArgument schema) args.
 
