@@ -9,6 +9,7 @@ Require Import List.
 Import ListNotations.
 
 Require Import Schema.
+Require Import treeordtype.
 
 Set Implicit Arguments.
 
@@ -18,128 +19,89 @@ Section SchemaAux.
   Variable Name : ordType.
 
   
-  Fixpoint typeEq (ty ty' : @type Name) : bool :=
-    match ty, ty' with
-    | NamedType n, NamedType n' => n == n'
-    | ListType ty, ListType ty' => typeEq ty ty'
-    | _, _ => false
-    end.
-
-  
-  
-  Lemma typeEqP : Equality.axiom typeEq.
-  Proof.
-    rewrite /Equality.axiom.
-    move => ty ty'; apply: (iffP idP).
-    elim:  ty ty' => [n | t IHt] [n' | t' IHt'] //=.
-      by move/eqP => ->.
-      simpl in IHt'.
-      move : (IHt _ IHt').
-        by move => H ; rewrite H.
-        move => H ; rewrite H.
-          elim ty' => [//=|//=].
-  Qed.
-
-  Definition type_eqMixin := Equality.Mixin typeEqP.
-  Canonical type_eqType := EqType type type_eqMixin.
-        
-
-
-  Definition prod_of_arg (arg : @FieldArgumentDefinition Name) := let: FieldArgument n t := arg in (n, t).
-  Definition arg_of_prod (p : prod Name type) := let: (n, t) := p in FieldArgument n t.
-
-  Lemma prod_of_argK : cancel prod_of_arg arg_of_prod.
-  Proof. by case. Qed.
-
-   Definition arg_eqMixin := CanEqMixin prod_of_argK.
-   Canonical arg_eqType := EqType FieldArgumentDefinition arg_eqMixin.
-
-
-
-   Definition prod_of_field (f : @FieldDefinition Name) := let: Field n args t := f in (n, args, t).
-   Definition field_of_prod (p : Name * (seq.seq FieldArgumentDefinition) * type)  := let: (n, args, t) := p in Field n args t.
-
-   Lemma prod_of_fieldK : cancel prod_of_field field_of_prod.
-   Proof. by case. Qed.
-
-   Definition field_eqMixin := CanEqMixin prod_of_fieldK.
-   Canonical field_eqType := EqType FieldDefinition field_eqMixin.
-
-   
+  (* Schema used as parameter in later functions *) 
   Implicit Type schema : @schema Name.
-  
-  Definition root schema : type := schema.(query_type).
+
+
+  (** Get the query root type for the given Schema **)
+  Definition query_root schema : type := schema.(query_type). 
+
   
   (**
    Looks up a name in the given document, returning the type definition if it
    was declared in the document.
    **)
-  Definition lookupName schema (name : Name)  : option TypeDefinition :=
-    match schema with
-    | (Schema _ tdefs) =>
-      let n_eq nt tdef := match tdef with
-                         | ScalarTypeDefinition name =>  nt == name
-                         | ObjectTypeDefinition name _  _ =>  nt == name
-                         | InterfaceTypeDefinition name _ => nt == name
-                         | UnionTypeDefinition name _ => nt == name
-                         | EnumTypeDefinition name _ =>  nt == name
-                         end
-      in
-      find (n_eq name) tdefs
-    end.
+  Definition lookup_type schema (ty : type)  : option TypeDefinition :=
+    let: (Schema _ tdefs) := schema in
+    let n_eq nt tdef := match tdef with
+                       | ScalarTypeDefinition name =>  (name_of_type nt) == name 
+                       | ObjectTypeDefinition name _  _ =>  (name_of_type nt) == name
+                       | InterfaceTypeDefinition name _ => (name_of_type nt) == name
+                       | UnionTypeDefinition name _ => (name_of_type nt) == name
+                       | EnumTypeDefinition name _ =>  (name_of_type nt) == name
+                       end
+    in
+    find (n_eq ty) tdefs.
+    
 
 
-  Definition isScalarType schema (ty : type) : bool :=
+  (** Checks whether the given type is defined as a Scalar in the Schema **)
+  Definition is_scalar_type schema (ty : type) : bool :=
     match ty with
-    | (NamedType name) =>
-      match (lookupName schema name) with
-      | Some (ScalarTypeDefinition name) => true
+    | (NamedType _) =>
+      match (lookup_type schema ty) with
+      | Some (ScalarTypeDefinition _) => true
       | _ => false
       end
     | _ => false
     end.
 
-  Definition isObjectType schema (ty : type) : bool :=
+  (** Checks whether the given type is defined as an Object in the Schema **)
+  Definition is_object_type schema (ty : type) : bool :=
     match ty with
-    | (NamedType name) =>
-      match (lookupName schema name) with
-      | Some (ObjectTypeDefinition name _ _) => true
+    | (NamedType _) =>
+      match (lookup_type schema ty) with
+      | Some (ObjectTypeDefinition _ _ _) => true
       | _ => false
       end
     | _ => false
     end.
 
-  Definition isInterfaceType schema (ty : type) : bool :=
+  (** Checks whether the given type is defined as an Interface in the Schema **)
+  Definition is_interface_type schema (ty : type) : bool :=
     match ty with
-    | (NamedType name) =>
-      match (lookupName schema name) with
-      | Some (InterfaceTypeDefinition name _) => true
+    | (NamedType _) =>
+      match (lookup_type schema ty) with
+      | Some (InterfaceTypeDefinition _ _) => true
       | _ => false
       end
     | _ => false
     end.
 
-  Definition isUnionType schema (ty : type) : bool :=
+  (** Checks whether the given type is defined as a Union in the Schema **)
+  Definition is_union_type schema (ty : type) : bool :=
     match ty with
-    | (NamedType name) =>
-      match (lookupName schema name) with
-      | Some (UnionTypeDefinition name _) => true
+    | (NamedType _) =>
+      match (lookup_type schema ty) with
+      | Some (UnionTypeDefinition _ _) => true
       | _ => false
       end
     | _ => false
     end.
 
-  Definition isEnumType schema (ty : type) : bool :=
+  (** Checks whether the given type is defined as an Enum in the Schema **)
+  Definition is_enum_type schema (ty : type) : bool :=
     match ty with
-    | (NamedType name) =>
-      match (lookupName schema name) with
-      | Some (EnumTypeDefinition name _) => true
+    | (NamedType _) =>
+      match (lookup_type schema ty) with
+      | Some (EnumTypeDefinition _ _) => true
       | _ => false
       end
     | _ => false
     end.
 
-  Definition isListType (ty : @type Name) : bool :=
+  (** Checks whether the given type is a list type (does not care for the wrapped type) **)
+  Definition is_list_type (ty : @type Name) : bool :=
     match ty with
     | (ListType ty') => true
     | _ => false
@@ -147,9 +109,12 @@ Section SchemaAux.
 
 
 
+  Definition types_names (tys : seq.seq type) : seq.seq Name := map (@name_of_type Name) tys.
+
   (** Get a type definition's name.
- Corresponds to the name one gives to an object, interface, etc. **)
-  Definition typeDefName (tdef : TypeDefinition) : Name :=
+      Corresponds to the name one gives to an object, interface, etc.
+   **)
+  Definition type_def_name (tdef : TypeDefinition) : Name :=
     match tdef with 
     | ScalarTypeDefinition name => name
     | ObjectTypeDefinition name _ _ => name
@@ -159,122 +124,115 @@ Section SchemaAux.
     end.
 
   (** Get type definitions' names *)
-  Definition typeDefsNames (tdefs : list TypeDefinition) := map typeDefName tdefs.
+  Definition type_defs_names (tdefs : seq.seq TypeDefinition) : seq.seq Name := map type_def_name tdefs.
 
 
-  (** Get a type's name.
-    Corresponds to named type actual name or the name used in a list type **)
-  Fixpoint unwrapTypeName (ty : type) : Name :=
-    match ty with
-    | NamedType name => name
-    | ListType ty' => unwrapTypeName ty'
-    end.
+  (** Get names from a list of arguments **)
+  Definition arguments_names (args : seq.seq FieldArgumentDefinition) : seq.seq Name :=
+    map (@name_of_argument Name) args.
 
-  Coercion unwrapTypeName : type >-> Ord.sort.
-
-  (** Get types' names **)
-  Definition typesNames (tys : list type) : list Name := map unwrapTypeName tys.
-
-  (** Get arguments' names **)
-  Definition argNames (args : list FieldArgumentDefinition) : list Name :=
-    let extract arg := match arg with
-                      | FieldArgument name _ => name
-                      end
-    in
-    map extract args.
-
-  (** Get a field's name **)
-  Definition fieldName (fld : FieldDefinition) : Name :=
-    let: Field name _ _ := fld in name.
-
-  (** Get fields' names **)
-  Definition fieldNames (flds : list FieldDefinition) : list Name := map fieldName flds.
-
-
+ 
   (** Get list of fields declared in an Object or Interface type definition **)
-  Definition fieldDefinitions schema (name : Name) : list FieldDefinition :=
-    match lookupName schema name with
+  Definition field_definitions schema (ty : type) : list FieldDefinition :=
+    match lookup_type schema ty with
     | Some (ObjectTypeDefinition _ _ flds) => flds
     | Some (InterfaceTypeDefinition _ flds) => flds
     | _ => []
     end.
 
 
-  Definition fields schema (name : Name) : list Name :=
-    match lookupName schema name with
-    | Some (ObjectTypeDefinition _ _ flds) => fieldNames flds
-    | Some (InterfaceTypeDefinition _ flds) => fieldNames flds
-    | _ => []
-    end.
+  Definition fields_names (flds : seq.seq FieldDefinition) : seq.seq Name := map (@name_of_field Name) flds.
 
-  Definition fieldType (fld : FieldDefinition) : @type Name :=
-    let: Field _ _ ty := fld in ty.
-
-  Definition lookupField schema (tname fname : Name) : option FieldDefinition :=
+  
+  
+  (**
+     Gets the first field definition from a given type that matches the given field name. 
+     If the type is not declared in the Schema or the field does not belong to the type, then it returns None.
+   **)
+  Definition lookup_field_in_type schema (ty : type) (fname : Name) : option FieldDefinition :=
     let n_eq nt fld := let: Field name _ _ := fld in nt == name
     in
-    find (n_eq fname) (fieldDefinitions schema tname).
+    find (n_eq fname) (field_definitions schema ty).
 
-  Definition lookupFieldType schema (tname fname : Name)  : option type :=
-    match lookupField schema tname fname with
-    | Some fieldDef => Some (fieldType fieldDef)
+
+  (** 
+      Gets the type of the first field definition from a given type that matches the given field name. 
+      If the type is not declared in the Schema or the field does not belong to the type, then it returns None.
+
+   **)
+  Definition lookup_field_type schema (ty : type) (fname : Name)  : option type :=
+    match lookup_field_in_type schema ty fname with
+    | Some fieldDef => Some (type_of_field fieldDef) 
     | None => None
     end.
 
 
-  Definition union schema (tname : Name) : seq.seq Name :=
-    match lookupName schema tname with
-    | Some (UnionTypeDefinition name mbs) => map unwrapTypeName mbs
+  (**
+     Get the union's types' names.
+     If the type is not declared as Union in the Schema, then returns None.
+   **)
+  Definition union_members schema (ty : type) : seq.seq type :=
+    match lookup_type schema ty with
+    | Some (UnionTypeDefinition name mbs) => mbs
     | _ => []
     end.
 
 
-  
-  Definition declaresImplementation schema (name iname : Name) : bool :=
-    match lookupName schema name with
-    | Some (ObjectTypeDefinition _ intfs _) => existsb (fun el => ((unwrapTypeName el) == iname) && isInterfaceType schema el) intfs
+  (**
+     Checks whether the given type declares implementation of another type.
+   **)
+  Definition declares_implementation schema (ty ty' : type) : bool :=
+    match lookup_type schema ty with
+    | Some (ObjectTypeDefinition _ intfs _) => has (fun i => i == ty') intfs
     | _ => false
     end.
 
 
-  Definition lookupArgument schema (tname fname argname : Name) : option FieldArgumentDefinition :=
-    match lookupField schema tname fname with
+  (**
+     Gets the first argument definition that matches the given argument name, from the
+     given type and field. If the argument is not defined then it returns None.
+     If the field is not declared in that type, then it returns None.
+   **)
+  Definition lookup_argument_in_type_and_field schema (ty : type) (fname argname : Name) : option FieldArgumentDefinition :=
+    match lookup_field_in_type schema ty fname with
     | Some (Field fname args _) => let n_eq n arg := let: FieldArgument name _ := arg in n == name
                                   in
                                   find (n_eq argname) args
     | _ => None
     end.
 
-  Definition get_possible_types schema (ty : type) : seq.seq Name  :=
-    let get_types n :=
-        match lookupName schema n with
-        | Some (ObjectTypeDefinition _ _ _) => [:: n]
-        | Some (InterfaceTypeDefinition _ _) =>
-          typeDefsNames (filter (fun tdef => match tdef with
-                            | (ObjectTypeDefinition _ intfs _) => has (fun i => (unwrapTypeName i) == n) intfs
-                            | _ => false
-                           end) schema.(typeDefinitions))
-        | Some (UnionTypeDefinition _ mbs) =>
-          typeDefsNames (filter (fun tdef => match tdef with
-                                          | (ObjectTypeDefinition name _ _) => (NamedType name) \in mbs
-                                          | _ => false
-                                          end) schema.(typeDefinitions))
-        | _ => [::]
-        end
-    in
-    get_types (unwrapTypeName ty).
+  (**
+     Gets "possible" types from a given type, as defined in the GraphQL Spec
+     (https://facebook.github.io/graphql/June2018/#GetPossibleTypes())
+
+     If the type is:
+     1. Object : Possible types are only the type itself.
+     2. Interface : Possible types are all types that declare implementation of this interface.
+     3. Union : Possible types are all members of the union.
+
+   **)
+  Definition get_possible_types schema (ty : type) : seq.seq type  :=
+    match lookup_type schema ty with
+    | Some (ObjectTypeDefinition _ _ _) => [:: ty]
+    | Some (InterfaceTypeDefinition iname _) =>
+      map (fun n => NamedType n)
+          (type_defs_names (filter (fun tdef => match tdef with
+                                             | (ObjectTypeDefinition _ intfs _) => has (fun i => (name_of_type i) == iname) intfs
+                                             | _ => false
+                                             end) schema.(typeDefinitions)))
+    | Some (UnionTypeDefinition _ mbs) => mbs
+    | _ => [::]
+    end.
     
         
 
 End SchemaAux.
 
 
-Arguments root [Name].
-Arguments lookupName [Name].
-Arguments isEnumType [Name].
-Arguments fields [Name].
-Arguments fieldType [Name].
-Arguments unwrapTypeName [Name].
-Arguments lookupField [Name].
-Arguments lookupFieldType [Name].
-Arguments union [Name].
+Arguments query_root [Name].
+Arguments lookup_type [Name].
+Arguments is_enum_type [Name].
+
+Arguments lookup_field_in_type [Name].
+Arguments lookup_field_type [Name].
+Arguments union_members [Name].

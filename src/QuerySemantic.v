@@ -6,7 +6,7 @@ Unset Printing Implicit Defensive.
 From extructures Require Import ord fmap.
 
 Require Import SchemaWellFormedness.
-Require Import Conformance.
+Require Import GraphConformance.
 Require Import QueryConformance.
 Require Import SchemaAux.
 Require Import GraphAux.
@@ -33,7 +33,7 @@ Section QuerySemantic.
                                       | _ => Null name
                                       end
     | NestedField name args ϕ => let target_nodes := get_target_nodes_with_field g u (Field name args) in
-                                match lookupFieldType schema u.(type) name with
+                                match lookup_field_type schema (NamedType u.(type)) name with
                                 | Some (ListType _) =>
                                   NestedListResult name (map (fun v => eval schema g v ϕ) target_nodes)
                                 | Some (NamedType _) =>
@@ -45,7 +45,7 @@ Section QuerySemantic.
                                 end
                                     
     | NestedLabeledField label name args ϕ =>  let target_nodes := get_target_nodes_with_field g u (Field name args) in
-                                match lookupFieldType schema u.(type) name with
+                                match lookup_field_type schema (NamedType u.(type)) name with
                                 | Some (ListType _) =>
                                   NestedListResult label (map (fun v => eval schema g v ϕ) target_nodes)
                                 | Some (NamedType _) =>
@@ -55,12 +55,12 @@ Section QuerySemantic.
                                   end
                                 | _ => Null name         
                                 end
-    | InlineFragment t ϕ => match lookupName schema t with
+    | InlineFragment t ϕ => match lookup_type schema (NamedType t) with
                            | Some (ObjectTypeDefinition _ _ _) => if t == u.(type) then
                                                                    eval schema g u ϕ
                                                                  else
                                                                    Empty
-                           | Some (InterfaceTypeDefinition _ _) => if declaresImplementation schema (NamedType u.(type)) t then
+                           | Some (InterfaceTypeDefinition _ _) => if declares_implementation schema (NamedType u.(type)) (NamedType t) then
                                                                     eval schema g u ϕ
                                                                   else
                                                                     Empty

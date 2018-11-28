@@ -15,7 +15,7 @@ Require Import SchemaAux.
 Require Import SchemaWellFormedness.
 Require Import Graph.
 Require Import GraphAux.
-Require Import Conformance.
+Require Import GraphConformance.
 Require Import Query.
 Require Import QueryConformance.
 Require Import QuerySemantic.
@@ -100,7 +100,7 @@ Section Example.
   Let schema  := Schema "Query"  [:: IDType; StringType; FloatType;  StarshipType;  CharacterType; DroidType; HumanType; EpisodeType; SearchResultType; QueryType].
 
 
-  Lemma sdf : schemaIsWF schema.
+  Lemma sdf : is_schema_wf schema.
   Proof. by []. Qed.
   
 
@@ -167,18 +167,18 @@ Section Example.
     Let g := GraphQLGraph r edges.
 
 
-    Lemma rtc : rootTypeConforms wf_schema g.
+    Lemma rtc : root_type_conforms wf_schema g.
     Proof.    by [].  Qed.
 
     
-    Lemma ec : edgesConform wf_schema edges.
+    Lemma ec : edges_conform wf_schema edges.
     Proof.
-        by rewrite /edgesConform /edges [fset]unlock.
+        by rewrite /edges_conform /edges [fset]unlock.
     Qed.
 
-    Lemma fc : fieldsConform wf_schema g.
+    Lemma fc : fields_conform wf_schema g.
     Proof.
-        by rewrite /fieldsConform /graph_s_nodes /= /edges [fset]unlock /=. Qed.
+        by rewrite /fields_conform /graph_s_nodes /= /edges [fset]unlock /=. Qed.
 
     Lemma nhot : nodes_have_object_type wf_schema g.
     Proof.
@@ -187,8 +187,6 @@ Section Example.
     
 
     Let wf_graph := ConformedGraph rtc ec fc nhot.
-
-
 
 
     
@@ -219,55 +217,57 @@ Section Example.
                        )
           ).
 
+  (*
   Lemma qc : SelectionConforms wf_schema q wf_schema.(query_type).
   Proof.
+    rewrite /q /query_type /=.
     apply: NestedFieldConforms.
-      by rewrite /lookupField /=.
+      by rewrite /lookup_field_in_type /=.
       by [].
     apply: SelectionSetConforms.
     apply: FieldConforms.  
-      by rewrite /lookupField /=.
+      by rewrite /lookup_field_in_type /=.
       by [].
     apply: NestedFieldConforms.
-      by rewrite /lookupField /=.
+      by rewrite /lookup_field_in_type /=.
       by [].
-    apply: SelectionSetConforms; rewrite /unwrapTypeName /=.
+    apply: SelectionSetConforms; rewrite /name_of_type /=.
 
-    apply: InlineFragmentConforms.
+    apply: InlineFragmentConforms "Human" _ _.
       by [].
       by exists "Human".
       apply: SelectionSetConforms.
       apply: LabeledFieldConforms.
-        by rewrite /lookupField /=.
+        by rewrite /lookup_field_in_type /=.
         by [].
       apply: NestedFieldConforms.
-        by rewrite /lookupField /=.
+        by rewrite /lookup_field_in_type /=.
         by [].
       apply: SelectionSetConforms.
       apply: LabeledFieldConforms.
-        by rewrite /lookupField /=.
+        by rewrite /lookup_field_in_type /=.
         by [].
       apply: FieldConforms.
-        by rewrite /lookupField /=.
+        by rewrite /lookup_field_in_type /=.
         by [].
     apply: InlineFragmentConforms.
       by [].
       by exists "Droid".
       apply: SelectionSetConforms.
       apply: LabeledFieldConforms.
-         by rewrite /lookupField /=.
+         by rewrite /lookup_field_in_type /=.
          by [].
       apply: FieldConforms.
-         by rewrite /lookupField /=.
+         by rewrite /lookup_field_in_type /=.
          by [].
-  Qed.
+  Qed.  *)
 
   Lemma qbc : selection_conforms wf_schema q wf_schema.(query_type).
-    Proof. by []. Qed.
+  Proof. by []. Qed.
 
 
 
-    Let wf_query := WFQuery qc. 
+    Let wf_query := WFQuery qbc. 
 
 
 
@@ -321,7 +321,7 @@ Section Example.
     
     Let g := GraphQLGraph r1 edges1.
 
-    Example rtNc : ~ rootTypeConforms wf_schema g.
+    Example rtNc : ~ root_type_conforms wf_schema g.
     Proof. by []. Qed.
 
 
@@ -339,8 +339,8 @@ Section Example.
     
     Let g2 := GraphQLGraph r edges2.
     
-    Example eNc : ~ edgesConform wf_schema edges2.
-    Proof. by rewrite /edgesConform /edges2 [fset]unlock. Qed. 
+    Example eNc : ~ edges_conform wf_schema edges2.
+    Proof. by rewrite /edges_conform /edges2 [fset]unlock. Qed. 
     
     
     (** Types are incorrect **)
@@ -357,8 +357,8 @@ Section Example.
     
     Let g3 := GraphQLGraph r edges3.
     
-    Example eNc3 : ~ edgesConform wf_schema edges3.
-    Proof. by rewrite /edgesConform /edges3 [fset]unlock. Qed.
+    Example eNc3 : ~ edges_conform wf_schema edges3.
+    Proof. by rewrite /edges_conform /edges3 [fset]unlock. Qed.
 
 
 
@@ -374,8 +374,8 @@ Section Example.
 
     Let g4 := GraphQLGraph r edges4.
     
-    Example eNc4 : ~ edgesConform wf_schema edges4.
-    Proof. by rewrite /edgesConform /edges4 [fset]unlock. Qed.
+    Example eNc4 : ~ edges_conform wf_schema edges4.
+    Proof. by rewrite /edges_conform /edges4 [fset]unlock. Qed.
 
 
 
@@ -392,8 +392,8 @@ Section Example.
     Let g5 := GraphQLGraph r edges5.
 
     
-    Example fNc : ~ fieldsConform wf_schema g5.
-    Proof. rewrite /fieldsConform /graph_s_nodes /= /edges5 [fset]unlock //=. Qed.
+    Example fNc : ~ fields_conform wf_schema g5.
+    Proof. rewrite /fields_conform /graph_s_nodes /= /edges5 [fset]unlock //=. Qed.
     
   End WrongGraph.
 
@@ -487,7 +487,7 @@ Section GraphQLSpecExamples.
                                        CatCommandEnum; CatType;
                                          CatOrDogUnion; DogOrHumanUnion; HumanOrAlienUnion].
 
-  Lemma schwf : schemaIsWF schema.
+  Lemma schwf : is_schema_wf schema.
   Proof. by []. Qed.
 
   Let wf_schema : @wfSchema string_ordType string_ordType   := WFSchema (fun n v => true) schwf.

@@ -42,30 +42,44 @@ Section WellFormedness.
    **)
   Inductive subtype schema : type -> type -> Prop :=
   | ST_Refl : forall ty, subtype schema ty ty
-  | ST_Object : forall name intfs iname fields ifields,
-      lookupName schema name = Some (ObjectTypeDefinition name intfs fields) ->
-      In (NamedType iname) intfs ->
-      lookupName schema iname = Some (InterfaceTypeDefinition iname ifields) ->
-      subtype schema (NamedType name) (NamedType iname)
+  | ST_Interface : forall n n',
+      declares_implementation schema (NamedType n) (NamedType n') ->
+      subtype schema (NamedType n) (NamedType n')
+  | ST_Union : forall n n',
+      (NamedType n) \in (union_members schema (NamedType n')) ->
+      subtype schema (NamedType n) (NamedType n')
   | ST_ListType : forall ty ty',
       subtype schema ty ty' ->
-      subtype schema (ListType ty) (@ListType Name ty').
+      subtype schema (ListType ty) (ListType ty'). 
 
-  Fixpoint isSubtype schema (ty ty' : type) : bool :=
+  Fixpoint is_subtype schema (ty ty' : type) : bool :=
     match ty, ty' with
-    | (ListType lty), (ListType lty') => isSubtype schema lty lty'
-    | (NamedType name), (NamedType name') => if name == name' then
-                                              true
-                                            else
-                                              match lookupName schema name with
-                                              | Some (ObjectTypeDefinition name intfs _) =>
-                                                (ty' \in intfs)  && isInterfaceType schema ty'
-                                              | _ => false
-                                              end
+    | (ListType lty), (ListType lty') => is_subtype schema lty lty'
+    | (NamedType name), (NamedType name') => (name == name') ||
+                                            declares_implementation schema ty ty' || 
+                                            (ty \in (union_members schema ty'))
     | _, _ => false
     end.
-                                                                                                                
-  
+
+
+  Variable sch : @schema Name.
+
+  Lemma subtypeP : forall ty ty', reflect (subtype sch ty ty') (is_subtype sch ty ty').
+  Proof.
+    move=> ty ty'; apply: (iffP idP).
+    move: ty'; elim: ty => n.
+    case=>  //.
+      by move=> n' /=; move/orP=> [/orP [/eqP -> | Hi] | Hu]; [apply ST_Refl | apply ST_Interface | apply ST_Union].
+      by move=> IH; case=> // => t' /= /IH; apply ST_ListType.
+    elim=> //=.
+      elim=> //=.
+      by move=> n; rewrite eqxx.
+      by move=> n n' H; apply Bool.orb_true_intro; left; apply Bool.orb_true_intro; right.
+      by move=> n n' H; apply Bool.orb_true_intro; right.
+  Qed.
+      
+
+        
   (** The two following definitions describe whether a given type is a valid type
       for a field argument (IsValidArgumentType) and if it is a valid type for a field itself 
       (IsValidFieldType).
@@ -74,31 +88,67 @@ Section WellFormedness.
 
       https://facebook.github.io/graphql/June2018/#sec-Input-and-Output-Types **)
 
-  Fixpoint isValidArgumentType schema (ty : type) : bool :=
+  Inductive valid_argument_type schema : type -> Prop :=
+  | VScalar_Arg : forall ty,
+      is_scalar_type schema ty ->
+      valid_argument_type schema ty
+  | VEnum_Arg : forall ty,
+      is_enum_type schema ty ->
+      valid_argument_type schema ty
+  | VList_Arg : forall ty,
+      valid_argument_type schema ty ->
+      valid_argument_type schema (ListType ty).
+  
+  Fixpoint is_valid_argument_type schema (ty : type) : bool :=
     match ty with
-    | NamedType _ => isScalarType schema ty || @isEnumType Name schema ty
-    | ListType ty' => isValidArgumentType schema ty'
+    | NamedType _ => is_scalar_type schema ty || is_enum_type schema ty
+    | ListType ty' => is_valid_argument_type schema ty'
     end.
-    
 
+
+  Lemma valid_argument_typeP : forall ty, reflect (valid_argument_type sch ty) (is_valid_argument_type sch ty).
+  Proof.
+    move=> ty; apply: (iffP idP).
+    elim: ty.
+      by move=> n; move/orP=> [Hs | He]; [apply (VScalar_Arg Hs) | apply (VEnum_Arg He)].
+      by move=> t IH /= /IH; apply VList_Arg.
+    elim.
+       by case=> //; move=> n H; apply Bool.orb_true_iff; left.
+       by case=> //; move=> n H; apply Bool.orb_true_iff; right.
+       by case.
+  Qed.
+  
   (* Because we are not considering InputObjects, a field may have any type, 
      as long as it is declared in the Schema. *)
-  Fixpoint isValidFieldType schema (ty : type) : bool :=
+  Inductive valid_field_type schema : type -> Prop :=
+  | VBase_Type : forall n,
+      lookup_type schema (NamedType n) != None ->
+      valid_field_type schema (NamedType n)      
+  | VList_Type : forall ty,
+      valid_field_type schema ty ->
+      valid_field_type schema (ListType ty).
+  
+  Fixpoint is_valid_field_type schema (ty : type) : bool :=
     match ty with
-    | NamedType n => match lookupName schema n with
-                    | Some tdef => true
-                    | _ => false
-                    end
-    | ListType ty' => isValidFieldType schema ty'
+    | NamedType _ => ~~ ((lookup_type schema ty) == None)
+    | ListType ty' => is_valid_field_type schema ty'
     end.
   
 
+  Lemma valid_field_typeP : forall ty, reflect (valid_field_type sch ty) (is_valid_field_type sch ty).
+  Proof.
+    move=> ty; apply: (iffP idP); last by elim.
+    elim: ty.
+      move=> n /=. apply VBase_Type.
+      move=> t H /= /H; apply VList_Type.
+  Qed.
 
+  
   (** 
       It checks whether an argument is well-formed by checking that
       its type is a valid type for an argument **)
-  Definition wfFieldArgument schema (argDef : FieldArgumentDefinition) : bool :=
-    let: FieldArgument aname ty := argDef in isValidArgumentType schema ty.
+  Definition is_field_argument_wf schema (argDef : FieldArgumentDefinition) : bool :=
+    let: FieldArgument aname ty := argDef in is_valid_argument_type schema ty.
 
   
   (**
@@ -109,12 +159,12 @@ Section WellFormedness.
            ∀ arg ∈ args, arg isWellFormed
            ------------------------------
            (fname (args) : ty) isAWellFormedField
-  **)
-  Definition wfField schema (fld : FieldDefinition) : bool :=
+   **)
+  Definition is_field_wf schema (fld : FieldDefinition) : bool :=
     let: Field name args outputType := fld in
-    isValidFieldType schema outputType &&
-                     uniq (argNames args) &&
-                     all (wfFieldArgument schema) args.
+    is_valid_field_type schema outputType &&
+                     uniq (arguments_names args) &&
+                     all (is_field_argument_wf schema) args.
 
 
 
@@ -134,34 +184,32 @@ Section WellFormedness.
     The arguments have to be completed included, both their names and types (invariant).
 
    **)
-  Inductive fieldOk schema : FieldDefinition -> FieldDefinition -> Prop :=              
-  | InterfaceField : forall fname ty ty' args args',
-      isSubtype schema ty ty' ->
-      incl args' args ->
-      fieldOk schema (Field fname args ty) (Field fname args' ty')
-              
-  | UnionField : forall fname ename ty args args' objs,
-      lookupName schema ename = Some (UnionTypeDefinition ename objs) ->
-      In ty objs ->
-      incl args' args ->
-      fieldOk schema (Field fname args ty) (Field fname args' (@NamedType Name ename)).
+  Inductive field_ok schema : FieldDefinition -> FieldDefinition -> Prop :=              
+  | AnyField : forall ty ty' fname args args',
+      is_subtype schema ty ty' ->
+      perm_eq args' args ->
+      field_ok schema (Field fname args ty) (Field fname args' ty').
 
-  Definition isFieldOK schema (fld fld' : @FieldDefinition Name) : bool :=
+  Definition is_field_ok schema (fld fld' : @FieldDefinition Name) : bool :=
     match fld, fld' with
     | Field fname args ty, Field fname' args' ty' =>
-      if fname == fname' then
-        all (fun x => x \in args) args' &&
-            match ty' with
-            | (NamedType tname) => match lookupName schema tname with
-                                  | Some (UnionTypeDefinition _ objs) => ty \in objs
-                                  | _ => isSubtype schema ty ty'
-                                  end
-            | _ => isSubtype schema ty ty'
-            end
-      else
-        false
+      (fname == fname') &&
+      perm_eq args' args &&
+      is_subtype schema ty ty'
     end.
 
+
+  Lemma field_okP schema : forall f f', reflect (field_ok sch f f') (is_field_ok sch f f').
+  Proof.
+    move=> f f'; apply: (iffP idP).
+    case: f => n args ty; case: f' => n' args' ty' /=.
+      by move/andP=> [/andP [/eqP -> Hperm] H]; apply AnyField.
+    case.
+      move=> ty ty' fname args args' Hs Hp /=; rewrite eqxx => /=.
+      by apply andb_true_intro; split.
+  Qed.
+
+  
   (**
      This checks whether an object type implements correctly an interface, 
      by properly defining every field defined in the interface.
@@ -185,15 +233,14 @@ Section WellFormedness.
       implementsOK schema (NamedType name) (NamedType iname).
 
 *)
-  Definition implementsOK schema (objTDef : TypeDefinition) (ty' : type) : bool :=
+  Definition implements_interface_correctly schema (objTDef : TypeDefinition) (ty' : type) : bool :=
     match objTDef, ty' with
     | (ObjectTypeDefinition _ intfs fields), (NamedType name') =>
-      (ty' \in intfs)
-        &&  match lookupName schema name' with
-            | Some (InterfaceTypeDefinition name' ifields) =>
-              all (fun f' => has (fun f => isFieldOK schema f f') fields) ifields
-            | _ => false
-            end
+      match lookup_type schema ty' with
+      | Some (InterfaceTypeDefinition name' ifields) =>
+        all (fun f' => has (fun f => is_field_ok schema f f') fields) ifields
+      | _ => false
+      end
     | _, _ => false
     end.
 
@@ -239,82 +286,86 @@ Section WellFormedness.
                           enum E { Evs } 
 
    **)
- (* Inductive wfTypeDefinition schema : TypeDefinition -> Prop :=
-  | WF_Scalar : forall name,
-      isScalarType schema (NamedType name) ->
-      wfTypeDefinition schema (ScalarTypeDefinition name)
+  Inductive wf_type_definition schema : TypeDefinition -> Prop :=
+  | WF_Scalar : forall name, wf_type_definition schema (ScalarTypeDefinition name)
                        
-  | WF_ObjectWithInterfaces : forall name interfaces fields,
-      lookupName schema name = Some (ObjectTypeDefinition name interfaces fields) ->
-      fields <> [] ->
-      uniq (fieldNames fields) ->
-      Forall (wfField schema) fields ->
-      uniq (typesNames interfaces) ->
-      Forall (implementsOK schema (NamedType name)) interfaces ->
-      wfTypeDefinition schema (ObjectTypeDefinition name interfaces fields)
+  | WF_Object : forall name interfaces fields,
+      fields != [::] ->
+      uniq (fields_names fields) ->
+      all (is_field_wf schema) fields ->
+      uniq (types_names interfaces) ->
+      all (implements_interface_correctly schema (ObjectTypeDefinition name interfaces fields)) interfaces ->
+      wf_type_definition schema (ObjectTypeDefinition name interfaces fields)
                        
   | WF_Interface : forall name fields,
-      lookupName schema name = Some (InterfaceTypeDefinition name fields) ->
-      fields <> [] ->
-      uniq (fieldNames fields) ->
-      Forall (wfField schema) fields ->
-      wfTypeDefinition schema (InterfaceTypeDefinition name fields)
+      fields != [::] ->
+      uniq (fields_names fields) ->
+      all (is_field_wf schema) fields ->
+      wf_type_definition schema (InterfaceTypeDefinition name fields)
                        
   | WF_Union : forall name members,
-      lookupName schema name = Some (UnionTypeDefinition name members) ->
-      members <> [] ->
-      uniq (typesNames members) ->
-      Forall (isObjectType schema) members ->
-      wfTypeDefinition schema (UnionTypeDefinition name members)
+      members != [::] ->
+      uniq (types_names members) ->
+      all (is_object_type schema) members ->
+      wf_type_definition schema (UnionTypeDefinition name members)
                        
   | WF_Enum : forall name enumValues,
-      lookupName schema name = Some (EnumTypeDefinition name enumValues) ->
-      enumValues <> [] ->
+      enumValues != [::] ->
       uniq enumValues ->
-      wfTypeDefinition schema (EnumTypeDefinition name enumValues).*)
+      wf_type_definition schema (EnumTypeDefinition name enumValues).
 
 
-  Fixpoint isWFTypeDef schema (tdef : TypeDefinition) : bool :=
+  Fixpoint is_type_def_wf schema (tdef : TypeDefinition) : bool :=
     match tdef with
     | ScalarTypeDefinition _ => true
     | ObjectTypeDefinition name interfaces fields =>
       (fields != [::])
-        && uniq (fieldNames fields)
-        && all (wfField schema) fields
-        && uniq (typesNames interfaces)
-        && all (implementsOK schema tdef) interfaces
+        && uniq (fields_names fields)
+        && all (is_field_wf schema) fields
+        && uniq (types_names interfaces)
+        && all (implements_interface_correctly schema tdef) interfaces
     | InterfaceTypeDefinition _ fields =>
       (fields != [::])
-        &&  uniq (fieldNames fields)
-        && all (wfField schema) fields
+        &&  uniq (fields_names fields)
+        && all (is_field_wf schema) fields
     | UnionTypeDefinition name members =>
       (members != [::])
-        && uniq (typesNames members)
-        && all (isObjectType schema) members
+        && uniq (types_names members)
+        && all (is_object_type schema) members
     | EnumTypeDefinition _ enumValues =>
       (enumValues != [::]) && uniq enumValues
         
     end.
-                
-                                     
 
-                 
-  Definition schemaIsWF schema : bool :=
-    match schema with
-    | Schema query tdefs => match query with
-                           | (NamedType root) =>
-                             (root \in (typeDefsNames tdefs)) &&
-                             uniq (typeDefsNames tdefs) &&                              
-                             all (isWFTypeDef schema) tdefs                                                            
-                           | _ => false
-                           end
-    end.
+
+  Lemma wf_type_definitionP schema : forall tdef, reflect (wf_type_definition sch tdef) (is_type_def_wf sch tdef).
+  Proof.
+    move=> tdef; apply (iffP idP).
+    case: tdef; move=> n //=.
+      by move=> _; apply WF_Scalar.
+      by move=> intfs flds; move/andP=> [/andP [/andP [/andP [H1 H2] H3] H4] H']; apply WF_Object.
+      by move=> flds; move/andP=> [/andP [H1 H2] H3]; apply WF_Interface.  
+      by move=> mbs; move/andP=> [/andP [H1 H2] H3]; apply WF_Union.
+      by move=> es; move/andP=> [H1 H2]; apply WF_Enum.
+    case => //.
+    Admitted.
+    
+  Definition is_schema_wf schema : bool :=
+    let: Schema query_type tdefs := schema in
+    match query_type with
+    | (NamedType name) =>
+      (name \in (type_defs_names tdefs)) &&
+       uniq (type_defs_names tdefs) &&                              
+       all (is_type_def_wf schema) tdefs                                                            
+    | _ => false
+    end
+  .
       
   
-  Record wfSchema := WFSchema {
+  Structure wfSchema := WFSchema {
                         schema : @schema Name ;
                         hasType :  Name -> Vals -> bool;
-                        _ : schemaIsWF schema;
+                        _ : is_schema_wf schema;
                       }.
 
 

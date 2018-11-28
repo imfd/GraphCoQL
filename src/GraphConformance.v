@@ -5,8 +5,6 @@ Unset Printing Implicit Defensive.
 
 From extructures Require Import ord fset fmap.
 
-Require Import List.
-Import ListNotations.
 
 Require Import Schema.
 Require Import SchemaWellFormedness.
@@ -26,7 +24,7 @@ Section Conformance.
   (** 
       It states that a Graph's root must have the same type as the Schema's root
    **)
-  Definition rootTypeConforms schema graph := graph.(root).(type) = SchemaAux.root(schema).
+  Definition root_type_conforms schema graph := graph.(root).(type) = SchemaAux.query_root(schema).
   
 
 
@@ -41,10 +39,10 @@ Section Conformance.
       2. v ∈ values (type (arg)) : The value must be of the type declared for that argument in the schema.  
  
    **)
-  Definition argumentsConform schema (srcNode : @node N Name Vals) (f : fld) :=
+  Definition arguments_conform schema (srcNode : @node N Name Vals) (f : fld) :=
     let argumentConforms arg :=
         let: (argname, value) := arg in
-        match lookupArgument schema srcNode.(type) f argname with
+        match lookup_argument_in_type_and_field schema (NamedType srcNode.(type)) f argname with
         | Some (FieldArgument _ ty) => (hasType schema) ty value    (* If the argument is declared then check its value's type *)
         | _ => false
         end
@@ -61,10 +59,10 @@ Section Conformance.
 
       This is used when checking that an edge conforms to a Schema (see next definition).
    **)
-  Definition fieldTypeConforms schema (fieldType targetType : Name) : bool :=
+  Definition field_type_conforms schema (fieldType targetType : Name) : bool :=
     (fieldType == targetType) ||
-    (declaresImplementation schema targetType fieldType) ||
-    (targetType \in (union schema fieldType)).
+    (declares_implementation schema (NamedType targetType) (NamedType fieldType)) ||
+    ((NamedType targetType) \in (union_members schema (NamedType fieldType))).
 
 
   
@@ -92,13 +90,13 @@ Section Conformance.
         that given field.
 
    **)
-  Definition edgesConform schema (E : {fset node * fld * node}) :=
+  Definition edges_conform schema (E : {fset node * fld * node}) :=
     let edgeConforms edge :=
         let: (u, f, v) := edge in
-        match lookupFieldType schema u.(type) f.(label) with    (* Check if field is declared in type *)
-        | Some fieldType => (fieldTypeConforms schema (unwrapTypeName fieldType) v.(type)) &&
-                           (isListType fieldType || is_label_unique_for_src_node E u f) &&
-                           argumentsConform schema u f
+        match lookup_field_type schema (NamedType u.(type)) f.(label) with    (* Check if field is declared in type *)
+        | Some fieldType => (field_type_conforms schema fieldType v.(type)) &&
+                           (is_list_type fieldType || is_label_unique_for_src_node E u f) &&
+                           arguments_conform schema u f
         | _ => false
         end
     in
@@ -119,12 +117,12 @@ Section Conformance.
      3. The arguments of 'f' must conform to what the Schema requires of them.
 
    **)
-  Definition node_s_fields_conform schema (u : node) :=
+  Definition node_fields_conform schema (u : node) :=
     let fieldConforms f :=
         let: (f', vals) := f in
-        match lookupFieldType schema u.(type) f'.(label) with
+        match lookup_field_type schema (NamedType u.(type)) f'.(label) with
         | Some fieldType =>                (* Field is declared in the node's type *)
-          argumentsConform schema  u f' &&    
+          arguments_conform schema  u f' &&    
                            match vals with
                            | (inl value) => hasType schema fieldType value
                            | (inr values) => all (hasType schema fieldType) values
@@ -135,18 +133,18 @@ Section Conformance.
     all fieldConforms u.(fields).
 
   
-  Definition fieldsConform schema graph :=
-    all (node_s_fields_conform schema) (graph_s_nodes graph).
+  Definition fields_conform schema graph :=
+    all (node_fields_conform schema) (graph_s_nodes graph).
 
 
   
-  Definition nodeHasObjectType schema (n : @node N Name Vals) :=
-    let: Node _ t _ := n in isObjectType schema (NamedType t).
+  Definition has_object_type schema (n : @node N Name Vals) :=
+    let: Node _ t _ := n in is_object_type schema (NamedType t).
 
 
 
   Definition nodes_have_object_type schema graph :=
-    all (nodeHasObjectType schema) (graph_s_nodes graph).
+    all (has_object_type schema) (graph_s_nodes graph).
 
                                                                      
 
@@ -158,11 +156,11 @@ Section Conformance.
      4. Its nodes conform to the Schema.
 
    **)
-  Record conformedGraph schema := ConformedGraph {
+  Structure conformedGraph schema := ConformedGraph {
                                                 graph;
-                                                _ : rootTypeConforms schema graph;
-                                                _ : edgesConform schema graph.(E);
-                                                _ : fieldsConform schema graph;
+                                                _ : root_type_conforms schema graph;
+                                                _ : edges_conform schema graph.(E);
+                                                _ : fields_conform schema graph;
                                                 _ : nodes_have_object_type schema graph
                                    }.
 

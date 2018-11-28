@@ -139,64 +139,7 @@ Section Query.
    Canonical query_ordType := OrdType Query query_ordMixin.
 
 
-
-
-   Fixpoint response_eq r1 r2 :=
-     match r1, r2 with
-     | Empty, Empty => true
-     | Null l, Null l' => l == l'
-     | SingleResult l val, SingleResult l' val' => (l == l') && (val == val')
-     | ListResult l vals, ListResult l' vals' => (l == l') && (vals == vals')
-     | NestedResult l r1', NestedResult l' r2' => (l == l') && (response_eq r1' r2')
-     | NestedListResult l rs, NestedListResult l' rs' =>
-       let fix loop s1 s2 :=
-           match s1, s2 with
-           | [::], [::] => true
-           | r1 :: s1, r2 :: s2 => if response_eq r1 r2 then loop s1 s2 else false
-           | _, _ => false
-           end
-       in
-       (l == l') && loop rs rs'
-     | ResponseList r1' r1'', ResponseList r2' r2'' => (response_eq r1' r2') && (response_eq r1'' r2'')
-     | _, _ => false
-     end.
-
-(*
-   Lemma response_eqP : Equality.axiom response_eq.
-   Proof.
-     rewrite /Equality.axiom => x y.
-     apply: (iffP idP) => [|<-].
-     move: y;  elim: x.   
-       by case.
-       by move=> l; case=> //; move=> l' /=; move/eqP=> ->.
-       by move=> l v; case=> // l' v' /=; by move/andP=> [/eqP -> /eqP ->].
-       by move=> l vals; case=> // l' vals' /=; move/andP=> [/eqP -> /eqP ->].
-       move=> l r IH; case=> // l' r' /=; move/andP=> [/eqP -> H].
-         by apply IH in H; rewrite H.
-       move=> l rs IH. case=> // l' rs' /=.
-         move/andP=> [/eqP ->].
-         elim: rs rs' IH => [| r0 rs0 IH] [| r1 rs1] //=.
-         move=> [H /IH {IH} IH] /=.
-         case E : (response_eq r0 r1) => //= /IH.
-         apply H in E; rewrite E.
-         by case=> ->.
-       move=> r IH r' IH'; case=> // => r2 r2' /=; move/andP=> [H1 H2].
-         by apply IH in H1; apply IH' in H2; rewrite H1 H2.
-     elim: x => //=.
-       by move=> l v; rewrite !eqxx.    
-       by move=> l vals; rewrite !eqxx.
-       by move=> l r; rewrite !eqxx.
-       move=> l vals IH /=; elim: vals IH => [| r rs IH] //=.
-         by rewrite !eqxx.
-         by move=> [H]; rewrite H.
-       by move=> r IH r' IH'; rewrite IH IH'.
-   Qed.
-
    
-   Definition response_eqMixin := Equality.Mixin response_eqP.
-   Canonical response_eqType := EqType ResponseObject response_eqMixin.
-   
- *)
    
    Fixpoint tree_of_response response : GenTree.tree (Name + (Vals + seq Vals)) :=
      match response with
@@ -238,43 +181,6 @@ Section Query.
    Definition response_ordMixin := CanOrdMixin tree_of_responseK.
    Canonical response_ordType := OrdType ResponseObject response_ordMixin.
 
-
-  (*
-  Fixpoint query_eq q1 q2 :=
-    match q1, q2 with
-    | SingleField name args, SingleField name' args' => (name == name') && (args == args')
-    | LabeledField label name args, LabeledField label' name' args' => (label == label') && (name == name') && (args == args')
-    | NestedField name args ϕ, NestedField name' args' ϕ' => (name == name') && (args == args') && query_eq ϕ ϕ'
-    | NestedLabeledField label name args ϕ, NestedLabeledField label' name' args' ϕ' =>
-      (label == label') && (name == name') && (args == args') && query_eq ϕ ϕ'
-    | InlineFragment t ϕ, InlineFragment t' ϕ' => (t == t') && query_eq ϕ ϕ'
-    | SelectionSet ϕ ϕ', SelectionSet ψ ψ' => (query_eq ϕ ψ) &&  (query_eq ϕ' ψ')
-    | _,  _ => false
-    end.
-
-
-  Lemma query_eqP : Equality.axiom query_eq.
-  Proof.
-    rewrite /Equality.axiom.
-    move=> x y; apply: (iffP idP) => [| <- {y}].
-    move: y; elim: x.
-    by move=> n args; case=> n' args' //=; move/andP=> [/eqP -> /eqP ->].
-    by move=> l n args; case=> l' n' args' //=; move/andP=> [/andP [/eqP -> /eqP ->] /eqP ->].
-    move=> n args q IH; case=> // => n' args' q' /=; move/andP=> [/andP [/eqP -> /eqP ->] H].
-      by apply IH in H; rewrite H.
-    move=> l n args q IH; case=> // => l' n' args' q' /=; move/andP=> [/andP [/andP [/eqP -> /eqP ->] /eqP ->] H].
-      by apply IH in H; rewrite H.
-    move=> t q IH; case=> // => t' q' /=; move/andP=> [/eqP -> H].
-      by apply IH in H; rewrite H.
-    move=> q IH q' IH'. case=> // => q'' q''' //=. move/andP=> [H1 H2].
-    by apply IH in H1; apply IH' in H2; rewrite H1 H2. 
-    elim: x => /=.
-    by move=> s f; rewrite !eqxx.
-    by move=> l s f; rewrite !eqxx.
-    by move=> s f q IH; rewrite !eqxx.
-    by move=> l s f q IH; rewrite !eqxx.
-    by move=> t q IH; rewrite !eqxx.
-    move=> q IH q' IH'. rewrite !eqxx. *)
     
   Fixpoint isFieldSelection query :=
     match query with
@@ -343,3 +249,103 @@ Arguments SelectionSet [Name Vals].
 
 Arguments Null [Name Vals].
 Arguments Empty [Name Vals].
+
+
+
+
+  (*
+  Fixpoint query_eq q1 q2 :=
+    match q1, q2 with
+    | SingleField name args, SingleField name' args' => (name == name') && (args == args')
+    | LabeledField label name args, LabeledField label' name' args' => (label == label') && (name == name') && (args == args')
+    | NestedField name args ϕ, NestedField name' args' ϕ' => (name == name') && (args == args') && query_eq ϕ ϕ'
+    | NestedLabeledField label name args ϕ, NestedLabeledField label' name' args' ϕ' =>
+      (label == label') && (name == name') && (args == args') && query_eq ϕ ϕ'
+    | InlineFragment t ϕ, InlineFragment t' ϕ' => (t == t') && query_eq ϕ ϕ'
+    | SelectionSet ϕ ϕ', SelectionSet ψ ψ' => (query_eq ϕ ψ) &&  (query_eq ϕ' ψ')
+    | _,  _ => false
+    end.
+
+
+  Lemma query_eqP : Equality.axiom query_eq.
+  Proof.
+    rewrite /Equality.axiom.
+    move=> x y; apply: (iffP idP) => [| <- {y}].
+    move: y; elim: x.
+    by move=> n args; case=> n' args' //=; move/andP=> [/eqP -> /eqP ->].
+    by move=> l n args; case=> l' n' args' //=; move/andP=> [/andP [/eqP -> /eqP ->] /eqP ->].
+    move=> n args q IH; case=> // => n' args' q' /=; move/andP=> [/andP [/eqP -> /eqP ->] H].
+      by apply IH in H; rewrite H.
+    move=> l n args q IH; case=> // => l' n' args' q' /=; move/andP=> [/andP [/andP [/eqP -> /eqP ->] /eqP ->] H].
+      by apply IH in H; rewrite H.
+    move=> t q IH; case=> // => t' q' /=; move/andP=> [/eqP -> H].
+      by apply IH in H; rewrite H.
+    move=> q IH q' IH'. case=> // => q'' q''' //=. move/andP=> [H1 H2].
+    by apply IH in H1; apply IH' in H2; rewrite H1 H2. 
+    elim: x => /=.
+    by move=> s f; rewrite !eqxx.
+    by move=> l s f; rewrite !eqxx.
+    by move=> s f q IH; rewrite !eqxx.
+    by move=> l s f q IH; rewrite !eqxx.
+    by move=> t q IH; rewrite !eqxx.
+    move=> q IH q' IH'. rewrite !eqxx. *)
+
+
+
+(*
+
+   Fixpoint response_eq r1 r2 :=
+     match r1, r2 with
+     | Empty, Empty => true
+     | Null l, Null l' => l == l'
+     | SingleResult l val, SingleResult l' val' => (l == l') && (val == val')
+     | ListResult l vals, ListResult l' vals' => (l == l') && (vals == vals')
+     | NestedResult l r1', NestedResult l' r2' => (l == l') && (response_eq r1' r2')
+     | NestedListResult l rs, NestedListResult l' rs' =>
+       let fix loop s1 s2 :=
+           match s1, s2 with
+           | [::], [::] => true
+           | r1 :: s1, r2 :: s2 => if response_eq r1 r2 then loop s1 s2 else false
+           | _, _ => false
+           end
+       in
+       (l == l') && loop rs rs'
+     | ResponseList r1' r1'', ResponseList r2' r2'' => (response_eq r1' r2') && (response_eq r1'' r2'')
+     | _, _ => false
+     end.
+
+   Lemma response_eqP : Equality.axiom response_eq.
+   Proof.
+     rewrite /Equality.axiom => x y.
+     apply: (iffP idP) => [|<-].
+     move: y;  elim: x.   
+       by case.
+       by move=> l; case=> //; move=> l' /=; move/eqP=> ->.
+       by move=> l v; case=> // l' v' /=; by move/andP=> [/eqP -> /eqP ->].
+       by move=> l vals; case=> // l' vals' /=; move/andP=> [/eqP -> /eqP ->].
+       move=> l r IH; case=> // l' r' /=; move/andP=> [/eqP -> H].
+         by apply IH in H; rewrite H.
+       move=> l rs IH. case=> // l' rs' /=.
+         move/andP=> [/eqP ->].
+         elim: rs rs' IH => [| r0 rs0 IH] [| r1 rs1] //=.
+         move=> [H /IH {IH} IH] /=.
+         case E : (response_eq r0 r1) => //= /IH.
+         apply H in E; rewrite E.
+         by case=> ->.
+       move=> r IH r' IH'; case=> // => r2 r2' /=; move/andP=> [H1 H2].
+         by apply IH in H1; apply IH' in H2; rewrite H1 H2.
+     elim: x => //=.
+       by move=> l v; rewrite !eqxx.    
+       by move=> l vals; rewrite !eqxx.
+       by move=> l r; rewrite !eqxx.
+       move=> l vals IH /=; elim: vals IH => [| r rs IH] //=.
+         by rewrite !eqxx.
+         by move=> [H]; rewrite H.
+       by move=> r IH r' IH'; rewrite IH IH'.
+   Qed.
+
+   
+   Definition response_eqMixin := Equality.Mixin response_eqP.
+   Canonical response_eqType := EqType ResponseObject response_eqMixin.
+   
+ *)
