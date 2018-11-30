@@ -105,5 +105,8 @@ Section QueryConformance.
                               queryConforms : selection_conforms schema query schema.(query_root)
                             }.
 
-
+  
+  Coercion query_of_wfquery schema (wfq : wfQuery schema) := let: WFQuery q _ := wfq in q.
+  
 End QueryConformance.
+

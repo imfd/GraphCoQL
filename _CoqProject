@@ -17,4 +17,5 @@
 ./src/QueryAux.v
 ./src/QueryConformance.v
 ./src/QuerySemantic.v
+./src/NRGTNF.v
 ./src/Example.v

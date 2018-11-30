@@ -181,180 +181,8 @@ Section Query.
    Definition response_ordMixin := CanOrdMixin tree_of_responseK.
    Canonical response_ordType := OrdType ResponseObject response_ordMixin.
 
-    
-  Fixpoint isFieldSelection query :=
-    match query with
-    | SingleField _ _ => true
-    | LabeledField _ _ _ => true
-    | NestedField _ _ _ => true
-    | NestedLabeledField _ _ _ _ => true
-    | SelectionSet hd tl => isFieldSelection hd && isFieldSelection tl
-    | _ => false
-    end.
+                                     
 
-  Fixpoint isInlineFragmentSelection query :=
-    match query with
-    | InlineFragment _ _ => true
-    | SelectionSet hd tl => isInlineFragmentSelection hd && isInlineFragmentSelection tl
-    | _ => false
-    end.
-
-  Fixpoint collect_nested_queries (query : Query) : seq Query :=
-    match query with
-    | SelectionSet hd tl => (collect_nested_queries hd) ++ (collect_nested_queries tl)
-    | _ => [:: query]
-    end.
-
-  Lemma cat_not_empty_not_empty (A : eqType) (l1 l2 : seq A) :
-    [|| l1 != [::] | l2 != [::]] -> l1 ++ l2 != [::].
-  Proof. by case: l1. Qed.
-  
-  Lemma collect_query_not_empty query : (collect_nested_queries query) != [::].
-  Proof.
-    elim: query => //=.
-      by move=> q IH q' IH'; apply: cat_not_empty_not_empty; apply: Bool.orb_true_intro; left.
-  Qed.
-
-  Fixpoint query_of_list (s : seq Query) : option Query :=
-    match s with
-    | [::] => None
-    | hd :: tl => if query_of_list tl is Some q then
-                   Some (SelectionSet hd q)
-                 else
-                   Some hd
-    end.
-
-  Lemma query_of_list_not_none (s : seq Query) : s != [::] -> query_of_list s <> None.
-  Proof.
-    elim: s => //.
-    by move=> q s' IH _ /=; case (query_of_list s') => //.
-  Qed.
-
-
- 
-       
-  Fixpoint flatten_query query : Query :=
-    match query with
-    | SingleField _ _ => query
-    | LabeledField _ _ _ => query
-    | NestedField n args ϕ => NestedField n args (flatten_query ϕ)
-    | NestedLabeledField l n args ϕ => NestedLabeledField l n args (flatten_query ϕ)
-    | InlineFragment t ϕ => InlineFragment t (flatten_query ϕ)
-    | SelectionSet hd tl => let flattened_hd := flatten_query hd in
-                           let flattened_tl := flatten_query tl in
-                           let fix merge_queries_to_selection (q1 q2 : Query) : Query :=
-                               match q1, q2 with
-                               | SelectionSet hd tl, SelectionSet hd' tl' => SelectionSet hd (merge_queries_to_selection tl q2)
-                               | SelectionSet hd tl, _ => SelectionSet hd (merge_queries_to_selection tl q2)
-                               | _, _ => SelectionSet q1 q2
-                               end
-                           in
-                           merge_queries_to_selection flattened_hd flattened_tl
-    end.
-
-  Implicit Type sch : @schema Name.
-
-  
-  Inductive GroundTypedNormalForm sch : Query -> Prop :=
-  | GT_Field : forall f args,
-      GroundTypedNormalForm sch (SingleField f args)
-
-  | GT_LabeledField : forall label f args,
-      GroundTypedNormalForm sch (LabeledField label f args)
-
-  | GT_NestedField : forall f args ϕ,
-      GroundTypedNormalForm sch ϕ ->
-      GroundTypedNormalForm sch (NestedField f args ϕ)
-
-  | GT_NestedLabeledField : forall label f args ϕ,
-      GroundTypedNormalForm sch ϕ ->
-      GroundTypedNormalForm sch (NestedLabeledField label f args ϕ)
-
-  | GT_InlineFragment : forall t ϕ,
-      is_object_type sch (NamedType t) ->
-      isFieldSelection ϕ ->
-      GroundTypedNormalForm sch ϕ ->
-      GroundTypedNormalForm sch (InlineFragment t ϕ)
-
-  | GT_SelectionSet : forall ϕ ϕ',
-      (isFieldSelection ϕ && isFieldSelection ϕ') || (isInlineFragmentSelection ϕ && isInlineFragmentSelection ϕ') ->
-      GroundTypedNormalForm sch ϕ ->
-      GroundTypedNormalForm sch ϕ' ->
-      GroundTypedNormalForm sch (SelectionSet ϕ ϕ').
-
-  Fixpoint is_ground_typed_normal_form query :=
-    match query with
-    | NestedField _ _ ϕ => is_ground_typed_normal_form ϕ
-    | NestedLabeledField _ _ _ ϕ => is_ground_typed_normal_form ϕ
-    | InlineFragment _ ϕ => isFieldSelection ϕ && is_ground_typed_normal_form ϕ
-    | SelectionSet ϕ ϕ' => ((isFieldSelection ϕ && isFieldSelection ϕ')
-                           || (isInlineFragmentSelection ϕ && isInlineFragmentSelection ϕ'))
-                            && is_ground_typed_normal_form ϕ && is_ground_typed_normal_form ϕ'
-    | _ => true
-    end.
-
-
-
-    Fixpoint partial_query_eq q1 q2 :=
-    match q1, q2 with
-    | SingleField name args, SingleField name' args' => (name == name') && (args == args')
-    | LabeledField label name args, LabeledField label' name' args' => (label == label') && (name == name') && (args == args')
-    | NestedField name args ϕ, NestedField name' args' ϕ' => (name == name') && (args == args')
-    | NestedLabeledField label name args ϕ, NestedLabeledField label' name' args' ϕ' =>
-      (label == label') && (name == name') && (args == args')
-    | InlineFragment t ϕ, InlineFragment t' ϕ' => (t == t')
-    | SelectionSet ϕ ϕ', SelectionSet ψ ψ' => (partial_query_eq ϕ ψ) &&  (partial_query_eq ϕ' ψ')
-    | _,  _ => false
-    end.
-
-    Fixpoint applies_to_query (p : pred Query) (q : Query) :=
-     match q with
-    | SelectionSet ϕ ϕ' => if p ϕ then true else applies_to_query p ϕ'
-    | _ => p q
-    end.
-
-    (*
-    Inductive NonRedundant : Query -> Prop :=
-    | NR_Field : forall name args, NonRedundant (SingleField name args)
-                                         
-    | NR_LabeledField : forall label name args, NonRedundant (LabeledField label name args)
-                                                        
-    | NR_NestedField : forall name args ϕ,
-        NonRedundant ϕ ->
-        NonRedundant (NestedField name args ϕ)
-                     
-    | NR_NestedLabeledField : forall label name args ϕ,
-        NonRedundant ϕ ->
-        NonRedundant (NestedLabeledField label name args ϕ)
-                     
-    | NR_InlineFragment : forall t ϕ,
-        NonRedundant ϕ ->
-        NonRedundant (InlineFragment t ϕ)
-                     
-  | NR_SelectionSet : forall ϕ ϕ',
-      ~~ (applies_to_query (partial_query_eq ϕ) ϕ') ->
-      NonRedundant ϕ ->
-      NonRedundant ϕ' ->
-      NonRedundant (SelectionSet ϕ ϕ')
-    .
-     *)
-    
-    Definition is_non_redundant (query : Query) :=
-      let flattened_query := flatten_query query in
-      let fix loop q :=
-          match q with
-          | SingleField _ _ => true
-          | LabeledField _ _ _ => true
-          | NestedField _ _ ϕ => loop ϕ
-          | NestedLabeledField _ _ _ ϕ => loop ϕ
-          | InlineFragment _ ϕ => loop ϕ 
-          | SelectionSet ϕ ϕ' => ~~(applies_to_query (partial_query_eq ϕ) ϕ') &&
-                                  loop ϕ &&
-                                  loop ϕ'
-          end
-      in
-      loop flattened_query.
-          
   
 End Query.
 
@@ -366,8 +194,10 @@ Arguments NestedLabeledField [Name Vals].
 Arguments InlineFragment [Name Vals].
 Arguments SelectionSet [Name Vals].
 
+Arguments ResponseObject [Name Vals].
 Arguments Null [Name Vals].
 Arguments Empty [Name Vals].
+Arguments NestedListResult [Name Vals].
 
 
 

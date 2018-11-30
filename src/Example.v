@@ -19,6 +19,7 @@ Require Import GraphConformance.
 Require Import Query.
 Require Import QueryConformance.
 Require Import QuerySemantic.
+Require Import NRGTNF.
 
 
 
@@ -305,6 +306,16 @@ Section Example.
       rewrite /get_target_nodes_with_field /=.
       by rewrite /edges [fset]unlock /=.
     Qed.
+
+
+
+    Lemma q_nr : is_non_redundant wf_query.
+    Proof. by []. Qed.
+
+    Lemma q_gtnf : is_ground_typed_normal_form wf_query.
+    Proof. by []. Qed.
+
+    Let normal_query := NormalQuery q_nr q_gtnf.
     
   End HP.
   
