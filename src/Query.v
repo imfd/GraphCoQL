@@ -3,6 +3,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+Set Asymmetric Patterns.
 
 From extructures Require Import ord fmap.
 
@@ -10,6 +11,11 @@ Require Import treeordtype.
 Require Import Schema.
 Require Import SchemaAux.
 
+
+Require Import CpdtTactics.
+
+
+Require Import List.
 
 
 Section Query.
@@ -34,10 +40,11 @@ Section Query.
   | ListResult : Name -> list Vals -> ResponseObject
   | NestedResult : Name -> ResponseObject -> ResponseObject
   | NestedListResult : Name -> list ResponseObject -> ResponseObject
-  | ResponseList : ResponseObject -> ResponseObject -> ResponseObject.
+  | ResponseList : list ResponseObject -> ResponseObject.
   Set Elimination Schemes.
 
-  Definition ResponseObject_rect P IH_Empty IH_Null IH_SingleResult IH_ListResult IH_NestedResult IH_NestedListResult IH_ResponseList :=
+  
+  Definition ResponseObject_rect P Pl IH_Empty IH_Null IH_SingleResult IH_ListResult IH_NestedResult IH_NestedListResult IH_ResponseList IH_Nil IH_Cons :=
     fix loop (r : ResponseObject) : P r :=
       match r with
       | Empty => IH_Empty
@@ -45,30 +52,41 @@ Section Query.
       | SingleResult l v => IH_SingleResult l v
       | ListResult l vals => IH_ListResult l vals
       | NestedResult l r' => IH_NestedResult l r' (loop r')
-      | NestedListResult l rs =>
-        let fix iter_pair rs : foldr (fun r => prod (P r)) unit rs :=
-            if rs is r :: rs' then (loop r, iter_pair rs') else tt
-        in
-        IH_NestedListResult l rs (iter_pair rs)
-      | ResponseList r r' => IH_ResponseList r (loop r) r' (loop r')
+      | NestedListResult l rs => IH_NestedListResult l rs
+                                                    ((fix F s : Pl s :=
+                                                        match s with
+                                                        | [::] => IH_Nil
+                                                        | hd :: tl => IH_Cons hd (loop hd) tl (F tl)
+                                                        end) rs)
+        
+      | ResponseList rs => IH_ResponseList rs ((fix F s : Pl s :=
+                                                        match s with
+                                                        | [::] => IH_Nil
+                                                        | hd :: tl => IH_Cons hd (loop hd) tl (F tl)
+                                                        end) rs)
       end.
 
   Definition ResponseObject_rec (P : ResponseObject -> Set) := @ResponseObject_rect P.
 
-  Definition ResponseObject_ind P IH_Empty IH_Null IH_SingleResult IH_ListResult IH_NestedResult IH_NestedListResult IH_ResponseList :=
-     fix loop (r : ResponseObject) : P r : Prop :=
+  Definition ResponseObject_ind P (Pl : seq.seq ResponseObject -> Prop) IH_Empty IH_Null IH_SingleResult IH_ListResult IH_NestedResult IH_NestedListResult IH_ResponseList IH_Nil IH_Cons :=
+    fix loop (r : ResponseObject) : P r : Prop :=
       match r with
       | Empty => IH_Empty
       | Null l => IH_Null l
       | SingleResult l v => IH_SingleResult l v
       | ListResult l vals => IH_ListResult l vals
       | NestedResult l r' => IH_NestedResult l r' (loop r')
-      | NestedListResult l rs =>
-        let fix iter_conj rs : foldr (fun r => and (P r)) True rs :=
-            if rs is r :: rs' then conj (loop r) (iter_conj rs') else Logic.I
-        in
-        IH_NestedListResult l rs (iter_conj rs)
-      | ResponseList r r' => IH_ResponseList r (loop r) r' (loop r')
+      | NestedListResult l rs => IH_NestedListResult l rs
+                                                    ((fix F s : Pl s :=
+                                                        match s with
+                                                        | [::] => IH_Nil
+                                                        | hd :: tl => IH_Cons hd (loop hd) tl (F tl)
+                                                        end) rs)
+      | ResponseList rs => IH_ResponseList rs ((fix F s : Pl s :=
+                                                        match s with
+                                                        | [::] => IH_Nil
+                                                        | hd :: tl => IH_Cons hd (loop hd) tl (F tl)
+                                                        end) rs)
       end.
 
   
@@ -141,7 +159,7 @@ Section Query.
 
    
    
-   Fixpoint tree_of_response response : GenTree.tree (Name + (Vals + seq Vals)) :=
+   Fixpoint tree_of_response response : GenTree.tree (Name + (Vals + seq.seq Vals)) :=
      match response with
      | Empty => GenTree.Node 0 [::]
      | Null l => GenTree.Node 1 [:: GenTree.Leaf (inl l)]
@@ -149,11 +167,11 @@ Section Query.
      | ListResult l vals => GenTree.Node 3 [:: GenTree.Leaf (inl l) ; GenTree.Leaf (inr (inr vals))]
      | NestedResult l q => GenTree.Node 4 [:: GenTree.Leaf (inl l) ; tree_of_response q]
      | NestedListResult l qs => GenTree.Node 5 (GenTree.Leaf (inl l) :: (map tree_of_response qs))
-     | ResponseList q q' => GenTree.Node 6 [:: tree_of_response q ; tree_of_response q']
+     | ResponseList rs => GenTree.Node 6 (map tree_of_response rs)
      end.
 
 
-   Fixpoint response_of_tree (t : GenTree.tree (Name + (Vals + seq Vals))) :=
+   Fixpoint response_of_tree (t : GenTree.tree (Name + (Vals + seq.seq Vals))) :=
      match t with
      | GenTree.Node 0 [::] => Empty
      | GenTree.Node 1 [:: GenTree.Leaf (inl l)] => Null l
@@ -161,18 +179,23 @@ Section Query.
      | GenTree.Node 3 [:: GenTree.Leaf (inl l) ; GenTree.Leaf (inr (inr vals))] => ListResult l vals
      | GenTree.Node 4 [:: GenTree.Leaf (inl l) ; t'] => NestedResult l (response_of_tree t')
      | GenTree.Node 5 (GenTree.Leaf (inl l) :: t') => NestedListResult l (map response_of_tree t')
-     | GenTree.Node 6 [::  t ; t'] => ResponseList (response_of_tree t) (response_of_tree t')
+     | GenTree.Node 6 t' => ResponseList (map response_of_tree t')
      | _ => Empty
      end.
 
    Lemma tree_of_responseK : cancel tree_of_response response_of_tree.
    Proof.
-     elim=> //.
+     rewrite /cancel.
+     eapply ResponseObject_ind => //.
+     Admitted. (*
+     apply (ResponseObject_ind  (fun (rs : list ResponseObject) =>  (map response_of_tree (map tree_of_response rs)) = rs)).
+     apply: (ResponseObject_ind (fun (rs : list ResponseObject) => map response_of_tree (map tree_of_response rs) = rs)).
+     
        by move=> s r /= ->.
        move=> s rs IH /=. elim: rs IH => [|r rs' IH] //=.
        by move=> [-> /IH {IH} IH]; case: IH => ->.
        by move=> r IH r' IH' /=; rewrite IH IH'.
-   Qed.
+   Qed.*)
 
    Definition response_eqMixin := CanEqMixin tree_of_responseK.
    Canonical response_eqType := EqType ResponseObject response_eqMixin.
@@ -236,6 +259,19 @@ Section Query.
                             && is_ground_typed_normal_form ϕ && is_ground_typed_normal_form ϕ'
     | _ => true
     end.
+
+
+
+
+    Lemma and_foldr_forall (T : eqType) (P : T -> Prop) (s : seq.seq T) :
+      foldr (fun t => and (P t)) True s -> forall t, In t s -> P t.
+    Proof.
+    elim: s => [| x s' IH] //=.
+    move=> [Hpx Hf] t.
+    by move=> [<-| Hs]; [ | apply (IH Hf t Hs)].
+    Qed.
+
+
   
 End Query.
 
@@ -247,6 +283,8 @@ Arguments NestedLabeledField [Name Vals].
 Arguments InlineFragment [Name Vals].
 Arguments SelectionSet [Name Vals].
 
+
+Arguments ResponseObject [Name Vals].
 Arguments Null [Name Vals].
 Arguments Empty [Name Vals].
 
