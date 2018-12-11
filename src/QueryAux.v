@@ -49,6 +49,11 @@ Section QueryAux.
   Check response_size.
   Print response_size.
 
+  Definition responses_size (responses : seq (@ResponseObject Name Vals)) : nat :=
+    sumn (map (fun r => proj1_sig (response_size r)) responses).
+
+
+
 End QueryAux.
 
 Arguments response_size [Name Vals].

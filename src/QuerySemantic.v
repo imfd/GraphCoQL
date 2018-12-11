@@ -42,9 +42,6 @@ Section QuerySemantic.
 
   Hint Resolve  t asdf.
   
-  Definition responses_size (responses : seq (@ResponseObject Name Vals)) : nat :=
-    sumn (map (fun r => proj1_sig (response_size r)) responses).
-
 
 
   Fixpoint indexed_β_filter (response : @ResponseObject Name Vals) (filter :  @ResponseObject Name Vals) (index : nat) : ResponseObject :=
@@ -57,15 +54,6 @@ Section QuerySemantic.
     | _, _ => Empty
     end.
 
-
-  (*
-  Fixpoint β_filter (filter_response response : @ResponseObject Name Vals) : @ResponseObject Name Vals :=
-    match response, filter_response with
-    | NestedResult l χ, NestedResult l' _ => if (l == l') then χ else Empty
-    | ResponseList rs, _ => ResponseList (map (β_filter filter_response) rs)
-    | _, _ => Empty
-    end.
-   *)
   
   Function β_filter (filter : @ResponseObject Name Vals) (responses : seq (@ResponseObject Name Vals)) {measure (fun r => responses_size r) responses} : seq ResponseObject :=
     match responses with
@@ -78,25 +66,13 @@ Section QuerySemantic.
       | _, _ => β_filter filter tl
       end
     end.
-  Proof. 
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
+  Proof.
+    all: intros; crush; rewrite /responses_size; crush.
   Qed.
 
-  
+
+  Function asf a b :=
+    a + b.
 
   Function γ_filter (filter_response : ResponseObject) (responses : seq ResponseObject) {measure (fun r => (responses_size r)) responses} : seq (@ResponseObject Name Vals) :=
     match responses with
@@ -109,46 +85,9 @@ Section QuerySemantic.
       | ResponseList rs, _ => (ResponseList (γ_filter filter_response rs)) :: γ_filtered
       | _, _ => if response == filter_response then γ_filtered else response :: γ_filtered
       end
-    end. 
-  Proof.    
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.    
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.    
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
-    intros; crush; rewrite /responses_size; crush.
+    end.
+  Proof.
+    all: intros; rewrite /responses_size; crush.
   Qed.
   
   
@@ -205,7 +144,7 @@ Section QuerySemantic.
   Lemma alkl : forall r : { m : nat | 0 < m}, 0 < proj1_sig r + 0.
   Proof. case=> /=; crush. Qed.
   
-  Lemma qwe : forall r l, responses_size l < responses_size (r :: l).
+  Lemma qwe : forall r l, responses_size l < (@responses_size Name Vals (r :: l)).
   Proof.
     move=> r; case=> //=; rewrite /responses_size /=; case (response_size r); crush.
   Qed.
@@ -250,12 +189,13 @@ Section QuerySemantic.
       intros; case (response_size hd); crush.
   Qed.
 
-      
+  Eval compute
+      (*
   Fixpoint collect (response : @ResponseObject Name Vals) : @ResponseObject Name Vals :=
     match response with
     | ResponseList rs => ResponseList (collect_list rs)                         
     | _ => response
-    end.
+    end.*)
       
       
   Fixpoint eval (schema : @wfSchema Name Vals)  (g : graphQLGraph) (u : @node N Name Vals) (query : Query) : @ResponseObject Name Vals :=
@@ -306,7 +246,7 @@ Section QuerySemantic.
                                                                   Empty
                            | _ => Empty
                                end
-    | SelectionSet ϕ ϕ' => collect (ResponseList [:: (eval schema g u ϕ); (eval schema g u ϕ')])
+    | SelectionSet ϕ ϕ' => (ResponseList (collect_list [:: (eval schema g u ϕ); (eval schema g u ϕ')]))
     end.
 
 
