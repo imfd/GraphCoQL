@@ -49,6 +49,7 @@ Section Example.
   Notation "f : t" := (Schema.Field f [::] t).
 
   Notation "'[' s ']'" := (ListType s) (at level 0, s at next level).
+
   
   Coercion namedType_of_string (s : string) := NamedType s.
   
@@ -109,7 +110,8 @@ Section Example.
   Let wf_schema : @wfSchema string_ordType string_ordType   := WFSchema (fun n v => true) sdf.
   
   Section HP.
-    
+
+
     
     Let edges : {fset node * fld * node} :=
       fset [:: (Graph.Node 0 "Query" emptym ,
@@ -274,36 +276,47 @@ Section Example.
 
     Let query_response := (NestedResult "hero"
                                        (ResponseList
-                                          (SingleResult "name" "Luke")
-                                          (NestedListResult "friends"
-                                                            [::
-                                                               (ResponseList Empty
-                                                                             (ResponseList
-                                                                                (SingleResult "droidFriend" "R2-D2")
-                                                                                (SingleResult "primaryFunction" "Astromech")
-                                                                             )
-                                                               );
-                                                               (ResponseList
-                                                                   (ResponseList
-                                                                      (SingleResult "humanFriend" "Han")
-                                                                      (NestedListResult "starships"
-                                                                                        [:: (ResponseList
-                                                                                               (SingleResult "starship" "Falcon")
-                                                                                               (SingleResult "length" "34.37"))
-                                                                                        ]))
-                                                                  Empty
-                                                                )
-                                                               
-                                                            ]
-                                          )
-                                       )
-                         ).
-
+                                          [::
+                                             (SingleResult "name" "Luke");
+                                             (NestedListResult "friends"
+                                                               [::
+                                                                  (ResponseList
+                                                                     [::
+                                                                        Empty;
+                                                                        ResponseList [::
+                                                                                         (SingleResult "droidFriend" "R2-D2");
+                                                                                         (SingleResult "primaryFunction" "Astromech")
+                                                                        ]
+                                                                     ]
+                                                                  );
+                                                                  (ResponseList
+                                                                     [::
+                                                                        (ResponseList
+                                                                           [::
+                                                                              (SingleResult "humanFriend" "Han");
+                                                                              (NestedListResult "starships"
+                                                                                        [:: (ResponseList [::
+                                                                                                             (SingleResult "starship" "Falcon");
+                                                                                                             (SingleResult "length" "34.37")
+                                                                                            ]
+                                                                              )]);
+                                                                              Empty
+                                                                           ]
+                                                                        )
+                                                                        
+                                                                     ]
+                                                                  )
+                                                               ]
+                                             )
+                                          ]
+                                       )).
+                                        
     Lemma ev_query_eq_response :  (eval_query  wf_graph wf_query) = query_response.
     Proof.
       rewrite /eval_query /=.
       rewrite /get_target_nodes_with_field /=.
-      by rewrite /edges [fset]unlock /=.
+      rewrite /edges [fset]unlock /=.
+      rewrite /collect_list /=.
     Qed.
     
   End HP.

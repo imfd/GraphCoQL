@@ -114,11 +114,23 @@ Section QuerySemantic.
       case: x; case: r IH; intros; rewrite γ_filter_equation //=; crush; case (_ == _) => //=.
   Admitted.
 
-  Lemma γ_responses_size_reduced : forall r l, responses_size (γ_filter r l) <= responses_size l.
+  Lemma γ_reduce_one : forall l r x, γ_filter r (x :: l) = γ_filter r l \/  γ_filter r (x :: l) = x :: γ_filter r l.
   Proof.
-    move=> r; elim=> [| x l' IH] //=.
-      by rewrite γ_filter_equation /=.
+    elim=> [| r' l' IH] //=; intros.
   Admitted.
+  
+  Lemma γ_responses_size_reduced : forall l r, responses_size (γ_filter r l) <= responses_size l.
+  Proof.
+    elim=> [| x l' IH].
+      by intros; rewrite γ_filter_equation /=.
+      move=> r; move: (γ_reduce_one l' r x) => [H1 | H2].
+        rewrite H1; have: responses_size (γ_filter r l') <= responses_size (l').
+          apply: (IH r).
+          rewrite /responses_size /=; case (response_size x); crush.
+        rewrite H2; have: responses_size (γ_filter r l') <= responses_size (l').
+          apply: (IH r).
+          intros; rewrite /responses_size; case (response_size x); crush.     
+  Qed.
 
     Lemma β_responses_size_reduced : forall r l, responses_size (β_filter r l) <= responses_size l.
   Proof.
@@ -189,7 +201,6 @@ Section QuerySemantic.
       intros; case (response_size hd); crush.
   Qed.
 
-  Eval compute
       (*
   Fixpoint collect (response : @ResponseObject Name Vals) : @ResponseObject Name Vals :=
     match response with
