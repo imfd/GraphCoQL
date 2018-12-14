@@ -44,58 +44,40 @@ Section QuerySemantic.
   
 
 
-  Fixpoint indexed_β_filter (response : @ResponseObject Name Vals) (filter :  @ResponseObject Name Vals) (index : nat) : ResponseObject :=
+  Fixpoint indexed_β_filter (response : @ResponseObject Name Vals) (filter :  @ResponseObject Name Vals) (index : nat) : seq ResponseObject :=
     match response, filter with
     | NestedListResult l rs, NestedListResult l' rs' => if l == l' then
-                                                         nth Empty rs index
+                                                         let res := nth Empty rs index in
+                                                         if res is ResponseList χ then χ else [::]
+                                                         
                                                        else
-                                                         Empty
-    | ResponseList rs, NestedListResult _ _ => ResponseList (map (fun r => (indexed_β_filter r filter index)) rs)
-    | _, _ => Empty
+                                                         [::]
+    | _, _ => [::]
     end.
 
   
-  Function β_filter (filter : @ResponseObject Name Vals) (responses : seq (@ResponseObject Name Vals)) {measure (fun r => responses_size r) responses} : seq ResponseObject :=
+  Fixpoint β_filter (filter : @ResponseObject Name Vals) (responses : seq (@ResponseObject Name Vals)) : seq ResponseObject :=
     match responses with
     | [::] => responses
     | hd :: tl =>
-      let β_filtered := (β_filter filter tl) in 
       match hd, filter with
-      | NestedResult l χ, NestedResult l' _ => if (l == l') then χ :: β_filtered else β_filtered
-      | ResponseList rs, _ => (ResponseList (β_filter filter rs)) :: β_filtered
+      | NestedResult l χ, NestedResult l' _ => if (l == l') then χ :: (β_filter filter tl) else (β_filter filter tl)
       | _, _ => β_filter filter tl
       end
     end.
-  Proof.
-    all: intros; crush; rewrite /responses_size; crush.
-  Qed.
 
-
-  Function asf a b :=
-    a + b.
-
-  Function γ_filter (filter_response : ResponseObject) (responses : seq ResponseObject) {measure (fun r => (responses_size r)) responses} : seq (@ResponseObject Name Vals) :=
+  Fixpoint γ_filter (filter_response : ResponseObject) (responses : seq ResponseObject) : seq (@ResponseObject Name Vals) :=
     match responses with
     | [::] => [::]
     | response :: tl =>
-      let γ_filtered := γ_filter filter_response tl in
       match response, filter_response with
-      | NestedResult l _, NestedResult l' _ => if l == l' then γ_filtered else response :: γ_filtered
-      | NestedListResult l _, NestedListResult l' _ => if l == l' then γ_filtered else response :: γ_filtered
-      | ResponseList rs, _ => (ResponseList (γ_filter filter_response rs)) :: γ_filtered
-      | _, _ => if response == filter_response then γ_filtered else response :: γ_filtered
+      | NestedResult l _, NestedResult l' _ => if l == l' then γ_filter filter_response tl else response :: (γ_filter filter_response tl)
+      | NestedListResult l _, NestedListResult l' _ => if l == l' then γ_filter filter_response tl else response :: (γ_filter filter_response tl)
+      | ResponseList rs, _ => response :: (γ_filter filter_response tl)
+      | _, _ => if response == filter_response then (γ_filter filter_response tl) else response :: (γ_filter filter_response tl)
       end
     end.
-  Proof.
-    all: intros; rewrite /responses_size; crush.
-  Qed.
   
-  
-  
-  About γ_filter.
-  Check γ_filter.
-  Check γ_filter_equation.
-  Print γ_filter.
   
   Notation "'ϵ'" := Empty.
   Notation "l <- 'null'" := (Null l) (at level 50).
@@ -110,8 +92,7 @@ Section QuerySemantic.
   Lemma γ_size_reduced : forall r l, size (γ_filter r l) <= size l.
   Proof.
     move=> r; elim=> [| x l' IH] //=.
-      by rewrite γ_filter_equation /=.
-      case: x; case: r IH; intros; rewrite γ_filter_equation //=; crush; case (_ == _) => //=.
+      case: x; case: r IH; intros; crush; case (_ == _) => //=.
   Admitted.
 
   Lemma γ_reduce_one : forall l r x, γ_filter r (x :: l) = γ_filter r l \/  γ_filter r (x :: l) = x :: γ_filter r l.
@@ -122,7 +103,7 @@ Section QuerySemantic.
   Lemma γ_responses_size_reduced : forall l r, responses_size (γ_filter r l) <= responses_size l.
   Proof.
     elim=> [| x l' IH].
-      by intros; rewrite γ_filter_equation /=.
+      by [].
       move=> r; move: (γ_reduce_one l' r x) => [H1 | H2].
         rewrite H1; have: responses_size (γ_filter r l') <= responses_size (l').
           apply: (IH r).
@@ -135,7 +116,7 @@ Section QuerySemantic.
     Lemma β_responses_size_reduced : forall r l, responses_size (β_filter r l) <= responses_size l.
   Proof.
     move=> r; elim=> [| x l' IH] //=.
-      by rewrite β_filter_equation /=.
+      crush.
       Admitted.
       
   Section Map.
@@ -153,60 +134,64 @@ Section QuerySemantic.
   Proof. by []. Qed.
 
 
-  Lemma alkl : forall r : { m : nat | 0 < m}, 0 < proj1_sig r + 0.
-  Proof. case=> /=; crush. Qed.
+  Lemma response_size_gt_0 : forall (r : @ResponseObject Name Vals), 0 < response_size r.
+  Proof. case; crush. Qed.
   
-  Lemma qwe : forall r l, responses_size l < (@responses_size Name Vals (r :: l)).
-  Proof.
-    move=> r; case=> //=; rewrite /responses_size /=; case (response_size r); crush.
-  Qed.
 
       
-  Hint Resolve γ_size_reduced γ_responses_size_reduced β_responses_size_reduced qwe.
-
-  Obligation Tactic := rewrite /responses_size; crush.
-  Program Fixpoint collect_list (responses : seq ResponseObject) {measure (responses_size responses)}: seq ResponseObject :=
+  Function collect (responses : seq ResponseObject) {measure (fun r => responses_size r) responses}: seq ResponseObject :=
     match responses with
     | [::] => responses
     | hd :: tl =>
       let γ_filtered := γ_filter hd tl in
       match hd with
-      | Empty => hd :: (collect_list γ_filtered)
-      | NestedResult l σ => (NestedResult l (ResponseList (collect_list (σ :: (β_filter hd tl))))) :: (collect_list γ_filtered)
-      | NestedListResult l rs => (NestedListResult l (indexed_map (fun i r => ResponseList (map (fun r' => indexed_β_filter r' r i) tl)) rs)) :: (collect_list γ_filtered)
-      | ResponseList ρ => collect_list ρ
-      | _ => hd :: (collect_list γ_filtered)
+      | NestedResult l σ => (NestedResult l (ResponseList (collect (σ :: (β_filter hd tl))))) :: (collect (γ_filter hd tl))
+      | NestedListResult l rs => (NestedListResult l
+                                  (collect (indexed_map
+                                              (fun i r => if r is ResponseList rs' then
+                                                         ResponseList (rs' ++ (flatten (map
+                                                                                 (fun r' => indexed_β_filter r' hd i) tl)))
+                                                       else
+                                                         Empty) rs)))
+                                  :: (collect (γ_filter hd tl))
+
+                                  (* Esto supone que estamos en el caso de una query bien formada, donde el único punto donde collect se puede encontrar con ResponseList es en una NestedListResult *)
+      | ResponseList ρ => (ResponseList (collect ρ)) :: (collect tl)
+      | _ => hd :: (collect (γ_filter hd tl))
       end
     end.
-  Next Obligation.
-    by apply: Lt.le_lt_n_Sm; apply: γ_responses_size_reduced. 
-  Qed.
-  Next Obligation.
-    have: sumn [seq ` (response_size r) | r <- β_filter (l <- {{σ}}) tl] <= sumn [seq ` (response_size r) | r <- tl].
-    apply: β_responses_size_reduced.
-    intros; crush.
-  Qed.
-  Next Obligation.
-    have: sumn [seq ` (response_size r) | r <- γ_filter (l <- {{σ}}) tl] <= sumn [seq ` (response_size r) | r <- tl]. apply: γ_responses_size_reduced. 
-    intros; crush.
-  Qed.
-  Next Obligation.
-    have: sumn [seq ` (response_size r) | r <- γ_filter (l <<- [{rs}]) tl] <= sumn [seq ` (response_size r) | r <- tl].
-      by apply: γ_responses_size_reduced.
-    intros; crush.
-  Qed.
-  Next Obligation.
-    have: sumn [seq ` (response_size r) | r <- γ_filter hd tl] <= sumn [seq ` (response_size r) | r <- tl].
-      by apply: γ_responses_size_reduced.
-      intros; case (response_size hd); crush.
-  Qed.
+  Proof.
+    Admitted. (*
+   - by intros; rewrite /responses_size; crush; apply: Lt.le_lt_n_Sm; apply: γ_responses_size_reduced.
+   - intros; rewrite /responses_size /=.
+     have:  sumn [seq response_size r | r <- γ_filter (s <- null) tl] <= sumn [seq response_size r | r <- tl].
+       by apply: γ_responses_size_reduced.
+       intros. crush.
+       crush.
+   - intros; rewrite /responses_size /=.
+     have: sumn [seq response_size r | r <- γ_filter (s <- s0) tl] <= sumn [seq response_size r | r <- tl].
+       by apply: γ_responses_size_reduced.
+       crush.
+   - intros; rewrite /responses_size /=.
+     have: sumn [seq response_size r | r <- γ_filter (s <<- l) tl] <= sumn [seq response_size r | r <- tl].
+       by apply: γ_responses_size_reduced.
+       crush.
+   - intros; rewrite /responses_size /=.
+     have: sumn [seq response_size r | r <- γ_filter (l <- {{σ}}) tl] <= sumn [seq response_size r | r <- tl].
+       by apply: γ_responses_size_reduced.
+       crush.
+   - intros; rewrite /responses_size /=.
+     have: sumn [seq response_size r | r <- β_filter (l <- {{σ}}) tl] <= sumn [seq response_size r | r <- tl].
+       by apply: β_responses_size_reduced.
+       crush.
+   - intros; rewrite /responses_size /=.
+     have: sumn [seq response_size r | r <- γ_filter (l <<- [{rs}]) tl] <= sumn [seq response_size r | r <- tl].
+       by apply: γ_responses_size_reduced.
+       crush.
+   - intros. rewrite /responses_size. Admitted. *)
+  
 
-      (*
-  Fixpoint collect (response : @ResponseObject Name Vals) : @ResponseObject Name Vals :=
-    match response with
-    | ResponseList rs => ResponseList (collect_list rs)                         
-    | _ => response
-    end.*)
+     
       
       
   Fixpoint eval (schema : @wfSchema Name Vals)  (g : graphQLGraph) (u : @node N Name Vals) (query : Query) : @ResponseObject Name Vals :=
@@ -222,7 +207,12 @@ Section QuerySemantic.
     | NestedField name args ϕ => let target_nodes := get_target_nodes_with_field g u (Field name args) in
                                 match lookup_field_type schema (NamedType u.(type)) name with
                                 | Some (ListType _) =>
-                                      NestedListResult name (map (fun v => eval schema g v ϕ) target_nodes)
+                                      NestedListResult name (map (fun v =>
+                                                                               let res := eval schema g v ϕ in 
+                                                                               if res is ResponseList _ then
+                                                                                 res
+                                                                               else
+                                                                                 ResponseList [:: res]) target_nodes)
                                 | Some (NamedType _) =>
                                   match ohead target_nodes with
                                   | Some v => (NestedResult name (eval schema g v ϕ))
@@ -234,7 +224,12 @@ Section QuerySemantic.
     | NestedLabeledField label name args ϕ =>  let target_nodes := get_target_nodes_with_field g u (Field name args) in
                                               match lookup_field_type schema (NamedType u.(type)) name with
                                               | Some (ListType _) =>
-                                                NestedListResult label (map (fun v => eval schema g v ϕ) target_nodes)
+                                                NestedListResult label (map (fun v =>
+                                                                               let res := eval schema g v ϕ in 
+                                                                               if res is ResponseList _ then
+                                                                                 res
+                                                                               else
+                                                                                 ResponseList [:: res]) target_nodes)
                                               | Some (NamedType _) =>
                                                 match ohead target_nodes with
                                                 | Some v => (NestedResult label (eval schema g v ϕ))
@@ -257,12 +252,12 @@ Section QuerySemantic.
                                                                   Empty
                            | _ => Empty
                                end
-    | SelectionSet ϕ ϕ' => (ResponseList (collect_list [:: (eval schema g u ϕ); (eval schema g u ϕ')]))
+    | SelectionSet ϕ => ResponseList (collect (map (eval schema g u) ϕ))
     end.
 
 
-      Definition eval_query (schema : @wfSchema Name Vals)  (g : @conformedGraph N Name Vals schema) (query : @wfQuery Name Vals schema) : @ResponseObject Name Vals :=
-        let: WFQuery query _ := query in
+      Definition eval_query (schema : @wfSchema Name Vals)  (g : @conformedGraph N Name Vals schema) (query : @conformedQuery Name Vals schema) : @ResponseObject Name Vals :=
+        let: ConformedQuery (WFQuery query _) _ := query in
         eval schema g.(graph) g.(graph).(root) query.
 
       

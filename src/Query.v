@@ -29,7 +29,7 @@ Section Query.
   | NestedField : Name -> {fmap Name -> Vals} -> Query -> Query
   | NestedLabeledField : Name -> Name -> {fmap Name -> Vals} -> Query -> Query
   | InlineFragment : Name -> Query -> Query    (* Check it's named type and not list *)
-  | SelectionSet : Query -> Query -> Query.   (* seq Query but not empty... *)
+  | SelectionSet : list Query -> Query.   (* seq Query but not empty... *)
 
 
   Unset Elimination Schemes.
@@ -99,7 +99,7 @@ Section Query.
      Another option would be to return a GenTree.tree ((Name, {fmap ...}) + (Name, Name, {fmap ...}))
      but this option doesn't allow (currently) to define Query as ordType, due to sum type
      not being of ordType itself.
-   *)
+   
     Fixpoint tree_of_query query : GenTree.tree (Name * Name * {fmap Name -> Vals})  :=
     match query with
     | SingleField name args => GenTree.Node 0 [:: GenTree.Leaf (name, name, args)]
@@ -156,6 +156,7 @@ Section Query.
    Definition query_ordMixin := PcanOrdMixin pcan_tree_of_query.
    Canonical query_ordType := OrdType Query query_ordMixin.
 
+*)
 
    
    
@@ -204,7 +205,8 @@ Section Query.
    Definition response_ordMixin := CanOrdMixin tree_of_responseK.
    Canonical response_ordType := OrdType ResponseObject response_ordMixin.
 
-    
+
+   (*
   Fixpoint isFieldSelection query :=
     match query with
     | SingleField _ _ => true
@@ -270,7 +272,26 @@ Section Query.
     move=> [Hpx Hf] t.
     by move=> [<-| Hs]; [ | apply (IH Hf t Hs)].
     Qed.
+    *)
 
+   Implicit Type query : Query.
+
+   Definition is_selection_set query :=
+     if query is SelectionSet _ then true else false.
+   
+   Fixpoint is_query_wf query :=
+     match query with
+     | NestedField _ _ q => is_query_wf q
+     | NestedLabeledField _ _ _ q => is_query_wf q
+     | InlineFragment _ q => is_query_wf q
+     | SelectionSet q => all (fun q' => ~~(is_selection_set q') && is_query_wf q') q
+     | _ => true
+     end.
+
+   Structure wfQuery := WFQuery {
+                           query : Query;
+                           _ : is_query_wf query
+                         }.
 
   
 End Query.

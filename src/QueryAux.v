@@ -22,10 +22,10 @@ Section QueryAux.
     | NestedField _ _ q' => 1 + (query_size q')
     | NestedLabeledField _ _ _ q' => 1 + (query_size q')
     | InlineFragment _ q' => 1 + (query_size q')
-    | SelectionSet q' q'' => (query_size q') + (query_size q'')
+    | SelectionSet q => sumn (map query_size q)
     | _ => 1
     end.
-
+ 
   
   Fixpoint app_response (r1 r2 : @ResponseObject Name Vals) : ResponseObject :=
     match r1, r2 with
@@ -35,22 +35,19 @@ Section QueryAux.
     | _, _ => ResponseList [:: r1; r2]
     end.
 
-  Program Fixpoint response_size response : {m : nat | 0 < m} :=
+  Fixpoint response_size response : nat :=
     match response with
     | Empty => 1
     | Null _ => 3
     | SingleResult _ _ => 3
     | ListResult _ vals => 4 + size vals
     | NestedResult _ r' => 4 + response_size r'
-    | NestedListResult _ rs => 4 + 2 * (size rs) + sumn (map (fun r => proj1_sig (response_size r)) rs)
-    | ResponseList rs => 1 + sumn (map (fun r => proj1_sig (response_size r)) rs)
+    | NestedListResult _ rs => 4 + 2 * (size rs) + sumn (map response_size rs)
+    | ResponseList rs => 1 + sumn (map response_size rs)
     end.
 
-  Check response_size.
-  Print response_size.
-
   Definition responses_size (responses : seq (@ResponseObject Name Vals)) : nat :=
-    sumn (map (fun r => proj1_sig (response_size r)) responses).
+    sumn (map response_size responses).
 
 
 

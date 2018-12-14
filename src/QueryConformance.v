@@ -33,7 +33,8 @@ Section QueryConformance.
   Definition argumentsConform schema (α : {fmap Name -> Vals}) (args : seq.seq FieldArgumentDefinition) : bool :=
     all (argumentConforms schema α) args.
      
-    
+
+  (*
   Inductive SelectionConforms schema : Query -> type -> Prop :=
   | FieldConforms : forall tname fty fname α args,
       lookup_field_in_type schema (NamedType tname) fname = Some (Field fname args fty) ->
@@ -69,7 +70,8 @@ Section QueryConformance.
       SelectionConforms schema (SelectionSet ϕ ϕ') ty 
   .
 
-
+   *)
+  
   Fixpoint selection_conforms schema (query : Query) (ty : type) :=
     match query with
     | SingleField fname α => match lookup_field_in_type schema ty fname with
@@ -95,14 +97,17 @@ Section QueryConformance.
                                selection_conforms schema ϕ (NamedType t)
                            else
                              false 
-    | SelectionSet ϕ ϕ' => selection_conforms schema ϕ ty && selection_conforms schema ϕ' ty
+    | SelectionSet ϕ => all (fun q => selection_conforms schema q ty) ϕ
     end.
 
+  Definition wf_query_conforms schema (query : @wfQuery Name Vals) (ty : type) :=
+    let: WFQuery q _ := query in
+    selection_conforms schema q ty.
     
   
-  Structure wfQuery (schema : @wfSchema Name Vals) := WFQuery {
-                              query : Query;
-                              queryConforms : selection_conforms schema query schema.(query_root)
+  Structure conformedQuery (schema : @wfSchema Name Vals) := ConformedQuery {
+                              query : @wfQuery Name Vals;
+                              queryConforms : wf_query_conforms schema query schema.(query_root)
                             }.
 
 
