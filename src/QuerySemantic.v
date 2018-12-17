@@ -28,55 +28,6 @@ Require Recdef.
 Section QuerySemantic.
 
   Variables N Name Vals : ordType.
-
-    Open Scope coq_nat.
-
-  
-  Lemma t : forall n x, n < 1 + n + x.
-  Proof. crush. Qed.
-
-  
-
-  Lemma asdf : forall (n : nat) (m : {m : nat | 0 < m}),  n < `m + n.
-  Proof. move=> n m; case: m; crush. Qed.
-
-  Hint Resolve  t asdf.
-  
-
-
-  Fixpoint indexed_β_filter (response : @ResponseObject Name Vals) (filter :  @ResponseObject Name Vals) (index : nat) : seq ResponseObject :=
-    match response, filter with
-    | NestedListResult l rs, NestedListResult l' rs' => if l == l' then
-                                                         let res := nth Empty rs index in
-                                                         if res is ResponseList χ then χ else [::]
-                                                         
-                                                       else
-                                                         [::]
-    | _, _ => [::]
-    end.
-
-  
-  Fixpoint β_filter (filter : @ResponseObject Name Vals) (responses : seq (@ResponseObject Name Vals)) : seq ResponseObject :=
-    match responses with
-    | [::] => responses
-    | hd :: tl =>
-      match hd, filter with
-      | NestedResult l χ, NestedResult l' _ => if (l == l') then χ :: (β_filter filter tl) else (β_filter filter tl)
-      | _, _ => β_filter filter tl
-      end
-    end.
-
-  Fixpoint γ_filter (filter_response : ResponseObject) (responses : seq ResponseObject) : seq (@ResponseObject Name Vals) :=
-    match responses with
-    | [::] => [::]
-    | response :: tl =>
-      match response, filter_response with
-      | NestedResult l _, NestedResult l' _ => if l == l' then γ_filter filter_response tl else response :: (γ_filter filter_response tl)
-      | NestedListResult l _, NestedListResult l' _ => if l == l' then γ_filter filter_response tl else response :: (γ_filter filter_response tl)
-      | ResponseList rs, _ => response :: (γ_filter filter_response tl)
-      | _, _ => if response == filter_response then (γ_filter filter_response tl) else response :: (γ_filter filter_response tl)
-      end
-    end.
   
   
   Notation "'ϵ'" := Empty.
@@ -85,40 +36,9 @@ Section QuerySemantic.
   Notation "l <<- vals" := (ListResult l vals) (at level 50).
   Notation "l <- {{ ρ }}" := (NestedResult l ρ) (at level 40). 
   Notation "l <<- [{ ρ }]" := (NestedListResult l ρ) (at level 40).
-  Notation "[- ρ -]" := (ResponseList ρ) (at level 40).
 
 
-
-  Lemma γ_size_reduced : forall r l, size (γ_filter r l) <= size l.
-  Proof.
-    move=> r; elim=> [| x l' IH] //=.
-      case: x; case: r IH; intros; crush; case (_ == _) => //=.
-  Admitted.
-
-  Lemma γ_reduce_one : forall l r x, γ_filter r (x :: l) = γ_filter r l \/  γ_filter r (x :: l) = x :: γ_filter r l.
-  Proof.
-    elim=> [| r' l' IH] //=; intros.
-  Admitted.
   
-  Lemma γ_responses_size_reduced : forall l r, responses_size (γ_filter r l) <= responses_size l.
-  Proof.
-    elim=> [| x l' IH].
-      by [].
-      move=> r; move: (γ_reduce_one l' r x) => [H1 | H2].
-        rewrite H1; have: responses_size (γ_filter r l') <= responses_size (l').
-          apply: (IH r).
-          rewrite /responses_size /=; case (response_size x); crush.
-        rewrite H2; have: responses_size (γ_filter r l') <= responses_size (l').
-          apply: (IH r).
-          intros; rewrite /responses_size; case (response_size x); crush.     
-  Qed.
-
-    Lemma β_responses_size_reduced : forall r l, responses_size (β_filter r l) <= responses_size l.
-  Proof.
-    move=> r; elim=> [| x l' IH] //=.
-      crush.
-      Admitted.
-      
   Section Map.
     
     Variables (T1 T2 : Type) (x2 : T2) (f : nat -> T1 -> T2) (s : seq T1).
@@ -130,137 +50,161 @@ Section QuerySemantic.
 
   End Map.
   
-  Example sum_index : indexed_map (fun i x => x + i) [:: 1; 2; 3] = [:: 1; 3; 5].
-  Proof. by []. Qed.
 
 
-  Lemma response_size_gt_0 : forall (r : @ResponseObject Name Vals), 0 < response_size r.
-  Proof. case; crush. Qed.
+  
+  Fixpoint indexed_β_filter (response : @ResponseObject Name Vals) (filter :  @Result Name Vals) (index : nat) : ResponseObject :=
+    let indexed_β result filter index : ResponseObject :=
+        match result, filter with
+        | NestedListResult l rs, NestedListResult l' rs' =>
+          if l == l' then
+            nth (SingleResponse Empty) rs index
+          else
+            SingleResponse Empty
+        | _, _ => SingleResponse Empty
+        end
+    in
+    match response with
+    | SingleResponse r => (indexed_β r filter index)
+    | MultipleResponses hd tl => app_responses (indexed_β hd filter index) (indexed_β_filter tl filter index)
+    end.
   
 
-      
-  Function collect (responses : seq ResponseObject) {measure (fun r => responses_size r) responses}: seq ResponseObject :=
+  
+  Fixpoint β_filter (filter : @Result Name Vals) (responses : (@ResponseObject Name Vals)) : ResponseObject :=
+    let  β filter result : ResponseObject :=
+         match result, filter with
+         | NestedResult l χ, NestedResult l' _ => if l == l' then χ  else SingleResponse Empty
+         | _, _ => SingleResponse Empty
+         end
+    in
     match responses with
-    | [::] => responses
-    | hd :: tl =>
-      let γ_filtered := γ_filter hd tl in
-      match hd with
-      | NestedResult l σ => (NestedResult l (ResponseList (collect (σ :: (β_filter hd tl))))) :: (collect (γ_filter hd tl))
-      | NestedListResult l rs => (NestedListResult l
-                                  (collect (indexed_map
-                                              (fun i r => if r is ResponseList rs' then
-                                                         ResponseList (rs' ++ (flatten (map
-                                                                                 (fun r' => indexed_β_filter r' hd i) tl)))
-                                                       else
-                                                         Empty) rs)))
-                                  :: (collect (γ_filter hd tl))
+    | SingleResponse r => (β filter r)
+    | MultipleResponses hd tl => app_responses (β filter hd) (β_filter filter tl)
+    end.
+  
+  
+  Fixpoint γ_filter (filter : @Result Name Vals) (responses : ResponseObject) : @ResponseObject Name Vals :=
+    let γ filter result : @Result Name Vals :=
+        match result, filter with
+        | SingleResult l v, SingleResult l' v' => if (l == l') && (v == v') then Empty else result
+        | ListResult l v, ListResult l' v' => if (l == l') && (v == v') then Empty else result
+        | NestedResult l _, NestedResult l' _ => if l == l' then Empty else result
+        | NestedListResult l _, NestedListResult l' _ => if l == l' then Empty else result
+        | _, _ => result
+        end
+    in
+    match responses with
+    | SingleResponse q => SingleResponse (γ filter q)
+    | MultipleResponses hd tl => MultipleResponses (γ filter hd) (γ_filter filter tl)
+    end.
+  
 
-                                  (* Esto supone que estamos en el caso de una query bien formada, donde el único punto donde collect se puede encontrar con ResponseList es en una NestedListResult *)
-      | ResponseList ρ => (ResponseList (collect ρ)) :: (collect tl)
-      | _ => hd :: (collect (γ_filter hd tl))
+  Program Fixpoint collect (response : ResponseObject) {measure (response_size response)}: ResponseObject :=
+    match response with
+    | SingleResponse _ => response
+    | MultipleResponses hd tl =>
+      match hd with
+      | NestedResult l σ => MultipleResponses
+                             (NestedResult l (collect (app_responses σ (β_filter hd tl))))
+                             (collect (γ_filter hd tl))
+      | NestedListResult l rs => MultipleResponses
+                                  (NestedListResult l
+                                                    (indexed_map
+                                                       (fun i r => collect (app_responses r (indexed_β_filter tl hd i)))
+                                                       rs))
+                                  (collect (γ_filter hd tl))
+      | _ => MultipleResponses hd (collect (γ_filter hd tl))
       end
     end.
-  Proof.
-    Admitted. (*
-   - by intros; rewrite /responses_size; crush; apply: Lt.le_lt_n_Sm; apply: γ_responses_size_reduced.
-   - intros; rewrite /responses_size /=.
-     have:  sumn [seq response_size r | r <- γ_filter (s <- null) tl] <= sumn [seq response_size r | r <- tl].
-       by apply: γ_responses_size_reduced.
-       intros. crush.
-       crush.
-   - intros; rewrite /responses_size /=.
-     have: sumn [seq response_size r | r <- γ_filter (s <- s0) tl] <= sumn [seq response_size r | r <- tl].
-       by apply: γ_responses_size_reduced.
-       crush.
-   - intros; rewrite /responses_size /=.
-     have: sumn [seq response_size r | r <- γ_filter (s <<- l) tl] <= sumn [seq response_size r | r <- tl].
-       by apply: γ_responses_size_reduced.
-       crush.
-   - intros; rewrite /responses_size /=.
-     have: sumn [seq response_size r | r <- γ_filter (l <- {{σ}}) tl] <= sumn [seq response_size r | r <- tl].
-       by apply: γ_responses_size_reduced.
-       crush.
-   - intros; rewrite /responses_size /=.
-     have: sumn [seq response_size r | r <- β_filter (l <- {{σ}}) tl] <= sumn [seq response_size r | r <- tl].
-       by apply: β_responses_size_reduced.
-       crush.
-   - intros; rewrite /responses_size /=.
-     have: sumn [seq response_size r | r <- γ_filter (l <<- [{rs}]) tl] <= sumn [seq response_size r | r <- tl].
-       by apply: γ_responses_size_reduced.
-       crush.
-   - intros. rewrite /responses_size. Admitted. *)
-  
+  Admit Obligations.
 
-     
-      
-      
-  Fixpoint eval (schema : @wfSchema Name Vals)  (g : graphQLGraph) (u : @node N Name Vals) (query : Query) : @ResponseObject Name Vals :=
-    match query with
-    | SingleField name args => match u.(fields) (Field name args) with
-                              | Some (inl value) => SingleResult name value
-                              | _ => Null name
-                              end
-    | LabeledField label name args =>  match u.(fields) (Field name args) with
-                                      | Some (inl value) => SingleResult label value
-                                      | _ => Null name
-                                      end
-    | NestedField name args ϕ => let target_nodes := get_target_nodes_with_field g u (Field name args) in
-                                match lookup_field_type schema (NamedType u.(type)) name with
-                                | Some (ListType _) =>
-                                      NestedListResult name (map (fun v =>
-                                                                               let res := eval schema g v ϕ in 
-                                                                               if res is ResponseList _ then
-                                                                                 res
-                                                                               else
-                                                                                 ResponseList [:: res]) target_nodes)
-                                | Some (NamedType _) =>
-                                  match ohead target_nodes with
-                                  | Some v => (NestedResult name (eval schema g v ϕ))
-                                  | _ => Null name
-                                  end
-                                | _ => Null name         (* If the field ∉ fields(u) then it's null, right? *)
-                                end
-                                  
-    | NestedLabeledField label name args ϕ =>  let target_nodes := get_target_nodes_with_field g u (Field name args) in
-                                              match lookup_field_type schema (NamedType u.(type)) name with
-                                              | Some (ListType _) =>
-                                                NestedListResult label (map (fun v =>
-                                                                               let res := eval schema g v ϕ in 
-                                                                               if res is ResponseList _ then
-                                                                                 res
-                                                                               else
-                                                                                 ResponseList [:: res]) target_nodes)
-                                              | Some (NamedType _) =>
-                                                match ohead target_nodes with
-                                                | Some v => (NestedResult label (eval schema g v ϕ))
-                                                | _ => Null name
-                                                end
-                                              | _ => Null name         
-                                              end
-    | InlineFragment t ϕ => match lookup_type schema (NamedType t) with
-                           | Some (ObjectTypeDefinition _ _ _) => if t == u.(type) then
-                                                                       eval schema g u ϕ
-                                                                 else
-                                                                   Empty
-                           | Some (InterfaceTypeDefinition _ _) => if declares_implementation schema (NamedType u.(type)) (NamedType t) then
-                                                                    eval schema g u ϕ
-                                                                  else
-                                                                    Empty
-                           | Some (UnionTypeDefinition _ mbs) => if (NamedType u.(type)) \in mbs then
-                                                                  eval schema g u ϕ
-                                                                else
-                                                                  Empty
-                           | _ => Empty
-                               end
-    | SelectionSet ϕ => ResponseList (collect (map (eval schema g u) ϕ))
-    end.
+  Lemma collect_eq : forall r, collect r =
+                          match r with
+                          | SingleResponse _ => r
+                          | MultipleResponses hd tl =>
+                            match hd with
+                            | NestedResult l σ => MultipleResponses
+                                                   (NestedResult l (collect (app_responses σ (β_filter hd tl))))
+                                                   (collect (γ_filter hd tl))
+                            | NestedListResult l rs => MultipleResponses
+                                                        (NestedListResult l
+                                                                          (indexed_map
+                                                                             (fun i r => collect (app_responses r (indexed_β_filter tl hd i)))
+                                                                             rs))
+                                                        (collect (γ_filter hd tl))
+                            | _ => MultipleResponses hd (collect (γ_filter hd tl))
+                            end
+                          end.
+    Proof. Admitted.
+    
+    Implicit Type schema : @wfSchema Name Vals.
+    Implicit Type graph : @graphQLGraph N Name Vals.
+    Implicit Type u : @node N Name Vals.
+    Implicit Type selection : @SelectionSet Name Vals.
+    Implicit Type query : @Query Name Vals.
+    
+    Fixpoint eval schema graph u selection : @ResponseObject Name Vals :=
+      match selection with
+      | SingleSelection q => (eval_query schema graph u q)
+      | MultipleSelection q tl => collect (app_responses (eval_query schema graph u q) (eval schema graph u tl))
+      end
+    with eval_query schema graph u query : @ResponseObject Name Vals :=
+           match query with
+           | SingleField name args => match u.(fields) (Field name args) with
+                                     | Some (inl value) => SingleResponse (SingleResult name value)
+                                     | _ => SingleResponse (Null name)
+                                     end
+           | LabeledField label name args =>  match u.(fields) (Field name args) with
+                                             | Some (inl value) => SingleResponse (SingleResult label value)
+                                             | _ => SingleResponse (Null name)
+                                             end
+           | NestedField name args ϕ => let target_nodes := get_target_nodes_with_field graph u (Field name args) in
+                                       match lookup_field_type schema (NamedType u.(type)) name with
+                                       | Some (ListType _) =>
+                                         SingleResponse (NestedListResult name (map (fun v => eval schema graph v ϕ) target_nodes))
+                                       | Some (NamedType _) =>
+                                         match ohead target_nodes with
+                                         | Some v => SingleResponse (NestedResult name (eval schema graph v ϕ))
+                                         | _ => SingleResponse (Null name)
+                                         end
+                                       | _ => SingleResponse (Null name)         (* If the field ∉ fields(u) then it's null, right? *)
+                                       end
+                                         
+           | NestedLabeledField label name args ϕ =>  let target_nodes := get_target_nodes_with_field graph u (Field name args) in
+                                                      match lookup_field_type schema (NamedType u.(type)) name with
+                                                      | Some (ListType _) =>
+                                                        SingleResponse (NestedListResult label (map (fun v => eval schema graph v ϕ) target_nodes))
+                                                      | Some (NamedType _) =>
+                                                        match ohead target_nodes with
+                                                        | Some v => SingleResponse (NestedResult label (eval schema graph v ϕ))
+                                                        | _ => SingleResponse (Null name)
+                                                        end
+                                                      | _ => SingleResponse (Null name)         
+                                                      end
+           | InlineFragment t ϕ => match lookup_type schema (NamedType t) with
+                                   | Some (ObjectTypeDefinition _ _ _) => if t == u.(type) then
+                                                                            eval schema graph u ϕ
+                                                                          else
+                                                                            (SingleResponse Empty)
+                                   | Some (InterfaceTypeDefinition _ _) => if declares_implementation schema (NamedType u.(type)) (NamedType t) then
+                                                                             eval schema graph u ϕ
+                                                                           else
+                                                                             (SingleResponse Empty)
+                                   | Some (UnionTypeDefinition _ mbs) => if (NamedType u.(type)) \in mbs then
+                                                                           eval schema graph u ϕ
+                                                                         else
+                                                                           (SingleResponse Empty)
+                                   | _ => SingleResponse Empty
+                                   end
+           end.
 
 
-      Definition eval_query (schema : @wfSchema Name Vals)  (g : @conformedGraph N Name Vals schema) (query : @conformedQuery Name Vals schema) : @ResponseObject Name Vals :=
-        let: ConformedQuery (WFQuery query _) _ := query in
-        eval schema g.(graph) g.(graph).(root) query.
+    Definition eval_selection schema  (g : @conformedGraph N Name Vals schema) (selection : @conformedQuery Name Vals schema) : @ResponseObject Name Vals :=
+      let: ConformedQuery selection _ := selection in
+      eval schema g.(graph) g.(graph).(root) selection.
 
-      
-      
+    
+    
 
 End QuerySemantic.

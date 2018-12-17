@@ -71,43 +71,49 @@ Section QueryConformance.
   .
 
    *)
+
+  Implicit Type selection : @SelectionSet Name Vals.
+  Implicit Type query : @Query Name Vals.
+  Implicit Type type : @type Name.
   
-  Fixpoint selection_conforms schema (query : Query) (ty : type) :=
-    match query with
-    | SingleField fname α => match lookup_field_in_type schema ty fname with
-                            | Some (Field fname args ty) => argumentsConform schema α args
-                            | _ => false
-                            end
-    | LabeledField _ fname α =>  match lookup_field_in_type schema ty fname with
-                                    | Some (Field fname args ty) => argumentsConform schema α args
+  Fixpoint selection_conforms schema selection ty :=
+    match selection with
+    | SingleSelection q => query_conforms schema q ty
+    | MultipleSelection q tl => query_conforms schema q ty && selection_conforms schema tl ty
+    end
+  with query_conforms schema query ty :=
+         match query with
+         | SingleField fname α => match lookup_field_in_type schema ty fname with
+                                 | Some (Field fname args ty) => argumentsConform schema α args
+                                 | _ => false
+                                 end
+         | LabeledField _ fname α =>  match lookup_field_in_type schema ty fname with
+                                     | Some (Field fname args ty) => argumentsConform schema α args
+                                     | _ => false
+                                     end
+         | NestedField fname α ϕ =>  match lookup_field_in_type schema ty fname with
+                                    | Some (Field fname args ty') => argumentsConform schema α args && selection_conforms schema ϕ ty'
                                     | _ => false
                                     end
-    | NestedField fname α ϕ =>  match lookup_field_in_type schema ty fname with
-                               | Some (Field fname args ty') => argumentsConform schema α args && selection_conforms schema ϕ ty'
-                               | _ => false
-                               end
-    | NestedLabeledField _ fname α ϕ =>  match lookup_field_in_type schema ty fname with
-                                        | Some (Field fname args ty') => argumentsConform schema α args && selection_conforms schema ϕ ty'
-                                        | _ => false
-                                        end
-    | InlineFragment t ϕ => if is_object_type schema (NamedType t) || is_interface_type schema (NamedType t) || is_union_type schema (NamedType t) then
-                             let possible_t_types := get_possible_types schema (NamedType t) in
-                             let possible_ty_types := get_possible_types schema ty in
-                             (has (fun x => x \in possible_ty_types) possible_t_types) &&
-                               selection_conforms schema ϕ (NamedType t)
-                           else
-                             false 
-    | SelectionSet ϕ => all (fun q => selection_conforms schema q ty) ϕ
+         | NestedLabeledField _ fname α ϕ =>  match lookup_field_in_type schema ty fname with
+                                             | Some (Field fname args ty') => argumentsConform schema α args && selection_conforms schema ϕ ty'
+                                             | _ => false
+                                             end
+         | InlineFragment t ϕ => if is_object_type schema (NamedType t) || is_interface_type schema (NamedType t) || is_union_type schema (NamedType t) then
+                                  let possible_t_types := get_possible_types schema (NamedType t) in
+                                  let possible_ty_types := get_possible_types schema ty in
+                                  (has (fun x => x \in possible_ty_types) possible_t_types) &&
+                                                                                         selection_conforms schema ϕ (NamedType t)
+                                else
+                                  false 
     end.
 
-  Definition wf_query_conforms schema (query : @wfQuery Name Vals) (ty : type) :=
-    let: WFQuery q _ := query in
-    selection_conforms schema q ty.
+  
     
   
   Structure conformedQuery (schema : @wfSchema Name Vals) := ConformedQuery {
-                              query : @wfQuery Name Vals;
-                              queryConforms : wf_query_conforms schema query schema.(query_root)
+                              selection : @SelectionSet Name Vals;
+                              _ : selection_conforms schema selection schema.(query_root)
                             }.
 
 
