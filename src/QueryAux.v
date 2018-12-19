@@ -21,8 +21,7 @@ Section QueryAux.
   
   Fixpoint selection_size selection : nat :=
     match selection with
-    | SingleSelection q => query_size q
-    | MultipleSelection q tl => query_size q + selection_size tl
+    | Selection queries => sumn (map query_size queries)
     end
   with query_size query : nat :=
          match query with
@@ -36,8 +35,7 @@ Section QueryAux.
 
   Fixpoint response_size response : nat :=
     match response with
-    | SingleResponse r => result_size r
-    | MultipleResponses hd tl => result_size hd + response_size tl
+    | Response r => sumn (map result_size r)
     end
   with result_size result : nat :=
     match result with
@@ -52,30 +50,13 @@ Section QueryAux.
   Definition responses_size (responses : seq (@ResponseObject Name Vals)) : nat :=
     sumn (map response_size responses).
 
+  Definition results_size (results : seq (@Result Name Vals)) : nat :=
+    sumn (map result_size results).
   
   Fixpoint app_responses r1 r2 : @ResponseObject Name Vals :=
-    match r1 with
-    | SingleResponse r => MultipleResponses r r2
-    | MultipleResponses hd tl => MultipleResponses hd (app_responses tl r2)
+    match r1, r2 with
+    | Response r, Response r' => Response (r ++ r')
     end.
-  (*
-  Fixpoint cleanup_empty_results response : option ResponseObject :=
-    match response with
-    | SingleResponse Empty => None
-    | SingleResponse _ => Some response
-    | MultipleResponses Empty tl => cleanup_empty_results tl
-    | MultipleResponses hd tl => Multiple                                     
-    end
-  with cleanup_empty result :=
-         match result with
-         | Empty => None
-         | NestedResult l r => let clean := (cleanup_empty_results r) in
-                              if clean is Some r' then
-                                Some (NestedResult l r')
-                              else
-                                None
-         | NestedListResult 
-         | _ => Some result *)
   
 End QueryAux.
 

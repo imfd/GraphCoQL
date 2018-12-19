@@ -24,8 +24,7 @@ Section Query.
   Variables Name Vals : ordType.
 
   Inductive SelectionSet : Type :=
-  | SingleSelection : Query -> SelectionSet
-  | MultipleSelection : Query -> SelectionSet -> SelectionSet
+  | Selection : list Query -> SelectionSet
   with Query : Type :=
        | SingleField : Name -> {fmap Name -> Vals} -> Query
        | LabeledField : Name -> Name -> {fmap Name -> Vals} -> Query
@@ -36,8 +35,7 @@ Section Query.
   
   Unset Elimination Schemes.
   Inductive ResponseObject : Type :=
-  | SingleResponse : Result -> ResponseObject
-  | MultipleResponses : Result -> ResponseObject -> ResponseObject
+  | Response : list Result -> ResponseObject
   with Result : Type :=
   | Empty : Result
   | Null : Name -> Result
@@ -56,8 +54,7 @@ Section Query.
 End Query.
 
 
-Arguments SingleSelection [Name Vals].
-Arguments MultipleSelection [Name Vals].
+Arguments Selection [Name Vals].
 Arguments Query [Name Vals].
 Arguments SingleField [Name Vals].
 Arguments LabeledField [Name Vals].
@@ -70,6 +67,5 @@ Arguments SelectionSet [Name Vals].
 Arguments ResponseObject [Name Vals].
 Arguments Null [Name Vals].
 Arguments Empty [Name Vals].
-Arguments SingleResult [Name Vals].
 
 

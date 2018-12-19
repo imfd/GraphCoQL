@@ -6,148 +6,131 @@ Unset Printing Implicit Defensive.
 
 From extructures Require Import ord fmap.
 
+Require Import List.
 
 Require Import Query.
 Require Import QueryAux.
-Require Import QueryConformance.
 Require Import SchemaWellFormedness.
 
 Section NRGTNF.
 
   Variables Name Vals : ordType.
-
-  Implicit Type query : @Query Name Vals.
   
-  Inductive GroundTypedNormalForm : @Query Name Vals -> Prop :=
-  | GT_Field : forall f args,
-      GroundTypedNormalForm (SingleField f args)
+  Implicit Type selection : @SelectionSet Name Vals.
+  Implicit Type query : @Query Name Vals.
 
-  | GT_LabeledField : forall label f args,
-      GroundTypedNormalForm (LabeledField label f args)
+    
+  
+  Definition is_field_selection query : bool :=
+    if query is InlineFragment _ _ then false else true.
 
-  | GT_NestedField : forall f args ϕ,
-      GroundTypedNormalForm ϕ ->
-      GroundTypedNormalForm (NestedField f args ϕ)
+  Definition is_inline_fragment query : bool :=
+    if query is InlineFragment _ _ then true else false.
+  
+  
+  Inductive GroundTypedNormalForm : SelectionSet -> Prop :=
+  | GT_MS_Field : forall queries,
+      all is_field_selection queries ->
+      Forall qGroundTypedNormalForm queries ->
+      GroundTypedNormalForm (Selection queries)
+  | GT_MS_Inline : forall queries,
+      all is_inline_fragment queries ->
+      Forall qGroundTypedNormalForm queries ->
+      GroundTypedNormalForm (Selection queries)
+                            
+  with qGroundTypedNormalForm : Query -> Prop :=
+       | GT_Field : forall f args,
+           qGroundTypedNormalForm (SingleField f args)
 
-  | GT_NestedLabeledField : forall label f args ϕ,
-      GroundTypedNormalForm ϕ ->
-      GroundTypedNormalForm (NestedLabeledField label f args ϕ)
+       | GT_LabeledField : forall label f args,
+           qGroundTypedNormalForm (LabeledField label f args)
 
-  | GT_InlineFragment : forall t ϕ,
-       isFieldSelection ϕ ->
-      GroundTypedNormalForm ϕ ->
-      GroundTypedNormalForm (InlineFragment t ϕ)
+       | GT_NestedField : forall f args ϕ,
+           GroundTypedNormalForm ϕ ->
+           qGroundTypedNormalForm (NestedField f args ϕ)
 
-  | GT_SelectionSet : forall ϕ ϕ',
-      (isFieldSelection ϕ && isFieldSelection ϕ') || (isInlineFragmentSelection ϕ && isInlineFragmentSelection ϕ') ->
-      GroundTypedNormalForm ϕ ->
-      GroundTypedNormalForm ϕ' ->
-      GroundTypedNormalForm (SelectionSet ϕ ϕ').
+       | GT_NestedLabeledField : forall label f args ϕ,
+           GroundTypedNormalForm ϕ ->
+           qGroundTypedNormalForm (NestedLabeledField label f args ϕ)
 
-  Fixpoint is_ground_typed_normal_form query :=
-    match query with
-    | NestedField _ _ ϕ => is_ground_typed_normal_form ϕ
-    | NestedLabeledField _ _ _ ϕ => is_ground_typed_normal_form ϕ
-    | InlineFragment _ ϕ => isFieldSelection ϕ && is_ground_typed_normal_form ϕ
-    | SelectionSet ϕ ϕ' => ((isFieldSelection ϕ && isFieldSelection ϕ')
-                           || (isInlineFragmentSelection ϕ && isInlineFragmentSelection ϕ'))
-                            && is_ground_typed_normal_form ϕ && is_ground_typed_normal_form ϕ'
-    | _ => true
-    end.
+       | GT_InlineFragment : forall t ϕ,
+           all is_field_selection ϕ ->
+           GroundTypedNormalForm (Selection ϕ) ->
+           qGroundTypedNormalForm (InlineFragment t (Selection ϕ)).
+  
+
+  Fixpoint is_ground_typed_normal_form selection : bool := 
+    match selection with
+    | Selection queries => ((all is_field_selection queries) || (all is_inline_fragment queries))
+                            && (all is_query_in_normal_form queries)
+    end
+  with is_query_in_normal_form query : bool :=
+          match query with
+          | NestedField _ _ ϕ => is_ground_typed_normal_form ϕ
+          | NestedLabeledField _ _ _ ϕ => is_ground_typed_normal_form ϕ
+          | InlineFragment _ (Selection ϕ) => (all is_field_selection ϕ) && (all is_query_in_normal_form ϕ)
+          | _ => true
+          end.
 
 
 
+  
 
 
-
-    Fixpoint partial_query_eq (q1 q2 : @Query Name Vals) : bool :=
+  Fixpoint partial_query_eq (q1 q2 : @Query Name Vals) : bool :=
     match q1, q2 with
     | SingleField name args, SingleField name' args' => (name == name') && (args == args')
     | LabeledField label name args, LabeledField label' name' args' => (label == label') && (name == name') && (args == args')
-    | NestedField name args ϕ, NestedField name' args' ϕ' => (name == name') && (args == args')
-    | NestedLabeledField label name args ϕ, NestedLabeledField label' name' args' ϕ' =>
+    | NestedField name args _, NestedField name' args' _ => (name == name') && (args == args')
+    | NestedLabeledField label name args _, NestedLabeledField label' name' args' _ =>
       (label == label') && (name == name') && (args == args')
-    | InlineFragment t ϕ, InlineFragment t' ϕ' => (t == t')
-    | SelectionSet ϕ ϕ', SelectionSet ψ ψ' => (partial_query_eq ϕ ψ) &&  (partial_query_eq ϕ' ψ')
+    | InlineFragment t _, InlineFragment t' _ => (t == t')
     | _,  _ => false
     end.
 
+  (*
     Fixpoint applies_to_query (p : pred Query) (q : @Query Name Vals) :=
      match q with
     | SelectionSet ϕ ϕ' => if p ϕ then true else applies_to_query p ϕ'
     | _ => p q
     end.
+*)
 
-    (*
-    Inductive NonRedundant : Query -> Prop :=
-    | NR_Field : forall name args, NonRedundant (SingleField name args)
+  Fixpoint no_repeated_query (queries : list Query) : bool :=
+     match queries with
+        | [::] => true
+        | hd :: tl => if has (partial_query_eq hd) tl then
+                       false
+                     else
+                       no_repeated_query tl
+     end.
+  
+  Fixpoint is_non_redundant selection : bool :=
+    let: Selection queries := selection in
+    (all is_query_non_redundant queries) && (no_repeated_query queries)
                                          
-    | NR_LabeledField : forall label name args, NonRedundant (LabeledField label name args)
-                                                        
-    | NR_NestedField : forall name args ϕ,
-        NonRedundant ϕ ->
-        NonRedundant (NestedField name args ϕ)
-                     
-    | NR_NestedLabeledField : forall label name args ϕ,
-        NonRedundant ϕ ->
-        NonRedundant (NestedLabeledField label name args ϕ)
-                     
-    | NR_InlineFragment : forall t ϕ,
-        NonRedundant ϕ ->
-        NonRedundant (InlineFragment t ϕ)
-                     
-  | NR_SelectionSet : forall ϕ ϕ',
-      ~~ (applies_to_query (partial_query_eq ϕ) ϕ') ->
-      NonRedundant ϕ ->
-      NonRedundant ϕ' ->
-      NonRedundant (SelectionSet ϕ ϕ')
-    .
-     *)
-    
-    Definition is_non_redundant query : bool :=
-      let flattened_query := flatten_query query in
-      let fix loop q :=
-          match q with
-          | SingleField _ _ => true
-          | LabeledField _ _ _ => true
-          | NestedField _ _ ϕ => loop ϕ
-          | NestedLabeledField _ _ _ ϕ => loop ϕ
-          | InlineFragment _ ϕ => loop ϕ 
-          | SelectionSet ϕ ϕ' => ~~(applies_to_query (partial_query_eq ϕ) ϕ') &&
-                                  loop ϕ &&
-                                  loop ϕ'
-          end
-      in
-      loop flattened_query.
+  with is_query_non_redundant q : bool :=
+         match q with
+         | SingleField _ _ => true
+         | LabeledField _ _ _ => true
+         | NestedField _ _ ϕ => is_non_redundant ϕ
+         | NestedLabeledField _ _ _ ϕ => is_non_redundant ϕ
+         | InlineFragment _ ϕ => is_non_redundant ϕ 
+         end.
+  
 
 
-
-    Structure normalizedQuery := NormalQuery {
-                                    query : Query;
-                                    _ : is_non_redundant query;
-                                    _ : is_ground_typed_normal_form query
+    Structure normalizedSelection := NormalizedSelection {
+                                    selection : SelectionSet;
+                                    _ : is_non_redundant selection;
+                                    _ : is_ground_typed_normal_form selection
                               }.
 
-    Coercion query_of_normalized_query (q : normalizedQuery) := let: NormalQuery q _ _ := q in q.
+    Coercion selection_of_normalized_selection (s : normalizedSelection) := let: NormalizedSelection s _ _ := s in s.
 
 
 
-    Implicit Type schema : @wfSchema Name Vals.
-    
+      
 
-    Fixpoint normalize_query (query : wfQuery) : Query :=
-      let: WFQuery q _ := query in
-      let flattened_query := flatten_query q in
-      let fix aux q := 
-          match q with
-          | SingleField _ _ => q
-          | LabeledField _ _ _ => q
-          | NestedField n args ϕ => NestedField n args (aux ϕ)
-          | NestedLabeledField l n args ϕ => NestedLabeledField l n args (aux ϕ)
-          | InlineFragment t ϕ => 
-            
-          end
-      in
-      aux flattened_query.
 
 End NRGTNF.

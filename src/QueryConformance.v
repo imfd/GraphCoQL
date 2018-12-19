@@ -12,6 +12,7 @@ Require Import Schema.
 Require Import SchemaAux.
 Require Import Query.
 Require Import SchemaWellFormedness.
+Require Import NRGTNF.
 
 
 Section QueryConformance.
@@ -78,8 +79,8 @@ Section QueryConformance.
   
   Fixpoint selection_conforms schema selection ty :=
     match selection with
-    | SingleSelection q => query_conforms schema q ty
-    | MultipleSelection q tl => query_conforms schema q ty && selection_conforms schema tl ty
+    | Selection [::] => false
+    | Selection queries => all (fun q => query_conforms schema q ty) queries
     end
   with query_conforms schema query ty :=
          match query with
@@ -116,8 +117,13 @@ Section QueryConformance.
                               _ : selection_conforms schema selection schema.(query_root)
                             }.
 
+  Structure normalizedConformedQuery (schema : @wfSchema Name Vals) :=
+    NCQuery {
+        nselection : @normalizedSelection Name Vals;
+        _ : selection_conforms schema nselection schema.(query_root)
+      }.
   
-  Coercion query_of_wfquery schema (wfq : wfQuery schema) := let: WFQuery q _ := wfq in q.
+  Coercion query_of_wfquery schema (wfq : conformedQuery schema) := let: ConformedQuery q _ := wfq in q.
   
 End QueryConformance.
 

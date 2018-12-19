@@ -13,6 +13,7 @@ Require Import QueryConformance.
 Require Import SchemaAux.
 Require Import GraphAux.
 Require Import QueryAux.
+Require Import NRGTNF.
 
 Require Import Schema.
 Require Import Query.
@@ -52,90 +53,86 @@ Section QuerySemantic.
   
 
 
-  
-  Fixpoint indexed_β_filter (response : @ResponseObject Name Vals) (filter :  @Result Name Vals) (index : nat) : ResponseObject :=
-    let indexed_β result filter index : ResponseObject :=
-        match result, filter with
-        | NestedListResult l rs, NestedListResult l' rs' =>
-          if l == l' then
-            nth (SingleResponse Empty) rs index
-          else
-            SingleResponse Empty
-        | _, _ => SingleResponse Empty
-        end
-    in
-    match response with
-    | SingleResponse r => (indexed_β r filter index)
-    | MultipleResponses hd tl => app_responses (indexed_β hd filter index) (indexed_β_filter tl filter index)
+  Fixpoint indexed_β (results : seq (@Result Name Vals)) (filter : @Result Name Vals) (index : nat) : seq (@Result Name Vals) :=
+    match results with
+    | [::] => [::]
+    | hd :: tl =>
+      match hd, filter with
+      | NestedListResult l rs, NestedListResult l' _ =>
+        if l == l' then
+          let: Response χ := (nth (Response [::]) rs index) in
+          χ ++ (indexed_β tl filter index)
+        else
+          indexed_β tl filter index
+        | _, _ => (indexed_β tl filter index)
+      end 
     end.
   
 
-  
-  Fixpoint β_filter (filter : @Result Name Vals) (responses : (@ResponseObject Name Vals)) : ResponseObject :=
-    let  β filter result : ResponseObject :=
-         match result, filter with
-         | NestedResult l χ, NestedResult l' _ => if l == l' then χ  else SingleResponse Empty
-         | _, _ => SingleResponse Empty
-         end
-    in
-    match responses with
-    | SingleResponse r => (β filter r)
-    | MultipleResponses hd tl => app_responses (β filter hd) (β_filter filter tl)
-    end.
-  
-  
-  Fixpoint γ_filter (filter : @Result Name Vals) (responses : ResponseObject) : @ResponseObject Name Vals :=
-    let γ filter result : @Result Name Vals :=
-        match result, filter with
-        | SingleResult l v, SingleResult l' v' => if (l == l') && (v == v') then Empty else result
-        | ListResult l v, ListResult l' v' => if (l == l') && (v == v') then Empty else result
-        | NestedResult l _, NestedResult l' _ => if l == l' then Empty else result
-        | NestedListResult l _, NestedListResult l' _ => if l == l' then Empty else result
-        | _, _ => result
-        end
-    in
-    match responses with
-    | SingleResponse q => SingleResponse (γ filter q)
-    | MultipleResponses hd tl => MultipleResponses (γ filter hd) (γ_filter filter tl)
+  Fixpoint β (results : seq (@Result Name Vals)) (filter : @Result Name Vals) : seq (@Result Name Vals) :=
+    match results with
+    | [::] => [::]
+    | hd :: tl =>
+      match hd, filter with
+      | NestedResult l r, NestedResult l' _ => if l == l' then
+                                                let: Response χ := r in
+                                                χ ++ (β tl filter)
+                                              else
+                                                β tl filter
+      | _, _ => β tl filter
+      end
     end.
   
 
-  Program Fixpoint collect (response : ResponseObject) {measure (response_size response)}: ResponseObject :=
-    match response with
-    | SingleResponse _ => response
-    | MultipleResponses hd tl =>
+  Definition γ (results : seq (@Result Name Vals)) (f : @Result Name Vals) : seq (@Result Name Vals) :=
+    let partially_equal (result filter : @Result Name Vals) : bool :=
+        match result, filter with
+        | SingleResult l v, SingleResult l' v' => (l == l') && (v == v')
+        | ListResult l v, ListResult l' v' => (l == l') && (v == v')
+        | NestedResult l _, NestedResult l' _ => l == l' 
+        | NestedListResult l _, NestedListResult l' _ => l == l'
+        | _, _ => false
+        end
+    in
+    filter (fun r => ~~(partially_equal r f)) results.
+      
+
+  Program Fixpoint collect (results : seq (@Result Name Vals)) {measure (results_size results)} : seq (@Result Name Vals) :=
+    match results with
+    | [::] => [::]
+    | hd :: tl =>
       match hd with
-      | NestedResult l σ => MultipleResponses
-                             (NestedResult l (collect (app_responses σ (β_filter hd tl))))
-                             (collect (γ_filter hd tl))
-      | NestedListResult l rs => MultipleResponses
-                                  (NestedListResult l
-                                                    (indexed_map
-                                                       (fun i r => collect (app_responses r (indexed_β_filter tl hd i)))
-                                                       rs))
-                                  (collect (γ_filter hd tl))
-      | _ => MultipleResponses hd (collect (γ_filter hd tl))
+      | NestedResult l (Response σ) => (NestedResult l (Response (collect (σ ++ (β tl hd)))))
+                                        :: (collect (γ tl hd))
+      | NestedListResult l rs => (NestedListResult l
+                                   (indexed_map
+                                      (fun (i : nat) (r : ResponseObject) =>
+                                         let: Response r := r in
+                                         Response (collect (r ++ (indexed_β tl hd i))))
+                                      rs))
+                                  :: (collect (γ tl hd))
+      | _ => hd :: (collect (γ tl hd))
       end
     end.
   Admit Obligations.
 
   Lemma collect_eq : forall r, collect r =
                           match r with
-                          | SingleResponse _ => r
-                          | MultipleResponses hd tl =>
-                            match hd with
-                            | NestedResult l σ => MultipleResponses
-                                                   (NestedResult l (collect (app_responses σ (β_filter hd tl))))
-                                                   (collect (γ_filter hd tl))
-                            | NestedListResult l rs => MultipleResponses
-                                                        (NestedListResult l
-                                                                          (indexed_map
-                                                                             (fun i r => collect (app_responses r (indexed_β_filter tl hd i)))
-                                                                             rs))
-                                                        (collect (γ_filter hd tl))
-                            | _ => MultipleResponses hd (collect (γ_filter hd tl))
-                            end
-                          end.
+    | [::] => [::]
+    | hd :: tl =>
+      match hd with
+      | NestedResult l (Response σ) => (NestedResult l (Response (collect (σ ++ (β tl hd)))))
+                                        :: (collect (γ tl hd))
+      | NestedListResult l rs => (NestedListResult l
+                                   (indexed_map
+                                      (fun (i : nat) (r : ResponseObject) =>
+                                         let: Response r := r in
+                                         Response (collect (r ++ (indexed_β tl hd i))))
+                                      rs))
+                                  :: (collect (γ tl hd))
+      | _ => hd :: (collect (γ tl hd))
+      end
+    end.
     Proof. Admitted.
     
     Implicit Type schema : @wfSchema Name Vals.
@@ -146,56 +143,67 @@ Section QuerySemantic.
     
     Fixpoint eval schema graph u selection : @ResponseObject Name Vals :=
       match selection with
-      | SingleSelection q => (eval_query schema graph u q)
-      | MultipleSelection q tl => collect (app_responses (eval_query schema graph u q) (eval schema graph u tl))
+      | Selection queries  =>
+        let fix loop rs :=
+            match rs with
+            | [::] => [::]
+            | hd :: tl =>
+              let res := eval_query schema graph u hd in
+              match res with
+              | inl r => r :: (loop tl)
+              | inr (Response r) => r ++ (loop tl)
+              end
+            end
+        in
+         Response (collect (loop queries))
       end
-    with eval_query schema graph u query : @ResponseObject Name Vals :=
+    with eval_query schema graph u query : (@Result Name Vals) + @ResponseObject Name Vals :=
            match query with
            | SingleField name args => match u.(fields) (Field name args) with
-                                     | Some (inl value) => SingleResponse (SingleResult name value)
-                                     | _ => SingleResponse (Null name)
+                                     | Some (inl value) => inl (SingleResult name value)
+                                     | _ => inl (Null name)
                                      end
            | LabeledField label name args =>  match u.(fields) (Field name args) with
-                                             | Some (inl value) => SingleResponse (SingleResult label value)
-                                             | _ => SingleResponse (Null name)
+                                             | Some (inl value) => inl (SingleResult label value)
+                                             | _ => inl (Null name)
                                              end
            | NestedField name args ϕ => let target_nodes := get_target_nodes_with_field graph u (Field name args) in
                                        match lookup_field_type schema (NamedType u.(type)) name with
                                        | Some (ListType _) =>
-                                         SingleResponse (NestedListResult name (map (fun v => eval schema graph v ϕ) target_nodes))
+                                         inl (NestedListResult name (map (fun v => eval schema graph v ϕ) target_nodes))
                                        | Some (NamedType _) =>
                                          match ohead target_nodes with
-                                         | Some v => SingleResponse (NestedResult name (eval schema graph v ϕ))
-                                         | _ => SingleResponse (Null name)
+                                         | Some v => inl (NestedResult name (eval schema graph v ϕ))
+                                         | _ => inl (Null name)
                                          end
-                                       | _ => SingleResponse (Null name)         (* If the field ∉ fields(u) then it's null, right? *)
+                                       | _ => inl (Null name)         (* If the field ∉ fields(u) then it's null, right? *)
                                        end
                                          
            | NestedLabeledField label name args ϕ =>  let target_nodes := get_target_nodes_with_field graph u (Field name args) in
                                                       match lookup_field_type schema (NamedType u.(type)) name with
                                                       | Some (ListType _) =>
-                                                        SingleResponse (NestedListResult label (map (fun v => eval schema graph v ϕ) target_nodes))
+                                                        inl (NestedListResult label (map (fun v => eval schema graph v ϕ) target_nodes))
                                                       | Some (NamedType _) =>
                                                         match ohead target_nodes with
-                                                        | Some v => SingleResponse (NestedResult label (eval schema graph v ϕ))
-                                                        | _ => SingleResponse (Null name)
+                                                        | Some v => inl (NestedResult label (eval schema graph v ϕ))
+                                                        | _ => inl (Null name)
                                                         end
-                                                      | _ => SingleResponse (Null name)         
+                                                      | _ => inl (Null name)       
                                                       end
            | InlineFragment t ϕ => match lookup_type schema (NamedType t) with
                                    | Some (ObjectTypeDefinition _ _ _) => if t == u.(type) then
-                                                                            eval schema graph u ϕ
+                                                                            inr (eval schema graph u ϕ)
                                                                           else
-                                                                            (SingleResponse Empty)
+                                                                            inl Empty
                                    | Some (InterfaceTypeDefinition _ _) => if declares_implementation schema (NamedType u.(type)) (NamedType t) then
-                                                                             eval schema graph u ϕ
+                                                                             inr (eval schema graph u ϕ)
                                                                            else
-                                                                             (SingleResponse Empty)
+                                                                             inl Empty
                                    | Some (UnionTypeDefinition _ mbs) => if (NamedType u.(type)) \in mbs then
-                                                                           eval schema graph u ϕ
+                                                                           inr (eval schema graph u ϕ)
                                                                          else
-                                                                           (SingleResponse Empty)
-                                   | _ => SingleResponse Empty
+                                                                           inl Empty
+                                   | _ =>  inl Empty
                                    end
            end.
 
@@ -204,7 +212,79 @@ Section QuerySemantic.
       let: ConformedQuery selection _ := selection in
       eval schema g.(graph) g.(graph).(root) selection.
 
-    
-    
+
+
+    Fixpoint eval'  schema graph u selection : @ResponseObject Name Vals :=
+      match selection with
+      | Selection queries  =>
+        let fix loop rs :=
+            match rs with
+            | [::] => [::]
+            | hd :: tl =>
+              let res := eval_query' schema graph u hd in
+              match res with
+              | inl r => r :: (loop tl)
+              | inr (Response r) => r ++ (loop tl)
+              end
+            end
+        in
+         Response (loop queries)
+      end
+    with eval_query' schema graph u query : (@Result Name Vals) + @ResponseObject Name Vals :=
+           match query with
+           | SingleField name args => match u.(fields) (Field name args) with
+                                     | Some (inl value) => inl (SingleResult name value)
+                                     | _ => inl (Null name)
+                                     end
+           | LabeledField label name args =>  match u.(fields) (Field name args) with
+                                             | Some (inl value) => inl (SingleResult label value)
+                                             | _ => inl (Null name)
+                                             end
+           | NestedField name args ϕ => let target_nodes := get_target_nodes_with_field graph u (Field name args) in
+                                       match lookup_field_type schema (NamedType u.(type)) name with
+                                       | Some (ListType _) =>
+                                         inl (NestedListResult name (map (fun v => eval' schema graph v ϕ) target_nodes))
+                                       | Some (NamedType _) =>
+                                         match ohead target_nodes with
+                                         | Some v => inl (NestedResult name (eval' schema graph v ϕ))
+                                         | _ => inl (Null name)
+                                         end
+                                       | _ => inl (Null name)         (* If the field ∉ fields(u) then it's null, right? *)
+                                       end
+                                         
+           | NestedLabeledField label name args ϕ =>  let target_nodes := get_target_nodes_with_field graph u (Field name args) in
+                                                      match lookup_field_type schema (NamedType u.(type)) name with
+                                                      | Some (ListType _) =>
+                                                        inl (NestedListResult label (map (fun v => eval' schema graph v ϕ) target_nodes))
+                                                      | Some (NamedType _) =>
+                                                        match ohead target_nodes with
+                                                        | Some v => inl (NestedResult label (eval' schema graph v ϕ))
+                                                        | _ => inl (Null name)
+                                                        end
+                                                      | _ => inl (Null name)       
+                                                      end
+           | InlineFragment t ϕ => match lookup_type schema (NamedType t) with
+                                   | Some (ObjectTypeDefinition _ _ _) => if t == u.(type) then
+                                                                            inr (eval' schema graph u ϕ)
+                                                                          else
+                                                                            inl Empty
+                                   | Some (InterfaceTypeDefinition _ _) => if declares_implementation schema (NamedType u.(type)) (NamedType t) then
+                                                                             inr (eval' schema graph u ϕ)
+                                                                           else
+                                                                             inl Empty
+                                   | Some (UnionTypeDefinition _ mbs) => if (NamedType u.(type)) \in mbs then
+                                                                           inr (eval' schema graph u ϕ)
+                                                                         else
+                                                                           inl Empty
+                                   | _ =>  inl Empty
+                                   end
+           end.
+
+
+    Definition eval_nrgtnf schema  (g : @conformedGraph N Name Vals schema) (selection : @normalizedConformedQuery Name Vals schema) : @ResponseObject Name Vals :=
+      let: NCQuery (NormalizedSelection s _ _) _ := selection in
+        eval' schema g.(graph) g.(graph).(root) s.
+     
+        
 
 End QuerySemantic.
