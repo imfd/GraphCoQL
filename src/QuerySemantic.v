@@ -50,73 +50,76 @@ Section QuerySemantic.
 
   End Map.
   
+  (**
+     indexed_β_filter : seq ResponseObject -> ResponseObject -> nat -> seq ResponseObject
+     
+     Extracts the i-th nested result from the response objects that match with the filter
+     response object.
 
-
-  
-  Fixpoint indexed_β_filter (response : @ResponseObject Name Vals) (filter :  @Result Name Vals) (index : nat) : ResponseObject :=
-    let indexed_β result filter index : ResponseObject :=
+   **)
+  Fixpoint indexed_β_filter (responses : seq (@ResponseObject Name Vals)) (filter :  @ResponseObject Name Vals) (index : nat) : seq ResponseObject :=
+    let indexed_β result filter index : seq ResponseObject :=
         match result, filter with
         | NestedListResult l rs, NestedListResult l' rs' =>
           if l == l' then
-            nth (SingleResponse Empty) rs index
+            let: Results σ := nth (Results [::]) rs index in
+            σ
           else
-            SingleResponse Empty
-        | _, _ => SingleResponse Empty
+            [::]
+        | _, _ => [::]
         end
     in
-    match response with
-    | SingleResponse r => (indexed_β r filter index)
-    | MultipleResponses hd tl => app_responses (indexed_β hd filter index) (indexed_β_filter tl filter index)
-    end.
+    flatten [seq (indexed_β r filter index) | r <- responses].
+    
   
 
   
-  Fixpoint β_filter (filter : @Result Name Vals) (responses : (@ResponseObject Name Vals)) : ResponseObject :=
-    let  β filter result : ResponseObject :=
+
+  (**
+     β_filter : ResponseObject -> seq ResponseObject -> seq ResponseObject
+     
+     Extracts nested results from results matching the filter response object.
+   **)
+  Fixpoint β_filter (filter : @ResponseObject Name Vals) (responses : seq (@ResponseObject Name Vals)) : seq ResponseObject :=
+    let  β filter result : seq ResponseObject :=
          match result, filter with
-         | NestedResult l χ, NestedResult l' _ => if l == l' then χ  else SingleResponse Empty
-         | _, _ => SingleResponse Empty
+         | NestedResult l (Results χ), NestedResult l' _ => if l == l' then χ  else [::]
+         | _, _ => [::]
          end
     in
-    match responses with
-    | SingleResponse r => (β filter r)
-    | MultipleResponses hd tl => app_responses (β filter hd) (β_filter filter tl)
-    end.
+    flatten [seq (β filter r) | r <- responses].
   
-  
-  Fixpoint γ_filter (filter : @Result Name Vals) (responses : ResponseObject) : @ResponseObject Name Vals :=
-    let γ filter result : @Result Name Vals :=
-        match result, filter with
-        | SingleResult l v, SingleResult l' v' => if (l == l') && (v == v') then Empty else result
-        | ListResult l v, ListResult l' v' => if (l == l') && (v == v') then Empty else result
-        | NestedResult l _, NestedResult l' _ => if l == l' then Empty else result
-        | NestedListResult l _, NestedListResult l' _ => if l == l' then Empty else result
-        | _, _ => result
+  Fixpoint γ_filter (flt : @ResponseObject Name Vals) (responses : seq (@ResponseObject Name Vals)) : seq (@ResponseObject Name Vals) :=
+    let γ flt result : bool :=
+        match result, flt with
+        | SingleResult l v, SingleResult l' v' => (l == l') && (v == v') 
+        | ListResult l v, ListResult l' v' => (l == l') && (v == v') 
+        | NestedResult l _, NestedResult l' _ => l == l' 
+        | NestedListResult l _, NestedListResult l' _ => l == l'
+        | _, _ => true
         end
     in
-    match responses with
-    | SingleResponse q => SingleResponse (γ filter q)
-    | MultipleResponses hd tl => MultipleResponses (γ filter hd) (γ_filter filter tl)
-    end.
+    filter (fun r => ~~(γ flt r)) responses.
   
 
-  Program Fixpoint collect (response : ResponseObject) {measure (response_size response)}: ResponseObject :=
-    match response with
-    | SingleResponse _ => response
-    | MultipleResponses hd tl =>
+  Program Fixpoint collect (responses : seq ResponseObject) {measure (responses_size responses)} : seq ResponseObject :=
+    match responses with
+    | [::] => [::]
+    | hd :: tl =>
       match hd with
-      | NestedResult l σ => MultipleResponses
-                             (NestedResult l (collect (app_responses σ (β_filter hd tl))))
-                             (collect (γ_filter hd tl))
-      | NestedListResult l rs => MultipleResponses
-                                  (NestedListResult l
-                                                    (indexed_map
-                                                       (fun i r => collect (app_responses r (indexed_β_filter tl hd i)))
-                                                       rs))
-                                  (collect (γ_filter hd tl))
-      | _ => MultipleResponses hd (collect (γ_filter hd tl))
+      | NestedResult l (Results σ) => (NestedResult l (Results (collect (σ ++ (β_filter hd tl)))))
+                                       :: (collect (γ_filter hd tl))
+      | NestedListResult l rs =>
+        (NestedListResult l
+           (indexed_map
+              (fun i r =>
+                 let: Results r := r in
+                 Results (collect (r ++ (indexed_β_filter tl hd i))))
+              rs))
+          :: (collect (γ_filter hd tl))
+      | _  => hd :: (collect (γ_filter hd tl))
       end
-    end.
+    end.     
   Admit Obligations.
 
   Lemma collect_eq : forall r, collect r =
@@ -141,15 +144,25 @@ Section QuerySemantic.
     Implicit Type schema : @wfSchema Name Vals.
     Implicit Type graph : @graphQLGraph N Name Vals.
     Implicit Type u : @node N Name Vals.
-    Implicit Type selection : @SelectionSet Name Vals.
+    Implicit Type query_set : @QuerySet Name Vals.
     Implicit Type query : @Query Name Vals.
     
-    Fixpoint eval schema graph u selection : @ResponseObject Name Vals :=
-      match selection with
-      | SingleSelection q => (eval_query schema graph u q)
-      | MultipleSelection q tl => collect (app_responses (eval_query schema graph u q) (eval schema graph u tl))
-      end
-    with eval_query schema graph u query : @ResponseObject Name Vals :=
+    Fixpoint eval schema graph u query_set : @Result Name Vals :=
+      let: SelectionSet queries := query_set in
+      let fix loop rs :=
+          match rs with
+          | [::] => [::]
+          | hd :: tl =>
+            let res := eval_query schema graph u hd in
+            match res with
+            | inl r => r :: (loop tl)
+            | inr (Results r) => r ++ (loop tl)
+            end
+          end
+      in
+      Results (collect (loop queries))
+               
+    with eval_query schema graph u query : (@ResponseObject Name Vals) + @Result Name Vals :=
            match query with
            | SingleField name args => match u.(fields) (Field name args) with
                                      | Some (inl value) => SingleResponse (SingleResult name value)
@@ -200,7 +213,7 @@ Section QuerySemantic.
            end.
 
 
-    Definition eval_selection schema  (g : @conformedGraph N Name Vals schema) (selection : @conformedQuery Name Vals schema) : @ResponseObject Name Vals :=
+    Definition eval_query_set schema  (g : @conformedGraph N Name Vals schema) (selection : @conformedQuery Name Vals schema) : @ResponseObject Name Vals :=
       let: ConformedQuery selection _ := selection in
       eval schema g.(graph) g.(graph).(root) selection.
 

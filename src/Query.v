@@ -23,28 +23,27 @@ Section Query.
 
   Variables Name Vals : ordType.
 
-  Inductive SelectionSet : Type :=
-  | SingleSelection : Query -> SelectionSet
-  | MultipleSelection : Query -> SelectionSet -> SelectionSet
+  Inductive QuerySet : Type :=
+  | SelectionSet : list Query -> QuerySet
   with Query : Type :=
        | SingleField : Name -> {fmap Name -> Vals} -> Query
        | LabeledField : Name -> Name -> {fmap Name -> Vals} -> Query
-       | NestedField : Name -> {fmap Name -> Vals} -> SelectionSet -> Query
-       | NestedLabeledField : Name -> Name -> {fmap Name -> Vals} -> SelectionSet -> Query
-       | InlineFragment : Name -> SelectionSet -> Query.
+       | NestedField : Name -> {fmap Name -> Vals} -> QuerySet -> Query
+       | NestedLabeledField : Name -> Name -> {fmap Name -> Vals} -> QuerySet -> Query
+       | InlineFragment : Name -> QuerySet -> Query.
 
 
   Unset Elimination Schemes.
-  Inductive ResponseObject : Type :=
-  | SingleResponse : Result -> ResponseObject
-  | MultipleResponses : Result -> ResponseObject -> ResponseObject
-  with Result : Type :=
-  | Empty : Result
-  | Null : Name -> Result
-  | SingleResult : Name -> Vals -> Result
-  | ListResult : Name -> list Vals -> Result
-  | NestedResult : Name -> ResponseObject -> Result
-  | NestedListResult : Name -> list ResponseObject -> Result.
+  Inductive Result : Type :=
+  | Results : list ResponseObject -> Result
+  with ResponseObject : Type :=
+       | Empty : ResponseObject
+       | Null : Name -> ResponseObject
+       | SingleResult : Name -> Vals -> ResponseObject
+       | ListResult : Name -> list Vals -> ResponseObject
+       | NestedResult : Name -> Result -> ResponseObject
+       | NestedListResult : Name -> list Result -> ResponseObject.
+  
   Set Elimination Schemes.
 
          
@@ -56,8 +55,7 @@ Section Query.
 End Query.
 
 
-Arguments SingleSelection [Name Vals].
-Arguments MultipleSelection [Name Vals].
+Arguments QuerySet [Name Vals].
 Arguments Query [Name Vals].
 Arguments SingleField [Name Vals].
 Arguments LabeledField [Name Vals].
@@ -66,7 +64,7 @@ Arguments NestedLabeledField [Name Vals].
 Arguments InlineFragment [Name Vals].
 Arguments SelectionSet [Name Vals].
 
-
+Arguments Results [Name Vals].
 Arguments ResponseObject [Name Vals].
 Arguments Null [Name Vals].
 Arguments Empty [Name Vals].
