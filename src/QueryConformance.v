@@ -73,14 +73,14 @@ Section QueryConformance.
 
    *)
 
-  Implicit Type selection : @SelectionSet Name Vals.
+  Implicit Type query_set : @QuerySet Name Vals.
   Implicit Type query : @Query Name Vals.
   Implicit Type type : @type Name.
   
-  Fixpoint selection_conforms schema selection ty :=
-    match selection with
-    | Selection [::] => false
-    | Selection queries => all (fun q => query_conforms schema q ty) queries
+  Fixpoint query_set_conforms schema query_set ty : bool :=
+    match query_set with
+    | SelectionSet [::] => false
+    | SelectionSet queries => all (fun q => query_conforms schema q ty) queries
     end
   with query_conforms schema query ty :=
          match query with
@@ -93,18 +93,19 @@ Section QueryConformance.
                                      | _ => false
                                      end
          | NestedField fname α ϕ =>  match lookup_field_in_type schema ty fname with
-                                    | Some (Field fname args ty') => argumentsConform schema α args && selection_conforms schema ϕ ty'
+                                    | Some (Field fname args ty') => argumentsConform schema α args && query_set_conforms schema ϕ ty'
                                     | _ => false
                                     end
          | NestedLabeledField _ fname α ϕ =>  match lookup_field_in_type schema ty fname with
-                                             | Some (Field fname args ty') => argumentsConform schema α args && selection_conforms schema ϕ ty'
+                                             | Some (Field fname args ty') => argumentsConform schema α args && query_set_conforms schema ϕ ty'
                                              | _ => false
                                              end
          | InlineFragment t ϕ => if is_object_type schema (NamedType t) || is_interface_type schema (NamedType t) || is_union_type schema (NamedType t) then
                                   let possible_t_types := get_possible_types schema (NamedType t) in
                                   let possible_ty_types := get_possible_types schema ty in
-                                  (has (fun x => x \in possible_ty_types) possible_t_types) &&
-                                                                                         selection_conforms schema ϕ (NamedType t)
+                                  (has (fun x => x \in possible_ty_types) possible_t_types)
+                                    &&
+                                  query_set_conforms schema ϕ (NamedType t)
                                 else
                                   false 
     end.
@@ -113,14 +114,14 @@ Section QueryConformance.
     
   
   Structure conformedQuery (schema : @wfSchema Name Vals) := ConformedQuery {
-                              selection : @SelectionSet Name Vals;
-                              _ : selection_conforms schema selection schema.(query_root)
+                              query_set : @QuerySet Name Vals;
+                              _ : query_set_conforms schema query_set schema.(query_root)
                             }.
 
   Structure normalizedConformedQuery (schema : @wfSchema Name Vals) :=
     NCQuery {
         nselection : @normalizedSelection Name Vals;
-        _ : selection_conforms schema nselection schema.(query_root)
+        _ : query_set_conforms schema nselection schema.(query_root)
       }.
   
   Coercion query_of_wfquery schema (wfq : conformedQuery schema) := let: ConformedQuery q _ := wfq in q.

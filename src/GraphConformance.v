@@ -162,7 +162,9 @@ Section Conformance.
                                                 _ : edges_conform schema graph.(E);
                                                 _ : fields_conform schema graph;
                                                 _ : nodes_have_object_type schema graph
-                                   }.
+                                      }.
+
+  Coercion graph_of_conformed_graph schema (g : conformedGraph schema) := let: ConformedGraph g _ _ _ _ := g in g.
 
 
 End Conformance.

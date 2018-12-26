@@ -138,25 +138,24 @@ Section QuerySemantic.
     Implicit Type schema : @wfSchema Name Vals.
     Implicit Type graph : @graphQLGraph N Name Vals.
     Implicit Type u : @node N Name Vals.
-    Implicit Type selection : @SelectionSet Name Vals.
+    Implicit Type query_set : @QuerySet Name Vals.
     Implicit Type query : @Query Name Vals.
     
-    Fixpoint eval schema graph u selection : @ResponseObject Name Vals :=
-      match selection with
-      | Selection queries  =>
-        let fix loop rs :=
-            match rs with
-            | [::] => [::]
-            | hd :: tl =>
-              let res := eval_query schema graph u hd in
-              match res with
-              | inl r => r :: (loop tl)
-              | inr (Response r) => r ++ (loop tl)
-              end
+    Fixpoint eval schema graph u query_set : @ResponseObject Name Vals :=
+      let: SelectionSet queries := query_set in
+      let fix loop rs :=
+          match rs with
+          | [::] => [::]
+          | hd :: tl =>
+            let res := eval_query schema graph u hd in
+            match res with
+            | inl r => r :: (loop tl)
+            | inr (Response r) => r ++ (loop tl)
             end
-        in
-         Response (collect (loop queries))
-      end
+          end
+      in
+      Response (collect (loop queries))
+               
     with eval_query schema graph u query : (@Result Name Vals) + @ResponseObject Name Vals :=
            match query with
            | SingleField name args => match u.(fields) (Field name args) with
@@ -208,7 +207,7 @@ Section QuerySemantic.
            end.
 
 
-    Definition eval_selection schema  (g : @conformedGraph N Name Vals schema) (selection : @conformedQuery Name Vals schema) : @ResponseObject Name Vals :=
+    Definition eval_query_set schema  (g : @conformedGraph N Name Vals schema) (selection : @conformedQuery Name Vals schema) : @ResponseObject Name Vals :=
       let: ConformedQuery selection _ := selection in
       eval schema g.(graph) g.(graph).(root) selection.
 
@@ -283,7 +282,9 @@ Section QuerySemantic.
 
     Definition eval_nrgtnf schema  (g : @conformedGraph N Name Vals schema) (selection : @normalizedConformedQuery Name Vals schema) : @ResponseObject Name Vals :=
       let: NCQuery (NormalizedSelection s _ _) _ := selection in
-        eval' schema g.(graph) g.(graph).(root) s.
+      eval' schema g.(graph) g.(graph).(root) s.
+
+
      
         
 

@@ -12,31 +12,32 @@ Require Import Query.
 Require Import QueryAux.
 Require Import SchemaWellFormedness.
 
+Require Import Schema.
+Require Import SchemaAux.
+
+Require Import Program.
+
 Section NRGTNF.
 
   Variables Name Vals : ordType.
   
-  Implicit Type selection : @SelectionSet Name Vals.
+  Implicit Type query_set : @QuerySet Name Vals.
   Implicit Type query : @Query Name Vals.
 
     
   
-  Definition is_field_selection query : bool :=
+  Definition is_field_query query : bool :=
     if query is InlineFragment _ _ then false else true.
 
   Definition is_inline_fragment query : bool :=
     if query is InlineFragment _ _ then true else false.
   
   
-  Inductive GroundTypedNormalForm : SelectionSet -> Prop :=
-  | GT_MS_Field : forall queries,
-      all is_field_selection queries ->
+  Inductive GroundTypedNormalForm : QuerySet -> Prop :=
+  | GT_MultipleSelection : forall queries,
+      (all is_field_query queries) \/ (all is_inline_fragment queries) ->
       Forall qGroundTypedNormalForm queries ->
-      GroundTypedNormalForm (Selection queries)
-  | GT_MS_Inline : forall queries,
-      all is_inline_fragment queries ->
-      Forall qGroundTypedNormalForm queries ->
-      GroundTypedNormalForm (Selection queries)
+      GroundTypedNormalForm (SelectionSet queries)
                             
   with qGroundTypedNormalForm : Query -> Prop :=
        | GT_Field : forall f args,
@@ -54,21 +55,22 @@ Section NRGTNF.
            qGroundTypedNormalForm (NestedLabeledField label f args ϕ)
 
        | GT_InlineFragment : forall t ϕ,
-           all is_field_selection ϕ ->
-           GroundTypedNormalForm (Selection ϕ) ->
-           qGroundTypedNormalForm (InlineFragment t (Selection ϕ)).
+           all is_field_query ϕ ->      (* repeated in next check? *)
+           GroundTypedNormalForm (SelectionSet ϕ) ->
+           qGroundTypedNormalForm (InlineFragment t (SelectionSet ϕ)).
   
 
-  Fixpoint is_ground_typed_normal_form selection : bool := 
-    match selection with
-    | Selection queries => ((all is_field_selection queries) || (all is_inline_fragment queries))
-                            && (all is_query_in_normal_form queries)
-    end
+  Fixpoint is_ground_typed_normal_form query_set : bool :=
+    let: SelectionSet queries := query_set in
+    ((all is_field_query queries) || (all is_inline_fragment queries))
+      &&
+    (all is_query_in_normal_form queries)
+      
   with is_query_in_normal_form query : bool :=
           match query with
           | NestedField _ _ ϕ => is_ground_typed_normal_form ϕ
           | NestedLabeledField _ _ _ ϕ => is_ground_typed_normal_form ϕ
-          | InlineFragment _ (Selection ϕ) => (all is_field_selection ϕ) && (all is_query_in_normal_form ϕ)
+          | InlineFragment _ (SelectionSet ϕ) => (all is_field_query ϕ) && (all is_query_in_normal_form ϕ)
           | _ => true
           end.
 
@@ -77,26 +79,11 @@ Section NRGTNF.
   
 
 
-  Fixpoint partial_query_eq (q1 q2 : @Query Name Vals) : bool :=
-    match q1, q2 with
-    | SingleField name args, SingleField name' args' => (name == name') && (args == args')
-    | LabeledField label name args, LabeledField label' name' args' => (label == label') && (name == name') && (args == args')
-    | NestedField name args _, NestedField name' args' _ => (name == name') && (args == args')
-    | NestedLabeledField label name args _, NestedLabeledField label' name' args' _ =>
-      (label == label') && (name == name') && (args == args')
-    | InlineFragment t _, InlineFragment t' _ => (t == t')
-    | _,  _ => false
-    end.
+ 
 
-  (*
-    Fixpoint applies_to_query (p : pred Query) (q : @Query Name Vals) :=
-     match q with
-    | SelectionSet ϕ ϕ' => if p ϕ then true else applies_to_query p ϕ'
-    | _ => p q
-    end.
-*)
+  
 
-  Fixpoint no_repeated_query (queries : list Query) : bool :=
+  Fixpoint no_repeated_query (queries : list (@Query Name Vals)) : bool :=
      match queries with
         | [::] => true
         | hd :: tl => if has (partial_query_eq hd) tl then
@@ -104,24 +91,24 @@ Section NRGTNF.
                      else
                        no_repeated_query tl
      end.
-  
+
+      
   Fixpoint is_non_redundant selection : bool :=
-    let: Selection queries := selection in
+    let: SelectionSet queries := selection in
     (all is_query_non_redundant queries) && (no_repeated_query queries)
                                          
-  with is_query_non_redundant q : bool :=
-         match q with
-         | SingleField _ _ => true
-         | LabeledField _ _ _ => true
+  with is_query_non_redundant query : bool :=
+         match query with
          | NestedField _ _ ϕ => is_non_redundant ϕ
          | NestedLabeledField _ _ _ ϕ => is_non_redundant ϕ
-         | InlineFragment _ ϕ => is_non_redundant ϕ 
+         | InlineFragment _ ϕ => is_non_redundant ϕ
+         | _ => true
          end.
   
 
 
     Structure normalizedSelection := NormalizedSelection {
-                                    selection : SelectionSet;
+                                    selection : QuerySet;
                                     _ : is_non_redundant selection;
                                     _ : is_ground_typed_normal_form selection
                               }.
@@ -129,8 +116,56 @@ Section NRGTNF.
     Coercion selection_of_normalized_selection (s : normalizedSelection) := let: NormalizedSelection s _ _ := s in s.
 
 
+                                         
+
+    Program Fixpoint normalize_list schema (queries : seq.seq (@Query Name Vals)) {measure (queries_size queries)} : seq.seq Query :=
+       match queries with
+          | [::] => [::]
+          | hd :: tl =>
+            match hd with
+            | SingleField _ _
+            | LabeledField _ _ _ => hd :: normalize_list schema (filter (fun q => ~~(partial_query_eq q hd)) tl)
+            | NestedField n α (SelectionSet ϕ) =>
+              let collected_subqueries :=
+                  (foldr (fun q acc => if q is NestedField n' α' (SelectionSet β) then
+                                      if (n == n') && (α == α') then
+                                        acc ++ β
+                                      else
+                                        acc
+                                    else
+                                      acc)
+                         ϕ tl)
+              in
+              (NestedField n α (SelectionSet (normalize_list schema collected_subqueries))) :: normalize_list schema (filter (fun q => ~~(partial_query_eq q hd)) tl)
+            | InlineFragment t (SelectionSet [:: (InlineFragment t' ϕ)]) =>
+              (InlineFragment t ϕ) :: normalize_list schema tl
+            | InlineFragment t (SelectionSet ϕ) =>
+              let norm := normalize_list schema ϕ in
+              let possible_types := get_possible_types schema (NamedType t) in
+              (map (fun t' => InlineFragment (name_of_type t') (SelectionSet norm)) possible_types) ++ normalize_list schema tl
+            | _ => normalize_list schema tl
+            end
+          end.
+
+    Fixpoint normalize query_set : QuerySet :=
+      let fix normalize_list (queries : seq Query) : seq Query :=
+          match queries with
+          | [::] => [::]
+          | hd :: tl =>
+            match hd with
+            | SingleField l args => hd :: (filter (fun q => q != hd) tl) 
+            | LabeledField
+            | NestedField
+            | NestedLabeledField
+            | InlineFragment
+            end
+          end
+      in
+      let: SelectionSet queries := query_set in
+          SelectionSet (normalize_list queries)
 
       
 
-
 End NRGTNF.
+
+Arguments normalizedSelection [Name Vals].

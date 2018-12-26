@@ -23,14 +23,14 @@ Section Query.
 
   Variables Name Vals : ordType.
 
-  Inductive SelectionSet : Type :=
-  | Selection : list Query -> SelectionSet
+  Inductive QuerySet : Type :=
+  | SelectionSet : list Query -> QuerySet
   with Query : Type :=
        | SingleField : Name -> {fmap Name -> Vals} -> Query
        | LabeledField : Name -> Name -> {fmap Name -> Vals} -> Query
-       | NestedField : Name -> {fmap Name -> Vals} -> SelectionSet -> Query
-       | NestedLabeledField : Name -> Name -> {fmap Name -> Vals} -> SelectionSet -> Query
-       | InlineFragment : Name -> SelectionSet -> Query.
+       | NestedField : Name -> {fmap Name -> Vals} -> QuerySet -> Query
+       | NestedLabeledField : Name -> Name -> {fmap Name -> Vals} -> QuerySet -> Query
+       | InlineFragment : Name -> QuerySet -> Query.
 
   
   Unset Elimination Schemes.
@@ -54,7 +54,7 @@ Section Query.
 End Query.
 
 
-Arguments Selection [Name Vals].
+Arguments QuerySet [Name Vals].
 Arguments Query [Name Vals].
 Arguments SingleField [Name Vals].
 Arguments LabeledField [Name Vals].
