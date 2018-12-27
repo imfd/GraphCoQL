@@ -97,7 +97,8 @@ Section QuerySemantic.
         | ListResult l v, ListResult l' v' => (l == l') && (v == v') 
         | NestedResult l _, NestedResult l' _ => l == l' 
         | NestedListResult l _, NestedListResult l' _ => l == l'
-        | _, _ => true
+        | Empty, Empty => true
+        | _, _ => false
         end
     in
     filter (fun r => ~~(γ flt r)) responses.
