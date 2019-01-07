@@ -3,12 +3,12 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-
+From Equations Require Import Equations.
 From extructures Require Import ord fmap.
 
 Require Import Query.
 
-
+Require Import Ssromega.
 
 Section QueryAux.
 
@@ -51,47 +51,61 @@ Section QueryAux.
     | InlineFragment t _, InlineFragment t' _ => t == t'
     | _, _ => false
     end.
-  
-  Fixpoint result_size result : nat :=
-    match result with
-    | Results rs => 1 + sumn (map response_size rs)
-    end
-  with response_size response : nat :=
-    match response with
-    | Empty => 1
-    | Null _ => 3
-    | SingleResult _ _ => 3
-    | ListResult _ vals => 4 + size vals
-    | NestedResult _ r' => 4 + result_size r'
-    | NestedListResult _ rs => 4 + 2 * (size rs) + sumn (map result_size rs)
-    end.
 
-  Definition responses_size (responses : seq (@ResponseObject Name Vals)) : nat :=
-    sumn (map response_size responses).
+  Equations(noind) result_size result : nat :=
+    {
+      result_size (Results [::]) := 1;
+      result_size (Results (cons hd tl)) := 1 + (response_size hd) + (responses_size tl)
+    }
+  with
+  response_size response : nat :=
+    {
+      response_size Empty := 1;
+      response_size (Null _) := 3;
+      response_size (SingleResult _ _) := 3;
+      response_size (ListResult _ vals) := 4 + size vals;
+      response_size (NestedResult _ r') := 4 + result_size r';
+      response_size (NestedListResult _ rs) := 4 + 2 * size rs + results_size rs
+    }
+  where
+  responses_size (responses : seq (@ResponseObject Name Vals)) : nat :=
+    {
+      responses_size [::] := 0;
+      responses_size (cons hd tl) := response_size hd + responses_size tl
+    }
+  where
+  results_size (results : seq (@Result Name Vals)) : nat :=
+    {
+      results_size [::] := 0;
+      results_size (cons hd tl) := (result_size hd) + (results_size tl)
+    }.
+
+
 
   
   Fixpoint app_responses r1 r2 : @Result Name Vals :=
     match r1, r2 with
    | Results rs, Results rs' => Results (rs ++ rs')
     end.
-  (*
-  Fixpoint cleanup_empty_results response : option ResponseObject :=
-    match response with
-    | SingleResponse Empty => None
-    | SingleResponse _ => Some response
-    | MultipleResponses Empty tl => cleanup_empty_results tl
-    | MultipleResponses hd tl => Multiple                                     
-    end
-  with cleanup_empty result :=
-         match result with
-         | Empty => None
-         | NestedResult l r => let clean := (cleanup_empty_results r) in
-                              if clean is Some r' then
-                                Some (NestedResult l r')
-                              else
-                                None
-         | NestedListResult 
-         | _ => Some result *)
+
+  
+  Lemma responses_size_app (l1 l2 : seq.seq (@ResponseObject Name Vals)) : responses_size (l1 ++ l2) = responses_size l1 + responses_size l2.
+  Proof.
+    elim: l1 => [//| n l' IH].
+    by simpl; rewrite IH addnA.
+  Qed.
+  
+  Lemma responses_lt_result (l : list (@ResponseObject Name Vals)) (r : @Result Name Vals) :
+    responses_size l < result_size (Results l).
+  Proof.
+    elim: l => [| x l' IH].
+    - by simpl; rewrite result_size_equation_1.
+    - by simpl; rewrite result_size_equation_2;  ssromega.
+  Qed.
+
+  
+  Lemma response_size_n_0 (r : @ResponseObject Name Vals) : 0 < response_size r.
+  Proof. by case: r. Qed.
   
 End QueryAux.
 
