@@ -24,7 +24,8 @@ Section Query.
   Variables Name Vals : ordType.
 
   Inductive QuerySet : Type :=
-  | SelectionSet : list Query -> QuerySet
+  | SingleQuery : Query -> QuerySet
+  | SelectionSet : Query -> QuerySet -> QuerySet
   with Query : Type :=
        | SingleField : Name -> {fmap Name -> Vals} -> Query
        | LabeledField : Name -> Name -> {fmap Name -> Vals} -> Query

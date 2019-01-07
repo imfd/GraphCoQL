@@ -332,22 +332,22 @@ Section QuerySemantic.
     Implicit Type u : @node N Name Vals.
     Implicit Type query_set : @QuerySet Name Vals.
     Implicit Type query : @Query Name Vals.
-    
+
+
     Fixpoint eval schema graph u query_set : @Result Name Vals :=
-      let: SelectionSet queries := query_set in
-      let fix loop rs :=
-          match rs with
-          | [::] => [::]
-          | hd :: tl =>
-            let res := eval_query schema graph u hd in
-            match res with
-            | inl r => r :: (loop tl)
-            | inr (Results r) => r ++ (loop tl)    (* I'm "lifting" the "on T { }" results to be at the same level as the others *)
-            end
-          end
-      in
-      Results (collect (loop queries))
-               
+      match query_set with
+      | SingleQuery q => match eval_query schema graph u q with
+                        | inl r => Results [:: r]
+                        | inr r => r
+                        end
+      | SelectionSet q q' =>
+        let: Results res := eval schema graph u q' in
+        match eval_query schema graph u q with
+        | inl r => Results (r :: res)
+        | inr (Results r) => Results (r ++ res)    (* I'm "lifting" the "on T { }" results to be at the same level as the others *)
+        end
+      end
+     
     with eval_query schema graph u query : (@ResponseObject Name Vals) + @Result Name Vals :=
            match query with
            | SingleField name args => match u.(fields) (Field name args) with

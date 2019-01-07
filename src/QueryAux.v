@@ -18,10 +18,27 @@ Section QueryAux.
   Implicit Type query : @Query Name Vals.
   Implicit Type response : @ResponseObject Name Vals.
   Implicit Type result : @Result Name Vals.
-  
+
+  (*
+  Equations query_set_size query_set : nat :=
+    {
+      query_set_size (SingleQuery q) := query_size q;
+      query_set_size (SelectionSet q q') := query_size q + query_set_size q'
+    }
+  where
+  query_size query : nat :=
+    {
+      query_size (NestedField _ _ q') := 1 + (query_set_size q');
+      query_size (NestedLabeledField _ _ _ q') := 1 + (query_set_size q');
+      query_size (InlineFragment _ q') := 1 + (query_set_size q');
+      query_size _ := 1
+    }.
+  *)
   Fixpoint query_set_size query_set : nat :=
-    let: SelectionSet queries := query_set in
-        sumn (map query_size queries)
+    match query_set with
+    | SingleQuery q => query_size q
+    | SelectionSet q q' => query_size q + query_set_size q'
+    end
 
   with query_size query : nat :=
          match query with
@@ -33,13 +50,6 @@ Section QueryAux.
 
   Definition queries_size (queries : seq Query) := sumn (map query_size queries).
  
-
-  Definition app_query_sets q1 q2 : @QuerySet Name Vals :=
-      match q1, q2 with
-      | SelectionSet ϕ, SelectionSet ϕ' => SelectionSet (ϕ ++ ϕ')
-      end.
-  
-  Definition app_queries q1 q2 : @QuerySet Name Vals := SelectionSet [:: q1 ; q2].
 
   
   Definition partial_query_eq (q1 q2 : @Query Name Vals) : bool :=

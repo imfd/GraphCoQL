@@ -78,8 +78,8 @@ Section QueryConformance.
   
   Fixpoint query_set_conforms schema query_set ty : bool :=
     match query_set with
-    | SelectionSet [::] => false
-    | SelectionSet queries => all (fun q => query_conforms schema q ty) queries
+    | SingleQuery q => query_conforms schema q ty
+    | SelectionSet q q' => query_conforms schema q ty && query_set_conforms schema q' ty
     end
   with query_conforms schema query ty :=
          match query with
