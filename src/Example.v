@@ -194,7 +194,10 @@ Section Example.
 
 
     
-  Let q := (NestedField "hero" [fmap ("episode", "EMPIRE")]
+    Let q :=
+      (SelectionSet
+         [::
+            (NestedField "hero" [fmap ("episode", "EMPIRE")]
                        (SelectionSet
                           [::
                              (SingleField "name" emptym);
@@ -231,7 +234,9 @@ Section Example.
                              )
                           ]
                        )
-          ).
+            )
+         ]
+      ).
 
   (*
   Lemma qc : SelectionConforms wf_schema q wf_schema.(query_type).
@@ -277,13 +282,8 @@ Section Example.
          by rewrite /lookup_field_in_type /=.
          by [].
   Qed.  *)
-
-  Lemma qwf : is_query_wf q.
-  Proof. by []. Qed.
-
-  Let wf_query := WFQuery qwf.
   
-  Lemma qbc : wf_query_conforms wf_schema wf_query wf_schema.(query_type).
+  Lemma qbc : query_set_conforms wf_schema q wf_schema.(query_type).
   Proof. by []. Qed.
 
 
@@ -293,35 +293,38 @@ Section Example.
 
 
 
-  Let query_response := (NestedResult "hero"
-                                       (ResponseList
-                                          [::
-                                             (SingleResult "name" "Luke");
-                                             (NestedListResult "friends"
-                                               [::
-                                                  (ResponseList
-                                                     [::
-                                                        Empty;
-                                                        (SingleResult "droidFriend" "R2-D2");
-                                                        (SingleResult "primaryFunction" "Astromech")
-                                                     ]
-                                                  );
-                                                  (ResponseList
-                                                     [::
-                                                        (SingleResult "humanFriend" "Han");
-                                                        (NestedListResult "starships"
-                                                                          [::
-                                                                             (ResponseList
+  Let query_response :=
+    (Results
+       [::
+          (NestedResult "hero"
+                        (Results
+                           [::
+                              (SingleResult "name" "Luke");
+                              (NestedListResult "friends"
+                                                [::
+                                                   (Results
+                                                      [::
+                                                         Empty;
+                                                         (SingleResult "droidFriend" "R2-D2");
+                                                         (SingleResult "primaryFunction" "Astromech")
+                                                      ]
+                                                   );
+                                                   (Results
+                                                      [::
+                                                         (SingleResult "humanFriend" "Han");
+                                                         (NestedListResult "starships"
+                                                                           [::
+                                                                              (Results
                                                                                 [::
                                                                                    (SingleResult "starship" "Falcon");
                                                                                    (SingleResult "length" "34.37");
                                                                                    Empty
                                                                                 ]
-                                                                             )
-                                                                          ]
-                                                        );
-                                                        Empty
-                                                     ]
+                                                                              )
+                                                                           ]
+                                                         );
+                                                         Empty
+                                                      ]
                                                   )
                                                         
                                                ]  
@@ -329,22 +332,16 @@ Section Example.
                                              )
                                           ]
                                        )
-                       ).
+          )
+       ]
+       ).
      
 
 
-   Eval compute in (collect
-                      [:: (ResponseList
-                             (collect
-                                [:: (SingleResult "humanFriend" "Han");
-                                   (NestedListResult "starships"
-                                                     [:: (ResponseList (collect [:: (SingleResult "starship" "Falcon");
-                                                                                   (SingleResult "length" "34.37")]))])])); Empty]).
-
                 
-    Example ev_query_eq_response :  (eval_query  wf_graph conformed_query) = query_response.
+    Example ev_query_eq_response :  (eval_query_set wf_graph conformed_query) = query_response.
     Proof.
-      rewrite /eval_query /=.
+      rewrite /eval_query_set /eval /=.
       rewrite /get_target_nodes_with_field /=.
       rewrite /edges [fset]unlock /=. compute.
     Admitted.

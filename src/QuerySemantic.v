@@ -351,55 +351,55 @@ Section QuerySemantic.
     with eval_query schema graph u query : (@ResponseObject Name Vals) + @Result Name Vals :=
            match query with
            | SingleField name args => match u.(fields) (Field name args) with
-                                     | Some (inl value) => SingleResponse (SingleResult name value)
-                                     | _ => SingleResponse (Null name)
+                                     | Some (inl value) =>  inl (SingleResult name value)
+                                     | _ => inl (Null name)
                                      end
            | LabeledField label name args =>  match u.(fields) (Field name args) with
-                                             | Some (inl value) => SingleResponse (SingleResult label value)
-                                             | _ => SingleResponse (Null name)
+                                             | Some (inl value) => inl (SingleResult label value)
+                                             | _ => inl (Null name)
                                              end
            | NestedField name args ϕ => let target_nodes := get_target_nodes_with_field graph u (Field name args) in
                                        match lookup_field_type schema (NamedType u.(type)) name with
                                        | Some (ListType _) =>
-                                         SingleResponse (NestedListResult name (map (fun v => eval schema graph v ϕ) target_nodes))
+                                         inl (NestedListResult name (map (fun v => eval schema graph v ϕ) target_nodes))
                                        | Some (NamedType _) =>
                                          match ohead target_nodes with
-                                         | Some v => SingleResponse (NestedResult name (eval schema graph v ϕ))
-                                         | _ => SingleResponse (Null name)
+                                         | Some v => inl (NestedResult name (eval schema graph v ϕ))
+                                         | _ => inl (Null name)
                                          end
-                                       | _ => SingleResponse (Null name)         (* If the field ∉ fields(u) then it's null, right? *)
+                                       | _ => inl (Null name)         (* If the field ∉ fields(u) then it's null, right? *)
                                        end
                                          
            | NestedLabeledField label name args ϕ =>  let target_nodes := get_target_nodes_with_field graph u (Field name args) in
                                                       match lookup_field_type schema (NamedType u.(type)) name with
                                                       | Some (ListType _) =>
-                                                        SingleResponse (NestedListResult label (map (fun v => eval schema graph v ϕ) target_nodes))
+                                                        inl (NestedListResult label (map (fun v => eval schema graph v ϕ) target_nodes))
                                                       | Some (NamedType _) =>
                                                         match ohead target_nodes with
-                                                        | Some v => SingleResponse (NestedResult label (eval schema graph v ϕ))
-                                                        | _ => SingleResponse (Null name)
+                                                        | Some v => inl (NestedResult label (eval schema graph v ϕ))
+                                                        | _ => inl (Null label)
                                                         end
-                                                      | _ => SingleResponse (Null name)         
+                                                      | _ => inl (Null label)         
                                                       end
            | InlineFragment t ϕ => match lookup_type schema (NamedType t) with
                                    | Some (ObjectTypeDefinition _ _ _) => if t == u.(type) then
-                                                                            eval schema graph u ϕ
+                                                                            inr (eval schema graph u ϕ)
                                                                           else
-                                                                            (SingleResponse Empty)
+                                                                            inl Empty
                                    | Some (InterfaceTypeDefinition _ _) => if declares_implementation schema (NamedType u.(type)) (NamedType t) then
-                                                                             eval schema graph u ϕ
+                                                                             inr (eval schema graph u ϕ)
                                                                            else
-                                                                             (SingleResponse Empty)
+                                                                             inl Empty
                                    | Some (UnionTypeDefinition _ mbs) => if (NamedType u.(type)) \in mbs then
-                                                                           eval schema graph u ϕ
+                                                                           inr (eval schema graph u ϕ)
                                                                          else
-                                                                           (SingleResponse Empty)
-                                   | _ => SingleResponse Empty
+                                                                           inl Empty
+                                   | _ => inl Empty
                                    end
            end.
 
 
-    Definition eval_query_set schema  (g : @conformedGraph N Name Vals schema) (selection : @conformedQuery Name Vals schema) : @ResponseObject Name Vals :=
+    Definition eval_query_set schema  (g : @conformedGraph N Name Vals schema) (selection : @conformedQuery Name Vals schema) : @Result Name Vals :=
       let: ConformedQuery selection _ := selection in
       eval schema g.(graph) g.(graph).(root) selection.
 
