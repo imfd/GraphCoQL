@@ -54,7 +54,7 @@ Section QueryAux.
   
   Fixpoint result_size result : nat :=
     match result with
-    | Results rs => sumn (map response_size rs)
+    | Results rs => 1 + sumn (map response_size rs)
     end
   with response_size response : nat :=
     match response with

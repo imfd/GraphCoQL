@@ -130,7 +130,12 @@ Section QuerySemantic.
     elim: lst => [| x l' IH].
       by case: r.
   Admitted.
-      
+
+  Lemma indexed_β_size_reduced (lst : seq.seq ResponseObject) (r : ResponseObject) (i : nat) :
+        responses_size (indexed_β_filter lst r i) <= responses_size lst.
+  Proof.
+  Admitted.
+  
   Lemma responses_size_app (l1 l2 : seq.seq (@ResponseObject Name Vals)) : responses_size (l1 ++ l2) = responses_size l1 + responses_size l2.
   Proof.
     elim: l1 => [//| n l' IH].
@@ -144,6 +149,80 @@ Section QuerySemantic.
   
   Hint Resolve γ_responses_size_reduced.
 
+
+      Lemma In_e_sumn {A : Type} (elt : A) (f : A -> nat) (l : list A) :
+      In elt l -> f elt <= sumn [seq (f x) | x <- l].
+    Proof.
+      elim: l => [// | hd l' IH].
+      move=> [-> | Hnin] /=.
+        by ssromega.
+      by move: (IH Hnin) => *; ssromega.
+    Qed.
+
+    Lemma In_r_size (r : seq.seq (@ResponseObject Name Vals)) rs : In r rs -> responses_size r <= sumn [seq (responses_size r') | r' <- rs].
+    Proof. by apply: In_e_sumn. Qed.
+
+    Lemma In_r_size' (r : (@Result Name Vals)) rs0 : In r rs0 -> result_size r <= sumn [seq (result_size i) | i <- rs0].
+    Proof. by apply: In_e_sumn. Qed.
+
+    Lemma responses_lt_result (l : list (@ResponseObject Name Vals)) (r : @Result Name Vals) :
+      responses_size l < result_size (Results l).
+    Proof.
+      elim: l => [| x l' IH].
+      - by rewrite /responses_size /result_size.
+      - rewrite responses_size_cons /result_size /=.
+        rewrite -/(response_size x) [(_ + _)]addnC addnA.
+        by rewrite /result_size in IH; ssromega.
+    Qed.
+
+    Lemma le_lt_trans n m p : n < m -> m <= p -> n < p.
+    Proof. by intros; ssromega. Qed.
+
+    Lemma sum_lt a b c d : a < c -> b <= d -> (a + b < c + d)%coq_nat.
+    Proof. intros. ssromega. Qed.
+    
+  Equations collect (responses : seq.seq (@ResponseObject Name Vals)) : seq.seq (@ResponseObject Name Vals) := 
+    collect responses by rec (responses_size responses) lt :=
+      collect [::] := [::];
+      collect (cons (NestedResult l (Results σ)) tl) :=
+                       (NestedResult l (Results (collect (σ ++ (β_filter (NestedResult l (Results σ)) tl)))))   
+                         :: (collect (γ_filter (NestedResult l (Results σ)) tl));
+                         
+      collect (cons (NestedListResult l rs)  tl) :=
+                         (NestedListResult l
+                           (indexed_map                
+                              (fun i r (H : In r rs) =>
+                                 Results (collect (r ++ (indexed_β_filter tl (NestedListResult l rs) i))))))
+                           :: (collect (γ_filter (NestedListResult l rs) tl));
+                           
+      collect (cons Empty tl) := Empty :: (collect tl);                           
+      collect (cons hd tl) := hd :: (collect (γ_filter hd tl)).
+   Next Obligation.
+   Admitted.
+   Next Obligation.
+   Admitted.
+   Next Obligation.
+   Admitted.
+   Next Obligation.
+   Admitted.
+   Next Obligation.
+   Admitted.
+   Next Obligation.
+     case: r H => l0 Hin.
+     rewrite responses_size_app responses_size_cons /responses_of_result /=.
+     have: responses_size l0 < response_size (l <<- [{rs}]).
+     move: (In_r_size' Hin) => Hrlt.  
+     move: (responses_lt_result l0 (Results l0)) => Hr.
+     rewrite /response_size.
+     move: (le_lt_trans Hr Hrlt) => Htrans.
+     rewrite [4 + 2 * size rs + _]addnC.
+       by apply: ltn_addr; apply: Htrans.
+     move=> *; apply: sum_lt.
+       done.
+       by move: (indexed_β_size_reduced tl (l <<- [{rs}]) i).
+   Qed.
+   Next Obligation.
+   
   Equations collect (responses : seq.seq (@ResponseObject Name Vals)) : seq.seq (@ResponseObject Name Vals) := 
     collect responses by rec (responses_size responses) lt :=
       collect [::] := [::] ;
@@ -154,9 +233,14 @@ Section QuerySemantic.
                          (NestedListResult l
                                            (indexed_map
                                               (fun i r (H : In r rs) =>
-                                                 let: Results r' := r in
-                                                 Results (collect (r' ++ (indexed_β_filter tl hd i))))))
-                           :: (collect (γ_filter hd tl)) ;
+                                                 Results (aux r hd tl i))))
+                           :: (collect (γ_filter hd tl))
+                       where
+                       foo (result : @Result Name Vals) (res : @ResponseObject Name Vals) (lst : list (@ResponseObject Name Vals) (i : nat) : list (@ResponseObject Name Vals) :=
+                            {
+                              foo (Results r') res lst i := collect (r' ++ (indexed_β_filter tl hd i))                                                                                                                                     };
+                                                                                                                                                                                        
+                                                                                                      
                        | _  => hd :: (collect (γ_filter hd tl))
                      }.
   Next Obligation.

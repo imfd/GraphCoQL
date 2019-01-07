@@ -46,7 +46,9 @@ Section Query.
   
   Set Elimination Schemes.
 
-         
+
+  Coercion responses_of_result (result : Result) := let: Results rs := result in rs.
+
 
   
   
