@@ -70,7 +70,6 @@ Section QueryAux.
   with
   response_size response : nat :=
     {
-      response_size Empty := 1;
       response_size (Null _) := 3;
       response_size (SingleResult _ _) := 3;
       response_size (ListResult _ vals) := 4 + size vals;

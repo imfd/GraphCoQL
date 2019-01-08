@@ -164,9 +164,9 @@ Section QuerySemantic.
         have: responses_size (get_nth (Results []) l0 i) < response_size (s4 <<- [{l0}]).
         funelim (get_nth (Results []) l0 i).
           - by [].
-          - case: t => lt; rewrite result_size_helper_1_equation_6 /= addnA.
+          - case: t => lt; rewrite result_size_helper_1_equation_5 /= addnA.
             by move: (responses_lt_result lt (Results lt)) => *; ssromega. 
-          - rewrite result_size_helper_1_equation_6 /= [result_size t + _]addnC.
+          - rewrite result_size_helper_1_equation_5 /= [result_size t + _]addnC.
             rewrite two_times_Sn; rewrite [4 + (2 * size l + 2)]addnA.
             rewrite -addnA -[2 + _]addnCA addnA. rewrite -[4 + 2 * size l + results_size l]/(response_size (s4 <<- [{l}])).
             by move: (H s4 s5 l1 Heq lst' IH (IH n)) => *; apply: ltn_addr.
@@ -219,8 +219,8 @@ Section QuerySemantic.
         have: responses_size (β filter r) < response_size r.
           move: response_size_n_0 => H0.
           funelim (β filter r) => //=.
-          rewrite result_size_helper_1_equation_5. case: r0 => l0.
-          move: (responses_lt_result l0 (Results l0)) => *; ssromega.
+          rewrite result_size_helper_1_equation_4; case: r0 => l0.
+          by move: (responses_lt_result l0 (Results l0)) => *; ssromega.
         by move=> *; ssromega.
       Qed.
   
@@ -240,7 +240,6 @@ Section QuerySemantic.
           γ (Null l) (Null l') := l == l';
           γ (NestedResult l _) (NestedResult l' _) := l == l'; 
           γ (NestedListResult l _) (NestedListResult l' _) := l == l';   (* Should check for equal size of sublists? *)
-          γ Empty Empty => true;    (* This actually never happens *)
           γ _ _ => false
         }.
       (**
@@ -287,8 +286,7 @@ Section QuerySemantic.
                               (fun i r (H : In r rs) =>
                                  Results (collect (r ++ (indexed_β_filter tl (NestedListResult l rs) i))))))
                            :: (collect (γ_filter (NestedListResult l rs) tl));
-                           
-      collect (cons Empty tl) := Empty :: (collect tl);                           
+                               
       collect (cons hd tl) := hd :: (collect (γ_filter hd tl)).
   Next Obligation.
     by move: (γ_responses_size_reduced tl hd) => *;  ssromega.
@@ -302,7 +300,7 @@ Section QuerySemantic.
  Next Obligation.
    rewrite responses_size_app. move: (β_responses_size_reduced tl (NestedResult l (Results σ))) => *.
    have: responses_size σ < response_size (NestedResult l (Results σ)).
-     by rewrite result_size_helper_1_equation_5; move: (responses_lt_result σ (Results σ)) => *; ssromega.
+     by rewrite result_size_helper_1_equation_4; move: (responses_lt_result σ (Results σ)) => *; ssromega.
    by move=> *; apply: sum_lt.
  Qed.    
  Next Obligation.
@@ -316,7 +314,7 @@ Section QuerySemantic.
      move: (responses_lt_result l0 (Results l0)) => Hr.
 
      move: (le_lt_trans Hr Hrlt) => Htrans.
-     rewrite result_size_helper_1_equation_6.
+     rewrite result_size_helper_1_equation_5.
      rewrite [4 + 2 * size rs + _]addnC.
        by apply: ltn_addr; apply: Htrans.
      move=> *; apply: sum_lt => [//|].
@@ -343,8 +341,8 @@ Section QuerySemantic.
       | SelectionSet q q' =>
         let: Results res := eval schema graph u q' in
         match eval_query schema graph u q with
-        | inl r => Results (r :: res)
-        | inr (Results r) => Results (r ++ res)    (* I'm "lifting" the "on T { }" results to be at the same level as the others *)
+        | inl r => Results (collect (r :: res))
+        | inr (Results r) => Results (collect (r ++ res))    (* I'm "lifting" the "on T { }" results to be at the same level as the others *)
         end
       end
      
@@ -385,16 +383,16 @@ Section QuerySemantic.
                                    | Some (ObjectTypeDefinition _ _ _) => if t == u.(type) then
                                                                             inr (eval schema graph u ϕ)
                                                                           else
-                                                                            inl Empty
+                                                                            inr (Results [::])
                                    | Some (InterfaceTypeDefinition _ _) => if declares_implementation schema (NamedType u.(type)) (NamedType t) then
                                                                              inr (eval schema graph u ϕ)
                                                                            else
-                                                                             inl Empty
+                                                                             inr (Results [::])
                                    | Some (UnionTypeDefinition _ mbs) => if (NamedType u.(type)) \in mbs then
                                                                            inr (eval schema graph u ϕ)
                                                                          else
-                                                                           inl Empty
-                                   | _ => inl Empty
+                                                                           inr (Results [::])
+                                   | _ => inr (Results [::])
                                    end
            end.
 

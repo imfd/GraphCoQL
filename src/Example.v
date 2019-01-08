@@ -195,47 +195,39 @@ Section Example.
 
     
     Let q :=
-      (SelectionSet
-         [::
-            (NestedField "hero" [fmap ("episode", "EMPIRE")]
-                       (SelectionSet
-                          [::
-                             (SingleField "name" emptym);
-                             (NestedField "friends" emptym
-                                          (SelectionSet
-                                             [::
-                                                (InlineFragment "Human"
-                                                                (SelectionSet
-                                                                   [::
-                                                                      (LabeledField "humanFriend" "name" emptym);
-                                                                      (NestedField "starships" emptym
-                                                                                   (SelectionSet
-                                                                                      [::
-                                                                                         (LabeledField "starship" "name" emptym);
-                                                                                         (SingleField "length" emptym)
-                                                                                      ]
-                                                                                   )
-                                                                      )
-                                                                   ]
-                                                                )
-                                                );
-                                             
-                                                
-                                                (InlineFragment "Droid"
-                                                                (SelectionSet
-                                                                   [::
-                                                                      (LabeledField "droidFriend" "name" emptym);
-                                                                      (SingleField "primaryFunction" emptym)
-                                                                   ]
-                                                                )
-                                                )
-                                             ]
-                                          )
-                             )
-                          ]
-                       )
+      (SingleQuery
+         (NestedField "hero" [fmap ("episode", "EMPIRE")]
+            (SelectionSet
+               (SingleField "name" emptym)
+               (SingleQuery
+                  (NestedField "friends" emptym
+                      (SelectionSet
+                         (InlineFragment "Human"
+                            (SelectionSet
+                               (LabeledField "humanFriend" "name" emptym)
+                               (SingleQuery
+                                  (NestedField "starships" emptym
+                                               (SelectionSet
+                                                  (LabeledField "starship" "name" emptym)
+                                                  (SingleQuery (SingleField "length" emptym))
+                                               )
+                                  )
+                               )
+                            )
+                         )
+                         (SingleQuery
+                            (InlineFragment "Droid"
+                                (SelectionSet
+                                   (LabeledField "droidFriend" "name" emptym)
+                                   (SingleQuery (SingleField "primaryFunction" emptym))
+                                )
+                            )
+                         )
+                      )
+                  )
+               )
             )
-         ]
+         )
       ).
 
   (*
@@ -304,7 +296,6 @@ Section Example.
                                                 [::
                                                    (Results
                                                       [::
-                                                         Empty;
                                                          (SingleResult "droidFriend" "R2-D2");
                                                          (SingleResult "primaryFunction" "Astromech")
                                                       ]
@@ -317,24 +308,20 @@ Section Example.
                                                                               (Results
                                                                                 [::
                                                                                    (SingleResult "starship" "Falcon");
-                                                                                   (SingleResult "length" "34.37");
-                                                                                   Empty
+                                                                                   (SingleResult "length" "34.37")
                                                                                 ]
                                                                               )
                                                                            ]
-                                                         );
-                                                         Empty
+                                                         )
                                                       ]
-                                                  )
-                                                        
-                                               ]  
-                                                     
-                                             )
-                                          ]
-                                       )
+                                                   )
+                                                ]  
+                              )
+                           ]
+                        )
           )
        ]
-       ).
+    ).
      
 
 
@@ -343,78 +330,58 @@ Section Example.
     Proof.
       rewrite /eval_query_set /eval /=.
       rewrite /get_target_nodes_with_field /=.
-      rewrite /edges [fset]unlock /=. compute.
-    Admitted.
+      rewrite /edges [fset]unlock /=. program_simpl. Qed.
 
-    Eval compute in
-        (collect
-           [:: (SingleResult "name" "Luke");
-              (NestedListResult "friends"
-                [:: (ResponseList
-                          [:: Empty;
-                             (SingleResult "droidFriend" "R2-D2");
-                             (SingleResult "primaryFunction" "Astromech")]);
-                   ResponseList
-                     (collect
-                        [:: ResponseList
-                               [:: SingleResult "humanFriend" "Han";
-                                  (NestedListResult "starships"
-                                                    [:: (ResponseList [:: (SingleResult "starship" "Falcon"); (SingleResult "length" "34.37")])])]; Empty])])]).
-      compute. apply eq_refl. by [].reflexivity. by [].
-      program_simpl.
-      do ?[rewrite ?collect_equation ?/indexed_map /=].
-      by []. 
-    Qed.
+    
 
-
-    Let q' := (NestedField "hero" [fmap ("episode", "EMPIRE")]
-                          (SelectionSet
-                             [::
-                                (SingleField "name" emptym);
-                                
-                                (SingleField "name" emptym);
-                                     
-                                (SingleField "id" emptym);
-                                (SingleField "name" emptym)
-                             ]
-                          )
-                          
+    Let q' := (SingleQuery
+                (NestedField "hero" [fmap ("episode", "EMPIRE")]
+                   (SelectionSet
+                      (SingleField "name" emptym)
+                      (SelectionSet
+                         (SingleField "name" emptym)
+                         (SelectionSet
+                            (SingleField "id" emptym)
+                            (SingleQuery
+                               (SingleField "name" emptym)
+                            )
+                         )
+                      )
+                   )
+                )
              ).
 
-    Lemma qwf' : is_query_wf q'.
-        by []. Qed.
-    Let wf_query' := WFQuery qwf'.
              
-     Lemma qbc' : wf_query_conforms wf_schema wf_query' wf_schema.(query_type).
-  Proof. by []. Qed.
+     Lemma qbc' : query_set_conforms wf_schema q' wf_schema.(query_type).
+     Proof. by []. Qed.
   
 
 
     Let conformed_query' := ConformedQuery qbc'. 
 
-    Goal (eval_query wf_graph conformed_query') = (NestedResult "hero" (ResponseList [:: (SingleResult "name" "Luke"); (SingleResult "id" "1000")])).
-      rewrite /eval_query /=.
+    Goal (eval_query_set wf_graph conformed_query') = (Results [:: (NestedResult "hero" (Results [:: (SingleResult "name" "Luke"); (SingleResult "id" "1000")]))]).
+      rewrite /eval_query_set /eval /=.
       rewrite /get_target_nodes_with_field /=.
       rewrite /edges [fset]unlock /=.
-      by do ?[rewrite ?collect_equation ?/indexed_map /=]. 
+      program_simpl.
     Qed.
-
+    
     Example ex7 :
       let r := [::
                  (SingleResult "name" "Luke");
                  (NestedListResult "friends"
                                    [::
-                                      (ResponseList [:: (SingleResult "id" "2001")]);
-                                      (ResponseList [:: (SingleResult "id" "1002")])
+                                      (Results [:: (SingleResult "id" "2001")]);
+                                      (Results [:: (SingleResult "id" "1002")])
                                    ]
                  );
                  (NestedListResult "friends"
                                    [::
-                                      (ResponseList [::
+                                      (Results [::
                                                        (SingleResult "id" "2001");
                                                        (SingleResult "name" "R2-D2")
                                       ]);
-                                      (ResponseList [::
+                                      (Results [::
                                                        (SingleResult "id" "1002");
                                                        (SingleResult "name" "Han")
                                       ])
@@ -426,11 +393,11 @@ Section Example.
                         (SingleResult "name" "Luke");
                         (NestedListResult "friends"
                                    [::
-                                      (ResponseList [::
+                                      (Results [::
                                                        (SingleResult "id" "2001");
                                                        (SingleResult "name" "R2-D2")
                                       ]);
-                                      (ResponseList [::
+                                      (Results [::
                                                        (SingleResult "id" "1002");
                                                        (SingleResult "name" "Han")
                                       ])
@@ -438,15 +405,10 @@ Section Example.
                         )
                      ]
       in
-      @collect nat_ordType string_ordType string_ordType r = expected.
+      collect r = expected.
     intros.
-    rewrite collect_equation /=.
-    rewrite collect_equation.
-    rewrite /indexed_map /=.
-    rewrite collect_equation /=.
-    rewrite collect_equation /=.
-      by do ?[rewrite ?collect_equation ?/indexed_map /=].
-      Qed.
+    program_simpl.
+    Qed.
     
   End HP.
   

@@ -38,7 +38,6 @@ Section Query.
   Inductive Result : Type :=
   | Results : list ResponseObject -> Result
   with ResponseObject : Type :=
-       | Empty : ResponseObject
        | Null : Name -> ResponseObject
        | SingleResult : Name -> Vals -> ResponseObject
        | ListResult : Name -> list Vals -> ResponseObject
@@ -70,7 +69,6 @@ Arguments SelectionSet [Name Vals].
 Arguments Results [Name Vals].
 Arguments ResponseObject [Name Vals].
 Arguments Null [Name Vals].
-Arguments Empty [Name Vals].
 Arguments SingleResult [Name Vals].
 
 
