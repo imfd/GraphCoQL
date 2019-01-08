@@ -9,6 +9,8 @@ From extructures Require Import ord fset fmap.
 From Coq Require Import String Ascii List.
 From CoqUtils Require Import string.
 
+From Equations Require Import Equations.
+
 
 Require Import Schema.
 Require Import SchemaAux.
@@ -48,7 +50,8 @@ Section Example.
   
   Notation "f : t" := (Schema.Field f [::] t).
 
-  Notation "'[' s ']'" := (ListType s) (at level 0, s at next level).
+  Notation "'[[' s ']]'" := (ListType s) (at level 0, s at next level).
+
   
   Coercion namedType_of_string (s : string) := NamedType s.
   
@@ -65,14 +68,14 @@ Section Example.
   Let CharacterType := interface "Character" {{[::
                                                  ("id" : "ID");
                                                  ("name" : "String");
-                                                 ("friends" : ["Character"])]
+                                                 ("friends" : [["Character"]])]
                                             }}.
 
   
   Let DroidType := type "Droid" implements [:: (NamedType "Character")] {{[::
                                                                             ("id" : "ID");
                                                                             ("name" : "String");
-                                                                            ("friends" : ["Character"]);
+                                                                            ("friends" : [["Character"]]);
                                                                             ("primaryFunction" : "String")
                                                                               
                                                                        ]}}.
@@ -81,8 +84,8 @@ Section Example.
   Let HumanType := type "Human" implements [:: (NamedType "Character")] {{[::
                                                                             ("id" : "ID");
                                                                             ("name" : "String");
-                                                                            ("friends" : ["Character"]);
-                                                                            ("starships" : ["Starship"])
+                                                                            ("friends" : [["Character"]]);
+                                                                            ("starships" : [["Starship"]])
                                                                               
                                                                        ]}}.
 
@@ -94,7 +97,7 @@ Section Example.
 
   Let QueryType := type "Query" implements [::] {{ [::
                                                      (Schema.Field "hero" [:: (FieldArgument "episode" "Episode")] "Character");
-                                                     (Schema.Field "search" [:: (FieldArgument "text" "String")] ["SearchResult"])]
+                                                     (Schema.Field "search" [:: (FieldArgument "text" "String")] [["SearchResult"]])]
                                                }}.
 
   Let schema  := Schema "Query"  [:: IDType; StringType; FloatType;  StarshipType;  CharacterType; DroidType; HumanType; EpisodeType; SearchResultType; QueryType].
@@ -109,7 +112,8 @@ Section Example.
   Let wf_schema : @wfSchema string_ordType string_ordType   := WFSchema (fun n v => true) sdf.
   
   Section HP.
-    
+
+
     
     Let edges : {fset node * fld * node} :=
       fset [:: (Graph.Node 0 "Query" emptym ,
@@ -190,32 +194,41 @@ Section Example.
 
 
     
-  Let q := (NestedField "hero" [fmap ("episode", "EMPIRE")]
-                       (SelectionSet
-                          (SingleField "name" emptym)
-                          (NestedField "friends" emptym
-                                       (SelectionSet
-                                          (InlineFragment "Human"
-                                                          (SelectionSet
-                                                             (LabeledField "humanFriend" "name" emptym)
-                                                             (NestedField "starships" emptym
-                                                                          (SelectionSet
-                                                                             (LabeledField "starship" "name" emptym)
-                                                                             (SingleField "length" emptym)
-                                                                          )
-                                                             )
-                                                          )
-                                          )
-                                          (InlineFragment "Droid"
-                                                          (SelectionSet
-                                                             (LabeledField "droidFriend" "name" emptym)
-                                                             (SingleField "primaryFunction" emptym)
-                                                          )
-                                          )
-                                       )
-                          )
-                       )
-          ).
+    Let q :=
+      (SingleQuery
+         (NestedField "hero" [fmap ("episode", "EMPIRE")]
+            (SelectionSet
+               (SingleField "name" emptym)
+               (SingleQuery
+                  (NestedField "friends" emptym
+                      (SelectionSet
+                         (InlineFragment "Human"
+                            (SelectionSet
+                               (LabeledField "humanFriend" "name" emptym)
+                               (SingleQuery
+                                  (NestedField "starships" emptym
+                                               (SelectionSet
+                                                  (LabeledField "starship" "name" emptym)
+                                                  (SingleQuery (SingleField "length" emptym))
+                                               )
+                                  )
+                               )
+                            )
+                         )
+                         (SingleQuery
+                            (InlineFragment "Droid"
+                                (SelectionSet
+                                   (LabeledField "droidFriend" "name" emptym)
+                                   (SingleQuery (SingleField "primaryFunction" emptym))
+                                )
+                            )
+                         )
+                      )
+                  )
+               )
+            )
+         )
+      ).
 
   (*
   Lemma qc : SelectionConforms wf_schema q wf_schema.(query_type).
@@ -261,49 +274,140 @@ Section Example.
          by rewrite /lookup_field_in_type /=.
          by [].
   Qed.  *)
-
-  Lemma qbc : selection_conforms wf_schema q wf_schema.(query_type).
+  
+  Lemma qbc : query_set_conforms wf_schema q wf_schema.(query_type).
   Proof. by []. Qed.
 
 
 
-    Let wf_query := WFQuery qbc. 
+  Let conformed_query := ConformedQuery qbc. 
 
 
 
 
-    Let query_response := (NestedResult "hero"
-                                       (ResponseList
-                                          (SingleResult "name" "Luke")
-                                          (NestedListResult "friends"
-                                                            [::
-                                                               (ResponseList Empty
-                                                                             (ResponseList
-                                                                                (SingleResult "droidFriend" "R2-D2")
-                                                                                (SingleResult "primaryFunction" "Astromech")
-                                                                             )
-                                                               );
-                                                               (ResponseList
-                                                                   (ResponseList
-                                                                      (SingleResult "humanFriend" "Han")
-                                                                      (NestedListResult "starships"
-                                                                                        [:: (ResponseList
-                                                                                               (SingleResult "starship" "Falcon")
-                                                                                               (SingleResult "length" "34.37"))
-                                                                                        ]))
-                                                                  Empty
-                                                                )
-                                                               
-                                                            ]
-                                          )
-                                       )
-                         ).
+  Let query_response :=
+    (Results
+       [::
+          (NestedResult "hero"
+                        (Results
+                           [::
+                              (SingleResult "name" "Luke");
+                              (NestedListResult "friends"
+                                                [::
+                                                   (Results
+                                                      [::
+                                                         (SingleResult "droidFriend" "R2-D2");
+                                                         (SingleResult "primaryFunction" "Astromech")
+                                                      ]
+                                                   );
+                                                   (Results
+                                                      [::
+                                                         (SingleResult "humanFriend" "Han");
+                                                         (NestedListResult "starships"
+                                                                           [::
+                                                                              (Results
+                                                                                [::
+                                                                                   (SingleResult "starship" "Falcon");
+                                                                                   (SingleResult "length" "34.37")
+                                                                                ]
+                                                                              )
+                                                                           ]
+                                                         )
+                                                      ]
+                                                   )
+                                                ]  
+                              )
+                           ]
+                        )
+          )
+       ]
+    ).
+     
 
-    Lemma ev_query_eq_response :  (eval_query  wf_graph wf_query) = query_response.
+
+                
+    Example ev_query_eq_response :  (eval_query_set wf_graph conformed_query) = query_response.
     Proof.
-      rewrite /eval_query /=.
+      rewrite /eval_query_set /eval /=.
       rewrite /get_target_nodes_with_field /=.
-      by rewrite /edges [fset]unlock /=.
+      rewrite /edges [fset]unlock /=. program_simpl. Qed.
+
+    
+
+    Let q' := (SingleQuery
+                (NestedField "hero" [fmap ("episode", "EMPIRE")]
+                   (SelectionSet
+                      (SingleField "name" emptym)
+                      (SelectionSet
+                         (SingleField "name" emptym)
+                         (SelectionSet
+                            (SingleField "id" emptym)
+                            (SingleQuery
+                               (SingleField "name" emptym)
+                            )
+                         )
+                      )
+                   )
+                )
+             ).
+
+             
+     Lemma qbc' : query_set_conforms wf_schema q' wf_schema.(query_type).
+     Proof. by []. Qed.
+  
+
+
+    Let conformed_query' := ConformedQuery qbc'. 
+
+    Goal (eval_query_set wf_graph conformed_query') = (Results [:: (NestedResult "hero" (Results [:: (SingleResult "name" "Luke"); (SingleResult "id" "1000")]))]).
+      rewrite /eval_query_set /eval /=.
+      rewrite /get_target_nodes_with_field /=.
+      rewrite /edges [fset]unlock /=.
+      program_simpl.
+    Qed.
+    
+    Example ex7 :
+      let r := [::
+                 (SingleResult "name" "Luke");
+                 (NestedListResult "friends"
+                                   [::
+                                      (Results [:: (SingleResult "id" "2001")]);
+                                      (Results [:: (SingleResult "id" "1002")])
+                                   ]
+                 );
+                 (NestedListResult "friends"
+                                   [::
+                                      (Results [::
+                                                       (SingleResult "id" "2001");
+                                                       (SingleResult "name" "R2-D2")
+                                      ]);
+                                      (Results [::
+                                                       (SingleResult "id" "1002");
+                                                       (SingleResult "name" "Han")
+                                      ])
+                                   ]
+                 )
+              ]
+      in
+      let expected := [::
+                        (SingleResult "name" "Luke");
+                        (NestedListResult "friends"
+                                   [::
+                                      (Results [::
+                                                       (SingleResult "id" "2001");
+                                                       (SingleResult "name" "R2-D2")
+                                      ]);
+                                      (Results [::
+                                                       (SingleResult "id" "1002");
+                                                       (SingleResult "name" "Han")
+                                      ])
+                                   ]
+                        )
+                     ]
+      in
+      collect r = expected.
+    intros.
+    program_simpl.
     Qed.
     
   End HP.

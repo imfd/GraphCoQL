@@ -7,6 +7,8 @@
 
 -R ./src GraphCoQL
 
+./src/Ssromega.v
+./src/CpdtTactics.v
 ./src/Schema.v
 ./src/SchemaAux.v
 ./src/SchemaWellFormedness.v
