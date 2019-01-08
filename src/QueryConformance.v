@@ -79,8 +79,8 @@ Section QueryConformance.
   
   Fixpoint query_set_conforms schema query_set ty : bool :=
     match query_set with
-    | SelectionSet [::] => false
-    | SelectionSet queries => all (fun q => query_conforms schema q ty) queries
+    | SingleQuery q => query_conforms schema q ty
+    | SelectionSet q q' => query_conforms schema q ty && query_set_conforms schema q' ty
     end
   with query_conforms schema query ty :=
          match query with
@@ -118,13 +118,6 @@ Section QueryConformance.
                               _ : query_set_conforms schema query_set schema.(query_root)
                             }.
 
-  Structure normalizedConformedQuery (schema : @wfSchema Name Vals) :=
-    NCQuery {
-        nselection : @normalizedSelection Name Vals;
-        _ : query_set_conforms schema nselection schema.(query_root)
-      }.
-  
   Coercion query_of_wfquery schema (wfq : conformedQuery schema) := let: ConformedQuery q _ := wfq in q.
   
 End QueryConformance.
-
