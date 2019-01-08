@@ -15,9 +15,6 @@ Require Import SchemaAux.
 Require Import CpdtTactics.
 
 
-Require Import List.
-
-
 Section Query.
 
 
@@ -152,7 +149,16 @@ Section Query.
   Definition query_ordMixin := PcanOrdMixin pcan_tree_of_query.
   Canonical query_ordType := OrdType Query query_ordMixin.
   
+
+
+  Fixpoint list_of_query_set (query_set : QuerySet) : seq Query :=
+    match query_set with
+    | SingleQuery q => [:: q]
+    | SelectionSet q q' => q :: (list_of_query_set q')
+    end.
   
+  Coercion list_of_query_set : QuerySet >-> seq.
+
 End Query.
 
 
