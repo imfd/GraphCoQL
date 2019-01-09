@@ -54,7 +54,7 @@ Section Example.
   Notation "'[[' s ']]'" := (ListType s) (at level 0, s at next level).
 
   
-  Coercion namedType_of_string (s : string) := NamedType s.
+  Coercion namedType_of_string (s : string) := NT s.
   
   Let IDType := scalar "ID".
   Let StringType := scalar "String".
@@ -73,7 +73,7 @@ Section Example.
                                             }}.
 
   
-  Let DroidType := type "Droid" implements [:: (NamedType "Character")] {{[::
+  Let DroidType := type "Droid" implements [:: "Character"] {{[::
                                                                             ("id" : "ID");
                                                                             ("name" : "String");
                                                                             ("friends" : [["Character"]]);
@@ -82,7 +82,7 @@ Section Example.
                                                                        ]}}.
   
   
-  Let HumanType := type "Human" implements [:: (NamedType "Character")] {{[::
+  Let HumanType := type "Human" implements [:: "Character"] {{[::
                                                                             ("id" : "ID");
                                                                             ("name" : "String");
                                                                             ("friends" : [["Character"]]);
@@ -93,7 +93,7 @@ Section Example.
   Let EpisodeType := enum "Episode" { [:: "NEWHOPE" ; "EMPIRE" ; "JEDI" ] }.
 
 
-  Let SearchResultType := union "SearchResult" of [:: (NamedType "Human") ; (NamedType "Droid") ; (NamedType "Starship")].
+  Let SearchResultType := union "SearchResult" of [:: "Human" ; "Droid" ; "Starship"].
 
 
   Let QueryType := type "Query" implements [::] {{ [::

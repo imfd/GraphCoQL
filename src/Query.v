@@ -30,7 +30,7 @@ Section Query.
        | LabeledField : Name -> Name -> {fmap Name -> Vals} -> Query
        | NestedField : Name -> {fmap Name -> Vals} -> QuerySet -> Query
        | NestedLabeledField : Name -> Name -> {fmap Name -> Vals} -> QuerySet -> Query
-       | InlineFragment : Name -> QuerySet -> Query.
+       | InlineFragment : @NamedType Name -> QuerySet -> Query.
 
 
   Inductive Result : Type :=

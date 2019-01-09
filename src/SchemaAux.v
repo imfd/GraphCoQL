@@ -24,21 +24,21 @@ Section SchemaAux.
 
 
   (** Get the query root type for the given Schema **)
-  Definition query_root schema : type := schema.(query_type). 
+  Definition query_root schema : NamedType := schema.(query_type). 
 
   
   (**
    Looks up a name in the given document, returning the type definition if it
    was declared in the document.
    **)
-  Definition lookup_type schema (ty : type)  : option TypeDefinition :=
+  Definition lookup_type schema (ty : NamedType)  : option TypeDefinition :=
     let: (Schema _ tdefs) := schema in
     let n_eq nt tdef := match tdef with
-                       | ScalarTypeDefinition name =>  (name_of_type nt) == name 
-                       | ObjectTypeDefinition name _  _ =>  (name_of_type nt) == name
-                       | InterfaceTypeDefinition name _ => (name_of_type nt) == name
-                       | UnionTypeDefinition name _ => (name_of_type nt) == name
-                       | EnumTypeDefinition name _ =>  (name_of_type nt) == name
+                       | ScalarTypeDefinition name =>  nt == name 
+                       | ObjectTypeDefinition name _  _ =>  nt == name
+                       | InterfaceTypeDefinition name _ => nt == name
+                       | UnionTypeDefinition name _ => nt == name
+                       | EnumTypeDefinition name _ =>  nt == name
                        end
     in
     find (n_eq ty) tdefs.
@@ -46,57 +46,37 @@ Section SchemaAux.
 
 
   (** Checks whether the given type is defined as a Scalar in the Schema **)
-  Definition is_scalar_type schema (ty : type) : bool :=
-    match ty with
-    | (NamedType _) =>
-      match (lookup_type schema ty) with
-      | Some (ScalarTypeDefinition _) => true
-      | _ => false
-      end
+  Definition is_scalar_type schema (ty : NamedType) : bool :=
+    match (lookup_type schema ty) with
+    | Some (ScalarTypeDefinition _) => true
     | _ => false
     end.
 
   (** Checks whether the given type is defined as an Object in the Schema **)
-  Definition is_object_type schema (ty : type) : bool :=
-    match ty with
-    | (NamedType _) =>
-      match (lookup_type schema ty) with
-      | Some (ObjectTypeDefinition _ _ _) => true
-      | _ => false
-      end
+  Definition is_object_type schema (ty : NamedType) : bool :=
+    match (lookup_type schema ty) with
+    | Some (ObjectTypeDefinition _ _ _) => true
     | _ => false
     end.
 
   (** Checks whether the given type is defined as an Interface in the Schema **)
-  Definition is_interface_type schema (ty : type) : bool :=
-    match ty with
-    | (NamedType _) =>
-      match (lookup_type schema ty) with
-      | Some (InterfaceTypeDefinition _ _) => true
-      | _ => false
-      end
-    | _ => false
-    end.
+  Definition is_interface_type schema (ty : NamedType) : bool :=
+   match (lookup_type schema ty) with
+   | Some (InterfaceTypeDefinition _ _) => true
+   | _ => false
+   end.
 
   (** Checks whether the given type is defined as a Union in the Schema **)
-  Definition is_union_type schema (ty : type) : bool :=
-    match ty with
-    | (NamedType _) =>
-      match (lookup_type schema ty) with
-      | Some (UnionTypeDefinition _ _) => true
-      | _ => false
-      end
-    | _ => false
-    end.
+  Definition is_union_type schema (ty : NamedType) : bool :=
+   match (lookup_type schema ty) with
+   | Some (UnionTypeDefinition _ _) => true
+   | _ => false
+   end.
 
   (** Checks whether the given type is defined as an Enum in the Schema **)
-  Definition is_enum_type schema (ty : type) : bool :=
-    match ty with
-    | (NamedType _) =>
-      match (lookup_type schema ty) with
-      | Some (EnumTypeDefinition _ _) => true
-      | _ => false
-      end
+  Definition is_enum_type schema (ty : NamedType) : bool :=
+    match (lookup_type schema ty) with
+    | Some (EnumTypeDefinition _ _) => true
     | _ => false
     end.
 
@@ -133,7 +113,7 @@ Section SchemaAux.
 
  
   (** Get list of fields declared in an Object or Interface type definition **)
-  Definition field_definitions schema (ty : type) : list FieldDefinition :=
+  Definition field_definitions schema (ty : NamedType) : list FieldDefinition :=
     match lookup_type schema ty with
     | Some (ObjectTypeDefinition _ _ flds) => flds
     | Some (InterfaceTypeDefinition _ flds) => flds
@@ -149,7 +129,7 @@ Section SchemaAux.
      Gets the first field definition from a given type that matches the given field name. 
      If the type is not declared in the Schema or the field does not belong to the type, then it returns None.
    **)
-  Definition lookup_field_in_type schema (ty : type) (fname : Name) : option FieldDefinition :=
+  Definition lookup_field_in_type schema (ty : NamedType) (fname : Name) : option FieldDefinition :=
     let n_eq nt fld := let: Field name _ _ := fld in nt == name
     in
     find (n_eq fname) (field_definitions schema ty).
@@ -160,7 +140,7 @@ Section SchemaAux.
       If the type is not declared in the Schema or the field does not belong to the type, then it returns None.
 
    **)
-  Definition lookup_field_type schema (ty : type) (fname : Name)  : option type :=
+  Definition lookup_field_type schema (ty : NamedType) (fname : Name)  : option type :=
     match lookup_field_in_type schema ty fname with
     | Some fieldDef => Some (type_of_field fieldDef) 
     | None => None
@@ -171,7 +151,7 @@ Section SchemaAux.
      Get the union's types' names.
      If the type is not declared as Union in the Schema, then returns None.
    **)
-  Definition union_members schema (ty : type) : seq.seq type :=
+  Definition union_members schema (ty : NamedType) : seq.seq NamedType :=
     match lookup_type schema ty with
     | Some (UnionTypeDefinition name mbs) => mbs
     | _ => []
@@ -181,7 +161,7 @@ Section SchemaAux.
   (**
      Checks whether the given type declares implementation of another type.
    **)
-  Definition declares_implementation schema (ty ty' : type) : bool :=
+  Definition declares_implementation schema (ty ty' : NamedType) : bool :=
     match lookup_type schema ty with
     | Some (ObjectTypeDefinition _ intfs _) => has (fun i => i == ty') intfs
     | _ => false
@@ -193,7 +173,7 @@ Section SchemaAux.
      given type and field. If the argument is not defined then it returns None.
      If the field is not declared in that type, then it returns None.
    **)
-  Definition lookup_argument_in_type_and_field schema (ty : type) (fname argname : Name) : option FieldArgumentDefinition :=
+  Definition lookup_argument_in_type_and_field schema (ty : NamedType) (fname argname : Name) : option FieldArgumentDefinition :=
     match lookup_field_in_type schema ty fname with
     | Some (Field fname args _) => let n_eq n arg := let: FieldArgument name _ := arg in n == name
                                   in
@@ -211,15 +191,14 @@ Section SchemaAux.
      3. Union : Possible types are all members of the union.
 
    **)
-  Definition get_possible_types schema (ty : type) : seq.seq type  :=
+  Definition get_possible_types schema (ty : NamedType) : seq.seq NamedType  :=
     match lookup_type schema ty with
     | Some (ObjectTypeDefinition _ _ _) => [:: ty]
     | Some (InterfaceTypeDefinition iname _) =>
-      map (fun n => NamedType n)
-          (type_defs_names (filter (fun tdef => match tdef with
-                                             | (ObjectTypeDefinition _ intfs _) => has (fun i => (name_of_type i) == iname) intfs
-                                             | _ => false
-                                             end) schema.(typeDefinitions)))
+      (type_defs_names (filter (fun tdef => match tdef with
+                                         | (ObjectTypeDefinition _ intfs _) => has (fun i => i == iname) intfs
+                                         | _ => false
+                                         end) schema.(typeDefinitions)))
     | Some (UnionTypeDefinition _ mbs) => mbs
     | _ => [::]
     end.

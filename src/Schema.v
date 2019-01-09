@@ -21,12 +21,13 @@ Section Schema.
       https://facebook.github.io/graphql/June2018/#EnumValue **)
   Definition EnumValue := Name.
 
+  Definition NamedType := Name.
 
   (** Types of data expected by query variables.
 
       https://facebook.github.io/graphql/June2018/#sec-Type-References **)
   Inductive type : Type :=
-  | NamedType : Name -> type
+  | NT : NamedType -> type
   | ListType : type -> type.
 
 
@@ -39,11 +40,12 @@ Section Schema.
    **)
   Fixpoint name_of_type (ty : type) : Name :=
     match ty with
-    | NamedType name => name
+    | NT name => name
     | ListType ty' => name_of_type ty'
     end.
 
   Coercion name_of_type : type >-> Ord.sort.
+
   
   (** Argument for a field.
 
@@ -94,9 +96,9 @@ Section Schema.
 
   Inductive TypeDefinition : Type :=
   | ScalarTypeDefinition : Name -> TypeDefinition
-  | ObjectTypeDefinition : Name -> seq type -> list FieldDefinition -> TypeDefinition
+  | ObjectTypeDefinition : Name -> seq NamedType -> list FieldDefinition -> TypeDefinition
   | InterfaceTypeDefinition : Name -> seq FieldDefinition -> TypeDefinition
-  | UnionTypeDefinition : Name -> seq type -> TypeDefinition
+  | UnionTypeDefinition : Name -> seq NamedType -> TypeDefinition
   | EnumTypeDefinition : Name -> seq EnumValue -> TypeDefinition.
   
 
@@ -119,7 +121,7 @@ Section Schema.
 
    **)
   Structure schema := Schema {
-                      query_type : type;
+                      query_type : NamedType;
                       typeDefinitions : seq TypeDefinition
                     }.
 
@@ -132,14 +134,14 @@ Section Schema.
     (** Get a tree out of a type **)
     Fixpoint tree_of_type (ty : type) : GenTree.tree Name :=
       match ty with
-      | NamedType n => GenTree.Leaf n
+      | NT n => GenTree.Leaf n
       | ListType ty' => GenTree.Node 0 [:: tree_of_type ty']
       end.
 
     (** Get a type out of a tree or none **)
     Fixpoint type_of_tree (t : GenTree.tree Name) : option type :=
       match t with
-      | GenTree.Leaf n => Some (NamedType n)
+      | GenTree.Leaf n => Some (NT n)
       | GenTree.Node 0 [:: t'] => if (type_of_tree t') is Some ty then
                                    Some (ListType ty)
                                  else
@@ -211,6 +213,7 @@ Section Schema.
       
 End Schema.
 
+Arguments NamedType [Name].
 Arguments type [Name].
 Arguments FieldArgumentDefinition [Name].
 Arguments FieldDefinition [Name].

@@ -42,7 +42,7 @@ Section Conformance.
   Definition arguments_conform schema (srcNode : @node N Name Vals) (f : fld) :=
     let argumentConforms arg :=
         let: (argname, value) := arg in
-        match lookup_argument_in_type_and_field schema (NamedType srcNode.(type)) f argname with
+        match lookup_argument_in_type_and_field schema srcNode.(type) f argname with
         | Some (FieldArgument _ ty) => (hasType schema) ty value    (* If the argument is declared then check its value's type *)
         | _ => false
         end
@@ -61,8 +61,8 @@ Section Conformance.
    **)
   Definition field_type_conforms schema (fieldType targetType : Name) : bool :=
     (fieldType == targetType) ||
-    (declares_implementation schema (NamedType targetType) (NamedType fieldType)) ||
-    ((NamedType targetType) \in (union_members schema (NamedType fieldType))).
+    (declares_implementation schema targetType fieldType) ||
+    (targetType \in (union_members schema fieldType)).
 
 
   
@@ -93,7 +93,7 @@ Section Conformance.
   Definition edges_conform schema (E : {fset node * fld * node}) :=
     let edgeConforms edge :=
         let: (u, f, v) := edge in
-        match lookup_field_type schema (NamedType u.(type)) f.(label) with    (* Check if field is declared in type *)
+        match lookup_field_type schema u.(type) f.(label) with    (* Check if field is declared in type *)
         | Some fieldType => (field_type_conforms schema fieldType v.(type)) &&
                            (is_list_type fieldType || is_label_unique_for_src_node E u f) &&
                            arguments_conform schema u f
@@ -120,7 +120,7 @@ Section Conformance.
   Definition node_fields_conform schema (u : node) :=
     let fieldConforms f :=
         let: (f', vals) := f in
-        match lookup_field_type schema (NamedType u.(type)) f'.(label) with
+        match lookup_field_type schema u.(type) f'.(label) with
         | Some fieldType =>                (* Field is declared in the node's type *)
           arguments_conform schema  u f' &&    
                            match vals with
@@ -139,7 +139,7 @@ Section Conformance.
 
   
   Definition has_object_type schema (n : @node N Name Vals) :=
-    let: Node _ t _ := n in is_object_type schema (NamedType t).
+    let: Node _ t _ := n in is_object_type schema t.
 
 
 

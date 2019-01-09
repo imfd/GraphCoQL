@@ -155,7 +155,7 @@ Section NRGTNF.
 
 
                                          
-
+    (*
     Program Fixpoint normalize_list schema (queries : seq.seq (@Query Name Vals)) {measure (queries_size queries)} : seq.seq Query :=
        match queries with
           | [::] => [::]
@@ -201,7 +201,7 @@ Section NRGTNF.
       in
       let: SelectionSet queries := query_set in
           SelectionSet (normalize_list queries)
-
+     *)
       
 
 End NRGTNF.
