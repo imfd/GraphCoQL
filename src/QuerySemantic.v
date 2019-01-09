@@ -357,10 +357,10 @@ Section QuerySemantic.
                                              | _ => inl (Null name)
                                              end
            | NestedField name args ϕ => let target_nodes := get_target_nodes_with_field graph u (Field name args) in
-                                       match lookup_field_type schema (NamedType u.(type)) name with
+                                       match lookup_field_type schema u.(type) name with
                                        | Some (ListType _) =>
                                          inl (NestedListResult name (map (fun v => eval schema graph v ϕ) target_nodes))
-                                       | Some (NamedType _) =>
+                                       | Some (NT _) =>
                                          match ohead target_nodes with
                                          | Some v => inl (NestedResult name (eval schema graph v ϕ))
                                          | _ => inl (Null name)
@@ -369,26 +369,26 @@ Section QuerySemantic.
                                        end
                                          
            | NestedLabeledField label name args ϕ =>  let target_nodes := get_target_nodes_with_field graph u (Field name args) in
-                                                      match lookup_field_type schema (NamedType u.(type)) name with
+                                                      match lookup_field_type schema u.(type) name with
                                                       | Some (ListType _) =>
                                                         inl (NestedListResult label (map (fun v => eval schema graph v ϕ) target_nodes))
-                                                      | Some (NamedType _) =>
+                                                      | Some (NT _) =>
                                                         match ohead target_nodes with
                                                         | Some v => inl (NestedResult label (eval schema graph v ϕ))
                                                         | _ => inl (Null label)
                                                         end
                                                       | _ => inl (Null label)         
                                                       end
-           | InlineFragment t ϕ => match lookup_type schema (NamedType t) with
+           | InlineFragment t ϕ => match lookup_type schema t with
                                    | Some (ObjectTypeDefinition _ _ _) => if t == u.(type) then
                                                                             inr (eval schema graph u ϕ)
                                                                           else
                                                                             inr (Results [::])
-                                   | Some (InterfaceTypeDefinition _ _) => if declares_implementation schema (NamedType u.(type)) (NamedType t) then
+                                   | Some (InterfaceTypeDefinition _ _) => if declares_implementation schema u.(type) t then
                                                                              inr (eval schema graph u ϕ)
                                                                            else
                                                                              inr (Results [::])
-                                   | Some (UnionTypeDefinition _ mbs) => if (NamedType u.(type)) \in mbs then
+                                   | Some (UnionTypeDefinition _ mbs) => if u.(type) \in mbs then
                                                                            inr (eval schema graph u ϕ)
                                                                          else
                                                                            inr (Results [::])

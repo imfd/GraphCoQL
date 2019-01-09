@@ -99,12 +99,12 @@ Section QueryConformance.
                                              | Some (Field fname args ty') => argumentsConform schema α args && query_set_conforms schema ϕ ty'
                                              | _ => false
                                              end
-         | InlineFragment t ϕ => if is_object_type schema (NamedType t) || is_interface_type schema (NamedType t) || is_union_type schema (NamedType t) then
-                                  let possible_t_types := get_possible_types schema (NamedType t) in
+         | InlineFragment t ϕ => if is_object_type schema t || is_interface_type schema t || is_union_type schema t then
+                                  let possible_t_types := get_possible_types schema t in
                                   let possible_ty_types := get_possible_types schema ty in
                                   (has (fun x => x \in possible_ty_types) possible_t_types)
                                     &&
-                                  query_set_conforms schema ϕ (NamedType t)
+                                  query_set_conforms schema ϕ t
                                 else
                                   false 
     end.
