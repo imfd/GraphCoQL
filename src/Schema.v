@@ -5,6 +5,8 @@ Unset Printing Implicit Defensive.
 
 From extructures Require Import ord.
 
+Require Import treeordtype.
+
 
 
 Section Schema.
@@ -96,7 +98,7 @@ Section Schema.
 
   Inductive TypeDefinition : Type :=
   | ScalarTypeDefinition : Name -> TypeDefinition
-  | ObjectTypeDefinition : Name -> seq NamedType -> list FieldDefinition -> TypeDefinition
+  | ObjectTypeDefinition : Name -> seq NamedType -> seq FieldDefinition -> TypeDefinition
   | InterfaceTypeDefinition : Name -> seq FieldDefinition -> TypeDefinition
   | UnionTypeDefinition : Name -> seq NamedType -> TypeDefinition
   | EnumTypeDefinition : Name -> seq EnumValue -> TypeDefinition.
@@ -134,15 +136,15 @@ Section Schema.
     (** Get a tree out of a type **)
     Fixpoint tree_of_type (ty : type) : GenTree.tree Name :=
       match ty with
-      | NT n => GenTree.Leaf n
-      | ListType ty' => GenTree.Node 0 [:: tree_of_type ty']
+      | NT n => GenTree.Node 0 [:: GenTree.Leaf n]
+      | ListType ty' => GenTree.Node 1 [:: tree_of_type ty']
       end.
 
     (** Get a type out of a tree or none **)
     Fixpoint type_of_tree (t : GenTree.tree Name) : option type :=
       match t with
-      | GenTree.Leaf n => Some (NT n)
-      | GenTree.Node 0 [:: t'] => if (type_of_tree t') is Some ty then
+      | GenTree.Node 0 [:: GenTree.Leaf n] => Some (NT n)
+      | GenTree.Node 1 [:: t'] => if (type_of_tree t') is Some ty then
                                    Some (ListType ty)
                                  else
                                    None
@@ -150,7 +152,7 @@ Section Schema.
       end.
 
     Lemma pcan_tree_of_type : pcancel tree_of_type type_of_tree.
-    Proof.
+    Proof. 
         by elim=> [| t /= ->].
     Qed.
 
@@ -159,8 +161,8 @@ Section Schema.
     Definition type_choiceMixin := PcanChoiceMixin pcan_tree_of_type.
     Canonical type_choiceType := ChoiceType type type_choiceMixin.
 
-    (*Definition type_ordMixin := PcanOrdMixin pcan_tree_of_type.
-    Canonical type_ordType := OrdType type type_ordMixin.*)
+    Definition type_ordMixin := PcanOrdMixin pcan_tree_of_type.
+    Canonical type_ordType := OrdType type type_ordMixin.
     
 
 
@@ -188,7 +190,7 @@ Section Schema.
     Definition type_definition_eq tdef1 tdef2 :=
       match tdef1, tdef2 with
       | ScalarTypeDefinition n, ScalarTypeDefinition n' => n == n'
-      | ObjectTypeDefinition n tys flds, ObjectTypeDefinition n' tys' flds' => (n == n') && (tys == tys') && (flds == flds')
+      | ObjectTypeDefinition n tys flds, ObjectTypeDefinition n' tys' flds' => [&& (n == n'), (tys == tys') & (flds == flds')]
       | InterfaceTypeDefinition n flds, InterfaceTypeDefinition n' flds' => (n == n') && (flds == flds')
       | UnionTypeDefinition n mbs, UnionTypeDefinition n' mbs' => (n == n') && (mbs == mbs')
       | EnumTypeDefinition n es, EnumTypeDefinition n' es' => (n == n') && (es == es')
@@ -196,16 +198,17 @@ Section Schema.
       end.
   
 
+
     Lemma type_definition_eqP : Equality.axiom type_definition_eq.
     Proof.
       move=> t1 t2; apply: (iffP idP) => [|<-].
       elim: t1; elim: t2 => //.
         by move=> n n' /= /eqP => ->.
-        by move=> n tys flds n' tys' flds' /=; move/andP=> [/andP [/eqP -> /eqP ->] /eqP ->].
+        by move=> n tyzs flds n' tys' flds' /=; case/and3P=> /eqP -> /eqP -> /eqP ->.
         by move=> n flds n' flds' /=; move/andP=> [/eqP -> /eqP ->].  
         by move=> n mbs n' mbs'; move/andP=> [/eqP -> /eqP ->].
         by move=> n es n' es'; move/andP=> [/eqP -> /eqP ->].
-      by elim: t1 => [s | s tys flds | s flds | s mbs | s es] /=; rewrite !eqxx. 
+      by elim: t1; move=> * /=; rewrite !eqxx.
     Qed.
 
     Definition type_definition_eqMixin := EqMixin type_definition_eqP.
