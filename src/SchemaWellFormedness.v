@@ -40,42 +40,45 @@ Section WellFormedness.
         be subtype of an interface and not between objects. Interfaces cannot be
         subtype of another interface.
    **)
-  Inductive subtype schema : type -> type -> Prop :=
-  | ST_Refl : forall ty, subtype schema ty ty
+  Inductive Subtype schema : type -> type -> Prop :=
+  | ST_Refl : forall ty, Subtype schema ty ty
+                            
   | ST_Interface : forall n n',
       declares_implementation schema n n' ->
-      subtype schema (NT n) (NT n')
+      Subtype schema (NT n) (NT n')
+              
   | ST_Union : forall n n',
       n \in (union_members schema n') ->
-      subtype schema (NT n) (NT n')
+            Subtype schema (NT n) (NT n')
+                    
   | ST_ListType : forall ty ty',
-      subtype schema ty ty' ->
-      subtype schema (ListType ty) (ListType ty'). 
+      Subtype schema ty ty' ->
+      Subtype schema (ListType ty) (ListType ty'). 
 
   Fixpoint is_subtype schema (ty ty' : type) : bool :=
     match ty, ty' with
     | (ListType lty), (ListType lty') => is_subtype schema lty lty'
-    | (NT name), (NT name') => (name == name') ||
-                              declares_implementation schema ty ty' || 
-                              (name \in (union_members schema name'))
+    | (NT name), (NT name') => [|| (name == name'),
+                               declares_implementation schema ty ty' | 
+                              (name \in (union_members schema name'))]
     | _, _ => false
     end.
 
 
   Variable sch : @schema Name.
 
-  Lemma subtypeP : forall ty ty', reflect (subtype sch ty ty') (is_subtype sch ty ty').
+  Lemma subtypeP ty ty': reflect (Subtype sch ty ty') (is_subtype sch ty ty').
   Proof.
-    move=> ty ty'; apply: (iffP idP).
-    move: ty'; elim: ty => n.
-    case=>  //.
-      by move=> n' /=; move/orP=> [/orP [/eqP -> | Hi] | Hu]; [apply ST_Refl | apply ST_Interface | apply ST_Union].
-      by move=> IH; case=> // => t' /= /IH; apply ST_ListType.
+    apply: (iffP idP).
+    elim: ty ty' => n.
+      - case=>  //.
+        * by move=> n' /= /or3P [/eqP -> | Hi | Hu]; [apply ST_Refl | apply ST_Interface | apply ST_Union].
+        by move=> IH; case=> // => t' /= /IH; apply ST_ListType.
     elim=> //=.
-      elim=> //=.
-      by move=> n; rewrite eqxx.
-      by move=> n n' H; apply Bool.orb_true_intro; left; apply Bool.orb_true_intro; right.
-      by move=> n n' H; apply Bool.orb_true_intro; right.
+      - elim=> //=.
+        * by move=> *; apply/or3P; constructor 1.
+      - by move=> * /=; apply/or3P; constructor 2.
+      by move=> * /=; apply/or3P; constructor 3.
   Qed.
       
 
@@ -110,12 +113,11 @@ Section WellFormedness.
   Proof.
     move=> ty; apply: (iffP idP).
     elim: ty.
-      by move=> n; move/orP=> [Hs | He]; [apply (VScalar_Arg Hs) | apply (VEnum_Arg He)].
+      - by move=> n /orP [Hs | He]; [apply (VScalar_Arg Hs) | apply (VEnum_Arg He)].
       by move=> t IH /= /IH; apply VList_Arg.
-    elim.
-       by move=> n H; apply Bool.orb_true_iff; left.
-       by move=> n H; apply Bool.orb_true_iff; right.
-       by case.
+    elim=> //.
+       - by move=> n H; apply/orP; left.
+       by move=> n H; apply/orP; right.
   Qed.
   
   (* Because we are not considering InputObjects, a field may have any type, 
@@ -130,7 +132,7 @@ Section WellFormedness.
   
   Fixpoint is_valid_field_type schema (ty : type) : bool :=
     match ty with
-    | NT _ => ~~ ((lookup_type schema ty) == None)
+    | NT _ => (lookup_type schema ty) != None
     | ListType ty' => is_valid_field_type schema ty'
     end.
   
@@ -162,9 +164,9 @@ Section WellFormedness.
    **)
   Definition is_field_wf schema (fld : FieldDefinition) : bool :=
     let: Field name args outputType := fld in
-    is_valid_field_type schema outputType &&
-                     uniq (arguments_names args) &&
-                     all (is_field_argument_wf schema) args.
+    [&& is_valid_field_type schema outputType,
+     uniq (arguments_names args) &
+     all (is_field_argument_wf schema) args].
 
 
 
@@ -193,9 +195,9 @@ Section WellFormedness.
   Definition is_field_ok schema (fld fld' : @FieldDefinition Name) : bool :=
     match fld, fld' with
     | Field fname args ty, Field fname' args' ty' =>
-      (fname == fname') &&
-      perm_eq args' args &&
-      is_subtype schema ty ty'
+      [&& (fname == fname'),
+       perm_eq args' args &
+       is_subtype schema ty ty']
     end.
 
 
@@ -203,10 +205,8 @@ Section WellFormedness.
   Proof.
     move=> f f'; apply: (iffP idP).
     case: f => n args ty; case: f' => n' args' ty' /=.
-      by move/andP=> [/andP [/eqP -> Hperm] H]; apply AnyField.
-    case.
-      move=> * /=; rewrite eqxx => /=.
-      by apply andb_true_intro; split.
+      by move/and3P=> [/eqP -> Hperm H]; apply AnyField.
+    by case=> * /=; apply/and3P.
   Qed.
 
   
@@ -319,19 +319,19 @@ Section WellFormedness.
     match tdef with
     | ScalarTypeDefinition _ => true
     | ObjectTypeDefinition name interfaces fields =>
-      (fields != [::])
-        && uniq (fields_names fields)
-        && all (is_field_wf schema) fields
-        && uniq interfaces
-        && all (implements_interface_correctly schema tdef) interfaces
+      [&& (fields != [::]),
+       uniq (fields_names fields),
+       all (is_field_wf schema) fields,
+       uniq interfaces &
+       all (implements_interface_correctly schema tdef) interfaces]
     | InterfaceTypeDefinition _ fields =>
-      (fields != [::])
-        &&  uniq (fields_names fields)
-        && all (is_field_wf schema) fields
+      [&& (fields != [::]),
+       uniq (fields_names fields) &
+       all (is_field_wf schema) fields]
     | UnionTypeDefinition name members =>
-      (members != [::])
-        && uniq members
-        && all (is_object_type schema) members
+      [&& (members != [::]),
+       uniq members &
+       all (is_object_type schema) members]
     | EnumTypeDefinition _ enumValues =>
       (enumValues != [::]) && uniq enumValues
         
@@ -343,18 +343,22 @@ Section WellFormedness.
     move=> tdef; apply (iffP idP).
     case: tdef; move=> n //=.
       by move=> _; apply WF_Scalar.
-      by move=> intfs flds; move/andP=> [/andP [/andP [/andP [H1 H2] H3] H4] H']; apply WF_Object.
-      by move=> flds; move/andP=> [/andP [H1 H2] H3]; apply WF_Interface.  
-      by move=> mbs; move/andP=> [/andP [H1 H2] H3]; apply WF_Union.
-      by move=> es; move/andP=> [H1 H2]; apply WF_Enum.
+      by move=> intfs flds /and5P [H1 H2 H3 H4 H']; constructor.
+      by move=> flds /and3P [H1 H2 H3]; apply WF_Interface.  
+      by move=> mbs /and3P [H1 H2 H3]; apply WF_Union.
+      by move=> es /andP [H1 H2]; apply WF_Enum.
     case => //.
-    Admitted.
-    
+      by move=> * /=; apply/and5P.
+      by move=> * /=; apply/and3P.
+      by move=> * /=; apply/and3P.
+      by move=> * /=; apply/andP.
+  Qed.
+  
   Definition is_schema_wf schema : bool :=
     let: Schema query_type tdefs := schema in
-    (query_type \in (type_defs_names tdefs)) &&
-       uniq (type_defs_names tdefs) &&                              
-       all (is_type_def_wf schema) tdefs.
+    [&& (query_type \in (type_defs_names tdefs)),
+     uniq (type_defs_names tdefs) &                   
+     all (is_type_def_wf schema) tdefs].
       
   
   Structure wfSchema := WFSchema {
@@ -364,7 +368,7 @@ Section WellFormedness.
                       }.
 
 
-  Coercion schema_from_wfSchema (wfschema : wfSchema) := let: WFSchema schema _ _ := wfschema in schema.
+  Coercion schema : wfSchema >-> Schema.schema.
 
 End WellFormedness.
 
