@@ -45,10 +45,9 @@ Section GraphQLGraph.
       Fields and values).
    **)
   Structure node := Node {
-                    id: N;
-                    type: S;
-                    fields: {fmap fld -> (Vals + (seq Vals))}
-                    
+                    id : N;
+                    type : S;
+                    fields : {fmap fld -> (Vals + (seq Vals))}
                   }.
 
 
@@ -68,6 +67,10 @@ Section GraphQLGraph.
   Canonical node_ordType := OrdType node node_ordMixin.
   
 
+  Definition pred_of_node (n : node) : collective_pred fld :=
+    [pred f : fld | isSome (n.(fields) f)].
+
+  Canonical node_predType := mkPredType pred_of_node.
 
   
   
@@ -105,10 +108,14 @@ Section GraphQLGraph.
   
     
 
-  Definition fun_of_edges (E : {fset node * fld * node}) := fun v1 f v2 => (v1, f, v2) \in val E.
+  Definition fun_of_graph (g : graphQLGraph) := fun v1 f v2 => (v1, f, v2) \in (E g).
+  Coercion fun_of_graph : graphQLGraph >-> Funclass.
+  
+  Lemma graphE (g : graphQLGraph) v1 f v2 : g v1 f v2 = ((v1, f, v2) \in g.(E)).
+    Proof. done. Qed.
+    
+  Coercion edges_of_graph (g : graphQLGraph) := g.(E).
 
-
-  Coercion root_of_graph (g : graphQLGraph) := let: GraphQLGraph r _  := g in r.
 
 
 

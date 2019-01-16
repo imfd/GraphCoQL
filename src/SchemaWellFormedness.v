@@ -124,7 +124,7 @@ Section WellFormedness.
      as long as it is declared in the Schema. *)
   Inductive valid_field_type schema : type -> Prop :=
   | VBase_Type : forall n,
-      lookup_type schema n != None ->
+      n \in schema ->
       valid_field_type schema (NT n)      
   | VList_Type : forall ty,
       valid_field_type schema ty ->
@@ -132,7 +132,7 @@ Section WellFormedness.
   
   Fixpoint is_valid_field_type schema (ty : type) : bool :=
     match ty with
-    | NT _ => (lookup_type schema ty) != None
+    | NT n => n \in schema  
     | ListType ty' => is_valid_field_type schema ty'
     end.
   
@@ -318,20 +318,24 @@ Section WellFormedness.
   Fixpoint is_type_def_wf schema (tdef : TypeDefinition) : bool :=
     match tdef with
     | ScalarTypeDefinition _ => true
+                                 
     | ObjectTypeDefinition name interfaces fields =>
       [&& (fields != [::]),
        uniq (fields_names fields),
        all (is_field_wf schema) fields,
        uniq interfaces &
        all (implements_interface_correctly schema tdef) interfaces]
+
     | InterfaceTypeDefinition _ fields =>
       [&& (fields != [::]),
        uniq (fields_names fields) &
        all (is_field_wf schema) fields]
+
     | UnionTypeDefinition name members =>
       [&& (members != [::]),
        uniq members &
        all (is_object_type schema) members]
+
     | EnumTypeDefinition _ enumValues =>
       (enumValues != [::]) && uniq enumValues
         
@@ -343,20 +347,16 @@ Section WellFormedness.
     move=> tdef; apply (iffP idP).
     case: tdef; move=> n //=.
       by move=> _; apply WF_Scalar.
-      by move=> intfs flds /and5P [H1 H2 H3 H4 H']; constructor.
+      by move=> intfs flds /and5P [H1 H2 H3 H4 H']; apply WF_Object.
       by move=> flds /and3P [H1 H2 H3]; apply WF_Interface.  
       by move=> mbs /and3P [H1 H2 H3]; apply WF_Union.
       by move=> es /andP [H1 H2]; apply WF_Enum.
-    case => //.
-      by move=> * /=; apply/and5P.
-      by move=> * /=; apply/and3P.
-      by move=> * /=; apply/and3P.
-      by move=> * /=; apply/andP.
+    by case => // * /=; [apply/and5P | apply/and3P | apply/and3P | apply/andP].
   Qed.
   
   Definition is_schema_wf schema : bool :=
     let: Schema query_type tdefs := schema in
-    [&& (query_type \in (type_defs_names tdefs)),
+    [&& (query_type \in schema),
      uniq (type_defs_names tdefs) &                   
      all (is_type_def_wf schema) tdefs].
       

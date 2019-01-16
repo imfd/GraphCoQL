@@ -24,7 +24,7 @@ Section Conformance.
   (** 
       It states that a Graph's root must have the same type as the Schema's root
    **)
-  Definition root_type_conforms schema graph := graph.(root).(type) = SchemaAux.query_root(schema).
+  Definition root_type_conforms schema graph : bool := graph.(root).(type) == schema.(query_type).
   
 
 
@@ -38,7 +38,9 @@ Section Conformance.
       1. arg ∈ args (src, f) : The argument must be declared in the given type for that given field.
       2. v ∈ values (type (arg)) : The value must be of the type declared for that argument in the schema.  
  
-   **)
+   **)     
+      
+    
   Definition arguments_conform schema (srcNode : @node N Name Vals) (f : fld) :=
     let argumentConforms arg :=
         let: (argname, value) := arg in
@@ -117,6 +119,7 @@ Section Conformance.
      3. The arguments of 'f' must conform to what the Schema requires of them.
 
    **)
+    
   Definition node_fields_conform schema (u : node) :=
     let fieldConforms f :=
         let: (f', vals) := f in
@@ -134,19 +137,12 @@ Section Conformance.
 
   
   Definition fields_conform schema graph :=
-    all (node_fields_conform schema) (graph_s_nodes graph).
-
+    all (node_fields_conform schema) (nodes graph).
 
   
-  Definition has_object_type schema (n : @node N Name Vals) :=
-    let: Node _ t _ := n in is_object_type schema t.
+  Definition nodes_have_object_type schema graph : bool :=
+    all (fun node : node => is_object_type schema node) (nodes graph).
 
-
-
-  Definition nodes_have_object_type schema graph :=
-    all (has_object_type schema) (graph_s_nodes graph).
-
-                                                                     
 
   (**
      A GraphQL graph conforms to a given Schema if:
