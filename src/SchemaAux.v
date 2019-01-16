@@ -106,14 +106,22 @@ Section SchemaAux.
   (** Get type definitions' names *)
   Definition type_defs_names (tdefs : seq.seq TypeDefinition) : seq.seq Name := map type_def_name tdefs.
 
+  Definition is_named tdef (name : Name) : bool :=
+    match tdef with
+    | ScalarTypeDefinition n => n == name
+    | ObjectTypeDefinition n _ _ => n == name
+    | InterfaceTypeDefinition n _ => n == name
+    | UnionTypeDefinition n _ => n == name
+    | EnumTypeDefinition n _ => n == name
+    end.
 
   (** Get names from a list of arguments **)
   Definition arguments_names (args : seq.seq FieldArgumentDefinition) : seq.seq Name :=
-    map (@name_of_argument Name) args.
+    map (@argname Name) args.
 
  
   (** Get list of fields declared in an Object or Interface type definition **)
-  Definition field_definitions schema (ty : NamedType) : list FieldDefinition :=
+  Definition fields schema (ty : NamedType) : list FieldDefinition :=
     match lookup_type schema ty with
     | Some (ObjectTypeDefinition _ _ flds) => flds
     | Some (InterfaceTypeDefinition _ flds) => flds
@@ -121,7 +129,7 @@ Section SchemaAux.
     end.
 
 
-  Definition fields_names (flds : seq.seq FieldDefinition) : seq.seq Name := map (@name_of_field Name) flds.
+  Definition fields_names (flds : seq.seq FieldDefinition) : seq.seq Name := map (@field_name Name) flds.
 
   
   
@@ -132,7 +140,7 @@ Section SchemaAux.
   Definition lookup_field_in_type schema (ty : NamedType) (fname : Name) : option FieldDefinition :=
     let n_eq nt fld := let: Field name _ _ := fld in nt == name
     in
-    find (n_eq fname) (field_definitions schema ty).
+    find (n_eq fname) (fields schema ty).
 
 
   (** 
@@ -142,7 +150,7 @@ Section SchemaAux.
    **)
   Definition lookup_field_type schema (ty : NamedType) (fname : Name)  : option type :=
     match lookup_field_in_type schema ty fname with
-    | Some fieldDef => Some (type_of_field fieldDef) 
+    | Some fieldDef => Some (return_type fieldDef) 
     | None => None
     end.
 

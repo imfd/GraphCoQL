@@ -11,7 +11,9 @@ Require Import Graph.
 Section GraphAux.
 
   Variables (N S Vals : ordType).
-
+  Implicit Type graph :  @graphQLGraph N S Vals.
+  
+  
   Definition is_src_in_edge (edge : N * @fld S Vals * N) (node : N) :=
     let: (n, f, v) := edge in n == node.
   
@@ -45,12 +47,15 @@ Section GraphAux.
     | (x, y) :: tl => x :: y :: unzip tl
     | _ => [::]
     end.
-  
-  Definition graph_s_nodes (graph : @graphQLGraph N S Vals) : seq node :=
+
+  Definition nodes graph : seq node :=
     undup (unzip (map (fun edge => let: (u, _, v) := edge in (u, v)) graph.(E))).
 
-
-  Definition get_target_nodes_with_field (graph : @graphQLGraph N S Vals) (u : node) (f : fld) :=
+    
+  Definition get_neighbours graph (u : node) :=
+    fset_filter (fun edge => let: (u', _, _) := edge in u'  == u) graph.(E).
+    
+  Definition get_target_nodes_with_field graph (u : node) (f : fld) :=
     let edges_with_field :=
         filter (fun e => let: (u', f', _) := e in (u' == u) && (f' == f)) graph.(E)
     in
