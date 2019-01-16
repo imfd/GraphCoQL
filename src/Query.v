@@ -159,6 +159,12 @@ Section Query.
   
   Coercion list_of_query_set : QuerySet >-> seq.
 
+  Definition pred_of_query_set (query_set : QuerySet) : collective_pred Query :=
+    [pred q : Query | mem_seq query_set q].
+
+  Canonical query_set_predType := mkPredType pred_of_query_set.
+  
+
 End Query.
 
 
