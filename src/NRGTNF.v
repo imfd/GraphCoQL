@@ -70,11 +70,9 @@ Section NRGTNF.
   Fixpoint is_ground_typed_normal_form (query_set : QuerySet) : bool :=
     match query_set with
     | SingleQuery q => is_query_in_normal_form q
-    | SelectionSet q q' => ((all is_field_query query_set) || (all is_inline_fragment query_set))
-                            &&
-                            is_query_in_normal_form q
-                            &&
-                            is_ground_typed_normal_form q'
+    | SelectionSet q q' => [&& ((all is_field_query query_set) || (all is_inline_fragment query_set)),
+                            is_query_in_normal_form q &
+                            is_ground_typed_normal_form q']
       
     end
   with
@@ -94,19 +92,19 @@ Section NRGTNF.
           (P0 := fun q => (is_query_in_normal_form q) -> qGroundTypedNormalForm q); do ?[by intros; constructor].
       - by move=> q IH /= H; constructor; apply: IH.
       - move=> q IH q' IHq /=.
-        by move/andP=> [/andP [Hor Hq] Hq']; constructor; [| apply: IH | apply: IHq].
+        by move/and3P=> [Hor Hq Hq']; constructor; [| apply: IH | apply: IHq].
       - by move=> n args ϕ IH /= H; constructor; apply: IH.
       - by move=> l n args ϕ IH /= H; constructor; apply: IH.
-      - by move=> t ϕ IH /= /andP [Hall H]; constructor => //; apply: IH.
+      by move=> t ϕ IH /= /andP [Hall H]; constructor => //; apply: IH.
     + elim query_set using QuerySet_ind with
         (P0 := fun q => qGroundTypedNormalForm q -> (is_query_in_normal_form q)); do ?[by intros].
       - by move=> q IH /= H; apply: IH; inversion H. 
       - move=> q IH q' IHq H /=; inversion H.
         simpl in H2; apply IH in H3; apply IHq in H4.
-        by rewrite andb_true_intro //; rewrite andb_true_intro //.
+        by apply/and3P. 
       - by move=> n args ϕ IH H /=; inversion H; apply: IH.
       - by move=> l n args ϕ IH H /=; inversion H; apply: IH.
-      - by move=> t ϕ IH H /=; inversion H; rewrite andb_true_intro //; split; [| apply IH].
+      by move=> t ϕ IH H /=; inversion H; apply/andP; split; [| apply: IH].
   Qed.
 
   
