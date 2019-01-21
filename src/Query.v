@@ -5,6 +5,7 @@ Unset Printing Implicit Defensive.
 
 Set Asymmetric Patterns.
 
+From Equations Require Import Equations.
 From extructures Require Import ord fmap.
 
 Require Import treeordtype.
@@ -15,9 +16,11 @@ Require Import SchemaAux.
 Require Import CpdtTactics.
 
 
+Delimit Scope query_scope with QUERY.
+Open Scope query_scope.
+
 Section Query.
-
-
+  
   Variables Name Vals : ordType.
 
   
@@ -156,15 +159,49 @@ Section Query.
     | SingleQuery q => [:: q]
     | SelectionSet q q' => q :: (list_of_query_set q')
     end.
+
   
   Coercion list_of_query_set : QuerySet >-> seq.
-
-  Definition pred_of_query_set (query_set : QuerySet) : collective_pred Query :=
-    [pred q : Query | mem_seq query_set q].
-
-  Canonical query_set_predType := mkPredType pred_of_query_set.
   
+  Equations in_query (query : Query) (queries : QuerySet) : bool :=
+    in_query query (SingleQuery q) := q == query;
+    in_query query (SelectionSet q q') := (q == query) || (in_query query q').
 
+
+  Equations filter (p : Query -> bool) (queries : QuerySet)  : option QuerySet :=
+    filter p (SingleQuery q) <= p q => {
+      | true => Some (SingleQuery q);
+      | false => None
+    };
+    filter p (SelectionSet q q') :=
+      let tl := filter p q' in
+      if tl is Some tl then
+        if p q then
+          Some (SelectionSet q tl)
+        else
+          Some tl
+      else
+        None.
+
+  Equations all (p : Query -> bool) (queries : QuerySet)  : bool :=
+    all p (SingleQuery q) := p q;
+    all p (SelectionSet q q') := p q && all p q'.
+      
+
+  Lemma allP queries (p : Query -> bool) : reflect (forall q : Query, in_query q queries -> p q) (all p queries).
+  Proof.
+    apply: (iffP idP).
+    funelim (all p queries).
+    by move=> Hq q0; rewrite in_query_equation_1; move/eqP <-.
+    move/andP=> [H1 Hall] q; rewrite in_query_equation_2; move/orP=> [/eqP <- //| Hq1]. 
+      by apply: H.
+      move=> H. funelim (all p queries).
+      by apply: H; rewrite in_query_equation_1. 
+      apply/andP; split.
+        by apply: H0; rewrite in_query_equation_2; apply/orP; left.
+          by apply: H; move=> q Hin; apply: H0; rewrite in_query_equation_2; apply/orP; right.
+  Qed.
+  
 End Query.
 
 
@@ -182,4 +219,8 @@ Arguments ResponseObject [Name Vals].
 Arguments Null [Name Vals].
 Arguments SingleResult [Name Vals].
 
+
+Notation "{ ϕ }" := (SingleQuery ϕ) : query_scope.
+Notation "{ ϕ & ϕ' }" := (SelectionSet ϕ (SingleQuery ϕ')) : query_scope.
+Notation "{ ϕ1 ; ϕ2 ; .. ; ϕn & ϕ' }" := (SelectionSet ϕ1 (SelectionSet ϕ2 .. (SelectionSet ϕn (SingleQuery ϕ')) ..)) : query_scope.
 

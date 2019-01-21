@@ -266,6 +266,7 @@ Section QuerySemantic.
       Lemma γ_responses_size_reduced (lst : seq.seq ResponseObject) (r : ResponseObject) :
         responses_size (γ_filter r lst) <= responses_size lst.
       Proof. by funelim (γ_filter r lst) => /=; ssromega. Qed.
+
     End Gamma.
     
   End Filters.

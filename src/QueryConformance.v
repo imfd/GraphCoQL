@@ -32,7 +32,7 @@ Section QueryConformance.
   
 
   Definition argumentsConform schema (α : {fmap Name -> Vals}) (args : seq.seq FieldArgumentDefinition) : bool :=
-    all (argumentConforms schema α) args.
+    seq.all (argumentConforms schema α) args.
      
 
   (*

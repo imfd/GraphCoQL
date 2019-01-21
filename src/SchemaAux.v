@@ -3,6 +3,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+From Equations Require Import Equations.
 From extructures Require Import ord.
 
 Require Import List.
@@ -53,11 +54,13 @@ Section SchemaAux.
     end.
 
   (** Checks whether the given type is defined as an Object in the Schema **)
-  Definition is_object_type schema (ty : NamedType) : bool :=
-    match (lookup_type schema ty) with
-    | Some (ObjectTypeDefinition _ _ _) => true
-    | _ => false
-    end.
+  Equations is_object_type schema (ty : @NamedType Name) : bool :=
+    is_object_type schema ty with (lookup_type schema ty) =>
+    {
+      | Some (ObjectTypeDefinition _ _ _) := true;
+      | _ => false
+    }.
+
 
   (** Checks whether the given type is defined as an Interface in the Schema **)
   Definition is_interface_type schema (ty : NamedType) : bool :=
@@ -176,6 +179,12 @@ Section SchemaAux.
     end.
 
 
+  Definition implements_interface (tdef : @TypeDefinition Name) (iname : NamedType) : bool :=
+    match tdef with
+    | ObjectTypeDefinition _ intfs _ => has (xpred1 iname) intfs
+    | _ => false
+    end.
+  
   (**
      Gets the first argument definition that matches the given argument name, from the
      given type and field. If the argument is not defined then it returns None.
@@ -210,7 +219,15 @@ Section SchemaAux.
     | Some (UnionTypeDefinition _ mbs) => mbs
     | _ => [::]
     end.
-    
+
+
+
+  Definition implementation schema (ty : NamedType) : seq.seq NamedType :=
+     match lookup_type schema ty with
+    | Some (InterfaceTypeDefinition iname _) =>
+      type_defs_names [seq tdef <- schema |  implements_interface tdef iname]
+    | _ => [::]
+    end.
         
 
 End SchemaAux.

@@ -3,7 +3,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-
+From Equations Require Import Equations.
 From extructures Require Import ord fmap.
 
 Require Import List.
@@ -25,13 +25,12 @@ Section NRGTNF.
   Implicit Type query : @Query Name Vals.
 
     
+  Equations is_field query : bool :=
+    is_field (InlineFragment _ _) := false;
+    is_field _ := true.
 
-  Definition is_field_query query : bool :=
-    if query is InlineFragment _ _ then false else true.
-
-  Definition is_inline_fragment query : bool :=
-    if query is InlineFragment _ _ then true else false.
-
+  Definition is_inline_fragment query : bool := ~~ is_field query.
+  
   
   Inductive GroundTypedNormalForm : QuerySet -> Prop :=
   | GT_SingleQuery : forall query,
@@ -39,7 +38,7 @@ Section NRGTNF.
       GroundTypedNormalForm (SingleQuery query)
                             
   | GT_MultipleSelection : forall (q : Query) (q' : QuerySet),
-      ((all is_field_query (SelectionSet q q')) || (all is_inline_fragment (SelectionSet q q'))) ->
+      ((all is_field (SelectionSet q q')) || (all is_inline_fragment (SelectionSet q q'))) ->
       qGroundTypedNormalForm q ->
       GroundTypedNormalForm q' ->
       GroundTypedNormalForm (SelectionSet q q')
@@ -60,30 +59,34 @@ Section NRGTNF.
            qGroundTypedNormalForm (NestedLabeledField label f args ϕ)
 
        | GT_InlineFragment : forall t (ϕ : QuerySet),
-           all is_field_query ϕ ->      (* repeated in next check? *)
+           all is_field ϕ ->      (* repeated in next check? *)
            GroundTypedNormalForm ϕ  ->
            qGroundTypedNormalForm (InlineFragment t ϕ).
   
 
       
+  Equations is_ground_typed_normal_form (query_set : @QuerySet Name Vals) : bool :=
+    {
+      is_ground_typed_normal_form (SingleQuery q) := is_query_in_normal_form q;
+      is_ground_typed_normal_form (SelectionSet q q') :=
+        [&& ((all is_field (SelectionSet q q')) || (all is_inline_fragment (SelectionSet q q'))),
+         is_query_in_normal_form q &
+         is_ground_typed_normal_form q']
+    }
+  where
+  is_query_in_normal_form (query : @Query Name Vals) : bool :=
+    {
+      is_query_in_normal_form (NestedField _ _ ϕ) := is_ground_typed_normal_form ϕ;
+      is_query_in_normal_form (NestedLabeledField _ _ _ ϕ) := is_ground_typed_normal_form ϕ;
+      is_query_in_normal_form (InlineFragment _ ϕ) := (all is_field ϕ) && is_ground_typed_normal_form ϕ;
+      is_query_in_normal_form _ := true
+    }.
+  Next Obligation.
+    elim query_set using QuerySet_ind with (P0 := fun q => P0 q (is_query_in_normal_form q)) => //=.
+      by move=> *; apply: f0.
+  Defined.
+  
    
-  Fixpoint is_ground_typed_normal_form (query_set : QuerySet) : bool :=
-    match query_set with
-    | SingleQuery q => is_query_in_normal_form q
-    | SelectionSet q q' => [&& ((all is_field_query query_set) || (all is_inline_fragment query_set)),
-                            is_query_in_normal_form q &
-                            is_ground_typed_normal_form q']
-      
-    end
-  with
-  is_query_in_normal_form (query : Query) : bool :=
-    match query with
-    | NestedField _ _ ϕ => is_ground_typed_normal_form ϕ
-    | NestedLabeledField _ _ _ ϕ => is_ground_typed_normal_form ϕ
-    | InlineFragment _ ϕ => (all is_field_query ϕ) && is_ground_typed_normal_form ϕ
-    | _ => true
-    end.
-
 
   Lemma normal_formP query_set : reflect (GroundTypedNormalForm query_set) (is_ground_typed_normal_form query_set).
   Proof.
