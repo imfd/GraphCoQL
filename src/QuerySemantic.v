@@ -335,65 +335,56 @@ Section QuerySemantic.
 
     Fixpoint eval schema graph u query_set : @Result Name Vals :=
       match query_set with
-      | SingleQuery q => match eval_query schema graph u q with
-                        | inl r => Results [:: r]
-                        | inr r => r
-                        end
-      | SelectionSet q q' =>
-        let: Results res := eval schema graph u q' in
-        match eval_query schema graph u q with
-        | inl r => Results (collect (r :: res))
-        | inr (Results r) => Results (collect (r ++ res))    (* I'm "lifting" the "on T { }" results to be at the same level as the others *)
-        end
+      | SingleQuery q => eval_query schema graph u q
+      | SelectionSet q q' => app_responses (eval_query schema graph u q) (eval schema graph u q')
       end
-     
-    with eval_query schema graph u query : (@ResponseObject Name Vals) + @Result Name Vals :=
+    with eval_query schema graph u query : @Result Name Vals :=
            match query with
            | SingleField name args => match u.(fields) (Field name args) with
-                                     | Some (inl value) =>  inl (SingleResult name value)
-                                     | _ => inl (Null name)
+                                     | Some (inl value) =>  Results [:: SingleResult name value]
+                                     | _ => Results [:: Null name]
                                      end
            | LabeledField label name args =>  match u.(fields) (Field name args) with
-                                             | Some (inl value) => inl (SingleResult label value)
-                                             | _ => inl (Null name)
+                                             | Some (inl value) => Results [:: SingleResult label value]
+                                             | _ => Results [:: Null name]
                                              end
            | NestedField name args ϕ => let target_nodes := get_target_nodes_with_field graph u (Field name args) in
                                        match lookup_field_type schema u.(type) name with
                                        | Some (ListType _) =>
-                                         inl (NestedListResult name (map (fun v => eval schema graph v ϕ) target_nodes))
+                                         Results [:: NestedListResult name (map (fun v => eval schema graph v ϕ) target_nodes)]
                                        | Some (NT _) =>
                                          match ohead target_nodes with
-                                         | Some v => inl (NestedResult name (eval schema graph v ϕ))
-                                         | _ => inl (Null name)
+                                         | Some v => Results [:: NestedResult name (eval schema graph v ϕ)]
+                                         | _ => Results [:: Null name]
                                          end
-                                       | _ => inl (Null name)         (* If the field ∉ fields(u) then it's null, right? *)
+                                       | _ => Results [:: Null name]         (* If the field ∉ fields(u) then it's null, right? *)
                                        end
                                          
            | NestedLabeledField label name args ϕ =>  let target_nodes := get_target_nodes_with_field graph u (Field name args) in
                                                       match lookup_field_type schema u.(type) name with
                                                       | Some (ListType _) =>
-                                                        inl (NestedListResult label (map (fun v => eval schema graph v ϕ) target_nodes))
+                                                        Results [:: NestedListResult label (map (fun v => eval schema graph v ϕ) target_nodes)]
                                                       | Some (NT _) =>
                                                         match ohead target_nodes with
-                                                        | Some v => inl (NestedResult label (eval schema graph v ϕ))
-                                                        | _ => inl (Null label)
+                                                        | Some v => Results [:: NestedResult label (eval schema graph v ϕ)]
+                                                        | _ => Results [:: Null name]
                                                         end
-                                                      | _ => inl (Null label)         
+                                                      | _ => Results [:: Null name]
                                                       end
            | InlineFragment t ϕ => match lookup_type schema t with
                                    | Some (ObjectTypeDefinition _ _ _) => if t == u.(type) then
-                                                                            inr (eval schema graph u ϕ)
+                                                                            eval schema graph u ϕ
                                                                           else
-                                                                            inr (Results [::])
+                                                                            Results [::]
                                    | Some (InterfaceTypeDefinition _ _) => if declares_implementation schema u.(type) t then
-                                                                             inr (eval schema graph u ϕ)
+                                                                             eval schema graph u ϕ
                                                                            else
-                                                                             inr (Results [::])
+                                                                             Results [::]
                                    | Some (UnionTypeDefinition _ mbs) => if u.(type) \in mbs then
-                                                                           inr (eval schema graph u ϕ)
+                                                                           eval schema graph u ϕ
                                                                          else
-                                                                           inr (Results [::])
-                                   | _ => inr (Results [::])
+                                                                           Results [::]
+                                   | _ => Results [::]
                                    end
            end.
 
