@@ -172,10 +172,10 @@ Section Schema.
   
   Definition arg_eqMixin := CanEqMixin prod_of_argK.
   Canonical arg_eqType := EqType FieldArgumentDefinition arg_eqMixin.
-  
+
+
 
   
-  Coercion return_type : FieldDefinition >-> type.
   
   Definition prod_of_field (f : FieldDefinition) := let: Field n args t := f in (n, args, t).
   Definition field_of_prod (p : Name * (seq.seq FieldArgumentDefinition) * type)  := let: (n, args, t) := p in Field n args t.

@@ -3,6 +3,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+From Equations Require Import Equations.
 
 From extructures Require Import ord fmap.
 
@@ -22,80 +23,94 @@ Section QueryConformance.
   Implicit Type query : @Query Name Vals.
   Implicit Type type : @type Name.
 
-  Definition argumentConforms schema (α : {fmap Name -> Vals}) (arg : FieldArgumentDefinition) : bool :=
-    match arg with
-    | (FieldArgument argname ty) => match (α argname) with
-                                   | Some value => schema.(hasType) ty value
-                                   | _ => false
-                                   end
-    end.
+  Definition argument_conforms schema (args : seq FieldArgumentDefinition) (arg : Name * Vals) : bool :=
+    let: (argname, value) := arg in
+    has (fun argdef => let: FieldArgument name ty := argdef in
+                    (name == argname) && schema.(hasType) ty value) args.
   
 
-  Definition argumentsConform schema (α : {fmap Name -> Vals}) (args : seq.seq FieldArgumentDefinition) : bool :=
-    all (argumentConforms schema α) args.
+  Definition arguments_conform schema (args : seq.seq FieldArgumentDefinition) (α : {fmap Name -> Vals}) : bool :=
+    all (argument_conforms schema args) α.
      
 
   
   Fixpoint query_conforms schema ty query :=
     match query with
     | SingleField fname α => match lookup_field_in_type schema ty fname with
-                            | Some fld => if is_scalar_type fld.(return_type) || is_enum_type fld.(return_type) then
-                                           α = emptym
-                                         else
-                                           argumentsConform schema α fld.(args)
+                            | Some fld => arguments_conform schema fld.(args) α 
                             | _ => false
                             end
     | LabeledField _ fname α =>  match lookup_field_in_type schema ty fname with
-                                | Some fld => argumentsConform schema α fld.(args)
+                                | Some fld => arguments_conform schema fld.(args) α 
                                 | _ => false
                                 end
     | NestedField fname α ϕ =>
-      ~~(nilp ϕ) &&  
-        match lookup_field_in_type schema ty fname with
-        | Some fld => argumentsConform schema α fld.(args) && all (query_conforms schema fld.(return_type)) ϕ
-        | _ => false
-        end
+      match lookup_field_in_type schema ty fname with
+      | Some fld => if is_scalar_type schema fld.(return_type) || is_enum_type schema fld.(return_type) then
+                     false
+                   else
+                     [&& ϕ != [::],
+                      arguments_conform schema fld.(args) α &
+                      all (query_conforms schema fld.(return_type)) ϕ]
+      | _ => false
+      end
       
     | NestedLabeledField _ fname α ϕ =>
-      ~~(nilp ϕ) &&
         match lookup_field_in_type schema ty fname with
-        | Some fld => argumentsConform schema α fld.(args) && all (query_conforms schema fld.(return_type)) ϕ
+        | Some fld => if is_scalar_type schema fld.(return_type) || is_enum_type schema fld.(return_type) then
+                       false
+                     else
+                       [&& ϕ != [::],
+                        arguments_conform schema fld.(args) α &
+                        all (query_conforms schema fld.(return_type)) ϕ]
         | _ => false
         end
         
     | InlineFragment t ϕ =>
-      ~~(nilp ϕ) &&
-        if is_object_type schema t then
-          if [|| (t == ty), (t \in implementation schema ty) | (t \in union_members schema ty)] then
-            all (query_conforms schema t) ϕ
-          else
-            false
-        else
-        if is_interface_type schema t then
-          if (t == ty) || (ty \in implementation schema t) then
-            all (query_conforms schema t) ϕ
-          else
-            false
-        else
-        if is_union_type schema t then
-          if (t == ty) || (ty \in union_members schema t) then
-            all (query_conforms schema t) ϕ
-          else
-            false
+      if is_object_type schema t then
+        if [|| (t == ty), (t \in implementation schema ty) | (t \in union_members schema ty)] then
+          (ϕ != [::]) && all (query_conforms schema t) ϕ
         else
           false
+      else
+      if is_interface_type schema t then
+        if (t == ty) || (ty \in implementation schema t) then
+          (ϕ != [::]) && all (query_conforms schema t) ϕ
+        else
+          false
+      else
+      if is_union_type schema t then
+        if (t == ty) || (ty \in union_members schema t) then
+          (ϕ != [::]) && all (query_conforms schema t) ϕ
+        else
+          false
+      else
+        false
     end.
 
   Definition queries_conform schema ty queries := (queries != [::]) && (all (query_conforms schema ty) queries).
 
+  Lemma ty_not_scalar_or_enum schema ty tdef:
+    lookup_type schema ty = Some tdef ->
+    ~~(is_scalar_type schema ty || is_enum_type schema ty) ->
+    [\/ is_object_type schema ty, is_interface_type schema ty | is_union_type schema ty].
+  Proof. 
+    rewrite /negb.
+    case: ifP => //.
+    rewrite /is_scalar_type /is_enum_type.
+    case Hlook: lookup_type => [sm|] //.
+    case: sm Hlook => //.
+    by move=> o intfs flds Hlook _ _ _; constructor; rewrite /is_object_type Hlook.
+    by move=> i flds Hlook _ _; constructor; rewrite /is_interface_type Hlook.
+    by move=> u mbs Hlook _ _; constructor; rewrite /is_union_type Hlook.
+  Qed.
+  
+ 
+    
   Lemma nested_field_obj_int_union schema ty n α ϕ :
     query_conforms schema ty (NestedField n α ϕ) ->
     is_object_type schema n \/ is_interface_type schema n \/ is_union_type schema n.
   Proof.
-    rewrite /query_conforms.
-    move/andP=> [/nilP HNnil].
-    case Hlook : lookup_field_in_type => [sm|] //.
-    move/andP=> [_].
-    rewrite -/(query_conforms schema sm).
- 
+  Admitted.
+  
 End QueryConformance.

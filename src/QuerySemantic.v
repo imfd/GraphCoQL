@@ -1,3 +1,5 @@
+Require Import List.
+
 From mathcomp Require Import all_ssreflect.
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -21,8 +23,6 @@ Require Import Graph.
 
 
 Require Import Ssromega.
-
-Require Import List.
 
 Section QuerySemantic.
 
@@ -347,7 +347,7 @@ Section QuerySemantic.
     | NestedField name args ϕ => let target_nodes := get_target_nodes_with_field graph u (Field name args) in
                                 match lookup_field_type schema u.(type) name with
                                 | Some (ListType _) =>
-                                  [:: NestedListResult name (map (fun v => collect (flatten (map (eval schema graph v) ϕ))) target_nodes)]
+                                  [:: NestedListResult name [seq (collect (flatten (map (eval schema graph v) ϕ))) | v <- target_nodes]]
                                     
                                 | Some (NT _) =>
                                   match ohead target_nodes with
@@ -360,7 +360,7 @@ Section QuerySemantic.
     | NestedLabeledField label name args ϕ =>  let target_nodes := get_target_nodes_with_field graph u (Field name args) in
                                               match lookup_field_type schema u.(type) name with
                                               | Some (ListType _) =>
-                                                [:: NestedListResult label (map (fun v => collect (flatten (map (eval schema graph v) ϕ))) target_nodes)]
+                                                [:: NestedListResult label [seq (collect (flatten (map (eval schema graph v) ϕ))) | v <- target_nodes]]
                                               | Some (NT _) =>
                                                 match ohead target_nodes with
                                                 | Some v => [:: NestedResult label (collect (flatten (map (eval schema graph v) ϕ)))]
