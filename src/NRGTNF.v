@@ -1,3 +1,4 @@
+Require Import List.
 From mathcomp Require Import all_ssreflect.
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -6,7 +7,6 @@ Unset Printing Implicit Defensive.
 From Equations Require Import Equations.
 From extructures Require Import ord fmap.
 
-Require Import List.
 
 Require Import Query.
 Require Import QueryAux.
@@ -21,7 +21,7 @@ Section NRGTNF.
 
   Variables Name Vals : ordType.
   
-  Implicit Type query_set : @QuerySet Name Vals.
+  Implicit Type queries : seq (@Query Name Vals).
   Implicit Type query : @Query Name Vals.
 
     
@@ -30,87 +30,18 @@ Section NRGTNF.
     is_field _ := true.
 
   Definition is_inline_fragment query : bool := ~~ is_field query.
-  
-  
-  Inductive GroundTypedNormalForm : QuerySet -> Prop :=
-  | GT_SingleQuery : forall query,
-      qGroundTypedNormalForm query ->
-      GroundTypedNormalForm (SingleQuery query)
-                            
-  | GT_MultipleSelection : forall (q : Query) (q' : QuerySet),
-      ((all is_field (SelectionSet q q')) || (all is_inline_fragment (SelectionSet q q'))) ->
-      qGroundTypedNormalForm q ->
-      GroundTypedNormalForm q' ->
-      GroundTypedNormalForm (SelectionSet q q')
-                            
-  with qGroundTypedNormalForm : Query -> Prop :=
-       | GT_Field : forall f args,
-           qGroundTypedNormalForm (SingleField f args)
-
-       | GT_LabeledField : forall label f args,
-           qGroundTypedNormalForm (LabeledField label f args)
-
-       | GT_NestedField : forall f args ϕ,
-           GroundTypedNormalForm ϕ ->
-           qGroundTypedNormalForm (NestedField f args ϕ)
-
-       | GT_NestedLabeledField : forall label f args ϕ,
-           GroundTypedNormalForm ϕ ->
-           qGroundTypedNormalForm (NestedLabeledField label f args ϕ)
-
-       | GT_InlineFragment : forall t (ϕ : QuerySet),
-           all is_field ϕ ->      (* repeated in next check? *)
-           GroundTypedNormalForm ϕ  ->
-           qGroundTypedNormalForm (InlineFragment t ϕ).
-  
 
       
-  Equations is_ground_typed_normal_form (query_set : @QuerySet Name Vals) : bool :=
+  Equations is_in_normal_form (query : @Query Name Vals) : bool :=
     {
-      is_ground_typed_normal_form (SingleQuery q) := is_query_in_normal_form q;
-      is_ground_typed_normal_form (SelectionSet q q') :=
-        [&& ((all is_field (SelectionSet q q')) || (all is_inline_fragment (SelectionSet q q'))),
-         is_query_in_normal_form q &
-         is_ground_typed_normal_form q']
-    }
-  where
-  is_query_in_normal_form (query : @Query Name Vals) : bool :=
-    {
-      is_query_in_normal_form (NestedField _ _ ϕ) := is_ground_typed_normal_form ϕ;
-      is_query_in_normal_form (NestedLabeledField _ _ _ ϕ) := is_ground_typed_normal_form ϕ;
-      is_query_in_normal_form (InlineFragment _ ϕ) := (all is_field ϕ) && is_ground_typed_normal_form ϕ;
-      is_query_in_normal_form _ := true
+      is_in_normal_form (NestedField _ _ ϕ) := (all is_field ϕ || all is_inline_fragment ϕ) && all is_in_normal_form ϕ;
+      is_in_normal_form (NestedLabeledField _ _ _ ϕ) := (all is_field ϕ || all is_inline_fragment ϕ) && all is_in_normal_form ϕ;
+      is_in_normal_form (InlineFragment _ ϕ) := (all is_field ϕ) && all is_in_normal_form ϕ;
+      is_in_normal_form _ := true
     }.
-  Next Obligation.
-    elim query_set using QuerySet_ind with (P0 := fun q => P0 q (is_query_in_normal_form q)) => //=.
-      by move=> *; apply: f0.
-  Defined.
   
-   
-
-  Lemma normal_formP query_set : reflect (GroundTypedNormalForm query_set) (is_ground_typed_normal_form query_set).
-  Proof.
-    apply: (iffP idP).
-    + elim query_set using QuerySet_ind with
-          (P0 := fun q => (is_query_in_normal_form q) -> qGroundTypedNormalForm q); do ?[by intros; constructor].
-      - by move=> q IH /= H; constructor; apply: IH.
-      - move=> q IH q' IHq /=.
-        by move/and3P=> [Hor Hq Hq']; constructor; [| apply: IH | apply: IHq].
-      - by move=> n args ϕ IH /= H; constructor; apply: IH.
-      - by move=> l n args ϕ IH /= H; constructor; apply: IH.
-      by move=> t ϕ IH /= /andP [Hall H]; constructor => //; apply: IH.
-    + elim query_set using QuerySet_ind with
-        (P0 := fun q => qGroundTypedNormalForm q -> (is_query_in_normal_form q)); do ?[by intros].
-      - by move=> q IH /= H; apply: IH; inversion H. 
-      - move=> q IH q' IHq H /=; inversion H.
-        simpl in H2; apply IH in H3; apply IHq in H4.
-        by apply/and3P. 
-      - by move=> n args ϕ IH H /=; inversion H; apply: IH.
-      - by move=> l n args ϕ IH H /=; inversion H; apply: IH.
-      by move=> t ϕ IH H /=; inversion H; apply/andP; split; [| apply: IH].
-  Qed.
-
-  
+  Definition are_in_normal_form (queries : seq (@Query Name Vals)) : bool :=
+    (all is_field queries || all is_inline_fragment queries) && all is_in_normal_form queries.  
 
   Fixpoint no_repeated_query (queries : list (@Query Name Vals)) : bool :=
      match queries with
@@ -122,89 +53,28 @@ Section NRGTNF.
      end.
 
 
-  Equations is_non_redundant (queries : @QuerySet Name Vals) : bool :=
+  Equations is_non_redundant (query : @Query Name Vals) : bool :=
     {
-      is_non_redundant (SingleQuery q) := is_query_non_redundant q;
-      is_non_redundant (SelectionSet q q') := is_query_non_redundant q && is_non_redundant q'
-    }
-  where
-  is_query_non_redundant (query : @Query Name Vals) : bool :=
-    {
-      is_query_non_redundant (NestedField _ _ ϕ) := is_non_redundant ϕ;
-      is_query_non_redundant (NestedLabeledField _ _ _ ϕ) := is_non_redundant ϕ;
-      is_query_non_redundant (InlineFragment _ ϕ) := is_non_redundant ϕ;
-      is_query_non_redundant _ := true
-
+      is_non_redundant (NestedField _ _ ϕ) := no_repeated_query ϕ && all is_non_redundant ϕ;
+      is_non_redundant (NestedLabeledField _ _ _ ϕ) := no_repeated_query ϕ && all is_non_redundant ϕ;
+      is_non_redundant (InlineFragment _ ϕ) := no_repeated_query ϕ && all is_non_redundant ϕ;
+      is_non_redundant _ := true
     }.
-  Next Obligation.
-    elim queries using QuerySet_ind with (P0 := fun q => P0 q (is_query_non_redundant q)); do ?[by intros].
-    by move=> q IH; rewrite is_non_redundant_equation_1; apply: f.
-    by move=> q IH q' IHq; rewrite is_non_redundant_equation_2; apply: f0.
-    by move=> n args ϕ IH; rewrite is_non_redundant_helper_1_equation_3; apply: f3.
-    by move=> l n args ϕ IH; rewrite is_non_redundant_helper_1_equation_4; apply: f4.
-    by move=> t ϕ IH; rewrite is_non_redundant_helper_1_equation_5; apply: f5.
-  Defined.
 
+  Definition are_non_redundant (queries : seq (@Query Name Vals)) : bool :=
+    no_repeated_query queries && all is_non_redundant queries.
 
-    Structure normalizedSelection := NormalizedSelection {
-                                    selection : QuerySet;
-                                    _ : is_non_redundant selection;
-                                    _ : is_ground_typed_normal_form selection
-                              }.
+  Lemma is_are_non_redundant_nf n α ϕ :
+    is_non_redundant (NestedField n α ϕ) = are_non_redundant ϕ.
+  Proof. done. Qed.
 
-    Coercion selection_of_normalized_selection (s : normalizedSelection) := let: NormalizedSelection s _ _ := s in s.
+  Lemma is_are_non_redundant_nlf l n α ϕ :
+    is_non_redundant (NestedLabeledField l n α ϕ) = are_non_redundant ϕ.
+  Proof. done. Qed.
 
-
-                                         
-    (*
-    Program Fixpoint normalize_list schema (queries : seq.seq (@Query Name Vals)) {measure (queries_size queries)} : seq.seq Query :=
-       match queries with
-          | [::] => [::]
-          | hd :: tl =>
-            match hd with
-            | SingleField _ _
-            | LabeledField _ _ _ => hd :: normalize_list schema (filter (fun q => ~~(partial_query_eq q hd)) tl)
-            | NestedField n α (SelectionSet ϕ) =>
-              let collected_subqueries :=
-                  (foldr (fun q acc => if q is NestedField n' α' (SelectionSet β) then
-                                      if (n == n') && (α == α') then
-                                        acc ++ β
-                                      else
-                                        acc
-                                    else
-                                      acc)
-                         ϕ tl)
-              in
-              (NestedField n α (SelectionSet (normalize_list schema collected_subqueries))) :: normalize_list schema (filter (fun q => ~~(partial_query_eq q hd)) tl)
-            | InlineFragment t (SelectionSet [:: (InlineFragment t' ϕ)]) =>
-              (InlineFragment t ϕ) :: normalize_list schema tl
-            | InlineFragment t (SelectionSet ϕ) =>
-              let norm := normalize_list schema ϕ in
-              let possible_types := get_possible_types schema (NamedType t) in
-              (map (fun t' => InlineFragment (name_of_type t') (SelectionSet norm)) possible_types) ++ normalize_list schema tl
-            | _ => normalize_list schema tl
-            end
-          end.
-
-    Fixpoint normalize query_set : QuerySet :=
-      let fix normalize_list (queries : seq Query) : seq Query :=
-          match queries with
-          | [::] => [::]
-          | hd :: tl =>
-            match hd with
-            | SingleField l args => hd :: (filter (fun q => q != hd) tl) 
-            | LabeledField
-            | NestedField
-            | NestedLabeledField
-            | InlineFragment
-            end
-          end
-      in
-      let: SelectionSet queries := query_set in
-          SelectionSet (normalize_list queries)
-     *)
+  Lemma is_are_non_redundant_if t ϕ :
+    is_non_redundant (InlineFragment t ϕ) = are_non_redundant ϕ.
+  Proof. done. Qed.
       
 
 End NRGTNF.
-
-Arguments normalizedSelection [Name Vals].
