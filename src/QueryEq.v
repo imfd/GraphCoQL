@@ -348,6 +348,14 @@ Section Eq.
     case Hlook : lookup_field_in_type => [fld'|] //.
     by exists fld'.
   Qed.
+  
+   Lemma nlf_conforms_lookup_some schema ty l n α ϕ :
+    query_conforms schema ty (NestedLabeledField l n α ϕ) ->
+    exists fld, lookup_field_in_type schema ty n = Some fld.
+  Proof. rewrite /query_conforms.
+    case Hlook : lookup_field_in_type => [fld'|] //.
+    by exists fld'.
+  Qed.
 
   Lemma nf_correct_lookup_some schema root current n α ϕ :
     Correct schema (root, current) (NestedField n α ϕ) ->
@@ -356,22 +364,31 @@ Section Eq.
     move=> H; inversion H.
       by exists ty'.
   Qed.
-    
-  Lemma nf_queries_conform' schema ty n α ϕ :
-    query_conforms schema ty (NestedField n α ϕ) ->
-    exists ty', queries_conform schema ty' ϕ.
+
+  Lemma nlf_correct_lookup_some schema root current l n α ϕ :
+    Correct schema (root, current) (NestedLabeledField l n α ϕ) ->
+    exists fld, lookup_field_type schema current n = Some fld. 
   Proof.
-    rewrite /query_conforms.
-    case H : lookup_field_in_type => [fld'|] //.
-    case: ifP => // _; rewrite -/(query_conforms schema fld'.(return_type)).
-    move/and3P=> [HNnil Hargs Hall].
-    exists (fld'.(return_type)).
-    by apply/andP.
+    move=> H; inversion H.
+      by exists ty'.
   Qed.
 
   Lemma nf_queries_conform'' schema ty n α ϕ fld :
     lookup_field_in_type schema ty n = Some fld ->
     query_conforms schema ty (NestedField n α ϕ) ->
+    queries_conform schema fld.(return_type) ϕ.
+  Proof.
+    move=> Hlook; rewrite /query_conforms.
+    rewrite Hlook.
+    case: ifP => // _; rewrite -/(query_conforms schema fld.(return_type)).
+    move/and3P=> [HNnil Hargs Hall].
+    rewrite /queries_conform.
+    by apply/andP. 
+  Qed.
+
+  Lemma nlf_queries_conform'' schema ty l n α ϕ fld :
+    lookup_field_in_type schema ty n = Some fld ->
+    query_conforms schema ty (NestedLabeledField l n α ϕ) ->
     queries_conform schema fld.(return_type) ϕ.
   Proof.
     move=> Hlook; rewrite /query_conforms.
@@ -396,6 +413,12 @@ Section Eq.
     Forall (Correct schema (name_of_type fld, name_of_type fld)) ϕ.
   Proof.  by move=> Hlook H; inversion H; rewrite Hlook in H6; case: H6 => ->. Qed.
 
+  Lemma nlf_queries_correct schema root current l n α ϕ fld :
+    lookup_field_type schema current n = Some fld ->
+    Correct schema (root, current) (NestedLabeledField l n α ϕ) ->
+    Forall (Correct schema (name_of_type fld, name_of_type fld)) ϕ.
+  Proof.  by move=> Hlook H; inversion H; rewrite Hlook in H7; case: H7 => ->. Qed.
+  
 
   Lemma nf_queries_eq schema (g : @conformedGraph N Name Vals schema) u n α ϕ ϕ' :
     (forall v, eval_queries schema g v ϕ = eval_queries schema g v ϕ') ->
@@ -531,9 +554,31 @@ Section Eq.
             by apply: qwe; apply: Hev'.
             
     - move=> l n α qs IH current Hqc root Hok.
+      move: (nlf_conforms_lookup_some Hqc); case=> fld Hlook.
+      move: (nlf_queries_conform'' Hlook Hqc) => Hqsc.
+      move: (nlf_correct_lookup_some Hok); case=> ty' Hlook'.
+      move: (nlf_queries_correct Hlook' Hok).
+      move: Hqsc.
+      move: (lookup_field_or_type Hlook Hlook') => <- Hqsc Hqsok.
+      move: (IH ty' Hqsc ty' Hqsok); case=> qs' [Hqsc' Hqsnf' Hqsnr' Hred' Hev'].
       
-      
-    Admitted.
+      exists (NestedLabeledField l n α qs'); split => //=.
+      * by constructor.
+      * move=> u Huin.
+          case: lookup_field_type => //.
+          case=> [nt | lt].
+          + case E: get_target_nodes_with_field => [|v tl] //.
+            case OH: ohead => [v'|] //.
+            inversion OH.
+            rewrite -E in OH.
+            move: (@u_and_target_nodes_in_nodes g u (Field n α) Huin) => Hall.
+            move: (ohead_in_nodes Hall OH) => Hv'.
+            move: (Hev' v' Hv').
+            by rewrite /eval_queries => ->.
+          + apply: singleton. apply: nrl_subqueries.
+            by apply: qwe; apply: Hev'.
+    - 
+  Admitted.
 
     
 End Eq.
