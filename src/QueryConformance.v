@@ -37,11 +37,19 @@ Section QueryConformance.
   Fixpoint query_conforms schema ty query :=
     match query with
     | SingleField fname α => match lookup_field_in_type schema ty fname with
-                            | Some fld => arguments_conform schema fld.(args) α 
+                            | Some fld =>
+                              if is_scalar_type schema fld.(return_type) || is_enum_type schema fld.(return_type) then
+                                arguments_conform schema fld.(args) α
+                              else
+                                false
                             | _ => false
                             end
     | LabeledField _ fname α =>  match lookup_field_in_type schema ty fname with
-                                | Some fld => arguments_conform schema fld.(args) α 
+                                | Some fld =>
+                                   if is_scalar_type schema fld.(return_type) || is_enum_type schema fld.(return_type) then
+                                     arguments_conform schema fld.(args) α
+                                   else
+                                     false
                                 | _ => false
                                 end
     | NestedField fname α ϕ =>
