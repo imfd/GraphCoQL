@@ -44,6 +44,15 @@ Section QueryAux.
     | _, _ => false
     end.
 
+      
+  Equations is_field query : bool :=
+    is_field (InlineFragment _ _) := false;
+    is_field _ := true.
+
+  Definition is_inline_fragment query : bool := ~~ is_field query.
+
+
+  
   Equations(noind) response_size response : nat :=
     {
       response_size (Null _) := 3;
@@ -81,3 +90,5 @@ End QueryAux.
 
 Arguments partial_query_eq [Name Vals].
 Arguments response_size [Name Vals].
+Arguments is_field [Name Vals].
+Arguments is_inline_fragment [Name Vals].

@@ -23,15 +23,10 @@ Section NRGTNF.
   
   Implicit Type queries : seq (@Query Name Vals).
   Implicit Type query : @Query Name Vals.
+  Definition is_field := @is_field Name Vals.
+  Definition is_inline_fragment := @is_inline_fragment Name Vals.
 
-    
-  Equations is_field query : bool :=
-    is_field (InlineFragment _ _) := false;
-    is_field _ := true.
 
-  Definition is_inline_fragment query : bool := ~~ is_field query.
-
-      
   Equations is_in_normal_form (query : @Query Name Vals) : bool :=
     {
       is_in_normal_form (NestedField _ _ ϕ) := (all is_field ϕ || all is_inline_fragment ϕ) && all is_in_normal_form ϕ;
@@ -41,8 +36,17 @@ Section NRGTNF.
     }.
   
   Definition are_in_normal_form (queries : seq (@Query Name Vals)) : bool :=
-    (all is_field queries || all is_inline_fragment queries) && all is_in_normal_form queries.  
+    (all is_field queries || all is_inline_fragment queries) && all is_in_normal_form queries.
 
+
+  Lemma are_in_normal_form_E queries :
+    are_in_normal_form queries ->
+    (all is_field queries \/ all is_inline_fragment queries) /\ all is_in_normal_form queries.
+  Proof.
+    rewrite /are_in_normal_form.
+    by move/andP=> [/orP H H'].
+  Qed.
+  
   Fixpoint no_repeated_query (queries : list (@Query Name Vals)) : bool :=
      match queries with
         | [::] => true

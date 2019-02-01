@@ -1,3 +1,4 @@
+Require Import List.
 From mathcomp Require Import all_ssreflect.
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -6,8 +7,6 @@ Unset Printing Implicit Defensive.
 From Equations Require Import Equations.
 From extructures Require Import ord.
 
-Require Import List.
-Import ListNotations.
 
 Require Import Schema.
 Require Import treeordtype.
@@ -23,7 +22,17 @@ Section SchemaAux.
   (* Schema used as parameter in later functions *) 
   Implicit Type schema : @schema Name.
 
+  
 
+  Fixpoint get_first {A} p (lst : seq A) :=
+    if lst is hd :: tl then
+      if p hd then
+        Some hd
+      else
+        get_first p tl
+    else
+      None.
+  
   (** Get the query root type for the given Schema **)
   Definition query_root schema : NamedType := schema.(query_type). 
 
@@ -42,7 +51,7 @@ Section SchemaAux.
                        | EnumTypeDefinition name _ =>  nt == name
                        end
     in
-    find (n_eq ty) tdefs.
+    get_first (n_eq ty) tdefs.
     
 
 
@@ -92,7 +101,7 @@ Section SchemaAux.
 
 
 
-  Definition types_names (tys : seq.seq type) : seq.seq Name := map (@name_of_type Name) tys.
+  Definition types_names (tys : seq type) : seq Name := map (@name_of_type Name) tys.
 
   (** Get a type definition's name.
       Corresponds to the name one gives to an object, interface, etc.
@@ -107,7 +116,7 @@ Section SchemaAux.
     end.
 
   (** Get type definitions' names *)
-  Definition type_defs_names (tdefs : seq.seq TypeDefinition) : seq.seq Name := map type_def_name tdefs.
+  Definition type_defs_names (tdefs : seq TypeDefinition) : seq Name := map type_def_name tdefs.
 
   Definition is_named tdef (name : Name) : bool :=
     match tdef with
@@ -119,7 +128,7 @@ Section SchemaAux.
     end.
 
   (** Get names from a list of arguments **)
-  Definition arguments_names (args : seq.seq FieldArgumentDefinition) : seq.seq Name :=
+  Definition arguments_names (args : seq FieldArgumentDefinition) : seq Name :=
     map (@argname Name) args.
 
  
@@ -132,7 +141,7 @@ Section SchemaAux.
     end.
 
 
-  Definition fields_names (flds : seq.seq FieldDefinition) : seq.seq Name := map (@field_name Name) flds.
+  Definition fields_names (flds : seq FieldDefinition) : seq Name := map (@field_name Name) flds.
 
   
   
@@ -143,7 +152,7 @@ Section SchemaAux.
   Definition lookup_field_in_type schema (ty : NamedType) (fname : Name) : option FieldDefinition :=
     let n_eq nt fld := let: Field name _ _ := fld in nt == name
     in
-    find (n_eq fname) (fields schema ty).
+    get_first (n_eq fname) (fields schema ty).
 
 
   (** 
@@ -162,7 +171,7 @@ Section SchemaAux.
      Get the union's types' names.
      If the type is not declared as Union in the Schema, then returns None.
    **)
-  Definition union_members schema (ty : NamedType) : seq.seq NamedType :=
+  Definition union_members schema (ty : NamedType) : seq NamedType :=
     match lookup_type schema ty with
     | Some (UnionTypeDefinition name mbs) => mbs
     | _ => []
@@ -194,7 +203,7 @@ Section SchemaAux.
     match lookup_field_in_type schema ty fname with
     | Some (Field fname args _) => let n_eq n arg := let: FieldArgument name _ := arg in n == name
                                   in
-                                  find (n_eq argname) args
+                                  get_first (n_eq argname) args
     | _ => None
     end.
 
@@ -208,7 +217,7 @@ Section SchemaAux.
      3. Union : Possible types are all members of the union.
 
    **)
-  Definition get_possible_types schema (ty : NamedType) : seq.seq NamedType  :=
+  Definition get_possible_types schema (ty : NamedType) : seq NamedType  :=
     match lookup_type schema ty with
     | Some (ObjectTypeDefinition _ _ _) => [:: ty]
     | Some (InterfaceTypeDefinition iname _) =>
@@ -222,7 +231,7 @@ Section SchemaAux.
 
 
 
-  Definition implementation schema (ty : NamedType) : seq.seq NamedType :=
+  Definition implementation schema (ty : NamedType) : seq NamedType :=
      match lookup_type schema ty with
     | Some (InterfaceTypeDefinition iname _) =>
       type_defs_names [seq tdef <- schema |  implements_interface tdef iname]

@@ -175,4 +175,6 @@ Notation " id : ty '*-' f '->' n" := (Graph.Node id ty emptym, Graph.Field f emp
    rewrite /get_target_nodes_with_field /=.
    rewrite /edges [fset]unlock /=.
    program_simpl.
-   Qed.
+ Qed.
+
+ Eval compute in query_conforms wf_schema "Root" (SingleField "allPeople" emptym).

@@ -246,6 +246,16 @@ Section QuerySemantic.
           γ (NestedListResult l _) (NestedListResult l' _) := l == l';   (* Should check for equal size of sublists? *)
           γ _ _ => false
         }.
+
+      Definition partial_response_eq (r1 r2 : @ResponseObject Name Vals) : bool :=
+        match r1, r2 with
+        | (SingleResult l v), (SingleResult l' v') => (l == l') && (v == v')
+        | (ListResult l v), (ListResult l' v') => (l == l') && (v == v')
+        | (Null l), (Null l') => l == l'
+        | (NestedResult l _), (NestedResult l' _) => l == l' 
+        | (NestedListResult l _), (NestedListResult l' _) => l == l'   
+        | _, _ => false
+        end.
       (**
          γ_filter : ResponseObject -> seq ResponseObject -> seq ResponseObject 
          Filters out response objects that are partially equal to the filter
@@ -254,14 +264,18 @@ Section QuerySemantic.
          where matching responses would return an ϵ result (empty string) but here 
          these are deleted.
        **)
-      Equations γ_filter (flt : @ResponseObject Name Vals) (responses : seq.seq (@ResponseObject Name Vals)) : seq.seq (@ResponseObject Name Vals) :=
+      (*Equations γ_filter (flt : @ResponseObject Name Vals) (responses : seq.seq (@ResponseObject Name Vals)) : seq.seq (@ResponseObject Name Vals) :=
         {
           γ_filter flt nil := nil;
           γ_filter flt (cons hd tl) <= γ flt hd => {
             γ_filter flt (cons hd tl) true => γ_filter flt tl;
             γ_filter flt (cons hd tl) false => cons hd (γ_filter flt tl)
           }
-        }.
+        }.*)
+
+      Definition γ_filter (flt : @ResponseObject Name Vals) (responses : seq.seq (@ResponseObject Name Vals)) : seq.seq (@ResponseObject Name Vals) :=
+        filter (fun r => ~~partial_response_eq flt r) responses.
+      
 
 
 
@@ -269,8 +283,15 @@ Section QuerySemantic.
 
       Lemma γ_responses_size_reduced (lst : seq.seq ResponseObject) (r : ResponseObject) :
         responses_size (γ_filter r lst) <= responses_size lst.
-      Proof. by funelim (γ_filter r lst) => /=; ssromega. Qed.
-
+      Proof.
+        rewrite /γ_filter.
+        elim: lst=> // hd tl IH.
+        simpl.
+        case: ifP => // H.
+        simpl. ssromega.
+        ssromega.
+        Qed.
+        
     End Gamma.
     
   End Filters.
@@ -389,7 +410,15 @@ Section QuerySemantic.
     collect (flatten (map (eval schema graph u) queries)).
 
 
-    
-    
-
+  Lemma eval_single_field schema graph u f α :
+    (exists v, eval schema graph u (SingleField f α) = [:: SingleResult f v]) \/
+    eval schema graph u (SingleField f α) = [:: Null f].
+  Proof.
+    rewrite /eval.
+    case Hv : (u.(fields) (Field f α)) => [val|]; last by right.
+    case: val Hv => val Hv.
+      by left; exists val.
+      by right.
+  Qed.
+  
 End QuerySemantic.
