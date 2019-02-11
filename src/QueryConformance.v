@@ -10,8 +10,8 @@ From extructures Require Import ord fmap.
 Require Import Schema.
 Require Import SchemaAux.
 Require Import Query.
+Require Import QueryAux.
 Require Import SchemaWellFormedness.
-Require Import NRGTNF.
 
 
 Section QueryConformance.
@@ -242,6 +242,19 @@ Section QueryConformance.
         move: (in_union_is_object Hunion) => Hobj _ _ _ _.
           by constructor 1.
           done.
+  Qed.
+
+
+  Lemma queries_conform_obj_int_union schema type_in_scope ϕ :
+    queries_conform schema type_in_scope ϕ ->
+    [\/ is_object_type schema type_in_scope,
+     is_interface_type schema type_in_scope |
+     is_union_type schema type_in_scope].
+  Proof.
+    rewrite /queries_conform.
+    case: ϕ => // hd tl.
+    move/andP=> [Hnil /= /andP [Hhd _]].
+    apply: (type_in_scope_N_scalar_enum Hhd).
   Qed.
       
 End QueryConformance.
