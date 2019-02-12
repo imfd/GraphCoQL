@@ -49,7 +49,9 @@ Section QueryAux.
     is_field (InlineFragment _ _) := false;
     is_field _ := true.
 
-  Definition is_inline_fragment query : bool := ~~ is_field query.
+  Equations is_inline_fragment query : bool :=
+    is_inline_fragment (InlineFragment _ _) := true;
+    is_inline_fragment _ := false.                                           
 
 
   
