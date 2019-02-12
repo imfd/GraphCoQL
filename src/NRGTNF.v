@@ -27,17 +27,19 @@ Section NRGTNF.
   Implicit Type queries : seq (@Query Name Vals).
   Implicit Type query : @Query Name Vals.
   Definition is_field := @is_field Name Vals.
-  Definition is_inline_fragment := @is_inline_fragment Name Vals.
-
-
+  Definition is_inline_fragment := @QueryAux.is_inline_fragment Name Vals.
+  
   Equations is_in_normal_form schema (query : @Query Name Vals) : bool :=
     {
-      is_in_normal_form schema (NestedField _ _ ϕ) := (all is_field ϕ || all is_inline_fragment ϕ) && all (is_in_normal_form schema) ϕ;
-      is_in_normal_form schema (NestedLabeledField _ _ _ ϕ) := (all is_field ϕ || all is_inline_fragment ϕ) && all (is_in_normal_form schema) ϕ;
+      is_in_normal_form schema (NestedField _ _ ϕ) := (all is_field ϕ || all is_inline_fragment ϕ)
+                                                       && all (is_in_normal_form schema) ϕ;
+      is_in_normal_form schema (NestedLabeledField _ _ _ ϕ) := (all is_field ϕ || all is_inline_fragment ϕ)
+                                                                && all (is_in_normal_form schema) ϕ;
       is_in_normal_form schema (InlineFragment t ϕ) := [&& (is_object_type schema t), (all is_field ϕ) & all (is_in_normal_form schema) ϕ];
       is_in_normal_form _ _ := true
     }.
-  
+
+
   Definition are_in_normal_form schema (queries : seq (@Query Name Vals)) : bool :=
     (all is_field queries || all is_inline_fragment queries) && all (is_in_normal_form schema) queries.
 
@@ -48,6 +50,35 @@ Section NRGTNF.
   Proof.
     rewrite /are_in_normal_form.
     by move/andP=> [/orP H H'].
+  Qed.
+
+  Lemma all_inlines_shape queries :
+    all is_inline_fragment queries ->
+    forall query, query \in queries ->
+                       exists t ϕ, query = InlineFragment t ϕ.
+  Proof.
+    move=> /allP H q Hin.
+    move: (H q Hin) => {Hin}.
+    funelim (is_inline_fragment q) => // _.
+    by exists s5; exists l1.
+  Qed.
+  
+
+    
+  Lemma inlines_in_normal_form_have_object_guards schema queries :
+    all is_inline_fragment queries ->
+    all (is_in_normal_form schema) queries ->
+    forall query, query \in queries ->
+                       exists t ϕ, query = InlineFragment t ϕ /\ is_object_type schema t.
+  Proof.
+    move=> Hinlines Hnf q Hin.
+    move: (all_inlines_shape Hinlines Hin).
+    case=> t; case=> ϕ Heq.    
+    move/allP: Hnf; move/(_ q Hin).
+    rewrite Heq.
+    rewrite is_in_normal_form_equation_5.
+    move/and3P=> [Hobj _ _].
+      by exists t; exists ϕ.
   Qed.
 
  
@@ -117,10 +148,5 @@ Section NRGTNF.
     move: Hnf; rewrite {1}/all is_in_normal_form_equation_5.
       by move/andP=> [/and3P [Hobj Hfld H'] _].
   Qed.
-
-  Lemma sub_nr schema ty ϕ ϕ' :
-    ϕ = [:: InlineFragment ty ϕ'] ->
-    are_non_redundant schema ϕ ->
-    all (are_non_redundant schema) ϕ'.
   
 End NRGTNF.
