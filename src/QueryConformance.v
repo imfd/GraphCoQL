@@ -5,7 +5,7 @@ Unset Printing Implicit Defensive.
 
 From Equations Require Import Equations.
 
-From extructures Require Import ord fmap.
+From extructures Require Import ord fset fmap.
 
 Require Import Schema.
 Require Import SchemaAux.
@@ -33,7 +33,12 @@ Section QueryConformance.
     all (argument_conforms schema args) α.
      
 
-  
+  Definition is_fragment_spread_possible schema parent_type ty : bool :=
+    let ty_possible_types := get_possible_types schema ty in
+    let parent_possible_types := get_possible_types schema parent_type in
+    let applicable_types := (ty_possible_types :&: parent_possible_types)%fset in
+    applicable_types != fset0.
+
   Fixpoint query_conforms schema ty query :=
     match query with
     | SingleField fname α => match lookup_field_in_type schema ty fname with
@@ -75,25 +80,10 @@ Section QueryConformance.
         end
         
     | InlineFragment t ϕ =>
-      if is_object_type schema t then
-        if [|| (t == ty), (t \in implementation schema ty) | (t \in union_members schema ty)] then
-          (ϕ != [::]) && all (query_conforms schema t) ϕ
-        else
-          false
-      else
-      if is_interface_type schema t then
-        if (t == ty) || (ty \in implementation schema t) then
-          (ϕ != [::]) && all (query_conforms schema t) ϕ
-        else
-          false
-      else
-      if is_union_type schema t then
-        if (t == ty) || (ty \in union_members schema t) then
-          (ϕ != [::]) && all (query_conforms schema t) ϕ
-        else
-          false
-      else
-        false
+      [&& [|| is_object_type schema t, is_interface_type schema t | is_union_type schema t],
+       is_fragment_spread_possible schema t ty,
+       ϕ != [::] &
+       all (query_conforms schema t) ϕ]
     end.
 
   Definition queries_conform schema ty queries := (queries != [::]) && (all (query_conforms schema ty) queries).
@@ -112,9 +102,65 @@ Section QueryConformance.
     by move=> i flds Hlook _ _; constructor; rewrite /is_interface_type Hlook.
     by move=> u mbs Hlook _ _; constructor; rewrite /is_union_type Hlook.
   Qed.
-  
+
+
+  Lemma fset1I_N_fset0 {A : ordType} (a b : A) :
+    (fset1 a :&: fset1 b)%fset != fset0 -> a = b.
+  Proof.
+    rewrite fset1I.
+    case: ifP => //.
+    move/fset1P => //.
+  Qed.
+
  
-    
+  Lemma object_spreads_in_object_scope schema type_in_scope t ϕ :
+    is_object_type schema type_in_scope ->
+    is_object_type schema t ->
+    query_conforms schema type_in_scope (InlineFragment t ϕ) ->
+    t = type_in_scope.
+  Proof.
+    funelim (is_object_type schema type_in_scope) => // _.
+    funelim (is_object_type schema0 t) => // _.
+    - rewrite /query_conforms.
+      move/and4P=> [/or3P _ Hspread _ _].
+      move: Hspread; rewrite /is_fragment_spread_possible.
+      by rewrite /get_possible_types Heq Heq0 => Hfset; move: (fset1I_N_fset0 Hfset).
+  Qed.
+
+  Lemma interface_spreads_in_object_scope schema type_in_scope t ϕ :
+    is_object_type schema type_in_scope ->
+    is_interface_type schema t ->
+    query_conforms schema type_in_scope (InlineFragment t ϕ) ->
+    type_in_scope \in implementation schema t.
+  Proof.
+    funelim (is_object_type schema type_in_scope) => // _.
+    funelim (is_interface_type schema0 t) => // _.
+    rewrite /query_conforms.
+    move/and4P=> [_ Hspread _ _].
+    move: Hspread; rewrite /is_fragment_spread_possible /get_possible_types Heq Heq0.
+    rewrite fset1I.
+    case: ifP => //.
+      by rewrite /implementation Heq in_fset.
+  Qed.
+
+  Lemma union_spreads_in_object_scope schema type_in_scope t ϕ :
+    is_object_type schema type_in_scope ->
+    is_union_type schema t ->
+    query_conforms schema type_in_scope (InlineFragment t ϕ) ->
+    type_in_scope \in union_members schema t.
+  Proof.
+    funelim (is_object_type schema type_in_scope) => // _.
+    funelim (is_union_type schema0 t) => // _.
+    rewrite /query_conforms.
+    move/and4P=> [_ Hspread _ _].
+    move: Hspread; rewrite /is_fragment_spread_possible /get_possible_types Heq Heq0.
+    rewrite fset1I.
+    case: ifP => //.
+    by rewrite /union_members Heq in_fset.
+  Qed.
+
+
+  
   Lemma nested_field_obj_int_union schema ty n α ϕ :
     query_conforms schema ty (NestedField n α ϕ) ->
     is_object_type schema n \/ is_interface_type schema n \/ is_union_type schema n.
@@ -123,21 +169,14 @@ Section QueryConformance.
 
   Definition is_inline_fragment := @is_inline_fragment Name Vals.
 
-  Lemma union_type_lookup_union schema ty:
-    is_union_type schema ty ->
-    exists u mbs, lookup_type schema ty = Some (UnionTypeDefinition u mbs).
-  Proof.
-    rewrite /is_union_type.
-    case Hlook: lookup_type => [tdef|] //.
-    case: tdef Hlook => // u mbs. exists u. exists mbs. done.
-  Qed.
+
     
   Lemma nf_union_subqueries_inlines schema ty f α ϕ :
     is_union_type schema f ->
     query_conforms schema ty (NestedField f α ϕ) ->
     all is_inline_fragment ϕ.
   Proof.
-    move=> Hunion; move: (union_type_lookup_union Hunion).
+    rewrite is_union_type_E.
     case=> u; case=> mbs Hlook.
     rewrite /query_conforms.
     case Hlookf : lookup_field_in_type => [fld|] //.
@@ -220,30 +259,21 @@ Section QueryConformance.
         by constructor 2.
     - move=> t ϕ.
       rewrite /query_conforms.
-      case: ifP => //.
-      case: ifP => //.
-      move/or3P=> [/eqP -> | Himpl | Hunion].
-        by move=> Hobj _; constructor 1.
-        move: (has_implementation_is_interface Himpl) => Hint _ _.
-        by constructor 2.
-        move: (has_members_is_union Hunion).
-        by constructor 3.
-      case: ifP => //.
-      case: ifP => //.
-      move/orP=> [/eqP -> | Himpl].
-        by move=> Hint _ _; constructor 2.
-        move: (in_implementation_is_object Himpl) => Hobj _ _ _.
-        by constructor 1.
-      case: ifP => //.
-      case: ifP => /orP. move=> [/eqP -> | Hunion].
-        by move=> Hunion _ _ _; constructor 3.
-        rewrite -/query_conforms.
-        inversion schema.
-        move: (in_union_is_object Hunion) => Hobj _ _ _ _.
-          by constructor 1.
-          done.
+      move/and4P=> [/or3P Hty Hspread Hne Hqsc] => //.
+      move: Hspread.
+      rewrite /is_fragment_spread_possible.
+      rewrite /get_possible_types.
+      case Hlook: lookup_type => [tdef|] //.
+      case: tdef Hlook => //; do ?[rewrite fset0I //=].
+      move=> obj intfs flds Hlook _.
+      by constructor 1; rewrite /is_object_type Hlook /=.
+      move=> i flds Hlook _.
+        by constructor 2; rewrite /is_interface_type Hlook /=.
+      move=> u mbs Hlook _.
+        by constructor 3; rewrite /is_union_type Hlook /=.  
+      by rewrite fset0I /=.
   Qed.
-
+  
 
   Lemma queries_conform_obj_int_union schema type_in_scope ϕ :
     queries_conform schema type_in_scope ϕ ->
