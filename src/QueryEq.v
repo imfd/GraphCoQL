@@ -52,32 +52,27 @@ Section Eq.
       Forall (Correct schema (name_of_type ty', name_of_type ty')) ϕ ->
       Correct schema (root, current) (NestedLabeledField l f α ϕ) 
 
-  | CIF_SS : forall t t' ϕ,  (* This includes the case when t = t' *)
-      query_conforms schema t' (InlineFragment t ϕ) ->
-      t \in get_possible_types schema t' ->
-            Forall (Correct schema (t', t)) ϕ ->
-            Correct schema (t', t') (InlineFragment t ϕ)   
+  (* If the query conforms to a type in scope, which is the same as the
+     root type, then anything is correct as the inline's guard 
+     (the conformance check rules out anything weird)
+   *)
+  | CIF_Any : forall root t ϕ,
+      query_conforms schema root (InlineFragment t ϕ) ->
+      Forall (Correct schema (root, t)) ϕ ->
+      Correct schema (root, root) (InlineFragment t ϕ)
                     
-  | CIF_ST : forall t t' ϕ,
-      query_conforms schema t (InlineFragment t ϕ) ->
-      Forall (Correct schema (t', t)) ϕ ->
-      Correct schema (t', t) (InlineFragment t ϕ)
-                    
-  | CIF_TT' : forall t t' ϕ,
-      query_conforms schema t (InlineFragment t' ϕ) ->
-      Forall (Correct schema (t, t')) ϕ ->
-      Correct schema (t, t) (InlineFragment t' ϕ)
-               
-  | CIF_TS' : forall t t' ϕ,
-      query_conforms schema t' (InlineFragment t' ϕ) ->
-      Forall (Correct schema (t, t')) ϕ ->
-      Correct schema (t, t') (InlineFragment t' ϕ)
-               
-  | CIF_TS : forall t t' ϕ,
-      query_conforms schema t' (InlineFragment t ϕ) ->
-      Forall (Correct schema (t, t)) ϕ ->
-      Correct schema (t, t') (InlineFragment t ϕ).
-  Set Elimination Schemes.
+  (* The inline's guard is the same as the previous one *)            
+  | CIF_Current : forall root current ϕ,
+      query_conforms schema current (InlineFragment current ϕ) ->
+      Forall (Correct schema (root, current)) ϕ ->
+      Correct schema (root, current) (InlineFragment current ϕ)
+
+  (* The inline's guard is the same as the root type *)
+  | CIF_Root : forall root current ϕ,
+      query_conforms schema current (InlineFragment root ϕ) ->
+      Forall (Correct schema (root, root)) ϕ ->
+      Correct schema (root, current) (InlineFragment root ϕ).
+  (* Any could be replaced by both Root and Current? *)
 
   
 
