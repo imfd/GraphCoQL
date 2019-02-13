@@ -5,7 +5,7 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 From Equations Require Import Equations.
-From extructures Require Import ord.
+From extructures Require Import ord fset.
 
 
 Require Import Schema.
@@ -70,21 +70,42 @@ Section SchemaAux.
       | _ => false
     }.
 
+  Lemma is_object_type_E schema ty :
+    is_object_type schema ty ->
+    exists (t : @NamedType Name) intfs flds, lookup_type schema ty = Some (ObjectTypeDefinition t intfs flds).
+  Proof.
+    funelim (is_object_type schema ty) => // _.
+      by exists s0; exists l; exists l0.
+  Qed.
 
   (** Checks whether the given type is defined as an Interface in the Schema **)
-  Definition is_interface_type schema (ty : NamedType) : bool :=
-   match (lookup_type schema ty) with
-   | Some (InterfaceTypeDefinition _ _) => true
-   | _ => false
-   end.
+  Equations is_interface_type schema (ty : @NamedType Name) : bool :=
+    is_interface_type schema ty with (lookup_type schema ty) =>
+    {
+      | Some (InterfaceTypeDefinition _ _) := true;
+      | _ => false
+    }.
+  
 
   (** Checks whether the given type is defined as a Union in the Schema **)
-  Definition is_union_type schema (ty : NamedType) : bool :=
-   match (lookup_type schema ty) with
-   | Some (UnionTypeDefinition _ _) => true
-   | _ => false
-   end.
+  Equations is_union_type schema (ty : @NamedType Name) : bool :=
+    is_union_type schema ty with (lookup_type schema ty) =>
+    {
+      | Some (UnionTypeDefinition _ _) := true;
+      | _ => false
+    }.
 
+    Lemma is_union_type_E schema ty:
+      is_union_type schema ty <->
+      exists u mbs, lookup_type schema ty = Some (UnionTypeDefinition u mbs).
+    Proof.
+      split.
+      funelim (is_union_type schema ty) => // _.
+        by exists s2; exists l2.
+      case=> u; case=> mbs Hlook.
+      by rewrite is_union_type_equation_1 Hlook.  
+  Qed.
+  
   (** Checks whether the given type is defined as an Enum in the Schema **)
   Definition is_enum_type schema (ty : NamedType) : bool :=
     match (lookup_type schema ty) with
@@ -183,14 +204,14 @@ Section SchemaAux.
    **)
   Definition declares_implementation schema (ty ty' : NamedType) : bool :=
     match lookup_type schema ty with
-    | Some (ObjectTypeDefinition _ intfs _) => has (fun i => i == ty') intfs
+    | Some (ObjectTypeDefinition _ intfs _) => ty' \in intfs
     | _ => false
     end.
 
 
-  Definition implements_interface (tdef : @TypeDefinition Name) (iname : NamedType) : bool :=
+  Definition implements_interface (iname : NamedType) (tdef : @TypeDefinition Name) : bool :=
     match tdef with
-    | ObjectTypeDefinition _ intfs _ => has (xpred1 iname) intfs
+    | ObjectTypeDefinition _ intfs _ => iname \in intfs
     | _ => false
     end.
   
@@ -217,28 +238,70 @@ Section SchemaAux.
      3. Union : Possible types are all members of the union.
 
    **)
-  Definition get_possible_types schema (ty : NamedType) : seq NamedType  :=
+ (* Definition get_possible_types schema (ty : NamedType) : seq NamedType  :=
     match lookup_type schema ty with
     | Some (ObjectTypeDefinition _ _ _) => [:: ty]
     | Some (InterfaceTypeDefinition iname _) =>
-      (type_defs_names (filter (fun tdef => match tdef with
-                                         | (ObjectTypeDefinition _ intfs _) => has (fun i => i == iname) intfs
-                                         | _ => false
-                                         end) schema.(typeDefinitions)))
+      (type_defs_names (filter (implements_interface iname) schema.(typeDefinitions)))
     | Some (UnionTypeDefinition _ mbs) => mbs
     | _ => [::]
+    end. *)
+
+  Definition get_possible_types schema (ty : NamedType) : {fset NamedType} :=
+    match lookup_type schema ty with
+    | Some (ObjectTypeDefinition _ _ _) => fset1 ty
+    | Some (InterfaceTypeDefinition iname _) =>
+      fset (type_defs_names (filter (implements_interface iname) schema.(typeDefinitions)))
+    | Some (UnionTypeDefinition _ mbs) => fset mbs
+    | _ => fset0
     end.
-
-
-
+  
   Definition implementation schema (ty : NamedType) : seq NamedType :=
      match lookup_type schema ty with
     | Some (InterfaceTypeDefinition iname _) =>
-      type_defs_names [seq tdef <- schema |  implements_interface tdef iname]
+      type_defs_names (filter (implements_interface iname) schema.(typeDefinitions))
     | _ => [::]
     end.
-        
 
+  (*
+  Lemma in_possible_types_E schema t ty :
+    reflect
+      ([\/ t = ty,
+        t \in implementation schema ty |
+        t \in union_members schema ty])
+      (t \in get_possible_types schema ty).
+  Proof.
+    apply: (iffP idP).
+    * rewrite /get_possible_types.
+      case Hlook : lookup_type => [tdef|] //.
+      case: tdef Hlook => //.
+      - move=> obj intfs flds Hlook.
+          by rewrite in_fset1; move/eqP; constructor 1.
+      - move=> intf flds Hlook.
+          by rewrite in_fset /implementation Hlook; constructor 2.
+      - move=> un mbs Hlook.
+          by rewrite in_fset /union_members Hlook; constructor 3.
+    * move=> [Heq | Hintfs | Hunion].
+      rewrite /get_possible_types.
+  Qed. *)
+  
+  Lemma in_possible_types_E schema t ty :
+    t \in get_possible_types schema ty ->
+          [\/ t = ty,
+           t \in implementation schema ty |
+           t \in union_members schema ty].
+  Proof.
+    rewrite /get_possible_types.
+    case Hlook : lookup_type => [tdef|] //.
+    case: tdef Hlook => //.
+    - move=> obj intfs flds Hlook.
+        by rewrite in_fset1; move/eqP; constructor 1.
+    - move=> intf flds Hlook.
+        by rewrite in_fset /implementation Hlook; constructor 2.
+    - move=> un mbs Hlook.
+        by rewrite in_fset /union_members Hlook; constructor 3.
+  Qed.
+  
 End SchemaAux.
 
 
