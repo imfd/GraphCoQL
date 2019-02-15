@@ -357,6 +357,7 @@ Section WellFormedness.
   Definition is_schema_wf schema : bool :=
     let: Schema query_type tdefs := schema in
     [&& (query_type \in schema),
+     is_object_type schema query_type,
      uniq (type_defs_names tdefs) &                   
      all (is_type_def_wf schema) tdefs].
       
@@ -370,6 +371,23 @@ Section WellFormedness.
 
   Coercion schema : wfSchema >-> Schema.schema.
 
+
+  Lemma query_type_object_schema schema :
+    is_schema_wf schema ->
+    is_object_type schema schema.(query_type).
+  Proof.
+    case: schema => query_type tdefs.
+    rewrite /is_schema_wf.
+      by move/and4P=> [_ Hobj _ _].
+  Qed.
+
+  Lemma query_type_object_wf_schema (schema : wfSchema) :
+    is_object_type schema schema.(query_type).
+  Proof. case: schema => schema Ht H.
+    by apply: (query_type_object_schema H).
+  Qed.
+
+        
 End WellFormedness.
 
 
