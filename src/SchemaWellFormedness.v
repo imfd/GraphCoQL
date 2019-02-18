@@ -189,7 +189,7 @@ Section WellFormedness.
   Inductive field_ok schema : FieldDefinition -> FieldDefinition -> Prop :=              
   | AnyField : forall ty ty' fname args args',
       is_subtype schema ty ty' ->
-      perm_eq args' args ->
+      perm_eq args' args -> (* FIXME: Subset, not permutation *)
       field_ok schema (Field fname args ty) (Field fname args' ty').
 
   Definition is_field_ok schema (fld fld' : @FieldDefinition Name) : bool :=
@@ -387,7 +387,13 @@ Section WellFormedness.
     by apply: (query_type_object_schema H).
   Qed.
 
-        
+
+  Lemma field_in_interface_in_object (schema : wfSchema) ty ti f :
+    ty \in implementation schema ti ->
+    lookup_field_in_type schema ty f = lookup_field_in_type schema ti f.
+  Proof.
+    Admitted.
+           
 End WellFormedness.
 
 
