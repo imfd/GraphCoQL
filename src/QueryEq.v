@@ -6,7 +6,7 @@ Unset Printing Implicit Defensive.
 Set Asymmetric Patterns.
 
 From Equations Require Import Equations.
-From extructures Require Import ord fmap.
+From extructures Require Import ord fset fmap.
 
 
 Require Import Schema.
@@ -60,22 +60,63 @@ Section Eq.
       query_conforms schema root (InlineFragment t ϕ) ->
       Forall (Correct schema (root, t)) ϕ ->
       Correct schema (root, root) (InlineFragment t ϕ)
-                    
-  (* The inline's guard is the same as the previous one *)            
-  | CIF_Current : forall root current ϕ,
-      query_conforms schema current (InlineFragment current ϕ) ->
-      Forall (Correct schema (root, current)) ϕ ->
-      Correct schema (root, current) (InlineFragment current ϕ)
 
-  (* The inline's guard is the same as the root type *)
   | CIF_Root : forall root current ϕ,
       query_conforms schema current (InlineFragment root ϕ) ->
       Forall (Correct schema (root, root)) ϕ ->
-      Correct schema (root, current) (InlineFragment root ϕ).
-  (* Any could be replaced by both Root and Current? *)
+      Correct schema (root, current) (InlineFragment root ϕ)
 
-  
+  (* The inline's guard is the same as the previous one *)            
+  | CIF_Current : forall root current ϕ,
+      (root \in get_possible_types schema current \/ current \in get_possible_types schema root) ->
+      query_conforms schema current (InlineFragment current ϕ) ->
+      Forall (Correct schema (root, current)) ϕ ->
+      Correct schema (root, current) (InlineFragment current ϕ).
 
+
+  Lemma correct_object_E schema root current t ϕ :
+    is_object_type schema t ->
+    Correct schema (root, current) (InlineFragment t ϕ) ->
+    (is_subtype schema (NT t) (NT current)).
+      (*
+    (t = root /\ is_subtype schema (NT t) (NT current)) |
+    (t = current /\ is_subtype schema (NT t) (NT root))]. *)
+  Proof.
+    move=> Hobj Hok.
+    inversion Hok.
+    - move: H2; rewrite /query_conforms.
+      move/and4P=> [_ Hspread _ _].
+      move: (object_spreads_E Hobj Hspread) => [-> | Himpl | Hmb]; rewrite /is_subtype; apply/or3P.
+        by constructor 1; apply/eqP.
+        by constructor 2; rewrite declares_in_implementation.
+        by constructor 3.
+    - move: H2; rewrite /query_conforms.
+      move/and4P=> [_ Hspread _ _].
+      move: (object_spreads_E Hobj Hspread) => [-> | Himpl | Hmb]; rewrite /is_subtype;
+      apply/or3P.                                        
+        by constructor 1; apply/eqP.
+        by constructor 2; rewrite declares_in_implementation.
+        by constructor 3.
+    - by rewrite /is_subtype; apply/or3P; constructor 1; apply/eqP.
+  Qed.
+
+  Lemma correct_conforms schema root current q :
+    Correct schema (root, current) q ->
+    query_conforms schema current q.
+  Proof. by move=> H; inversion H. Qed.
+
+  Lemma queries_correct_conform schema root current queries :
+    Forall (Correct schema (root, current)) queries ->
+    all (query_conforms schema current) queries.
+  Proof.
+    elim: queries => // hd tl IH.
+    move=> H; inversion H => //=.
+    apply/andP; split.
+    apply: (correct_conforms H2).
+    by apply: IH.
+  Qed.
+
+    
   Definition QueryEq schema (g : @conformedGraph N Name Vals schema) u ty (q1 q2 : Query)  :=
     query_conforms schema ty q1 ->
     query_conforms schema ty q2 ->
