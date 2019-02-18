@@ -305,7 +305,7 @@ Section QuerySemantic.
       by move: (IH Htl) => Hleq; ssromega.
   Qed.
     
-  Equations collect (responses : seq.seq (@ResponseObject Name Vals)) : seq.seq (@ResponseObject Name Vals) := 
+  Equations collect (responses : seq (@ResponseObject Name Vals)) : seq (@ResponseObject Name Vals) := 
     collect responses by rec (responses_size responses) lt :=
       collect [::] := [::];
       collect (cons (NestedResult l σ) tl) :=
@@ -353,8 +353,8 @@ Section QuerySemantic.
   Implicit Type graph : @graphQLGraph N Name Vals.
   Implicit Type u : @node N Name Vals.
   Implicit Type query : @Query Name Vals.
-  
 
+  (*
   Fixpoint eval schema graph u query : seq.seq ResponseObject :=
     match query with
     | SingleField name args => match u.(fields) (Field name args) with
@@ -363,16 +363,16 @@ Section QuerySemantic.
                               end
     | LabeledField label name args =>  match u.(fields) (Field name args) with
                                       | Some (inl value) => [:: SingleResult label value]
-                                      | _ => [:: Null name]
+                                      | _ => [:: Null label]
                                       end
     | NestedField name args ϕ => let target_nodes := get_target_nodes_with_field graph u (Field name args) in
                                 match lookup_field_type schema u.(type) name with
                                 | Some (ListType _) =>
-                                  [:: NestedListResult name [seq (collect (flatten (map (eval schema graph v) ϕ))) | v <- target_nodes]]
+                                  [:: NestedListResult name [seq (eval_queries schema graph v ϕ) | v <- target_nodes]]
                                     
                                 | Some (NT _) =>
                                   match ohead target_nodes with
-                                  | Some v => [:: NestedResult name (collect (flatten (map (eval schema graph v) ϕ)))]
+                                  | Some v => [:: NestedResult name (eval_queries schema graph v ϕ)]
                                   | _ =>  [:: Null name]
                                   end
                                 | _ => [:: Null name]         (* If the field ∉ fields(u) then it's null, right? *)
@@ -381,44 +381,195 @@ Section QuerySemantic.
     | NestedLabeledField label name args ϕ =>  let target_nodes := get_target_nodes_with_field graph u (Field name args) in
                                               match lookup_field_type schema u.(type) name with
                                               | Some (ListType _) =>
-                                                [:: NestedListResult label [seq (collect (flatten (map (eval schema graph v) ϕ))) | v <- target_nodes]]
+                                                [:: NestedListResult label [seq (eval_queries schema graph v ϕ) | v <- target_nodes]]
                                               | Some (NT _) =>
                                                 match ohead target_nodes with
-                                                | Some v => [:: NestedResult label (collect (flatten (map (eval schema graph v) ϕ)))]
+                                                | Some v => [:: NestedResult label (eval_queries schema graph v ϕ)]
                                                 | _ => [:: Null label]
                                                 end
                                               | _ => [:: Null label]
                                               end
     | InlineFragment t ϕ => match lookup_type schema t with
                            | Some (ObjectTypeDefinition _ _ _) => if t == u.(type) then
-                                                                   collect (flatten (map (eval schema graph u) ϕ))
+                                                                   (eval_queries schema graph u ϕ)
                                                                  else
                                                                    [::]
                            | Some (InterfaceTypeDefinition _ _) => if declares_implementation schema u.(type) t then
-                                                                   collect (flatten (map (eval schema graph u) ϕ))
+                                                                   (eval_queries schema graph u ϕ)
                                                                   else
                                                                     [::]
                            | Some (UnionTypeDefinition _ mbs) => if u.(type) \in mbs then
-                                                                   collect (flatten (map (eval schema graph u) ϕ))
+                                                                   (eval_queries schema graph u ϕ)
                                                                 else
                                                                   [::]
                            | _ =>  [::]
                            end
+    end
+  with
+  eval_queries schema graph u (queries : seq (@Query Name Vals)) {struct queries} : seq (@ResponseObject Name Vals) :=
+    match queries with
+    | [::] => [::]
+    | query :: [::] => eval schema graph u query
+    | query :: (hd :: tl) => collect ((eval schema graph u query) ++ (eval schema graph u hd) ++ (eval_queries schema graph u tl))
     end.
+   *)
+  
+  Equations eval schema graph u query : seq.seq (@ResponseObject Name Vals) :=
+    {
+      eval schema graph u (SingleField name args) :=
+        match u.(fields) (Field name args) with
+        | Some (inl value) =>  [:: SingleResult name value]
+        | _ => [:: Null name]
+        end;
+      eval schema graph u (LabeledField label name args) :=
+        match u.(fields) (Field name args) with
+        | Some (inl value) => [:: SingleResult label value]
+        | _ => [:: Null label]
+        end;
+      eval schema graph u (NestedField name args ϕ) :=
+        let target_nodes := get_target_nodes_with_field graph u (Field name args) in
+        match lookup_field_type schema u.(type) name with
+        | Some (ListType _) =>
+          [:: NestedListResult name [seq (eval_queries schema graph v ϕ) | v <- target_nodes]]
+            
+        | Some (NT _) =>
+          match ohead target_nodes with
+          | Some v => [:: NestedResult name (eval_queries schema graph v ϕ)]
+          | _ =>  [:: Null name]
+          end
+        | _ => [:: Null name]         (* If the field ∉ fields(u) then it's null, right? *)
+        end;
+                                  
+      eval schema graph u (NestedLabeledField label name args ϕ) :=
+        let target_nodes := get_target_nodes_with_field graph u (Field name args) in
+        match lookup_field_type schema u.(type) name with
+        | Some (ListType _) =>
+          [:: NestedListResult label [seq (eval_queries schema graph v ϕ) | v <- target_nodes]]
+        | Some (NT _) =>
+          match ohead target_nodes with
+          | Some v => [:: NestedResult label (eval_queries schema graph v ϕ)]
+          | _ => [:: Null label]
+          end
+        | _ => [:: Null label]
+        end;
+      eval schema graph u (InlineFragment t ϕ) :=
+        match lookup_type schema t with
+        | Some (ObjectTypeDefinition _ _ _) => if t == u.(type) then
+                                                eval_queries schema graph u ϕ
+                                              else
+                                                [::]
+        | Some (InterfaceTypeDefinition _ _) => if declares_implementation schema u.(type) t then
+                                                 eval_queries schema graph u ϕ
+                                               else
+                                                 [::]
+        | Some (UnionTypeDefinition _ mbs) => if u.(type) \in mbs then
+                                               eval_queries schema graph u ϕ
+                                             else
+                                               [::]
+        | _ =>  [::]
+        end
+    }
+  where
+  eval_queries schema graph u (queries : seq (@Query Name Vals)) : seq (@ResponseObject Name Vals) :=
+    {
+      eval_queries _ _ _ [::] := [::];
+      eval_queries schema graph u (cons query nil) := eval schema graph u query;
+      eval_queries schema graph u (cons query (cons hd tl)) := collect ((eval schema graph u query) ++ (eval schema graph u hd) ++ (eval_queries schema graph u tl))
+    }.
 
+  (*
   Definition eval_queries schema graph u (queries : seq.seq Query) : seq.seq ResponseObject :=
     collect (flatten (map (eval schema graph u) queries)).
-
+   *)
 
   Lemma eval_single_field schema graph u f α :
     (exists v, eval schema graph u (SingleField f α) = [:: SingleResult f v]) \/
     eval schema graph u (SingleField f α) = [:: Null f].
   Proof.
-    rewrite /eval.
+    rewrite eval_equation_1.
+    case Hv : (u.(fields) (Field f α)) => [val|]; last by right.
+    case: val Hv => val Hv.
+      by left; exists val.
+      by right.
+  Qed.
+
+    Lemma eval_labeled_field schema graph u l f α :
+    (exists v, eval schema graph u (LabeledField l f α) = [:: SingleResult l v]) \/
+    eval schema graph u (LabeledField l f α) = [:: Null l].
+  Proof.
+    rewrite eval_equation_2.
     case Hv : (u.(fields) (Field f α)) => [val|]; last by right.
     case: val Hv => val Hv.
       by left; exists val.
       by right.
   Qed.
   
+
+  Lemma eval_single_field_size_1 schema graph u f α :
+    size (eval schema graph u (SingleField f α)) = 1.
+  Proof.
+    move: (eval_single_field schema graph u f α) => [| ->] //.
+      by case=> v ->.
+  Qed.
+
+  Lemma collect_app_nil r :
+    collect (r ++ [::]) = collect r.
+  Proof.
+      by rewrite cats0.
+  Qed.
+
+  Lemma gamma_filter_single_result_null f f' v (lst : seq (@ResponseObject Name Vals)) :
+    γ_filter (SingleResult f v) ((Null f') :: lst) = (Null f') :: γ_filter (SingleResult f v) lst. Proof. done. Qed.
+
+  
+  Lemma collect_single_result l v :
+    collect [:: (SingleResult l v)] = [:: (SingleResult l v)].
+  Proof. done. Qed.
+
+  Lemma collect_null_result l :
+    collect [:: Null l] = [:: Null l].
+  Proof. done. Qed.
+
+
+  Lemma collect_nested_result l r :
+    collect [:: NestedResult l r] = [:: NestedResult l (collect r)].
+  Proof.
+    funelim (collect [:: NestedResult l r]) => //=.
+      by rewrite collect_equation_1 collect_app_nil.
+  Qed.
+
+  Lemma collect_nested_list_result (l : Name) (r : seq (seq (@ResponseObject Name Vals))) :
+    collect [:: NestedListResult l r] = [:: NestedListResult l (map collect r)].
+  Proof.
+  Admitted.
+  
+
+  
+
+  
+  Lemma collect_collect_same (r : seq (@ResponseObject Name Vals)) :
+    collect r = collect (collect r).
+  Proof.
+  Admitted.
+
+  Lemma eval_same_query_in_list schema graph u query :
+    eval schema graph u query = eval_queries schema graph u [:: query].
+  Proof.
+      by rewrite eval_helper_1_equation_2. Qed.
+
+  Lemma eval_query_inline schema (g : conformedGraph schema) qs :
+    eval schema g g.(root) (InlineFragment schema.(query_type) qs) = eval_queries schema g g.(root) qs.
+  Proof.
+    rewrite eval_equation_5.
+    move: (query_type_object_wf_schema schema) => /is_object_type_E [obj [intfs [flds Hlook]]].
+    rewrite Hlook.
+    move: (root_query_type g) => -> /=.
+    case: ifP => //; case/eqP => //.
+  Qed.
+    
+
+
+  
+    
+    
 End QuerySemantic.
