@@ -294,10 +294,16 @@ Section Eq.
             AtomicQueryRed schema type_in_scope (InlineFragment ti ϕ) (InlineFragment t ϕ)
                            
   | AQR_Inline_Impl : forall ti ϕ,
-      query_conforms schema type_in_scope (InlineFragment ti ϕ) ->
-      Forall (Correct schema (type_in_scope, type_in_scope)) ϕ ->
       type_in_scope \in implementation schema ti ->
-             AtomicQueryRed schema type_in_scope (InlineFragment ti ϕ) (InlineFragment type_in_scope ϕ)
+      query_conforms schema type_in_scope (InlineFragment ti ϕ) ->
+      Forall (Correct schema (type_in_scope, ti)) ϕ ->
+      AtomicQueryRed schema type_in_scope (InlineFragment ti ϕ) (InlineFragment type_in_scope ϕ)
+
+  | AQR_Inline_Member : forall tu ϕ,
+      type_in_scope \in union_members schema tu ->
+      query_conforms schema type_in_scope (InlineFragment tu ϕ) ->
+      Forall (Correct schema (type_in_scope, tu)) ϕ ->
+      AtomicQueryRed schema type_in_scope (InlineFragment tu ϕ) (InlineFragment type_in_scope ϕ)
                                               
   .
 
@@ -562,6 +568,12 @@ Section Eq.
     Forall (Correct schema (ty, ty)) queries.
   Admitted.
 
+  Lemma queries_correct_mb schema ty tu queries :
+    ty \in union_members schema tu ->
+    Forall (Correct schema (ty, tu)) queries ->
+    Forall (Correct schema (ty, ty)) queries.
+  Admitted.     
+
   Lemma ble schema ty ti queries :
     ty \in implementation schema ti ->
     query_conforms schema ty (InlineFragment ti queries) ->
@@ -573,6 +585,13 @@ Section Eq.
     ty \in implementation schema ti ->
     queries_conform schema ti queries ->
     Forall (Correct schema (ty, ti)) queries ->
+    queries_conform schema ty queries.
+  Admitted.
+
+  Lemma bleble' schema ty tu queries :
+    ty \in union_members schema tu ->
+    queries_conform schema tu queries ->
+    Forall (Correct schema (ty, tu)) queries ->
     queries_conform schema ty queries.
   Admitted.
 
@@ -588,6 +607,21 @@ Section Eq.
     rewrite /query_conforms.
     apply/and4P; split=> //.
       by apply/or3P; constructor 2.
+    by move: (queries_correct_conform Hqsok).
+  Qed.
+
+  Lemma foo' schema ty tu queries :
+    is_object_type schema ty ->
+    is_union_type schema tu ->
+    is_fragment_spread_possible schema ty tu ->
+    queries != [::] ->
+    Forall (Correct schema (ty, tu)) queries ->
+    query_conforms schema ty (InlineFragment tu queries).
+  Proof.
+    move=> Hobj Hunion Hspread Hne Hqsok.
+    rewrite /query_conforms.
+    apply/and4P; split=> //.
+      by apply/or3P; constructor 3.
     by move: (queries_correct_conform Hqsok).
   Qed.
   
@@ -749,10 +783,11 @@ Section Eq.
       pose Hqc' := Hqc.
       move: Hqc'.
       rewrite /query_conforms.      
-      move/and4P=> [/or3P [Hobj | Hint | Hunion] Hspread _ _].
+      move/and4P=> [/or3P [Hobj | Hint | Hunion] Hspread _ _]; exists qs'.
       * move: (object_spreads_in_object_scope Hqobj Hobj Hqsc).
-        case. move/(_ Hqc) => Heq _; rewrite -Heq.
-        exists qs'; split=> //.
+        case.
+        move/(_ Hqc) => Heq _; rewrite -Heq.
+        split=> //.
           by rewrite Heq; rewrite Heq in Hqsok'.
         apply: multi_step => //.
         rewrite -Heq in Hqc.
@@ -761,7 +796,8 @@ Section Eq.
         move: (Hev' g.(root) (root_in_nodes g)) => <-.
         rewrite Heq.
           by apply (eval_query_inline g qs).
-      * exists qs'; split=> //; move: (interface_spreads_in_object_scope Hqobj Hint Hqc) => Himpl.
+      * move: (interface_spreads_in_object_scope Hqobj Hint Hqc) => Himpl.
+        split=> //.
         + apply: (queries_correct_impl Himpl Hqsok').
         + apply: multi_step.
           apply: SQ => //.
@@ -775,7 +811,6 @@ Section Eq.
           apply: multi_step.
           apply: AQR_Inline_Impl => //.
           apply: (foo Hqobj Hint Hspread Hqsne' Hqsok').
-          apply: (queries_correct_impl Himpl Hqsok') => //.
           apply: multi_refl.
           apply: multi_step.
           apply: Inline_same.
@@ -787,10 +822,47 @@ Section Eq.
           move/(queries_conform_inv Hqsne')=> Hqsc'.
           apply: (bleble Himpl Hqsc' Hqsok').
           apply: multi_refl.
-          
-          
-      
-      
-  
-        
+        + rewrite eval_equation_5.
+          move/is_interface_type_E: Hint => [i [flds ->]].
+          move: (root_query_type g) => ->.
+          move/declares_in_implementation: Himpl => ->.
+          apply: (Hev' g.(root) (root_in_nodes g)).
+     * move: (union_spreads_in_object_scope Hqobj Hunion Hqc) => Hmb.
+       split=> //.
+       + apply: (queries_correct_mb Hmb Hqsok').
+       + apply: multi_step.
+          apply: SQ => //.
+          apply: multi_step => //.
+          apply (AQR_Inline Hqc Hred')  => //.
+          apply: multi_refl.
+
+          apply: multi_step => //.
+          apply: SQ => //.
+          apply: (foo' Hqobj Hunion Hspread Hqsne' Hqsok').
+          apply: multi_step.
+          apply: AQR_Inline_Member => //.
+          apply: (foo' Hqobj Hunion Hspread Hqsne' Hqsok').
+          apply: multi_refl.
+          apply: multi_step.
+          apply: Inline_same.
+          apply: inline_conforms_to_same_type => //.
+            by constructor 1.
+          move: (foo' Hqobj Hunion Hspread Hqsne' Hqsok').
+          rewrite /query_conforms.
+          move/and4P=> [_ _ _].
+          move/(queries_conform_inv Hqsne')=> Hqsc'.
+          apply: (bleble' Hmb Hqsc' Hqsok').
+          apply: multi_refl.
+       + rewrite eval_equation_5.
+         move/is_union_type_E: Hunion => [u [mbs Hlook]].
+         move: (root_query_type g) => ->.
+         rewrite /union_members in Hmb.
+         rewrite Hlook in Hmb.
+         rewrite Hlook Hmb.
+         apply: (Hev' g.(root) (root_in_nodes g)).
+    (* Empty list *)
+     * done.
+    
+     * 
+       
 End Eq.

@@ -85,8 +85,18 @@ Section SchemaAux.
       | Some (InterfaceTypeDefinition _ _) := true;
       | _ => false
     }.
-  
 
+  Lemma is_interface_type_E schema ty :
+    is_interface_type schema ty <->
+    exists i flds, lookup_type schema ty = Some (InterfaceTypeDefinition i flds).
+  Proof.
+    split.
+    funelim (is_interface_type schema ty) => // _.
+      by exists s1; exists l1.
+    case=> i; case=> flds Hlook.
+      by rewrite is_interface_type_equation_1 Hlook.
+  Qed.
+  
   (** Checks whether the given type is defined as a Union in the Schema **)
   Equations is_union_type schema (ty : @NamedType Name) : bool :=
     is_union_type schema ty with (lookup_type schema ty) =>
