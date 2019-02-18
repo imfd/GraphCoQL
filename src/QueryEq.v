@@ -301,7 +301,24 @@ Section Eq.
                                               
   .
 
-  
+
+  Lemma asf schema (g : @conformedGraph N Name Vals schema)  u type_in_scope ti ϕ :
+     query_conforms schema type_in_scope (InlineFragment ti ϕ) ->
+     type_in_scope \in implementation schema ti ->
+            eval schema g u (InlineFragment ti ϕ) = eval schema g u (InlineFragment type_in_scope ϕ). 
+  Proof.
+    move=> Hqc Himpl.
+    move: (has_implementation_is_interface Himpl) => Hint.
+    rewrite !eval_equation_5.
+    funelim (is_interface_type schema ti) => //.
+    rewrite Heq.
+    move: (in_implementation_is_object Himpl) => /is_object_type_E [obj [intfs [flds Hlook]]].
+    rewrite Hlook.
+    case: ifP => //.
+    rewrite declares_in_implementation.
+  Abort.
+  (* Missing info on node -> type of node should be same as the one in scope *)
+    
   
   (*Lemma AQR_SFE schema ty ϕ n α : AtomicQueryRed schema ty (SingleField n α) ϕ ->
                                ϕ = SingleField n α.
@@ -320,62 +337,6 @@ Section Eq.
   Qed.
 
 
-  (*
-  Lemma query_filter_preserves (queries ϕ' : @QuerySet Name Vals) p pred :
-    all pred queries -> filter p queries = Some ϕ' -> all pred ϕ'.
-  Proof.
-    move: ϕ'.
-    elim queries using QuerySet_ind with (P0 := fun q => forall queries, all pred queries -> in_query q queries -> pred q).
-    - move=> q H /= ϕ' Hq.
-      case (p q).
-      rewrite filter_helper_1_equation_1.
-      case. move=> Heq; rewrite -Heq.
-      rewrite all_equation_1. done.
-      rewrite filter_helper_1_equation_2. done.
-    - move=> q H q' H' ϕ'.
-      rewrite all_equation_2. move/andP=> [Hq Hall].
-      simpl. case Hfilt: (filter p q') => [sm|].
-      case (p q).
-      case. move=> Heq. rewrite -Heq.
-      rewrite all_equation_2. apply/andP; split=> //.
-      apply: H'. done. done. case. move=> <-. apply: H'. done. done. done.
-
-    - by move=> n f q /allP H; apply: H.
-    - by move=> l n f q /allP H; apply: H.
-    - by move=> n f ϕ H q /allP H'; apply: H'.
-    - by move=> l n f ϕ H q /allP H'; apply: H'.
-    - by move=> t ϕ H q /allP H'; apply: H'.
-  Qed. *)
-
-  (*
-  Lemma filter_preserves_normal (queries ϕ' : @QuerySet Name Vals) p :
-    is_ground_typed_normal_form queries ->
-    filter p queries = Some ϕ' ->
-    is_ground_typed_normal_form ϕ'.
-  Proof.
-    move: ϕ'.
-    elim queries using QuerySet_ind with (P0 := fun q => forall queries, is_ground_typed_normal_form queries ->
-                                                                in_query q queries ->
-                                                                is_query_in_normal_form q).
-    - move=> q Hq ϕ' H /=.
-       case (p q).
-         * by rewrite filter_helper_1_equation_1; case=> <-.
-         by rewrite filter_helper_1_equation_2.
-    - move=> q Hq q' Hq' ϕ'.
-      rewrite is_ground_typed_normal_form_equation_2; move/and3P=> [/orP [Hflds | Hins] Hnf Hnf'] /=;
-      case Hfilt: (filter p q') => [sm|]; case (p q) => //; case=> <-.
-      rewrite is_ground_typed_normal_form_equation_2.
-      move: (Hq' sm Hnf' Hfilt).
-  Admitted.
-*)
-(*
-  Lemma filter_preserves_non_redundancy (queries ϕ' : @QuerySet Name Vals) p :
-    is_non_redundant queries ->
-    filter p queries = Some ϕ' ->
-    is_non_redundant ϕ'.
-  Proof.
-    Admitted.
-*)
 
   Lemma queries_conform_cons schema ty hd tl :
     queries_conform schema ty (hd :: tl) -> query_conforms schema ty hd.
@@ -384,26 +345,6 @@ Section Eq.
       by move/andP=> [_ /= /andP [Hhd _]].
   Qed.
 
-  Lemma correct_conforms schema root current ϕ :
-    Correct schema (root, current) ϕ ->
-    query_conforms schema current ϕ.
-  Proof.
-    move: root current.
-    elim ϕ using Query_ind with (Pl := fun qs => forall root current, qs != [::] -> Forall (Correct schema (root, current)) qs -> queries_conform schema current qs) => //.
-    by intros; inversion H.
-    by intros; inversion H.
-    by move=> n α ϕ' IH root current H; inversion H.  
-    by move=> l n α ϕ' IH root current H; inversion H.
-    by move=> t ϕ' IH root current H; inversion H.
-    move=> q IH qs IH' root current Hne H.
-    rewrite /queries_conform.
-    apply/andP; split => //.
-    simpl. apply/andP; split => //.
-    move: (Forall_cons_inv H) => [H1 H2].
-    apply: (IH _ _ H1).
-    case: qs IH' Hne H => //.
-    move=> hd tl H.
-    Admitted.
 
   Lemma nested_conforms_list schema ty n α ϕ :
     query_conforms schema ty (NestedField n α ϕ) -> ϕ != [::].
@@ -424,38 +365,7 @@ Section Eq.
   Proof. by move=> Hqc; apply: CF. Qed.
 
  
-   
-  Lemma empty_queries_N_conform schema ty : ~ queries_conform schema ty [::].
-  Proof. done. Qed.
 
-  Lemma nf_queries_conform schema ty fld n α ϕ :
-    lookup_field_in_type schema ty n = Some fld ->
-    query_conforms schema ty (NestedField n α ϕ) ->
-    queries_conform schema fld.(return_type) ϕ.
-  Proof.
-    rewrite /query_conforms.
-    move=> Hlook; rewrite Hlook.
-    case: ifP => // _; rewrite -/(query_conforms schema fld.(return_type)).
-    move/and3P=> [HNempty Hargs Hall].
-    rewrite /queries_conform. 
-    by apply/andP.  
-  Qed.
-
-  Lemma nf_conforms_lookup_some schema ty  n α ϕ :
-    query_conforms schema ty (NestedField n α ϕ) ->
-    exists fld, lookup_field_in_type schema ty n = Some fld.
-  Proof. rewrite /query_conforms.
-    case Hlook : lookup_field_in_type => [fld'|] //.
-    by exists fld'.
-  Qed.
-  
-   Lemma nlf_conforms_lookup_some schema ty l n α ϕ :
-    query_conforms schema ty (NestedLabeledField l n α ϕ) ->
-    exists fld, lookup_field_in_type schema ty n = Some fld.
-  Proof. rewrite /query_conforms.
-    case Hlook : lookup_field_in_type => [fld'|] //.
-    by exists fld'.
-  Qed.
 
   Lemma nf_correct_lookup_some schema root current n α ϕ :
     Correct schema (root, current) (NestedField n α ϕ) ->
@@ -507,11 +417,16 @@ Section Eq.
   Proof.
     by rewrite /lookup_field_type; move=> ->; case. Qed.
 
-  Lemma nf_queries_correct schema root current n α ϕ fld :
-    lookup_field_type schema current n = Some fld ->
+  
+  (**
+     If query is free of issues and its type in the schema is "ty",
+     then its subqueries are also free of issues for the given type.
+   **)
+  Lemma nested_field_subqueries_correct schema root current n α ϕ ty :
     Correct schema (root, current) (NestedField n α ϕ) ->
-    Forall (Correct schema (name_of_type fld, name_of_type fld)) ϕ.
-  Proof.  by move=> Hlook H; inversion H; rewrite Hlook in H6; case: H6 => ->. Qed.
+    lookup_field_type schema current n = Some ty ->
+    Forall (Correct schema (name_of_type ty, name_of_type ty)) ϕ.
+  Proof.  by move=> H Hlook; inversion H; rewrite Hlook in H6; case: H6 => ->. Qed.
 
   Lemma nlf_queries_correct schema root current l n α ϕ fld :
     lookup_field_type schema current n = Some fld ->
@@ -582,37 +497,24 @@ Section Eq.
   Lemma nrl_subqueries (n : Name) (ϕ ϕ' : seq (seq (@ResponseObject Name Vals))) : ϕ = ϕ' -> NestedListResult n ϕ = NestedListResult n ϕ'. Proof. by move=> ->. Qed.
 
 
-  Lemma adsf schema (g : @conformedGraph N Name Vals schema) (lst : seq node) qs qs' :
-    (forall u, u \in lst -> eval_queries schema g u qs = eval_queries schema g u qs') ->
-    map (fun n => eval_queries schema g n qs) (nodes g) = map (fun n => eval_queries schema g n qs') (nodes g).
-  Proof.
-    move=> H.
-    case Hn: (nodes g) => [| v tl] //.
-    rewrite !map_cons.
-    have Hv : nodes g = v :: tl -> v \in nodes g.
-    move=> ->. rewrite inE. case: eqP => //.
-  Admitted.
+ 
 
   Lemma qwe schema (g : @conformedGraph N Name Vals schema) u qs qs' α n :
     (forall u : node_eqType N Name Vals, u \in nodes g -> eval_queries schema g u qs = eval_queries schema g u qs') ->
-    [seq collect (flatten [seq eval schema g v i | i <- qs]) | v <- get_target_nodes_with_field g u {| label := n; args := α |}] =
-    [seq collect (flatten [seq eval schema g v i | i <- qs']) | v <- get_target_nodes_with_field g u {| label := n; args := α |}].
+    [seq (eval_queries schema g v qs) | v <- get_target_nodes_with_field g u {| label := n; args := α |}] =
+  [seq (eval_queries schema g v qs') | v <- get_target_nodes_with_field g u {| label := n; args := α |}].
   Proof. Admitted.
 
-  Lemma inline_conforms schema ty t ϕ :
+  Lemma inline_subqueries_conform schema ty t ϕ :
     query_conforms schema ty (InlineFragment t ϕ) ->
     queries_conform schema t ϕ.
   Proof.
     rewrite /query_conforms.
-    case: ifP => // _.
-    case: ifP => // _.
-    case: ifP => // _.
-    case: ifP => // _.
-    case: ifP => // _.
-    case: ifP => // _.
+    move/and4P=> [_ _ Hne H].
+    by rewrite /queries_conform; apply/andP. 
   Qed.
 
-  Lemma inline_correct schema root current t ϕ :
+  Lemma inline_subqueries_correct schema root current t ϕ :
     Correct schema (root, current) (InlineFragment t ϕ) ->
     Forall (Correct schema (root, t)) ϕ.
   Proof.
