@@ -48,10 +48,18 @@ Section GraphAux.
     | _ => [::]
     end.
 
+  (* Change to use set *)
   Definition nodes graph : seq node :=
-    undup (unzip (map (fun edge => let: (u, _, v) := edge in (u, v)) graph.(E))).
+    graph.(root) :: (undup (unzip (map (fun edge => let: (u, _, v) := edge in (u, v)) graph.(E)))).
 
-    
+
+  Lemma root_in_nodes graph : graph.(root) \in nodes graph.
+  Proof.
+    rewrite /nodes.
+    rewrite inE.
+    by apply/orP; left; apply/eqP.
+  Qed.
+  
   Definition get_neighbours graph (u : node) :=
     fset_filter (fun edge => let: (u', _, _) := edge in u'  == u) graph.(E).
     
@@ -60,6 +68,7 @@ Section GraphAux.
         filter (fun e => let: (u', f', _) := e in (u' == u) && (f' == f)) graph.(E)
     in
     map (fun e => let: (_, _, v) := e in v) edges_with_field.
-    
+
+  
 
 End GraphAux.
