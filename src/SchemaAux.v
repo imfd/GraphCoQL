@@ -263,6 +263,11 @@ Section SchemaAux.
     | _ => [::]
     end.
 
+  Lemma declares_in_implementation schema t ty :
+    (declares_implementation schema t ty) <-> (t \in implementation schema ty).
+  Proof.
+  Admitted.
+  
   (*
   Lemma in_possible_types_E schema t ty :
     reflect
