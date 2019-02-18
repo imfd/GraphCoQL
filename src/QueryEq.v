@@ -139,7 +139,7 @@ Section Eq.
     funelim (is_object_type schema t1) => //.
     funelim (is_object_type schema0 t2) => //.
     move=> _ _ Hdiff.
-    rewrite /eval Heq0.
+    rewrite eval_equation_5 Heq0.
     case: eqP => //= <-.
     rewrite Heq.
     by case: eqP => // Ht1t2; rewrite Ht1t2 in Hdiff.
@@ -170,27 +170,20 @@ Section Eq.
       by move=> i flds Hlook; rewrite Hlook.
   Qed.
 
-  Lemma union_n_obj schema ty :
-    is_union_type schema ty -> is_object_type schema ty = false.
-  Proof. Admitted.
-  Lemma union_N_int schema ty :
-    is_union_type schema ty -> is_interface_type schema ty = false.
-  Admitted.
-  
   Lemma inline_preserves_conformance schema type_in_scope ϕ :
     query_conforms schema type_in_scope ϕ ->
     query_conforms schema type_in_scope (InlineFragment type_in_scope [:: ϕ]).
   Proof.
     rewrite {2}/query_conforms.
     move=> Hqc.
+    apply/and4P; split=> //.
+    apply/or3P. apply: (type_in_scope_N_scalar_enum Hqc).
+    rewrite /is_fragment_spread_possible /get_possible_types.
+    
     move: (type_in_scope_N_scalar_enum Hqc) => [Hobj | Hint | Hunion].
-    rewrite Hobj; case: eqP => //= _; apply/andP; done.
-    move: (interface_N_obj Hint); rewrite /negb. case: ifP => // _ _.
-    rewrite Hint; case: eqP => //= _; apply/andP; done.
-    move: (union_n_obj Hunion) => ->.
-    move: (union_N_int Hunion) => ->.
-    rewrite Hunion; case: eqP => //= _; apply/andP; done.
-  Qed.
+    funelim (is_object_type schema type_in_scope) => //.
+    Admitted.
+ 
   
   Lemma filter_preserves_pred T (p pred : T -> bool) (s : seq T) :
     all p s ->
