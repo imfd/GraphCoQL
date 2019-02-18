@@ -163,6 +163,17 @@ Section Conformance.
   Coercion graph_of_conformed_graph schema (g : conformedGraph schema) := let: ConformedGraph g _ _ _ _ := g in g.
 
 
+  Lemma aux_root_query_type schema graph :
+    root_type_conforms schema graph -> graph.(root).(type) = schema.(query_type).
+  Proof. by rewrite /root_type_conforms; move/eqP. Qed.
+  
+  Lemma root_query_type schema (graph : conformedGraph schema) :
+    graph.(root).(type) = schema.(query_type).
+  Proof.
+    case: graph => g H *.
+      by move: (aux_root_query_type H).
+  Qed.
+
 End Conformance.
 
 Arguments conformedGraph [N Name Vals]. 
