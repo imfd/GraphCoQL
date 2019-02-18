@@ -252,7 +252,11 @@ Section Eq.
       all (query_conforms schema type_in_scope) ϕs ->
       QueryRed schema type_in_scope ((InlineFragment t  (ϕ :: ϕ')) :: ϕs)
                       ((InlineFragment t [:: ϕ]) :: (InlineFragment t ϕ') :: ϕs)
-        
+
+  | Inline_same : forall ϕ,
+      query_conforms schema type_in_scope (InlineFragment type_in_scope ϕ) ->
+      QueryRed schema type_in_scope [:: InlineFragment type_in_scope ϕ] ϕ
+               
 
   with
   AtomicQueryRed (schema : @wfSchema Name Vals) (type_in_scope : NamedType) : Query -> Query -> Prop :=
@@ -288,6 +292,12 @@ Section Eq.
       query_conforms schema type_in_scope (InlineFragment ti ϕ) ->
       t \in implementation schema ti ->
             AtomicQueryRed schema type_in_scope (InlineFragment ti ϕ) (InlineFragment t ϕ)
+                           
+  | AQR_Inline_Impl : forall ti ϕ,
+      query_conforms schema type_in_scope (InlineFragment ti ϕ) ->
+      Forall (Correct schema (type_in_scope, type_in_scope)) ϕ ->
+      type_in_scope \in implementation schema ti ->
+             AtomicQueryRed schema type_in_scope (InlineFragment ti ϕ) (InlineFragment type_in_scope ϕ)
                                               
   .
 
