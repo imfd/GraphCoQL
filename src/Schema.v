@@ -304,7 +304,12 @@ Notation "'interface' I '{' flds '}'" := (InterfaceTypeDefinition I flds) : sche
 Notation "'union' U '{' mbs '}'" := (UnionTypeDefinition U mbs) : schema_scope.
 Notation "'enum' E '{' evs '}'" := (EnumTypeDefinition E evs) : schema_scope.
 
-*)
+ *)
+Arguments argname [Name].
+Arguments argtype [Name].
+Arguments field_name [Name].
+Arguments field_args [Name].
+Arguments return_type [Name].
 Arguments NamedType [Name].
 Arguments type [Name].
 Arguments FieldArgumentDefinition [Name].
