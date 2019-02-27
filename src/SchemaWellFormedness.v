@@ -324,13 +324,13 @@ Section WellFormedness.
       
   
   Structure wfSchema := WFSchema {
-                        schema : @schema Name;
+                        schem : @schema Name;
                         hasType :  Name -> Vals -> bool;
-                        _ : is_schema_wf schema;
+                        _ : is_schema_wf schem;
                       }.
 
   
-  Coercion schema : wfSchema >-> Schema.schema.
+  Coercion schem : wfSchema >-> Schema.schema.
 
 
   Lemma query_has_object_type schema :

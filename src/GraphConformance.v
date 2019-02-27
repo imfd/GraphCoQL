@@ -17,7 +17,10 @@ Section Conformance.
 
   Variables (N Name Vals: ordType).
 
-  Implicit Type schema : @wfSchema Name Vals.
+  Variables (sch : @schema Name).
+  
+  
+  Implicit Type schema : @wfSchema Name Vals sch.
   Implicit Type graph : @graphQLGraph N Name Vals. 
 
 

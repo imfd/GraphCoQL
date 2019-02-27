@@ -17,8 +17,9 @@ Require Import SchemaWellFormedness.
 Section QueryConformance.
 
   Variables Name Vals : ordType.
-
-  Implicit Type schema : @wfSchema Name Vals.  
+  Variable sch : @schema Name.
+  
+  Implicit Type schema : @wfSchema Name Vals sch.  
   Implicit Type queries : seq (@Query Name Vals).
   Implicit Type query : @Query Name Vals.
   Implicit Type type : @type Name.
@@ -70,7 +71,7 @@ Section QueryConformance.
     | SingleField fname α => match lookup_field_in_type schema ty fname with
                             | Some fld =>
                               if is_scalar_type schema fld.(return_type) || is_enum_type schema fld.(return_type) then
-                                arguments_conform schema fld.(args) α
+                                arguments_conform schema fld.(field_args) α
                               else
                                 false
                             | _ => false
@@ -78,7 +79,7 @@ Section QueryConformance.
     | LabeledField _ fname α =>  match lookup_field_in_type schema ty fname with
                                 | Some fld =>
                                    if is_scalar_type schema fld.(return_type) || is_enum_type schema fld.(return_type) then
-                                     arguments_conform schema fld.(args) α
+                                     arguments_conform schema fld.(field_args) α
                                    else
                                      false
                                 | _ => false
@@ -89,7 +90,7 @@ Section QueryConformance.
                      false
                    else
                      [&& ϕ != [::],
-                      arguments_conform schema fld.(args) α &
+                      arguments_conform schema fld.(field_args) α &
                       all (query_conforms schema fld.(return_type)) ϕ]
       | _ => false
       end
@@ -100,7 +101,7 @@ Section QueryConformance.
                        false
                      else
                        [&& ϕ != [::],
-                        arguments_conform schema fld.(args) α &
+                        arguments_conform schema fld.(field_args) α &
                         all (query_conforms schema fld.(return_type)) ϕ]
         | _ => false
         end
@@ -178,7 +179,7 @@ Section QueryConformance.
     type_in_scope \in implementation schema t.
   Proof.
     funelim (is_object_type schema type_in_scope) => // _.
-    funelim (is_interface_type schema0 t) => // _.
+    funelim (is_interface_type schema t) => // _.
     rewrite /query_conforms.
     move/and4P=> [_ Hspread _ _].
     move: Hspread; rewrite /is_fragment_spread_possible /get_possible_types Heq Heq0.
@@ -194,7 +195,7 @@ Section QueryConformance.
     type_in_scope \in union_members schema t.
   Proof.
     funelim (is_object_type schema type_in_scope) => // _.
-    funelim (is_union_type schema0 t) => // _.
+    funelim (is_union_type schema t) => // _.
     rewrite /query_conforms.
     move/and4P=> [_ Hspread _ _].
     move: Hspread; rewrite /is_fragment_spread_possible /get_possible_types Heq Heq0.

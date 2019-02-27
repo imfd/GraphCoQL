@@ -6,7 +6,7 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 Set Asymmetric Patterns.
 
-From extructures Require Import ord fmap.
+From extructures Require Import ord fmap fset.
 From Equations Require Import Equations.
 
 
@@ -348,8 +348,8 @@ Section QuerySemantic.
       by move: (γ_responses_size_reduced tl (NestedListResult l rs)) => *;  ssromega.
   Qed.
   
- 
-  Implicit Type schema : @wfSchema Name Vals.
+  Variable sch : @schema Name.
+  Implicit Type schema : @wfSchema Name Vals sch.
   Implicit Type graph : @graphQLGraph N Name Vals.
   Implicit Type u : @node N Name Vals.
   Implicit Type query : @Query Name Vals.
@@ -557,11 +557,11 @@ Section QuerySemantic.
   Proof.
       by rewrite eval_helper_1_equation_2. Qed.
 
-  Lemma eval_query_inline schema (g : conformedGraph schema) qs :
+  Lemma eval_query_inline schema (g : conformedGraph sch schema) qs :
     eval schema g g.(root) (InlineFragment schema.(query_type) qs) = eval_queries schema g g.(root) qs.
   Proof.
     rewrite eval_equation_5.
-    move: (query_type_object_wf_schema schema) => /is_object_type_E [obj [intfs [flds Hlook]]].
+    move: (query_has_object_type_wf_schema schema) => /is_object_type_E [obj [intfs [flds Hlook]]].
     rewrite Hlook.
     move: (root_query_type g) => -> /=.
     case: ifP => //; case/eqP => //.
