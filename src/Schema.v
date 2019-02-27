@@ -13,27 +13,36 @@ Open Scope schema_scope.
 
 Section Schema.
 
-  (** Names for everything, from operations, fields, arguments, types, etc.
+  (**
+     Names for everything, from operations, fields, arguments, types, etc.
 
-      https://facebook.github.io/graphql/June2018/#sec-Names **)
+     https://facebook.github.io/graphql/June2018/#sec-Names **)
   Variable Name : ordType.
 
   
-  (** Same as names, except that it can't be true, false or null. 
-      Right now it is just the same as Name.
+  (**
+     Same as names, except that it can't be true, false or null. 
+     Right now it is just the same as Name.
 
-      https://facebook.github.io/graphql/June2018/#EnumValue **)
+     https://facebook.github.io/graphql/June2018/#EnumValue **)
   Definition EnumValue := Name.
 
 
   
   Section Types.
+
+    (** 
+        Basically the same as a name.    
+    
+        https://facebook.github.io/graphql/June2018/#NamedType **)
     Definition NamedType := Name.
 
+    
     (** Types of data expected by query variables.
 
-        https://facebook.github.io/graphql/June2018/#sec-Type-References
-     **)
+        NonNull types are omitted in this current version.
+
+        https://facebook.github.io/graphql/June2018/#sec-Type-References **)
     Inductive type : Type :=
     | NT : NamedType -> type
     | ListType : type -> type.
@@ -45,9 +54,8 @@ Section Schema.
         Corresponds to a named type's actual name or the name used in a list type
 
         https://facebook.github.io/graphql/June2018/#sec-Type-References
-        https://facebook.github.io/graphql/June2018/#sec-Wrapping-Types
-     **)
-    Fixpoint name_of_type (ty : type) : Name :=
+        https://facebook.github.io/graphql/June2018/#sec-Wrapping-Types **)
+    Fixpoint name_of_type (ty : type) : NamedType :=
       match ty with
       | NT name => name
       | ListType ty' => name_of_type ty'
@@ -77,14 +85,10 @@ Section Schema.
     Lemma pcan_tree_of_type : pcancel tree_of_type type_of_tree.
     Proof. by elim=> [| t /= ->]. Qed.
     
-    Definition type_eqMixin := PcanEqMixin pcan_tree_of_type.
-    Canonical type_eqType := EqType type type_eqMixin.
-    Definition type_choiceMixin := PcanChoiceMixin pcan_tree_of_type.
-    Canonical type_choiceType := ChoiceType type type_choiceMixin.
+    Canonical type_eqType := EqType type (PcanEqMixin pcan_tree_of_type).
+    Canonical type_choiceType := ChoiceType type (PcanChoiceMixin pcan_tree_of_type).
+    Canonical type_ordType := OrdType type (PcanOrdMixin pcan_tree_of_type).
     
-    Definition type_ordMixin := PcanOrdMixin pcan_tree_of_type.
-    Canonical type_ordType := OrdType type type_ordMixin.
-      
   End Types.
 
 
@@ -96,24 +100,59 @@ Section Schema.
 
         In the specification it is named "InputValue" (InputValueDefinition) but 
         it is not very descriptive of what it is. Besides, it is constantly refered 
-        as "argument", therefore it is named as FieldArgument (only fields can have
-        arguments so it may sound redundant to name it like this but I feel it is
+        as "argument", therefore it is here named as FieldArgument (only fields can have
+        arguments so it may sound redundant to name it like this but I feel like it is
         more descriptive and reinforces this notion). 
 
         https://facebook.github.io/graphql/June2018/#sec-Field-Arguments **)
-    Record FieldArgumentDefinition := FieldArgument {
-                                         argname : Name;
-                                         argtype : type
-                                       }.
+    Inductive FieldArgumentDefinition := FieldArgument (argname : Name) (argtype : type).
+
+    (** Extractors for a FieldArgument **)
+    Definition argname arg := let: FieldArgument n _ := arg in n.
+    Definition argtype arg := let: FieldArgument _ t := arg in t.
+    
+
+    (** Packing and unpacking of a field argument, needed for canonical instances **)
+    Definition prod_of_arg (arg : FieldArgumentDefinition) := let: FieldArgument n t := arg in (n, t).
+    Definition arg_of_prod (p : prod Name type) := let: (n, t) := p in FieldArgument n t.
+
+    (** Cancelation lemma for field arguments **)
+    Lemma prod_of_argK : cancel prod_of_arg arg_of_prod.  Proof. by case. Qed.
   
-    (** https://facebook.github.io/graphql/June2018/#FieldDefinition **)
-    Record FieldDefinition := Field {
-                                 field_name : Name;
-                                 args : seq FieldArgumentDefinition;
-                                 return_type : type
-                               }.
+    Canonical arg_eqType := EqType FieldArgumentDefinition (CanEqMixin prod_of_argK).
+    Canonical arg_choiceType := ChoiceType FieldArgumentDefinition (CanChoiceMixin prod_of_argK).
+    Canonical arg_ordType := OrdType FieldArgumentDefinition (CanOrdMixin prod_of_argK).
 
 
+    
+    (** Field of an object or interface in the schema. 
+        Represents a leaf or an edge between nodes of the underlying tree structure.
+
+        https://facebook.github.io/graphql/June2018/#FieldDefinition **)
+    Inductive FieldDefinition := Field (field_name : Name)
+                                      (args : seq FieldArgumentDefinition)
+                                      (return_type : type).
+
+    (** Extractors for a Field **)
+    Definition field_name fld := let: Field f _ _ := fld in f.
+    Definition field_args fld := let: Field _ args _ := fld in args.
+    Definition return_type fld := let: Field _ _ ty := fld in ty.
+
+    (** Packing and unpacking of a field, needed for canonical instances **)
+    Definition prod_of_field (f : FieldDefinition) := let: Field n args t := f in (n, args, t).
+    Definition field_of_prod (p : Name * (seq.seq FieldArgumentDefinition) * type)  := let: (n, args, t) := p in Field n args t.
+
+    (** Cancelation lemma for a field **)
+    Lemma prod_of_fieldK : cancel prod_of_field field_of_prod. Proof. by case. Qed.
+
+    
+    Canonical field_eqType := EqType FieldDefinition (CanEqMixin prod_of_fieldK).
+    Canonical field_choiceType := ChoiceType FieldDefinition (CanChoiceMixin prod_of_fieldK).
+    Canonical field_ordType := OrdType FieldDefinition (CanOrdMixin prod_of_fieldK).
+
+
+    
+  
     (** Possible type definitions one can make in a GraphQL service. Some observations:
 
         1. Objects' interfaces: Objects *may* declare one or more implemented interfaces. This is 
@@ -165,25 +204,11 @@ Section Schema.
 
  
       
-  Definition prod_of_arg (arg : FieldArgumentDefinition) := let: FieldArgument n t := arg in (n, t).
-  Definition arg_of_prod (p : prod Name type) := let: (n, t) := p in FieldArgument n t.
-
-  Lemma prod_of_argK : cancel prod_of_arg arg_of_prod.  Proof. by case. Qed.
-  
-  Definition arg_eqMixin := CanEqMixin prod_of_argK.
-  Canonical arg_eqType := EqType FieldArgumentDefinition arg_eqMixin.
 
 
 
   
   
-  Definition prod_of_field (f : FieldDefinition) := let: Field n args t := f in (n, args, t).
-  Definition field_of_prod (p : Name * (seq.seq FieldArgumentDefinition) * type)  := let: (n, args, t) := p in Field n args t.
-  
-  Lemma prod_of_fieldK : cancel prod_of_field field_of_prod. Proof. by case. Qed.
-  
-  Definition field_eqMixin := CanEqMixin prod_of_fieldK.
-  Canonical field_eqType := EqType FieldDefinition field_eqMixin.
 
 
 
