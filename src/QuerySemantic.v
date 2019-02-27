@@ -350,8 +350,8 @@ Section QuerySemantic.
   
   Variable sch : @schema Name.
   Implicit Type schema : @wfSchema Name Vals sch.
-  Implicit Type graph : @graphQLGraph N Name Vals.
-  Implicit Type u : @node N Name Vals.
+  Implicit Type graph : @graphQLGraph Name Vals.
+  Implicit Type u : @node Name Vals.
   Implicit Type query : @Query Name Vals.
 
   (*
@@ -427,7 +427,7 @@ Section QuerySemantic.
         | _ => [:: Null label]
         end;
       eval schema graph u (NestedField name args ϕ) :=
-        let target_nodes := get_target_nodes_with_field graph u (Field name args) in
+        let target_nodes := neighbours_with_field graph u (Field name args) in
         match lookup_field_type schema u.(type) name with
         | Some (ListType _) =>
           [:: NestedListResult name [seq (eval_queries schema graph v ϕ) | v <- target_nodes]]
@@ -441,7 +441,7 @@ Section QuerySemantic.
         end;
                                   
       eval schema graph u (NestedLabeledField label name args ϕ) :=
-        let target_nodes := get_target_nodes_with_field graph u (Field name args) in
+        let target_nodes := neighbours_with_field graph u (Field name args) in
         match lookup_field_type schema u.(type) name with
         | Some (ListType _) =>
           [:: NestedListResult label [seq (eval_queries schema graph v ϕ) | v <- target_nodes]]

@@ -64,14 +64,13 @@ Section Schema.
     Coercion name_of_type : type >-> Ord.sort.
 
 
-    (** Get a tree out of a type **)
+    (** Packing and unpacking of a type, needed for canonical instances **)
     Fixpoint tree_of_type (ty : type) : GenTree.tree Name :=
       match ty with
       | NT n => GenTree.Node 0 [:: GenTree.Leaf n]
       | ListType ty' => GenTree.Node 1 [:: tree_of_type ty']
       end.
       
-    (** Get a type out of a tree or none **)
     Fixpoint type_of_tree (t : GenTree.tree Name) : option type :=
       match t with
       | GenTree.Node 0 [:: GenTree.Leaf n] => Some (NT n)
@@ -81,7 +80,9 @@ Section Schema.
                                    None
       | _ => None
       end.
-      
+
+
+    (** Cancelation lemma for types **)
     Lemma pcan_tree_of_type : pcancel tree_of_type type_of_tree.
     Proof. by elim=> [| t /= ->]. Qed.
     

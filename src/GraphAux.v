@@ -10,64 +10,66 @@ Require Import Graph.
 
 Section GraphAux.
 
-  Variables (N S Vals : ordType).
-  Implicit Type graph :  @graphQLGraph N S Vals.
+  Variables (F Vals : ordType).
+  Implicit Type graph :  @graphQLGraph F Vals.
+  Implicit Type edge : @node F Vals * @fld F Vals * @node F Vals.
   
+
+  (** Extractors for an edge **)
+  Definition edge_nodes edge : seq node :=
+    let: (u, _, v) := edge in [:: u ; v].
+
+  Definition edge_target edge : node :=
+    let: (_, _, v) := edge in v.
+
+  Definition edge_source edge : node :=
+    let: (u, _, _) := edge in u.
+
+  Definition edge_field edge : fld :=
+    let: (_, f, _) := edge in f.
+
   
-  Definition is_src_in_edge (edge : N * @fld S Vals * N) (node : N) :=
-    let: (n, f, v) := edge in n == node.
-  
-  Definition node_edges (E : seq (N * fld * N)) (node : N)  :=
-    [seq edge <- E | is_src_in_edge edge node].
-
-  Definition node_labels (E : seq (N * @fld S Vals * N)) (node : N) : seq S :=
-    map (fun edge => let: (_, f, _) := edge in
-                  let: Field label _ := f in label) (node_edges E node).
-
-  Definition label_ocurrences_for_node (E : seq (N * @fld S Vals * N)) (node : N) (label : S) :=
-    count (fun l => l == label) (node_labels E node).
-
-
-  (** 
-      Checks whether a label 
-   **)
-  Definition is_label_unique_for_src_node (E : seq (N * @fld S Vals * N)) (src_node : N) (f : fld) :=
-    let nb_of_ocurrences := foldr (fun edge acc =>
-                                    let: (u, f', _) := edge in
-                                    if u == src_node then
-                                      if f == f' then acc + 1 else acc
-                                    else
-                                      acc) 0 E
-    in
-    nb_of_ocurrences == 1.
-
-
-  Fixpoint unzip T (s : seq (T * T)) : seq T :=
-    match s with
-    | (x, y) :: tl => x :: y :: unzip tl
-    | _ => [::]
-    end.
-
-  (* Change to use set *)
-  Definition nodes graph : seq node :=
-    graph.(root) :: (undup (unzip (map (fun edge => let: (u, _, v) := edge in (u, v)) graph.(E)))).
+  (** Get all nodes from a graph **)
+  Definition nodes graph : {fset node} :=
+    fset (graph.(root) :: (flatten [seq (edge_nodes edge) | edge <- graph.(E)])).
 
 
   Lemma root_in_nodes graph : graph.(root) \in nodes graph.
   Proof.
     rewrite /nodes.
-    rewrite inE.
+    rewrite in_fset inE. 
     by apply/orP; left; apply/eqP.
   Qed.
+
+
+  (** Get all neighbours of a node irrespective of the field in the edge 
+      connecting the two **)
+  Definition neighbours graph (u : node) : {fset node} :=
+    fset (foldr (fun e acc =>
+                   let: (u', _, v) := e in
+                   if u' == u then
+                     v :: acc
+                   else
+                     acc) [::] graph.(E)).
   
-  Definition get_neighbours graph (u : node) :=
-    fset_filter (fun edge => let: (u', _, _) := edge in u'  == u) graph.(E).
-    
-  Definition get_target_nodes_with_field graph (u : node) (f : fld) :=
-    let edges_with_field :=
-        filter (fun e => let: (u', f', _) := e in (u' == u) && (f' == f)) graph.(E)
+  (* fset [seq (edge_target edge) | edge <- [seq edge <- graph.(E) | edge_source edge == u]]. *)
+
+
+  (** Get all neighbours of a node that are linked via an edge with a given
+      field. **)
+  Definition neighbours_with_field graph (u : node) (f : fld) : {fset node} :=
+    fset [seq (edge_target edge) |  edge <- graph.(E) & ((edge_source edge == u) && (edge_field edge == f))].
+
+
+  (** 
+      Checks whether there is only one edge coming out of the source node and 
+      having the given field.
+   **)
+  Definition is_field_unique_for_src_node graph (src_node : node) (f : fld) :=
+    let edges :=
+        [seq edge <- graph.(E) | (edge_source edge == src_node) & (edge_field edge == f)]
     in
-    map (fun e => let: (_, _, v) := e in v) edges_with_field.
+    uniq edges.
 
   
 
