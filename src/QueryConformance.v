@@ -17,28 +17,56 @@ Require Import SchemaWellFormedness.
 Section QueryConformance.
 
   Variables Name Vals : ordType.
-
-  Implicit Type schema : @wfSchema Name Vals.  
+  Variable sch : @schema Name.
+  
+  Implicit Type schema : @wfSchema Name Vals sch.  
   Implicit Type queries : seq (@Query Name Vals).
   Implicit Type query : @Query Name Vals.
   Implicit Type type : @type Name.
 
+  (** Checks whether a query's argument (arg name + value associated) conforms to an argument
+      of a field defined in the schema.
+      
+      It basically consists on checking whether the field has an argument with the same name
+      as the query's argument, and whether the type of the value associated matches the
+      type of the field's argument (as defined in the schema).
+
+      ∃ argument ∈ field, name(argument) = name(α) ∧ value(α) has_type type(argument)
+   **)
   Definition argument_conforms schema (args : seq FieldArgumentDefinition) (arg : Name * Vals) : bool :=
     let: (argname, value) := arg in
     has (fun argdef => let: FieldArgument name ty := argdef in
                     (name == argname) && schema.(hasType) ty value) args.
   
 
+  (** Checks whether a set of arguments (described as a partial mapping between names and values)
+      conform to a set of fields. 
+
+      See also [arguments_conforms].
+   **)
   Definition arguments_conform schema (args : seq.seq FieldArgumentDefinition) (α : {fmap Name -> Vals}) : bool :=
     all (argument_conforms schema args) α.
      
 
+  (** Checks whether a type can be used as an inline fragment's guard 
+      in a given context with another type in scope (parent type).
+
+      It basically amounts to intersecting the possible types of each
+      and check that the intersection is not empty.
+
+
+      See also [SchemaAux - get_possible_types].
+
+     https://facebook.github.io/graphql/June2018/#sec-Fragment-spread-is-possible
+     https://facebook.github.io/graphql/June2018/#GetPossibleTypes()
+   **)
   Definition is_fragment_spread_possible schema parent_type ty : bool :=
     let ty_possible_types := get_possible_types schema ty in
     let parent_possible_types := get_possible_types schema parent_type in
     let applicable_types := (ty_possible_types :&: parent_possible_types)%fset in
     applicable_types != fset0.
 
+  (* TODO: rename **)
   Lemma object_spreads_E schema parent_type ty :
     is_object_type schema ty ->
     is_fragment_spread_possible schema parent_type ty ->
@@ -64,44 +92,43 @@ Section QueryConformance.
     case: ifP=> //. case: eqP => //.
   Admitted.
 
-  
+  (** Checks whether a query conforms to a given schema.
+      
+      Every query (or selection of fields) is set in a given context
+      of a particular type, therefore, the conformance is checked
+      based on the schema and the current type in context.
+
+  **)
   Fixpoint query_conforms schema ty query :=
     match query with
     | SingleField fname α => match lookup_field_in_type schema ty fname with
-                            | Some fld =>
-                              if is_scalar_type schema fld.(return_type) || is_enum_type schema fld.(return_type) then
-                                arguments_conform schema fld.(args) α
-                              else
-                                false
+                            | Some fld => (is_scalar_type schema fld.(return_type) ||
+                                          is_enum_type schema fld.(return_type)) &&
+                                          arguments_conform schema fld.(field_args) α
                             | _ => false
                             end
     | LabeledField _ fname α =>  match lookup_field_in_type schema ty fname with
-                                | Some fld =>
-                                   if is_scalar_type schema fld.(return_type) || is_enum_type schema fld.(return_type) then
-                                     arguments_conform schema fld.(args) α
-                                   else
-                                     false
+                                | Some fld => (is_scalar_type schema fld.(return_type) ||
+                                              is_enum_type schema fld.(return_type)) &&
+                                              arguments_conform schema fld.(field_args) α
+                                  
                                 | _ => false
                                 end
     | NestedField fname α ϕ =>
       match lookup_field_in_type schema ty fname with
-      | Some fld => if is_scalar_type schema fld.(return_type) || is_enum_type schema fld.(return_type) then
-                     false
-                   else
-                     [&& ϕ != [::],
-                      arguments_conform schema fld.(args) α &
-                      all (query_conforms schema fld.(return_type)) ϕ]
+      | Some fld => [&& ~~(is_scalar_type schema fld.(return_type) || is_enum_type schema fld.(return_type)),
+                    ϕ != [::],
+                    arguments_conform schema fld.(field_args) α &
+                    all (query_conforms schema fld.(return_type)) ϕ]
       | _ => false
       end
       
     | NestedLabeledField _ fname α ϕ =>
         match lookup_field_in_type schema ty fname with
-        | Some fld => if is_scalar_type schema fld.(return_type) || is_enum_type schema fld.(return_type) then
-                       false
-                     else
-                       [&& ϕ != [::],
-                        arguments_conform schema fld.(args) α &
-                        all (query_conforms schema fld.(return_type)) ϕ]
+        | Some fld => [&& ~~(is_scalar_type schema fld.(return_type) || is_enum_type schema fld.(return_type)),
+                      ϕ != [::],
+                      arguments_conform schema fld.(field_args) α &
+                      all (query_conforms schema fld.(return_type)) ϕ]
         | _ => false
         end
         
@@ -178,7 +205,7 @@ Section QueryConformance.
     type_in_scope \in implementation schema t.
   Proof.
     funelim (is_object_type schema type_in_scope) => // _.
-    funelim (is_interface_type schema0 t) => // _.
+    funelim (is_interface_type schema t) => // _.
     rewrite /query_conforms.
     move/and4P=> [_ Hspread _ _].
     move: Hspread; rewrite /is_fragment_spread_possible /get_possible_types Heq Heq0.
@@ -194,7 +221,7 @@ Section QueryConformance.
     type_in_scope \in union_members schema t.
   Proof.
     funelim (is_object_type schema type_in_scope) => // _.
-    funelim (is_union_type schema0 t) => // _.
+    funelim (is_union_type schema t) => // _.
     rewrite /query_conforms.
     move/and4P=> [_ Hspread _ _].
     move: Hspread; rewrite /is_fragment_spread_possible /get_possible_types Heq Heq0.
@@ -370,8 +397,8 @@ Section QueryConformance.
   Proof.
     rewrite /query_conforms.
     move=> Hlook; rewrite Hlook.
-    case: ifP => // _; rewrite -/(query_conforms schema fld.(return_type)).
-    move/and3P=> [HNempty Hargs Hall].
+    rewrite -/(query_conforms schema fld.(return_type)).
+    move/and4P=> [_ HNempty Hargs Hall].
     rewrite /queries_conform. 
     by apply/andP.  
   Qed.

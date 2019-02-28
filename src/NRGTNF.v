@@ -22,8 +22,9 @@ Require Import CpdtTactics.
 Section NRGTNF.
 
   Variables Name Vals : ordType.
-
-  Implicit Type schema : @wfSchema Name Vals.
+  Variable sch : @schema Name.
+  
+  Implicit Type schema : @wfSchema Name Vals sch.
   Implicit Type queries : seq (@Query Name Vals).
   Implicit Type query : @Query Name Vals.
   Definition is_field := @is_field Name Vals.
