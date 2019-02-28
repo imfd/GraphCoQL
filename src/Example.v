@@ -21,6 +21,7 @@ Require Import GraphConformance.
 Require Import Query.
 Require Import QueryConformance.
 Require Import QuerySemantic.
+Require Import NRGTNF.
 
 
 

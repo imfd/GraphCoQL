@@ -3,7 +3,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-From extructures Require Import ord.
+From extructures Require Import ord fset.
 
 Require Import treeordtype.
 
@@ -13,27 +13,36 @@ Open Scope schema_scope.
 
 Section Schema.
 
-  (** Names for everything, from operations, fields, arguments, types, etc.
+  (**
+     Names for everything, from operations, fields, arguments, types, etc.
 
-      https://facebook.github.io/graphql/June2018/#sec-Names **)
+     https://facebook.github.io/graphql/June2018/#sec-Names **)
   Variable Name : ordType.
 
   
-  (** Same as names, except that it can't be true, false or null. 
-      Right now it is just the same as Name.
+  (**
+     Same as names, except that it can't be true, false or null. 
+     Right now it is just the same as Name.
 
-      https://facebook.github.io/graphql/June2018/#EnumValue **)
+     https://facebook.github.io/graphql/June2018/#EnumValue **)
   Definition EnumValue := Name.
 
 
   
   Section Types.
+
+    (** 
+        Basically the same as a name.    
+    
+        https://facebook.github.io/graphql/June2018/#NamedType **)
     Definition NamedType := Name.
 
+    
     (** Types of data expected by query variables.
 
-        https://facebook.github.io/graphql/June2018/#sec-Type-References
-     **)
+        NonNull types are omitted in this current version.
+
+        https://facebook.github.io/graphql/June2018/#sec-Type-References **)
     Inductive type : Type :=
     | NT : NamedType -> type
     | ListType : type -> type.
@@ -45,9 +54,8 @@ Section Schema.
         Corresponds to a named type's actual name or the name used in a list type
 
         https://facebook.github.io/graphql/June2018/#sec-Type-References
-        https://facebook.github.io/graphql/June2018/#sec-Wrapping-Types
-     **)
-    Fixpoint name_of_type (ty : type) : Name :=
+        https://facebook.github.io/graphql/June2018/#sec-Wrapping-Types **)
+    Fixpoint name_of_type (ty : type) : NamedType :=
       match ty with
       | NT name => name
       | ListType ty' => name_of_type ty'
@@ -56,14 +64,13 @@ Section Schema.
     Coercion name_of_type : type >-> Ord.sort.
 
 
-    (** Get a tree out of a type **)
+    (** Packing and unpacking of a type, needed for canonical instances **)
     Fixpoint tree_of_type (ty : type) : GenTree.tree Name :=
       match ty with
       | NT n => GenTree.Node 0 [:: GenTree.Leaf n]
       | ListType ty' => GenTree.Node 1 [:: tree_of_type ty']
       end.
       
-    (** Get a type out of a tree or none **)
     Fixpoint type_of_tree (t : GenTree.tree Name) : option type :=
       match t with
       | GenTree.Node 0 [:: GenTree.Leaf n] => Some (NT n)
@@ -73,18 +80,16 @@ Section Schema.
                                    None
       | _ => None
       end.
-      
+
+
+    (** Cancelation lemma for types **)
     Lemma pcan_tree_of_type : pcancel tree_of_type type_of_tree.
     Proof. by elim=> [| t /= ->]. Qed.
     
-    Definition type_eqMixin := PcanEqMixin pcan_tree_of_type.
-    Canonical type_eqType := EqType type type_eqMixin.
-    Definition type_choiceMixin := PcanChoiceMixin pcan_tree_of_type.
-    Canonical type_choiceType := ChoiceType type type_choiceMixin.
+    Canonical type_eqType := EqType type (PcanEqMixin pcan_tree_of_type).
+    Canonical type_choiceType := ChoiceType type (PcanChoiceMixin pcan_tree_of_type).
+    Canonical type_ordType := OrdType type (PcanOrdMixin pcan_tree_of_type).
     
-    Definition type_ordMixin := PcanOrdMixin pcan_tree_of_type.
-    Canonical type_ordType := OrdType type type_ordMixin.
-      
   End Types.
 
 
@@ -96,24 +101,59 @@ Section Schema.
 
         In the specification it is named "InputValue" (InputValueDefinition) but 
         it is not very descriptive of what it is. Besides, it is constantly refered 
-        as "argument", therefore it is named as FieldArgument (only fields can have
-        arguments so it may sound redundant to name it like this but I feel it is
+        as "argument", therefore it is here named as FieldArgument (only fields can have
+        arguments so it may sound redundant to name it like this but I feel like it is
         more descriptive and reinforces this notion). 
 
         https://facebook.github.io/graphql/June2018/#sec-Field-Arguments **)
-    Record FieldArgumentDefinition := FieldArgument {
-                                         argname : Name;
-                                         argtype : type
-                                       }.
+    Inductive FieldArgumentDefinition := FieldArgument (argname : Name) (argtype : type).
+
+    (** Extractors for a FieldArgument **)
+    Definition argname arg := let: FieldArgument n _ := arg in n.
+    Definition argtype arg := let: FieldArgument _ t := arg in t.
+    
+
+    (** Packing and unpacking of a field argument, needed for canonical instances **)
+    Definition prod_of_arg (arg : FieldArgumentDefinition) := let: FieldArgument n t := arg in (n, t).
+    Definition arg_of_prod (p : prod Name type) := let: (n, t) := p in FieldArgument n t.
+
+    (** Cancelation lemma for field arguments **)
+    Lemma prod_of_argK : cancel prod_of_arg arg_of_prod.  Proof. by case. Qed.
   
-    (** https://facebook.github.io/graphql/June2018/#FieldDefinition **)
-    Record FieldDefinition := Field {
-                                 field_name : Name;
-                                 args : seq FieldArgumentDefinition;
-                                 return_type : type
-                               }.
+    Canonical arg_eqType := EqType FieldArgumentDefinition (CanEqMixin prod_of_argK).
+    Canonical arg_choiceType := ChoiceType FieldArgumentDefinition (CanChoiceMixin prod_of_argK).
+    Canonical arg_ordType := OrdType FieldArgumentDefinition (CanOrdMixin prod_of_argK).
 
 
+    
+    (** Field of an object or interface in the schema. 
+        Represents a leaf or an edge between nodes of the underlying tree structure.
+
+        https://facebook.github.io/graphql/June2018/#FieldDefinition **)
+    Inductive FieldDefinition := Field (field_name : Name)
+                                      (args : {fset FieldArgumentDefinition})
+                                      (return_type : type).
+
+    (** Extractors for a Field **)
+    Definition field_name fld := let: Field f _ _ := fld in f.
+    Definition field_args fld := let: Field _ args _ := fld in args.
+    Definition return_type fld := let: Field _ _ ty := fld in ty.
+
+    (** Packing and unpacking of a field, needed for canonical instances **)
+    Definition prod_of_field (f : FieldDefinition) := let: Field n args t := f in (n, args, t).
+    Definition field_of_prod (p : Name * {fset FieldArgumentDefinition} * type)  := let: (n, args, t) := p in Field n args t.
+
+    (** Cancelation lemma for a field **)
+    Lemma prod_of_fieldK : cancel prod_of_field field_of_prod. Proof. by case. Qed.
+
+    
+    Canonical field_eqType := EqType FieldDefinition (CanEqMixin prod_of_fieldK).
+    Canonical field_choiceType := ChoiceType FieldDefinition (CanChoiceMixin prod_of_fieldK).
+    Canonical field_ordType := OrdType FieldDefinition (CanOrdMixin prod_of_fieldK).
+
+
+    
+  
     (** Possible type definitions one can make in a GraphQL service. Some observations:
 
         1. Objects' interfaces: Objects *may* declare one or more implemented interfaces. This is 
@@ -134,12 +174,85 @@ Section Schema.
 
     Inductive TypeDefinition : Type :=
     | ScalarTypeDefinition : Name -> TypeDefinition
-    | ObjectTypeDefinition : Name -> seq NamedType -> seq FieldDefinition -> TypeDefinition
+    | ObjectTypeDefinition : Name -> {fset NamedType} -> seq FieldDefinition -> TypeDefinition
     | InterfaceTypeDefinition : Name -> seq FieldDefinition -> TypeDefinition
-    | UnionTypeDefinition : Name -> seq NamedType -> TypeDefinition
-    | EnumTypeDefinition : Name -> seq EnumValue -> TypeDefinition.
+    | UnionTypeDefinition : Name -> {fset NamedType} -> TypeDefinition
+    | EnumTypeDefinition : Name -> {fset EnumValue} -> TypeDefinition.
     
 
+    (** Extractors for a type definition **)
+    Definition tdef_name tdef : Name :=
+      match tdef with 
+      | ScalarTypeDefinition name => name
+      | ObjectTypeDefinition name _ _ => name
+      | InterfaceTypeDefinition name _ => name
+      | UnionTypeDefinition name _ => name
+      | EnumTypeDefinition name _ => name
+      end.
+
+    Coercion tdef_name : TypeDefinition >-> Ord.sort.
+
+    Definition tdef_fields tdef : seq FieldDefinition :=
+      match tdef with 
+      | ObjectTypeDefinition _ _ flds
+      | InterfaceTypeDefinition _ flds => flds
+      | _ => [::]
+      end.
+
+    Definition tdef_intfs tdef : {fset NamedType} :=
+      match tdef with
+      | ObjectTypeDefinition _ intfs _ => intfs
+      | _ => fset0
+      end.
+
+    Definition tdef_mbs tdef : {fset NamedType} :=
+      match tdef with
+      | UnionTypeDefinition _ mbs => mbs
+      | _ => fset0
+      end.
+
+    Definition tdef_enums tdef : {fset EnumValue} :=
+      match tdef with
+      | EnumTypeDefinition _ enums => enums
+      | _ => fset0
+      end.
+
+
+    
+    (** Packing and unpacking of a type definition, needed for canonical instances **)
+    Notation tdefRep := (Name + (Name * {fset NamedType} * seq FieldDefinition) + (Name * seq FieldDefinition) +
+                        (Name * {fset NamedType}) + (Name * {fset EnumValue}))%type.
+
+    
+    Definition tdef_rep tdef : tdefRep :=
+      match tdef with 
+      | ScalarTypeDefinition name => inl (inl (inl (inl name)))
+      | ObjectTypeDefinition name intfs flds => inl (inl (inl (inr (name, intfs, flds))))
+      | InterfaceTypeDefinition name flds => inl (inl (inr (name, flds)))
+      | UnionTypeDefinition name mbs => inl (inr (name, mbs))
+      | EnumTypeDefinition name enums => inr (name, enums)
+      end.
+
+    Definition tdef_con (trep : tdefRep) : TypeDefinition :=
+      match trep with
+      | inl (inl (inl (inl name))) => ScalarTypeDefinition name
+      | inl (inl (inl (inr (name, intfs, flds)))) => ObjectTypeDefinition name intfs flds
+      | inl (inl (inr (name, flds))) => InterfaceTypeDefinition name flds
+      | inl (inr (name, mbs)) => UnionTypeDefinition name mbs
+      | inr (name, enums) => EnumTypeDefinition name enums
+      end.
+
+    (** Cancelation lemma for a type definition **)
+    Lemma tdef_repK : cancel tdef_rep tdef_con.
+    Proof. by case. Qed.
+
+    
+    Canonical tdef_eqType := EqType TypeDefinition (CanEqMixin tdef_repK).
+    Canonical tdef_choiceType := ChoiceType TypeDefinition (CanChoiceMixin tdef_repK).
+    Canonical tdef_ordType := OrdType TypeDefinition (CanOrdMixin tdef_repK).
+    
+    
+      
     (** 
         The Schema corresponds to the type system - the collective types defined and a
         reference to the Query type (the entry point for queries).
@@ -155,141 +268,32 @@ Section Schema.
         This description matches the definition given in this file, but one can also define 
         a "schema", which only describes the types for the operations: query, mutation and suscription.
    **)
-    Record schema := Schema {
-                        query_type : NamedType;
-                        typeDefinitions : seq TypeDefinition
-                      }.
+    Inductive schema := Schema (query_type : NamedType)
+                              (type_definitions : seq TypeDefinition).
 
+    (** Extractors for a schema **)
+    Definition query_type sch := let: Schema q _ := sch in q.
+    Definition type_definitions sch := let: Schema _ tdefs := sch in tdefs.
+
+    Coercion type_definitions : schema >-> seq.
+
+    (** Packing and unpacking of a schema **)
+    Definition prod_of_schema (s : schema) := let: Schema q tdefs := s in (q, tdefs).
+    Definition schema_of_prod p := let: (q, tdefs) := p in Schema q tdefs.
+
+    (** Cancelation lemma for a schema **)
+    Lemma prod_of_schemaK : cancel prod_of_schema schema_of_prod.  Proof. by case. Qed.
+ 
+    Canonical schema_eqType := EqType schema (CanEqMixin prod_of_schemaK).
+    Canonical schema_choiceType := ChoiceType schema (CanChoiceMixin prod_of_schemaK).
+    Canonical schema_ordType := OrdType schema (CanOrdMixin prod_of_schemaK).
 
   End TypeSystem.
-
- 
-      
-  Definition prod_of_arg (arg : FieldArgumentDefinition) := let: FieldArgument n t := arg in (n, t).
-  Definition arg_of_prod (p : prod Name type) := let: (n, t) := p in FieldArgument n t.
-
-  Lemma prod_of_argK : cancel prod_of_arg arg_of_prod.  Proof. by case. Qed.
-  
-  Definition arg_eqMixin := CanEqMixin prod_of_argK.
-  Canonical arg_eqType := EqType FieldArgumentDefinition arg_eqMixin.
-  
-
-  
-  Coercion return_type : FieldDefinition >-> type.
-  
-  Definition prod_of_field (f : FieldDefinition) := let: Field n args t := f in (n, args, t).
-  Definition field_of_prod (p : Name * (seq.seq FieldArgumentDefinition) * type)  := let: (n, args, t) := p in Field n args t.
-  
-  Lemma prod_of_fieldK : cancel prod_of_field field_of_prod. Proof. by case. Qed.
-  
-  Definition field_eqMixin := CanEqMixin prod_of_fieldK.
-  Canonical field_eqType := EqType FieldDefinition field_eqMixin.
-
-
-
-   
-  Fixpoint name_of_type_definition tdef : Name :=
-    match tdef with 
-    | ScalarTypeDefinition name => name
-    | ObjectTypeDefinition name _ _ => name
-    | InterfaceTypeDefinition name _ => name
-    | UnionTypeDefinition name _ => name
-    | EnumTypeDefinition name _ => name
-    end.
-  
-  Coercion name_of_type_definition : TypeDefinition >-> Ord.sort.
-
-  
-  Definition type_definition_eq tdef1 tdef2 :=
-    match tdef1, tdef2 with
-    | ScalarTypeDefinition n, ScalarTypeDefinition n' => n == n'
-    | ObjectTypeDefinition n tys flds, ObjectTypeDefinition n' tys' flds' => [&& (n == n'), (tys == tys') & (flds == flds')]
-    | InterfaceTypeDefinition n flds, InterfaceTypeDefinition n' flds' => (n == n') && (flds == flds')
-    | UnionTypeDefinition n mbs, UnionTypeDefinition n' mbs' => (n == n') && (mbs == mbs')
-    | EnumTypeDefinition n es, EnumTypeDefinition n' es' => (n == n') && (es == es')
-    | _, _ => false
-    end.
-  
-
-  Lemma type_definition_eqP : Equality.axiom type_definition_eq.
-  Proof.
-    move=> t1 t2; apply: (iffP idP) => [|<-].
-    elim: t1; elim: t2 => //.
-      by move=> n n' /= /eqP => ->.
-      by move=> n tyzs flds n' tys' flds' /=; case/and3P=> /eqP -> /eqP -> /eqP ->.
-      by move=> n flds n' flds' /= /andP [/eqP -> /eqP ->].  
-      by move=> n mbs n' mbs' /andP [/eqP -> /eqP ->].
-      by move=> n es n' es' /andP [/eqP -> /eqP ->].
-    by elim: t1; move=> * /=; rewrite !eqxx.
-  Qed.
-
-    
-  Definition type_definition_eqMixin := EqMixin type_definition_eqP.
-  Canonical type_definition_eqType := EqType TypeDefinition type_definition_eqMixin.
-
-
-  
-
-  Definition prod_of_schema (s : schema) := let: Schema q tdefs := s in (q, tdefs).
-  Definition schema_of_prod p := let: (q, tdefs) := p in Schema q tdefs.
-
-  Lemma prod_of_schemaK : cancel prod_of_schema schema_of_prod.  Proof. by case. Qed.
-  
-  Definition schema_eqMixin := CanEqMixin prod_of_schemaK.
-  Canonical schema_eqType := EqType schema schema_eqMixin.
-  
-      
-  Definition fun_of_schema (s : schema) : TypeDefinition -> bool := fun tdef => tdef \in s.(typeDefinitions).
-  Coercion fun_of_schema : schema >-> Funclass.
-  Coercion typeDefinitions : schema >-> seq.
-
-
-  Lemma in_schemaE (s : schema) tdef : s tdef = (tdef \in s.(typeDefinitions)).
-  Proof. done. Qed.
-    
-  Definition is_named tdef name : bool :=
-    match tdef with
-    | ScalarTypeDefinition n => n == name
-    | ObjectTypeDefinition n _ _ => n == name
-    | InterfaceTypeDefinition n _ => n == name
-    | UnionTypeDefinition n _ => n == name
-    | EnumTypeDefinition n _ => n == name
-    end.
-  
-  Definition pred_of_schema (s : schema) : collective_pred Name :=
-    [pred ty : Name | has (fun tdef => is_named tdef ty) s.(typeDefinitions)].
-  
-  Canonical schema_predType := mkPredType pred_of_schema.
-  
-  Definition tdef_pred_of_schema (s : schema) :=
-    [pred tdef : TypeDefinition | tdef \in s.(typeDefinitions)].
-    
-    
-  Lemma name_in_schemaE (s : schema) (n : Name) : n \in s = has (fun tdef => is_named tdef n) s.
-  Proof. done. Qed.
-    
-     
-  Definition contains_field_name tdef (name : Name) : bool :=
-    match tdef with
-    | ScalarTypeDefinition _ => false
-    | ObjectTypeDefinition n _ flds => has (fun fld => fld.(field_name) == name) flds
-    | InterfaceTypeDefinition n flds => has (fun fld => fld.(field_name) == name) flds
-    | UnionTypeDefinition n mbs => name \in mbs
-    | EnumTypeDefinition n evs => name \in evs
-    end.
-    
-    Definition pred_of_type_definition (tdef : TypeDefinition) : collective_pred Name :=
-      [pred ty : Name | contains_field_name tdef ty].
-  
-    Canonical type_definition_predType := mkPredType pred_of_type_definition.
-    
-    Lemma in_typeDefinitionE (tdef : TypeDefinition) (n : Name) : n \in tdef = contains_field_name tdef n.
-    Proof. done. Qed.
     
     
 End Schema.
 
-
+(*
 
 Notation "[ name ]" := (ListType name).
 Notation "argname : ty" := (FieldArgument argname ty) : schema_scope.
@@ -301,6 +305,12 @@ Notation "'interface' I '{' flds '}'" := (InterfaceTypeDefinition I flds) : sche
 Notation "'union' U '{' mbs '}'" := (UnionTypeDefinition U mbs) : schema_scope.
 Notation "'enum' E '{' evs '}'" := (EnumTypeDefinition E evs) : schema_scope.
 
+ *)
+Arguments argname [Name].
+Arguments argtype [Name].
+Arguments field_name [Name].
+Arguments field_args [Name].
+Arguments return_type [Name].
 Arguments NamedType [Name].
 Arguments type [Name].
 Arguments FieldArgumentDefinition [Name].

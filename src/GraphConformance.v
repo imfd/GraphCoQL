@@ -17,8 +17,11 @@ Section Conformance.
 
   Variables (N Name Vals: ordType).
 
-  Implicit Type schema : @wfSchema Name Vals.
-  Implicit Type graph : @graphQLGraph N Name Vals. 
+  Variables (sch : @schema Name).
+  
+  
+  Implicit Type schema : @wfSchema Name Vals sch.
+  Implicit Type graph : @graphQLGraph Name Vals. 
 
 
   (** 
@@ -41,15 +44,15 @@ Section Conformance.
    **)     
       
     
-  Definition arguments_conform schema (srcNode : @node N Name Vals) (f : fld) :=
-    let argumentConforms arg :=
+  Definition arguments_conform schema (srcNode : @node Name Vals) (f : fld) :=
+    let argument_conforms arg :=
         let: (argname, value) := arg in
         match lookup_argument_in_type_and_field schema srcNode.(type) f argname with
         | Some (FieldArgument _ ty) => (hasType schema) ty value    (* If the argument is declared then check its value's type *)
         | _ => false
         end
     in
-    all argumentConforms f.(args).
+    all argument_conforms f.(args).
   
     
 
@@ -61,10 +64,8 @@ Section Conformance.
 
       This is used when checking that an edge conforms to a Schema (see next definition).
    **)
-  Definition field_type_conforms schema (fieldType targetType : Name) : bool :=
-    (fieldType == targetType) ||
-    (declares_implementation schema targetType fieldType) ||
-    (targetType \in (union_members schema fieldType)).
+  Definition field_type_conforms schema (field_type target_type : Name) : bool :=
+    is_subtype schema (NT target_type) (NT field_type).
 
 
   
@@ -77,7 +78,7 @@ Section Conformance.
      1. f ∈ fields (τ(u)) :
           field 'f' has to be a field of that node's type in the Schema.
 
-     2. type (f) = τ(v) ∨ τ(v) ∈ implementation (type (f)) ∨ τ(v) ∈ union (type (f)) : 
+     2. type (f) = τ(v) ∨ τ(v) ∈ implementation (type (f)) ∨ τ(v) ∈ union (type (f)) , ie, is a subtype :
           The type associated to 'f' in the schema has to be the same type associated to node 'v'
        OR the type of 'f' is an Interface type therefore the type of 'v' has to be of an 
             object which implements this interface
@@ -92,17 +93,17 @@ Section Conformance.
         that given field.
 
    **)
-  Definition edges_conform schema (E : {fset node * fld * node}) :=
-    let edgeConforms edge :=
+  Definition edges_conform schema graph :=
+    let edge_conforms edge :=
         let: (u, f, v) := edge in
         match lookup_field_type schema u.(type) f.(label) with    (* Check if field is declared in type *)
-        | Some fieldType => (field_type_conforms schema fieldType v.(type)) &&
-                           (is_list_type fieldType || is_label_unique_for_src_node E u f) &&
-                           arguments_conform schema u f
+        | Some fieldType => [&& (field_type_conforms schema fieldType v.(type)),
+                            (is_list_type fieldType || is_field_unique_for_src_node graph u f) &
+                            arguments_conform schema u f]
         | _ => false
         end
     in
-    all edgeConforms E.
+    all edge_conforms graph.(E).
 
   
   (**
@@ -121,7 +122,7 @@ Section Conformance.
    **)
     
   Definition node_fields_conform schema (u : node) :=
-    let fieldConforms f :=
+    let field_conforms f :=
         let: (f', vals) := f in
         match lookup_field_type schema u.(type) f'.(label) with
         | Some fieldType =>                (* Field is declared in the node's type *)
@@ -133,15 +134,15 @@ Section Conformance.
         | _ => false
         end
     in
-    all fieldConforms u.(fields).
+    all field_conforms u.(fields).
 
   
   Definition fields_conform schema graph :=
-    all (node_fields_conform schema) (nodes graph).
+    all (node_fields_conform schema) graph.(nodes).
 
   
   Definition nodes_have_object_type schema graph : bool :=
-    all (fun node : node => is_object_type schema node) (nodes graph).
+    all (fun node : node => is_object_type schema node.(type)) graph.(nodes).
 
 
   (**
@@ -152,10 +153,10 @@ Section Conformance.
      4. Its nodes conform to the Schema.
 
    **)
-  Structure conformedGraph schema := ConformedGraph {
+  Record conformedGraph schema := ConformedGraph {
                                                 graph;
                                                 _ : root_type_conforms schema graph;
-                                                _ : edges_conform schema graph.(E);
+                                                _ : edges_conform schema graph;
                                                 _ : fields_conform schema graph;
                                                 _ : nodes_have_object_type schema graph
                                       }.
@@ -163,6 +164,17 @@ Section Conformance.
   Coercion graph_of_conformed_graph schema (g : conformedGraph schema) := let: ConformedGraph g _ _ _ _ := g in g.
 
 
+  Lemma aux_root_query_type schema graph :
+    root_type_conforms schema graph -> graph.(root).(type) = schema.(query_type).
+  Proof. by rewrite /root_type_conforms; move/eqP. Qed.
+  
+  Lemma root_query_type schema (graph : conformedGraph schema) :
+    graph.(root).(type) = schema.(query_type).
+  Proof.
+    case: graph => g H *.
+      by move: (aux_root_query_type H).
+  Qed.
+
 End Conformance.
 
-Arguments conformedGraph [N Name Vals]. 
+Arguments conformedGraph [Name Vals]. 
