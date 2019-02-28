@@ -319,3 +319,4 @@ Arguments TypeDefinition [Name].
 Arguments Schema [Name].
 
 Arguments name_of_type [Name].
+Arguments tdef_intfs [Name].
