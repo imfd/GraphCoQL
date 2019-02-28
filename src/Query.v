@@ -165,6 +165,10 @@ Section Query.
   
   
 
+  (** Boolean predicate to state equivalence between queries, needed for canonical instance.
+
+   Maybe an isomorphism to another structure would be better (tree) but it was a bit chaotic,
+   so I left it there hanging for a while. **)
   Equations query_eq (q1 q2 : Query) : bool :=
     {
       query_eq (SingleField n α) (SingleField n' α') := (n == n') && (α == α');
@@ -195,10 +199,55 @@ Section Query.
     by move=> n α; case=> // n' α'; rewrite query_eq_equation_1; move/andP=> [/eqP -> /eqP ->].
     by move=> l n α; case=> // l' n' α'; rewrite query_eq_equation_7; move/and3P=> [/eqP -> /eqP -> /eqP ->].
   Admitted.
-  
-  Definition query_eqMixin := EqMixin query_eqP.
-  Canonical query_eqType := EqType Query query_eqMixin.
 
+  
+  Canonical query_eqType := EqType Query (EqMixin query_eqP).
+
+
+  (** Extractors for queries **)
+  Definition qname query : option Name :=
+    match query with
+    | SingleField name _
+    | LabeledField _ name _
+    | NestedField name _ _
+    | NestedLabeledField _ name _ _ => Some name
+    | _ => None
+    end.
+
+  Definition qlabel query : option Name :=
+    match query with
+    | LabeledField label _ _
+    | NestedLabeledField label _ _ _ => Some label
+    | _ => None
+    end.
+  
+  Definition qsubquery query : seq Query :=
+    match query with
+    | NestedField _ _ ϕ
+    | NestedLabeledField _ _ _ ϕ
+    | InlineFragment _ ϕ => ϕ
+    | _ => [::]
+    end.
+
+  Definition qargs query : {fmap Name -> Vals} :=
+    match query with
+    | SingleField _ α
+    | LabeledField _ _ α
+    | NestedField _ α _
+    | NestedLabeledField _ _ α _ => α
+    | _ => emptym
+    end.
+
+
+  (** Extractors for response objects **)
+  Definition rname response : Name :=
+    match response with
+    | Null name
+    | SingleResult name _
+    | ListResult name _
+    | NestedResult name _
+    | NestedListResult name _ => name
+    end.
   
   
 End Query.

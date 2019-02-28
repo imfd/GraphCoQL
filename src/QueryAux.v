@@ -18,7 +18,7 @@ Section QueryAux.
   Implicit Type query : @Query Name Vals.
   Implicit Type response : @ResponseObject Name Vals.
 
-
+  (** Get the query's size, according to Jorge and Olaf's version **)
   Equations query_size query : nat :=
     {
       query_size (NestedField _ _ q') := 1 + queries_size q';
@@ -33,7 +33,8 @@ Section QueryAux.
       queries_size (cons hd tl) := query_size hd + queries_size tl
     }.
 
-  
+  (** Partial equality between queries.
+      It basically ignores subqueries and only checks labels, names and arguments **)
   Definition partial_query_eq (q1 q2 : @Query Name Vals) : bool :=
     match q1, q2 with
     | SingleField n α, SingleField n' α'
@@ -44,7 +45,11 @@ Section QueryAux.
     | _, _ => false
     end.
 
-      
+
+  (** Boolean predicates to check what type the query is:
+      - Fields : Everything not an inline fragment
+      - Inline : An inline fragment 
+   **)
   Equations is_field query : bool :=
     is_field (InlineFragment _ _) := false;
     is_field _ := true.
@@ -54,7 +59,7 @@ Section QueryAux.
     is_inline_fragment _ := false.                                           
 
 
-  
+  (** Get the response's size, according to Jorge and Olaf's version **)
   Equations(noind) response_size response : nat :=
     {
       response_size (Null _) := 3;
@@ -74,6 +79,8 @@ Section QueryAux.
       responses_size' [::] := 0;
       responses_size' (cons hd tl) := responses_size hd + responses_size' tl
     }.
+
+
   
   Lemma responses_size_app (l1 l2 : seq.seq (@ResponseObject Name Vals)) : responses_size (l1 ++ l2) = responses_size l1 + responses_size l2.
   Proof. 
