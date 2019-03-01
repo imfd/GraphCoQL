@@ -55,13 +55,13 @@ Section Schema.
 
         https://facebook.github.io/graphql/June2018/#sec-Type-References
         https://facebook.github.io/graphql/June2018/#sec-Wrapping-Types **)
-    Fixpoint name_of_type (ty : type) : NamedType :=
+    Fixpoint tname (ty : type) : NamedType :=
       match ty with
       | NT name => name
-      | ListType ty' => name_of_type ty'
+      | ListType ty' => tname ty'
       end.
 
-    Coercion name_of_type : type >-> Ord.sort.
+    Coercion tname : type >-> Ord.sort.
 
 
     (** Packing and unpacking of a type, needed for canonical instances **)
@@ -135,8 +135,8 @@ Section Schema.
                                       (return_type : type).
 
     (** Extractors for a Field **)
-    Definition field_name fld := let: Field f _ _ := fld in f.
-    Definition field_args fld := let: Field _ args _ := fld in args.
+    Definition fname fld := let: Field f _ _ := fld in f.
+    Definition fargs fld := let: Field _ args _ := fld in args.
     Definition return_type fld := let: Field _ _ ty := fld in ty.
 
     (** Packing and unpacking of a field, needed for canonical instances **)
@@ -181,7 +181,7 @@ Section Schema.
     
 
     (** Extractors for a type definition **)
-    Definition tdef_name tdef : Name :=
+    Definition tdname tdef : Name :=
       match tdef with 
       | ScalarTypeDefinition name => name
       | ObjectTypeDefinition name _ _ => name
@@ -190,28 +190,28 @@ Section Schema.
       | EnumTypeDefinition name _ => name
       end.
 
-    Coercion tdef_name : TypeDefinition >-> Ord.sort.
+    Coercion tdname : TypeDefinition >-> Ord.sort.
 
-    Definition tdef_fields tdef : seq FieldDefinition :=
+    Definition tfields tdef : seq FieldDefinition :=
       match tdef with 
       | ObjectTypeDefinition _ _ flds
       | InterfaceTypeDefinition _ flds => flds
       | _ => [::]
       end.
 
-    Definition tdef_intfs tdef : {fset NamedType} :=
+    Definition tintfs tdef : {fset NamedType} :=
       match tdef with
       | ObjectTypeDefinition _ intfs _ => intfs
       | _ => fset0
       end.
 
-    Definition tdef_mbs tdef : {fset NamedType} :=
+    Definition tmbs tdef : {fset NamedType} :=
       match tdef with
       | UnionTypeDefinition _ mbs => mbs
       | _ => fset0
       end.
 
-    Definition tdef_enums tdef : {fset EnumValue} :=
+    Definition tenums tdef : {fset EnumValue} :=
       match tdef with
       | EnumTypeDefinition _ enums => enums
       | _ => fset0
@@ -308,8 +308,8 @@ Notation "'enum' E '{' evs '}'" := (EnumTypeDefinition E evs) : schema_scope.
  *)
 Arguments argname [Name].
 Arguments argtype [Name].
-Arguments field_name [Name].
-Arguments field_args [Name].
+Arguments fname [Name].
+Arguments fargs [Name].
 Arguments return_type [Name].
 Arguments NamedType [Name].
 Arguments type [Name].
@@ -318,5 +318,5 @@ Arguments FieldDefinition [Name].
 Arguments TypeDefinition [Name].
 Arguments Schema [Name].
 
-Arguments name_of_type [Name].
-Arguments tdef_intfs [Name].
+Arguments tname [Name].
+Arguments tintfs [Name].

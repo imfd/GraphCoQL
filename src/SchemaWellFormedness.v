@@ -4,8 +4,6 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 From extructures Require Import ord fset.
 
-Require Import List.
-Import ListNotations.
 
 Require Import Schema.
 Require Import SchemaAux.
@@ -162,8 +160,8 @@ Section WellFormedness.
    **)
   Definition is_field_wf (fld : FieldDefinition) : bool :=
     [&& is_valid_field_type fld.(return_type),
-     uniq [seq arg.(argname) | arg <- fld.(field_args)] &
-     all (is_field_argument_wf) fld.(field_args)].
+     uniq [seq arg.(argname) | arg <- fld.(fargs)] &
+     all (is_field_argument_wf) fld.(fargs)].
 
 
 
@@ -297,13 +295,13 @@ Section WellFormedness.
                                  
     | ObjectTypeDefinition name interfaces fields =>
       [&& (fields != [::]),
-       uniq [seq fld.(field_name) | fld <- fields],
+       uniq [seq fld.(fname) | fld <- fields],
        all is_field_wf fields &
        all (implements_interface_correctly name) interfaces]
 
     | InterfaceTypeDefinition _ fields =>
       [&& (fields != [::]),
-       uniq [seq fld.(field_name) | fld <- fields] &
+       uniq [seq fld.(fname) | fld <- fields] &
        all is_field_wf fields]
 
     | UnionTypeDefinition name members =>
@@ -316,11 +314,10 @@ Section WellFormedness.
 
   
   Definition is_schema_wf schema : bool :=
-    let: Schema query_type tdefs := schema in
-    [&& (query_type \in schema_names schema),
-     is_object_type schema query_type,
-     uniq [seq tdef.(tdef_name) | tdef <- schema] &                   
-     all is_type_def_wf tdefs].
+    [&& (schema.(query_type) \in schema_names schema),
+     is_object_type schema schema.(query_type),
+     uniq [seq tdef.(tdname) | tdef <- schema] &                   
+     all is_type_def_wf schema.(type_definitions)].
       
   
   Structure wfSchema := WFSchema {
@@ -333,13 +330,14 @@ Section WellFormedness.
   Coercion schem : wfSchema >-> Schema.schema.
 
 
+
+  
+
   Lemma query_has_object_type schema :
     is_schema_wf schema ->
     is_object_type schema schema.(query_type).
   Proof.
-    case: schema => query_type tdefs.
-    rewrite /is_schema_wf.
-      by move/and4P=> [_ Hobj _ _].
+    by rewrite /is_schema_wf => /and4P [_ Hobj _ _].
   Qed.
 
   Lemma query_has_object_type_wf_schema (schema : wfSchema) :
@@ -348,7 +346,22 @@ Section WellFormedness.
     by apply: (query_has_object_type H).
   Qed.
 
+  Lemma tdefs_N_nil schema :
+    is_schema_wf schema ->
+    schema.(type_definitions) != [::].
+  Proof.
+    rewrite /is_schema_wf => /and4P [H _ _ _].
+    rewrite /schema_names in_fset in H.
+    by case: schema.(type_definitions) H => //.
+  Qed.
 
+  
+  Lemma has_implementation_is_interface (schema : wfSchema) ty :
+    implementation schema ty != fset0 ->
+    is_interface_type schema ty.
+  Proof.
+  Abort.
+  
   Lemma field_in_interface_in_object (schema : wfSchema) ty ti f :
     ty \in implementation schema ti ->
     lookup_field_in_type schema ty f = lookup_field_in_type schema ti f.

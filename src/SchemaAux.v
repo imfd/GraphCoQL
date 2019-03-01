@@ -63,9 +63,10 @@ Section SchemaAux.
   
   (** Checks whether the given type definition has the given name **)
   Definition has_name (name : @NamedType Name) (tdef : TypeDefinition) : bool :=
-    name == tdef.(tdef_name).
+    name == tdef.(tdname).
 
-  Lemma has_nameP name tdef : reflect (name = tdef.(tdef_name)) (has_name name tdef).
+  
+  Lemma has_nameP name tdef : reflect (name = tdef.(tdname)) (has_name name tdef).
   Proof. by apply: (iffP eqP). Qed.
   
   (**
@@ -77,7 +78,7 @@ Section SchemaAux.
     
 
   Lemma lookup_typeP ty :
-    reflect (exists2 tdef, tdef \in schema.(type_definitions) & tdef.(tdef_name) = ty)
+    reflect (exists2 tdef, tdef \in schema.(type_definitions) & tdef.(tdname) = ty)
             (lookup_type ty).
   Proof.
     apply: (iffP idP).
@@ -105,7 +106,7 @@ Section SchemaAux.
     by case: has_name => //; [case=> -> | move/IH => //; apply: mem_tail].
   Qed.
 
-  Lemma lookup_type_name ty tdef : lookup_type ty = Some tdef -> ty = tdef.(tdef_name).
+  Lemma lookup_type_name ty tdef : lookup_type ty = Some tdef -> ty = tdef.(tdname).
   Proof.
     rewrite /lookup_type.
     elim: schema.(type_definitions) => // hd tl IH.
@@ -194,11 +195,11 @@ Section SchemaAux.
 
   
   (** Get all unduplicated argument names from a field **)
-  Definition field_arg_names (fld : FieldDefinition) : {fset Name} := fset [seq arg.(argname) | arg <- fld.(field_args)].
+  Definition field_arg_names (fld : FieldDefinition) : {fset Name} := fset [seq arg.(argname) | arg <- fld.(fargs)].
 
 
   (** Get all field names from a type definition **)
-  Definition tdef_field_names (tdef : @TypeDefinition Name) : {fset Name} := fset [seq fld.(field_name) | fld <- tdef.(tdef_fields)].
+  Definition tdef_field_names (tdef : @TypeDefinition Name) : {fset Name} := fset [seq fld.(fname) | fld <- tdef.(tfields)].
 
   
   (** Get list of fields declared in an Object or Interface type definition **)
@@ -211,7 +212,7 @@ Section SchemaAux.
 
 
   (** Get all type definitions' names from a schema **)
-  Definition schema_names : {fset Name} := fset [seq tdef.(tdef_name) | tdef <- schema]. 
+  Definition schema_names : {fset Name} := fset [seq tdef.(tdname) | tdef <- schema]. 
 
 
   (** Check whether a given name is declared in the schema, as a type definition **)
@@ -219,11 +220,11 @@ Section SchemaAux.
 
 
   (** Checks whether the field has the given name **)
-  Definition has_field_name (fname : Name) (fld : FieldDefinition) :=
-    fname == fld.(field_name).
+  Definition has_field_name (name : Name) (fld : FieldDefinition) :=
+    name == fld.(fname).
 
-  Lemma has_field_nameP (fname : Name) (fld : FieldDefinition) :
-    reflect (fname = fld.(field_name)) (has_field_name fname fld).
+  Lemma has_field_nameP (name : Name) (fld : FieldDefinition) :
+    reflect (name = fld.(fname)) (has_field_name name fld).
   Proof.
     by apply: (iffP eqP). Qed.
     
@@ -234,15 +235,15 @@ Section SchemaAux.
    **)
   Definition lookup_field_in_type (ty : NamedType) (fname : Name) : option FieldDefinition :=
     if lookup_type ty is Some tdef then
-      get_first (has_field_name fname) tdef.(tdef_fields)
+      get_first (has_field_name fname) tdef.(tfields)
     else
       None.
 
 
-  Lemma lookup_field_in_typeP ty fname :
+  Lemma lookup_field_in_typeP ty name :
     reflect (exists tdef fld, [/\ lookup_type ty = Some tdef,
-                          fld \in tdef.(tdef_fields) &
-                                  fld.(field_name) = fname]) (lookup_field_in_type ty fname).
+                          fld \in tdef.(tfields) &
+                                  fld.(fname) = name]) (lookup_field_in_type ty name).
   Proof.
     apply: (iffP idP).
     - rewrite /lookup_field_in_type.
@@ -311,18 +312,18 @@ Section SchemaAux.
     end.
 
 
-  
   Lemma in_intfs ty (tdef : @TypeDefinition Name):
-    ty \in tdef_intfs tdef ->
-           exists n flds, tdef = ObjectTypeDefinition n (tdef_intfs tdef) flds.
+    ty \in tdef.(tintfs) ->
+           exists n flds, tdef = ObjectTypeDefinition n tdef.(tintfs) flds.
   Proof.
-    rewrite /tdef_intfs.
+    rewrite /tintfs.
     case: tdef => // o i flds Hin.
     by exists o, flds.
   Qed.
   
+ 
   Lemma declares_implementationP ty ity :
-    reflect (exists2 tdef, lookup_type ty = Some tdef & ity \in tdef_intfs tdef)
+    reflect (exists2 tdef, lookup_type ty = Some tdef & ity \in tdef.(tintfs))
             (declares_implementation ty ity).
   Proof.
     apply: (iffP idP).
@@ -335,9 +336,7 @@ Section SchemaAux.
   Qed.
   
   Definition implements_interface (iname : NamedType) (tdef : @TypeDefinition Name) : bool :=
-    iname \in tdef.(tdef_intfs).
-
-
+    iname \in tdef.(tintfs).
 
 
 
@@ -369,13 +368,13 @@ Section SchemaAux.
     | Some (InterfaceTypeDefinition iname _) =>
       let filtered := [seq tdef <- schema | implements_interface iname tdef]
       in
-      fset [seq tdef.(tdef_name) | tdef <- filtered]
+      fset [seq tdef.(tdname) | tdef <- filtered]
     | Some (UnionTypeDefinition _ mbs) => fset mbs
     | _ => fset0
     end.
   
   Definition implementation (ty : NamedType) : {fset NamedType} :=
-    fset [seq tdef.(tdef_name) | tdef <- schema & implements_interface ty tdef].
+    fset [seq tdef.(tdname) | tdef <- schema & implements_interface ty tdef].
 
 
 
@@ -411,7 +410,7 @@ Section SchemaAux.
       by rewrite mem_filter => /andP [Himpl Hin] _; exists x'.
     - case=> [x Hin Himpl].
       rewrite /implementation fset_N_fset0.
-      apply/seq0Pn. exists (x.(tdef_name)).
+      apply/seq0Pn. exists (x.(tdname)).
       by apply/mapP; exists x => //;rewrite mem_filter; apply/andP.
   Qed.
       
@@ -463,7 +462,8 @@ Section SchemaAux.
     - move=> obj intfs flds Hlook.
         by rewrite in_fset1; move/eqP; constructor 1.
     - move=> intf flds Hlook.
-        by rewrite in_fset /implementation Hlook; constructor 2; rewrite in_fset.
+      move/lookup_type_name: Hlook => -> /=.
+      by rewrite /implementation in_fset; constructor 2.
     - move=> un mbs Hlook.
         by rewrite in_fset /union_members Hlook; constructor 3.
   Qed.

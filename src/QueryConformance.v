@@ -104,13 +104,13 @@ Section QueryConformance.
     | SingleField fname α => match lookup_field_in_type schema ty fname with
                             | Some fld => (is_scalar_type schema fld.(return_type) ||
                                           is_enum_type schema fld.(return_type)) &&
-                                          arguments_conform schema fld.(field_args) α
+                                          arguments_conform schema fld.(fargs) α
                             | _ => false
                             end
     | LabeledField _ fname α =>  match lookup_field_in_type schema ty fname with
                                 | Some fld => (is_scalar_type schema fld.(return_type) ||
                                               is_enum_type schema fld.(return_type)) &&
-                                              arguments_conform schema fld.(field_args) α
+                                              arguments_conform schema fld.(fargs) α
                                   
                                 | _ => false
                                 end
@@ -118,7 +118,7 @@ Section QueryConformance.
       match lookup_field_in_type schema ty fname with
       | Some fld => [&& ~~(is_scalar_type schema fld.(return_type) || is_enum_type schema fld.(return_type)),
                     ϕ != [::],
-                    arguments_conform schema fld.(field_args) α &
+                    arguments_conform schema fld.(fargs) α &
                     all (query_conforms schema fld.(return_type)) ϕ]
       | _ => false
       end
@@ -127,7 +127,7 @@ Section QueryConformance.
         match lookup_field_in_type schema ty fname with
         | Some fld => [&& ~~(is_scalar_type schema fld.(return_type) || is_enum_type schema fld.(return_type)),
                       ϕ != [::],
-                      arguments_conform schema fld.(field_args) α &
+                      arguments_conform schema fld.(fargs) α &
                       all (query_conforms schema fld.(return_type)) ϕ]
         | _ => false
         end
@@ -187,7 +187,7 @@ Section QueryConformance.
     - rewrite /query_conforms.
       move/and4P=> [/or3P _ Hspread _ _].
       move: (object_spreads_E Hobj Hspread)=> [||] //.
-        by rewrite /implementation H.
+        rewrite /implementation.
       by rewrite /union_members H.
     - move=> Heq; rewrite Heq /=.
       move: Hqsc; rewrite /queries_conform.
