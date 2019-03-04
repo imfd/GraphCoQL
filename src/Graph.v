@@ -74,7 +74,7 @@ Section GraphQLGraph.
   Canonical node_predType := mkPredType pred_of_node.
 
 
-  Lemma mem_fieldE (n : node) f : f \in n = isSome (n f).
+  Lemma mem_fieldE (n : node) f : f \in n = (n f).
   Proof. done. Qed.
 
   
