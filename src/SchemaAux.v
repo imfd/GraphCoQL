@@ -267,7 +267,15 @@ Section SchemaAux.
     | _ => fset0
     end.
 
- 
+
+  Lemma union_members_E tdef :
+    (tdef.(tdname), tdef) \in schema.(type_definitions) ->
+    union_members tdef.(tdname) = tdef.(tmbs).
+  Proof.
+    move/lookup_in_schemaP => Hlook.
+    rewrite /union_members /tmbs {}Hlook .
+      by case: tdef.
+  Qed.
       
   (**
      Checks whether the given type declares implementation of another type.

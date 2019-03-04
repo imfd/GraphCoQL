@@ -461,7 +461,8 @@ Section WellFormedness.
     - rewrite /implements_interface /declares_implementation Htdef.
       by case: tdef Htdef.
   Qed.
-    
+
+  
   Lemma declares_implementation_are_interfaces schema tdef (ity : Name) :
     is_schema_wf schema ->
     declares_implementation schema tdef ity ->
@@ -532,6 +533,20 @@ Section WellFormedness.
   Qed.
 
 
+  
+  Lemma union_members_has_objects schema ty :
+    is_schema_wf schema ->
+    all (is_object_type schema) (union_members schema ty).
+  Proof.
+    move=> Hwf.
+    rewrite /union_members.
+    case Hlook: lookup_type => [tdef|] //.
+    case: tdef Hlook => // u mbs /lookup_in_schemaP Hlook.
+    move: Hwf; rewrite /is_schema_wf => /and4P [_ _ _ /allP Hok].
+    move/Hok: Hlook => /=.
+    by rewrite is_type_def_wf_unionE => /andP [_ Hobj].
+  Qed.
+  
   Lemma union_members_nfset0Pwf schema ty :
     is_schema_wf schema ->
     reflect (is_union_type schema ty) (union_members schema ty != fset0).
@@ -548,7 +563,8 @@ Section WellFormedness.
       move/(Hok (ty, UnionTypeDefinition s2 f0)) => /=.
       by rewrite is_type_def_wf_unionE => /andP [H _].
   Qed.
-  
+
+
   
 End WellFormedness.
 
