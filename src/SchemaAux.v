@@ -5,7 +5,7 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 From Equations Require Import Equations.
-From extructures Require Import ord fset.
+From extructures Require Import ord fset fmap.
 
 
 Require Import Schema.
@@ -69,49 +69,18 @@ Section SchemaAux.
   Lemma has_nameP name tdef : reflect (name = tdef.(tdname)) (has_name name tdef).
   Proof. by apply: (iffP eqP). Qed.
   
-  (**
-   Looks up a name in the given document, returning the type definition if it
-   was declared in the document.
-   **)
-  Definition lookup_type (ty : NamedType)  : option TypeDefinition :=
-    get_first (has_name ty) schema.
-    
 
-  Lemma lookup_typeP ty :
-    reflect (exists2 tdef, tdef \in schema.(type_definitions) & tdef.(tdname) = ty)
-            (lookup_type ty).
+  Definition lookup_type (ty : Name) := schema.(type_definitions) ty.
+
+  
+
+  Lemma lookup_in_schemaP (ty : Name) tdef :
+    reflect (lookup_type ty = Some tdef)
+            ((ty, tdef) \in schema.(type_definitions)).
   Proof.
     apply: (iffP idP).
-    - rewrite /lookup_type.
-      move/get_firstP => [x Hin].
-      by rewrite /has_name => /eqP ->; exists x.
-    - case=> tdef Hin <-.
-      rewrite /lookup_type.
-      apply/get_firstP.
-      by exists tdef => //; rewrite /has_name.
-  Qed.
-
-  Lemma lookup_type_isSome ty tdef : lookup_type ty = Some tdef -> lookup_type ty.
-  Proof. by move=> ->. Qed.
-
-
-  Hint Resolve mem_head mem_tail.
-  Lemma lookup_in_schema ty tdef :
-    lookup_type ty = Some tdef ->
-    tdef \in schema.(type_definitions).
-  Proof.
-    rewrite /lookup_type.
-    elim: (schema.(type_definitions)) => // hd tl IH.
-    rewrite /get_first.
-    by case: has_name => //; [case=> -> | move/IH => //; apply: mem_tail].
-  Qed.
-
-  Lemma lookup_type_name ty tdef : lookup_type ty = Some tdef -> ty = tdef.(tdname).
-  Proof.
-    rewrite /lookup_type.
-    elim: schema.(type_definitions) => // hd tl IH.
-    rewrite /get_first.
-      by case Hn : has_name => //; move/has_nameP: Hn => ->; case => ->.
+    - by move/getmP.
+    - by rewrite /lookup_type; move/getmP.
   Qed.
 
   
@@ -210,9 +179,17 @@ Section SchemaAux.
     | _ => [::]
     end.
 
+  Lemma fields_E (tdef : @TypeDefinition Name) :
+    (tdef.(tdname), tdef) \in schema.(type_definitions) ->
+    fields tdef.(tdname) = tdef.(tfields).
+  Proof.
+    move/lookup_in_schemaP => Hlook.
+    rewrite /fields /tfields Hlook.
+    by case: tdef Hlook. 
+  Qed.
 
   (** Get all type definitions' names from a schema **)
-  Definition schema_names : {fset Name} := fset [seq tdef.(tdname) | tdef <- schema]. 
+  Definition schema_names : {fset Name} := fset [seq tdef.(tdname) | tdef <- codomm (schema.(type_definitions))]. 
 
 
   (** Check whether a given name is declared in the schema, as a type definition **)
@@ -290,17 +267,7 @@ Section SchemaAux.
     | _ => fset0
     end.
 
-  (* Valid for wf schema *)
-  Lemma union_members_nfset0P ty : reflect (is_union_type ty) (union_members ty != fset0).
-  Proof.
-    apply: (iffP idP).
-    - move/fset0Pn=> [x].
-      rewrite /union_members.
-      funelim (is_union_type ty) => //; rewrite Heq //.
-    - funelim (is_union_type ty) => // _.
-      rewrite /union_members Heq.
-  Admitted.
-
+ 
       
   (**
      Checks whether the given type declares implementation of another type.
@@ -366,7 +333,7 @@ Section SchemaAux.
     match lookup_type ty with
     | Some (ObjectTypeDefinition _ _ _) => fset1 ty
     | Some (InterfaceTypeDefinition iname _) =>
-      let filtered := [seq tdef <- schema | implements_interface iname tdef]
+      let filtered := [seq tdef <- codomm (schema.(type_definitions)) | implements_interface iname tdef]
       in
       fset [seq tdef.(tdname) | tdef <- filtered]
     | Some (UnionTypeDefinition _ mbs) => fset mbs
@@ -374,7 +341,7 @@ Section SchemaAux.
     end.
   
   Definition implementation (ty : NamedType) : {fset NamedType} :=
-    fset [seq tdef.(tdname) | tdef <- schema & implements_interface ty tdef].
+    fset [seq tdef.(tdname) | tdef <- codomm schema.(type_definitions) & implements_interface ty tdef].
 
 
 
@@ -401,19 +368,23 @@ Section SchemaAux.
     by case: s => //; case=> [x]; rewrite in_nil.
   Qed.
 
+  
   Lemma implementationP ty :
-    reflect (exists2 x, x \in schema.(type_definitions) & implements_interface ty x) (implementation ty != fset0).
+    reflect (exists2 x, x \in codomm schema.(type_definitions) & x.(implements_interface ty)) (implementation ty != fset0).
   Proof.
     apply: (iffP idP).
     - rewrite /implementation.
       move/fset_N_fset0/in_N_nilP => [x /mapP [x']].
       by rewrite mem_filter => /andP [Himpl Hin] _; exists x'.
+     
     - case=> [x Hin Himpl].
       rewrite /implementation fset_N_fset0.
-      apply/seq0Pn. exists (x.(tdname)).
-      by apply/mapP; exists x => //;rewrite mem_filter; apply/andP.
+      apply/seq0Pn.
+      exists (x.(tdname)).
+      by apply/mapP; exists x => //;rewrite mem_filter; apply/andP; split.
   Qed.
-      
+
+  (*
   Lemma implementation_has ty :
     implementation ty != fset0 <-> has (implements_interface ty) schema.
   Proof.
@@ -421,13 +392,35 @@ Section SchemaAux.
     - by move/implementationP=> H; apply/hasP.
     - by move/hasP=> H; apply/implementationP.
   Qed.
-    
+    *)
 
   Lemma declares_in_implementation t ty :
     (declares_implementation t ty) <-> (t \in implementation ty).
   Proof.
   Admitted.
-  
+
+  Lemma implements_interface_is_object (ity : Name) tdef :
+    (tdef.(tdname), tdef) \in schema.(type_definitions) ->
+    implements_interface ity tdef ->
+    is_object_type tdef.(tdname).
+  Proof.
+    move/lookup_in_schemaP => Hlook.
+    rewrite /implements_interface.
+    move/in_intfs=> [n [flds Heq]].
+    rewrite Heq in Hlook * => /=.
+    rewrite is_object_type_equation_1.
+      by rewrite Hlook.
+  Qed.
+
+  Lemma declares_implementation_is_object (ity oty : Name) :
+    declares_implementation oty ity ->
+    is_object_type oty.
+  Proof.
+    rewrite /declares_implementation.
+    case Hlook: lookup_type => [tdef|] //.
+    case: tdef Hlook => // o intfs flds Hlook Hin.
+    by rewrite is_object_type_equation_1 Hlook.
+  Qed.    
   (*
   Lemma in_possible_types_E schema t ty :
     reflect
@@ -450,6 +443,7 @@ Section SchemaAux.
       rewrite /get_possible_types.
   Qed. *)
 
+  (*
   Lemma in_possible_types_E t ty :
     t \in get_possible_types ty ->
           [\/ t = ty,
@@ -462,13 +456,13 @@ Section SchemaAux.
     - move=> obj intfs flds Hlook.
         by rewrite in_fset1; move/eqP; constructor 1.
     - move=> intf flds Hlook.
-      move/lookup_type_name: Hlook => -> /=.
+      move: Hlook => -> /=.
       by rewrite /implementation in_fset; constructor 2.
     - move=> un mbs Hlook.
         by rewrite in_fset /union_members Hlook; constructor 3.
   Qed.
 
-
+*)
  
   
 End SchemaAux.
