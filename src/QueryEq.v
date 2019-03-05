@@ -66,7 +66,7 @@ Section Eq.
       Forall (Correct schema (root, root)) ϕ ->
       Correct schema (root, current) (InlineFragment root ϕ)
 
-  (* The inline's guard is the same as the previous one *)            
+  (* The inline's guard is the same as the previous one in scope *)            
   | CIF_Current : forall root current ϕ,
       (root \in get_possible_types schema current \/ current \in get_possible_types schema root) ->
       query_conforms schema current (InlineFragment current ϕ) ->

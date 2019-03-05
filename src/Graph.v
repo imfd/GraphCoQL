@@ -66,7 +66,7 @@ Section GraphQLGraph.
   Canonical node_ordType := OrdType node (CanOrdMixin prod_of_nodeK).
   
   
-  Definition mem_field (n : node) f := isSome (n f).
+  Definition mem_field (n : node) f := (n f).
   
   Definition pred_of_node (n : node) : pred_class :=
     [eta mem_field n].

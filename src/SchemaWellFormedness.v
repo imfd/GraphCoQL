@@ -331,56 +331,48 @@ Section WellFormedness.
 
 
 
-  
+  Ltac wfschema := case: schema => sch Hhty; rewrite /is_schema_wf => /= /and4P [Hqin Hqobj Hhn /allP Hok].
 
-  Lemma query_has_object_type schema :
-    is_schema_wf schema ->
+  Lemma query_has_object_type (schema : wfSchema) :
     is_object_type schema schema.(query_type).
   Proof.
-    by rewrite /is_schema_wf => /and4P [_ Hobj _ _].
+    by  wfschema.
   Qed.
 
-  Lemma query_has_object_type_wf_schema (schema : wfSchema) :
-    is_object_type schema schema.(query_type).
-  Proof. case: schema => schema Ht H.
-    by apply: (query_has_object_type H).
-  Qed.
 
-  Lemma tdefs_N_nil schema :
-    is_schema_wf schema ->
+  Lemma tdefs_N_nil (schema : wfSchema) :
     schema.(type_definitions) != emptym.
   Proof.
-    rewrite /is_schema_wf => /and4P [H _ _ _].
-    rewrite /schema_names in_fset in H.
-    move/mapP: H => [x /codommP [t Hs] H].
-    case: (type_definitions schema) Hs.
+    wfschema.
+    rewrite /schema_names in_fset in Hqin.
+    move/mapP: Hqin => [x /codommP [t Hs] Hqin].
+    case: (type_definitions sch) Hs.
     by case.
   Qed.
 
-  Lemma lookup_type_name_wf schema ty tdef :
-    is_schema_wf schema ->
+  Lemma lookup_type_name_wf (schema : wfSchema) ty tdef :
     lookup_type schema ty = Some tdef ->
     ty = tdef.(tdname).
   Proof.
-    rewrite /is_schema_wf => /and4P [_ _ /allP H _].
+    wfschema.
     rewrite /lookup_type.
     move/getmP=> Hin.
-    by move/has_nameP: (H (ty, tdef) Hin) => /=.
+    move/allP: Hhn.
+    by move/(_ (ty, tdef) Hin) => /has_nameP /=.
   Qed.
 
   
 
 
-  Lemma lookup_in_schema_wfP schema ty tdef :
-    is_schema_wf schema ->
+  Lemma lookup_in_schema_wfP (schema : wfSchema) ty tdef :
     reflect (lookup_type schema ty = Some tdef /\ ty = tdef.(tdname))
             ((ty, tdef) \in schema.(type_definitions)).
   Proof.
-    move=> Hwf.
+    wfschema.
     apply: (iffP idP).
-    - move: Hwf; rewrite /is_schema_wf => /and4P [_ _ /allP H _].
-      move=> Hin.
-      move/has_nameP: (H (ty, tdef) Hin) => /= Heq.
+    - move=> Hin.
+      move/allP: Hhn.
+      move/(_ (ty, tdef) Hin) => /has_nameP /= Heq.
       rewrite Heq in Hin *.
         by move/lookup_in_schemaP: Hin; split.
     - move=> [Hlook Heq].
@@ -388,131 +380,112 @@ Section WellFormedness.
   Qed.
 
  
-  Lemma is_scalar_type_wfE schema ty :
-    is_schema_wf schema ->
+  Lemma is_scalar_type_wfE (schema : wfSchema) ty :
     reflect (lookup_type schema ty = Some (ScalarTypeDefinition ty))
             (is_scalar_type schema ty).
   Proof.
-    move=> Hwf.
     apply: (iffP idP).
     - rewrite /is_scalar_type.
       case Hlook: lookup_type => [tdef|] //.
-      move: (lookup_type_name_wf Hwf Hlook) => ->.
-        by case: tdef {Hlook}.
+      move/lookup_type_name_wf: Hlook => ->.
+        by case: tdef.
     - move=> Hlook.
       by rewrite /is_scalar_type Hlook.
   Qed.
 
-  Lemma is_object_type_wfP schema ty :
-    is_schema_wf schema ->
+  Lemma is_object_type_wfP (schema : wfSchema) ty :
     reflect (exists intfs flds, lookup_type schema ty = Some (ObjectTypeDefinition ty intfs flds))
             (is_object_type schema ty).
   Proof.
-    move=> Hwf.
     apply: (iffP idP)=> //.
     - funelim (is_object_type schema ty) => // _.
-      exists f, l; move: (lookup_type_name_wf Hwf Heq) => H.
-        by rewrite H in Heq * => /=.
+      by exists f, l; rewrite Heq; move/lookup_type_name_wf: Heq => ->.
     - move=> [intfs [flds Hlook]].
         by rewrite /is_object_type Hlook.
   Qed.
 
-  Lemma is_interface_type_wfP schema ty :
-    is_schema_wf schema ->
+  Lemma is_interface_type_wfP (schema : wfSchema) ty :
     reflect (exists flds, lookup_type schema ty = Some (InterfaceTypeDefinition ty flds))
             (is_interface_type schema ty).
   Proof.
-    move=> Hwf.
     apply: (iffP idP).
     - funelim (is_interface_type schema ty) => // _.
-      exists l0; move: (lookup_type_name_wf Hwf Heq) => H.
-        by rewrite H in Heq *.
+        by exists l0; rewrite Heq; move/lookup_type_name_wf: Heq => ->.
     - move=> [flds Hlook].
-      by rewrite /is_interface_type Hlook.
+        by rewrite /is_interface_type Hlook.
   Qed.
  
 
-  Lemma is_union_type_wfP schema ty :
-    is_schema_wf schema ->
+  Lemma is_union_type_wfP (schema : wfSchema) ty :
     reflect (exists mbs, lookup_type schema ty = Some (UnionTypeDefinition ty mbs))
             (is_union_type schema ty).
   Proof.
-    move=> Hwf.
     apply: (iffP idP).
     - funelim (is_union_type schema ty) => // _.
-      exists f0; move: (lookup_type_name_wf Hwf Heq) => H.
-        by rewrite H in Heq *.
+        by exists f0; rewrite Heq; move/lookup_type_name_wf: Heq => ->.
     - move=> [mbs Hlook].
-      by rewrite /is_union_type Hlook.
+        by rewrite /is_union_type Hlook.
   Qed.
 
-      
-  Lemma implements_declares_implementation schema (ity : Name) (tdef : TypeDefinition) :
-    is_schema_wf schema ->
-    (tdef.(tdname), tdef) \in schema.(type_definitions) ->
-    declares_implementation schema tdef.(tdname) ity <-> implements_interface ity tdef.
-  Proof.
-    move=> Hwf.
-    move/lookup_in_schemaP=> Htdef.
-    split.
-    - rewrite /declares_implementation.
-      rewrite Htdef.
-      case: tdef Htdef => // o i f Hin.
-    - rewrite /implements_interface /declares_implementation Htdef.
-      by case: tdef Htdef.
-  Qed.
 
   
-  Lemma declares_implementation_are_interfaces schema tdef (ity : Name) :
-    is_schema_wf schema ->
+  Lemma declares_implementation_are_interfaces (schema : wfSchema) tdef (ity : Name) :
     declares_implementation schema tdef ity ->
     is_interface_type schema ity.
   Proof.
-    move=> Hwf Hdecl.
+    move=> Hdecl.
     move: (declares_implementation_is_object Hdecl).
-    move/(is_object_type_wfP tdef Hwf) => [intfs [flds /lookup_in_schemaP Hlook]].
-    move/and4P: Hwf => [_ _ _ /allP Hok].
+    move/is_object_type_wfP=> [intfs [flds /lookup_in_schemaP Hlook]].
+    move: Hdecl Hlook; wfschema => Hdecl Hlook.
     move: (Hok (tdef, ObjectTypeDefinition tdef intfs flds) Hlook).
     rewrite is_type_def_wf_objE => /and5P [_ _ _ /allP Hintf _].
     rewrite /declares_implementation in Hdecl.
     move/lookup_in_schemaP: Hlook => Hlook.
     rewrite Hlook in Hdecl.
-    apply (Hintf ity Hdecl).
+    by apply: (Hintf ity Hdecl).
   Qed.    
     
-    
-  Lemma has_implementation_is_interface schema ty :
-    is_schema_wf schema ->
-    implementation schema ty != fset0 ->
+
+  Lemma in_seq_nilN {A : eqType} (a : A) (s : seq A) :
+    a \in s -> s != [::].
+  Proof. by case: s. Qed.
+  
+  Lemma in_fset_N_fset0 {A : ordType} (a : A) (s : seq A) :
+    a \in fset s -> fset s != fset0.
+  Proof.
+      by move=> Hin; apply/fset0Pn; exists a. Qed.
+
+  
+  Lemma has_implementation_is_interface (schema : wfSchema) ty t :
+    t \in implementation schema ty ->
     is_interface_type schema ty.
   Proof.
-    move=> Hwf.
-    move/implementationP=> [tdef /codommP [t  Hlook]].
-    move: (lookup_type_name_wf Hwf Hlook) => Heq; rewrite Heq in Hlook.
+    move/in_fset_N_fset0.
+    move/implementationP=> [tdef /codommP [t'  Hlook]].
+    move: (lookup_type_name_wf Hlook) => Heq; rewrite Heq in Hlook.
     move/lookup_in_schemaP: Hlook => Hin.
-    move/(implements_declares_implementation ty Hwf Hin).
+    move/(implements_declares_implementation ty Hin).
     by apply: declares_implementation_are_interfaces.
   Qed.
 
  
     
-  Lemma field_in_interface_in_object schema ty ti f :
-    is_schema_wf schema ->
+  Lemma field_in_interface_in_object (schema : wfSchema) ty ti f :
     ty \in implementation schema ti ->
     lookup_field_in_type schema ti f -> lookup_field_in_type schema ty f.
   Proof.
-    move=> Hwf Hin.
+    move=> Hin.
     move/declares_in_implementation: Hin => Hdecl.
-    move: (declares_implementation_is_object Hdecl) => /(is_object_type_wfP ty Hwf).
+    move: (declares_implementation_is_object Hdecl) => /is_object_type_wfP.
     case=> [intfs [flds Hlook]].
     rewrite {2}/lookup_field_in_type Hlook.
     move/lookup_field_in_typeP=> [tdef [ty' [Hlook' Hfin]]] Heq /=.
-    move: (lookup_type_name_wf Hwf Hlook') => Heq'.
+    move: (lookup_type_name_wf Hlook') => Heq'.
     rewrite /declares_implementation Hlook in Hdecl.
-    move: (lookup_type_name_wf Hwf Hlook) => Hneq.
+    move: (lookup_type_name_wf Hlook) => Hneq.
 
     move/lookup_in_schemaP: Hlook => Hin.
-    move/and4P: Hwf => [_ _ _ /allP Hok].
+    move: Hlook' Hin; wfschema => Hlook' Hin.
     move: (Hok (ty, (ObjectTypeDefinition ty intfs flds)) Hin) => {Hok}.
     rewrite is_type_def_wf_objE => /and5P [_ _ _ _ /allP Hintfs].
     move: (Hintfs ti Hdecl) => {Hintfs Hdecl}.
@@ -534,24 +507,20 @@ Section WellFormedness.
 
 
   
-  Lemma union_members_has_objects schema ty :
-    is_schema_wf schema ->
+  Lemma union_members_has_objects (schema : wfSchema) ty :
     all (is_object_type schema) (union_members schema ty).
   Proof.
-    move=> Hwf.
     rewrite /union_members.
     case Hlook: lookup_type => [tdef|] //.
     case: tdef Hlook => // u mbs /lookup_in_schemaP Hlook.
-    move: Hwf; rewrite /is_schema_wf => /and4P [_ _ _ /allP Hok].
+    move: Hlook; wfschema => Hlook.
     move/Hok: Hlook => /=.
     by rewrite is_type_def_wf_unionE => /andP [_ Hobj].
   Qed.
   
-  Lemma union_members_nfset0Pwf schema ty :
-    is_schema_wf schema ->
+  Lemma union_members_nfset0Pwf (schema : wfSchema) ty :
     reflect (is_union_type schema ty) (union_members schema ty != fset0).
   Proof.
-    move=> Hwf.
     apply: (iffP idP).
     - move/fset0Pn=> [x].
       rewrite /union_members.
@@ -559,13 +528,63 @@ Section WellFormedness.
     - funelim (is_union_type schema ty) => // _.
       rewrite /union_members Heq.
       move/lookup_in_schemaP: Heq.
-      move/and4P: Hwf => [_ _ _ /allP Hok].
+      wfschema.
       move/(Hok (ty, UnionTypeDefinition s2 f0)) => /=.
       by rewrite is_type_def_wf_unionE => /andP [H _].
   Qed.
 
-
+  Lemma in_union_is_object (schema : wfSchema) ty uty :
+    ty \in union_members schema uty ->
+           is_object_type schema ty.
+  Proof.
+    move=> Hin.
+    move/allP: (union_members_has_objects schema uty).
+    by move/(_ ty Hin).
+  Qed.
   
+  Lemma in_possible_typesPwf (schema : wfSchema) t ty :
+    is_object_type schema t ->
+    reflect
+      ([\/ t = ty,
+        t \in implementation schema ty |
+        t \in union_members schema ty])
+      (t \in get_possible_types schema ty).
+  Proof.
+    move=> Hobj.
+    apply: (iffP idP).
+    * rewrite /get_possible_types.
+      case Hlook : lookup_type => [tdef|] //.
+      case: tdef Hlook => //.
+      - move=> obj intfs flds Hlook.
+          by rewrite in_fset1; move/eqP; constructor 1.
+      - move=> intf flds Hlook.
+        move: (lookup_type_name_wf Hlook) => -> /=.
+          by rewrite in_fset; constructor 2.
+      - move=> un mbs Hlook.
+          by rewrite in_fset /union_members Hlook; constructor 3.
+    * move=> [<- | Hintfs | Hunion]; rewrite /get_possible_types.
+      - move/is_object_type_wfP: Hobj => [intfs [flds Hlook]].
+          by rewrite Hlook; apply/fset1P.
+      - move: (declares_in_implementation schema t ty).
+        case=> _ H.
+        move: (H Hintfs) => /declares_implementation_are_interfaces.
+        move/is_interface_type_wfP=> [flds Hlook].
+        by rewrite Hlook.
+      - move: (in_union Hunion) => /is_union_type_wfP [mbs Hlook].
+        by rewrite /union_members Hlook in Hunion *.
+  Qed. 
+
+  Lemma get_possible_types_interfaceE (schema : wfSchema) ty :
+    is_interface_type schema ty ->
+    get_possible_types schema ty = implementation schema ty.
+  Proof.
+    move/is_interface_type_E=> [i [flds Hlook]].
+    rewrite /get_possible_types Hlook.
+    by move/lookup_type_name_wf: Hlook => ->.
+  Qed.
+
+ 
+    
 End WellFormedness.
 
 
