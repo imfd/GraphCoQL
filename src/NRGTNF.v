@@ -22,13 +22,14 @@ Require Import CpdtTactics.
 Section NRGTNF.
 
   Variables Name Vals : ordType.
-  Variable sch : @schema Name.
   
-  Implicit Type schema : @wfSchema Name Vals sch.
+  Implicit Type schema : @wfSchema Name Vals.
   Implicit Type queries : seq (@Query Name Vals).
   Implicit Type query : @Query Name Vals.
   Definition is_field := @is_field Name Vals.
   Definition is_inline_fragment := @QueryAux.is_inline_fragment Name Vals.
+
+  
   
   Equations is_in_normal_form schema (query : @Query Name Vals) : bool :=
     {
@@ -52,6 +53,7 @@ Section NRGTNF.
     rewrite /are_in_normal_form.
     by move/andP=> [/orP H H'].
   Qed.
+
 
   Lemma all_inlines_shape queries :
     all is_inline_fragment queries ->
@@ -149,5 +151,15 @@ Section NRGTNF.
     move: Hnf; rewrite {1}/all is_in_normal_form_equation_5.
       by move/andP=> [/and3P [Hobj Hfld H'] _].
   Qed.
+
+  Lemma filter_preserves_non_repeated (ϕ : seq (@Query Name Vals)) p :
+    no_repeated_query ϕ ->
+    no_repeated_query (filter p ϕ).
+  Proof.
+  Admitted.
+
+
+
+
   
 End NRGTNF.

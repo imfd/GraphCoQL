@@ -146,8 +146,8 @@ Section QueryConformance.
     | NestedField fname α ϕ =>
       match lookup_field_in_type schema ty fname with
       | Some fld => [&& ~~(is_scalar_type schema fld.(return_type) || is_enum_type schema fld.(return_type)),
-                    ϕ != [::],
-                    arguments_conform schema fld.(fargs) α &
+                    arguments_conform schema fld.(fargs) α,
+                    ϕ != [::] &
                     all (query_conforms schema fld.(return_type)) ϕ]
       | _ => false
       end
@@ -155,8 +155,8 @@ Section QueryConformance.
     | NestedLabeledField _ fname α ϕ =>
         match lookup_field_in_type schema ty fname with
         | Some fld => [&& ~~(is_scalar_type schema fld.(return_type) || is_enum_type schema fld.(return_type)),
-                      ϕ != [::],
-                      arguments_conform schema fld.(fargs) α &
+                      arguments_conform schema fld.(fargs) α,
+                       ϕ != [::] &
                       all (query_conforms schema fld.(return_type)) ϕ]
         | _ => false
         end
@@ -448,5 +448,56 @@ Section QueryConformance.
     [rewrite (get_possible_types_objectE Hobj) | rewrite (get_possible_types_interfaceE Hintf)|  ]. apply: fset1I_N_fset0.
       by apply: eq_spreads.
   Qed. *)
+
+  
+
+  Lemma inline_preserves_conformance schema type_in_scope ϕ :
+    query_conforms schema type_in_scope ϕ ->
+    query_conforms schema type_in_scope (InlineFragment type_in_scope [:: ϕ]).
+  Proof.
+    rewrite {2}/query_conforms.
+    move=> Hqc.
+    apply/and4P; split=> //.
+    apply/or3P. apply: (type_in_scope_N_scalar_enum Hqc).
+    rewrite /is_fragment_spread_possible /get_possible_types.
+    
+    move: (type_in_scope_N_scalar_enum Hqc) => [Hobj | Hint | Hunion].
+    funelim (is_object_type schema type_in_scope) => //.
+    Admitted.
+ 
+
+  
+  Lemma queries_conform_cons schema ty hd tl :
+    queries_conform schema ty (hd :: tl) -> query_conforms schema ty hd.
+  Proof.
+    rewrite /queries_conform.
+      by move/andP=> [_ /= /andP [Hhd _]].
+  Qed.
+
+
+  Lemma nested_conforms_list schema ty n α ϕ :
+    query_conforms schema ty (NestedField n α ϕ) -> ϕ != [::].
+  Proof.
+    rewrite /query_conforms.
+    case lookup_field_in_type => // f.
+      by move/and4P=> [_ _ Hne _].
+  Qed.
+
+   Lemma inline_subqueries_conform schema ty t ϕ :
+    query_conforms schema ty (InlineFragment t ϕ) ->
+    queries_conform schema t ϕ.
+  Proof.
+    rewrite /query_conforms.
+    move/and4P=> [_ _ Hne H].
+    by rewrite /queries_conform; apply/andP. 
+  Qed.
+
+  
+  
+  Lemma queries_conform_inv schema ty queries :
+    queries != [::] ->
+    all (query_conforms schema ty) queries ->
+    queries_conform schema ty queries.
+  Proof. by move=> *; rewrite /queries_conform; apply/andP. Qed.
   
 End QueryConformance.

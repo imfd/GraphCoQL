@@ -33,6 +33,13 @@ Section QueryAux.
       queries_size (cons hd tl) := query_size hd + queries_size tl
     }.
 
+  Lemma queries_size_app qs qs' :
+    queries_size (qs ++ qs') = queries_size qs + queries_size qs'.
+  Proof.
+    elim: qs qs' => //= hd tl IH qs'.
+    by rewrite (IH qs') addnA.
+  Qed.
+  
   (** Partial equality between queries.
       It basically ignores subqueries and only checks labels, names and arguments **)
   Definition partial_query_eq (q1 q2 : @Query Name Vals) : bool :=
@@ -93,7 +100,21 @@ Section QueryAux.
   
   Lemma response_size_n_0 (r : @ResponseObject Name Vals) : 0 < response_size r.
   Proof. by case: r. Qed.
-  
+
+   Lemma no_repeated_filter (ϕ : @Query Name Vals) (ϕ' : seq Query) :
+    ~~(has (partial_query_eq ϕ) (filter (fun q => ~~(partial_query_eq ϕ q)) ϕ')).
+  Proof.
+    elim: ϕ' => // q ϕ' IH.
+    simpl.
+    case: ifP => // Hnpeq.
+    simpl.
+    apply/orP.
+    rewrite /not. move=> [Hpeq | Hhas].
+    move: Hnpeq. rewrite /negb. case: ifP => //. rewrite Hpeq. done.
+    move: IH; rewrite /negb. case: ifP=> //. rewrite Hhas. done.
+  Qed.
+
+ 
 End QueryAux.
 
 

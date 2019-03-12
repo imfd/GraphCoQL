@@ -348,8 +348,7 @@ Section QuerySemantic.
       by move: (γ_responses_size_reduced tl (NestedListResult l rs)) => *;  ssromega.
   Qed.
   
-  Variable sch : @schema Name.
-  Implicit Type schema : @wfSchema Name Vals sch.
+  Implicit Type schema : @wfSchema Name Vals.
   Implicit Type graph : @graphQLGraph Name Vals.
   Implicit Type u : @node Name Vals.
   Implicit Type query : @Query Name Vals.
@@ -557,11 +556,11 @@ Section QuerySemantic.
   Proof.
       by rewrite eval_helper_1_equation_2. Qed.
 
-  Lemma eval_query_inline schema (g : conformedGraph sch schema) qs :
+  Lemma eval_query_inline schema (g : conformedGraph schema) qs :
     eval schema g g.(root) (InlineFragment schema.(query_type) qs) = eval_queries schema g g.(root) qs.
   Proof.
     rewrite eval_equation_5.
-    move: (query_has_object_type_wf_schema schema) => /is_object_type_E [obj [intfs [flds Hlook]]].
+    move: (query_has_object_type schema) => /is_object_type_E [obj [intfs [flds Hlook]]].
     rewrite Hlook.
     move: (root_query_type g) => -> /=.
     case: ifP => //; case/eqP => //.
@@ -569,7 +568,77 @@ Section QuerySemantic.
     
 
 
+  Lemma inline_nested_empty schema (g : @conformedGraph Name Vals schema) :
+    forall t1 t2 ϕ,
+      is_object_type schema t1 ->
+      is_object_type schema t2 ->
+      t1 <> t2 ->
+      eval schema g g.(root) (InlineFragment t1 [:: (InlineFragment t2 ϕ)]) = [::].
+  Proof.
+    move=> t1 t2 ϕ.
+    funelim (is_object_type schema t1) => //.
+    funelim (is_object_type schema t2) => //.
+    move=> _ _ Hdiff.
+    rewrite eval_equation_5 Heq0.
+    rewrite /eval_queries /= eval_equation_5 Heq.
+    case: eqP => //= <-.
+    case: eqP => // H.
+    by rewrite H in Hdiff.
+   Qed.
+
   
+
+  Lemma inline_query_preserves schema (g : @conformedGraph Name Vals schema):
+    forall ϕ u,
+      u \in nodes g.(graph) ->
+      eval schema g u ϕ = eval schema g u (InlineFragment u.(type) [:: ϕ]).
+  Proof.
+    move=> ϕ u Hin; case: g Hin.
+    move=> g Hr He Hf Hn /= Hin.
+    rewrite /nodes_have_object_type in Hn.
+    move/seq.allP /(_ u Hin): Hn.
+    case: u Hin => ty flds Hin. rewrite /type. funelim (is_object_type schema ty) => //.
+    move=> _.
+    rewrite eval_equation_5 Heq /=.
+    by case: ifP => // /eqP.
+  Qed.
+
+  Lemma asf schema (g : @conformedGraph Name Vals schema)  u type_in_scope ti ϕ :
+     query_conforms schema type_in_scope (InlineFragment ti ϕ) ->
+     type_in_scope \in implementation schema ti ->
+            eval schema g u (InlineFragment ti ϕ) = eval schema g u (InlineFragment type_in_scope ϕ). 
+  Proof.
+    move=> Hqc Himpl.
+    move: (has_implementation_is_interface Himpl) => Hint.
+    rewrite !eval_equation_5.
+    funelim (is_interface_type schema ti) => //.
+    rewrite Heq.
+    move: (in_implementation_is_object Himpl) => /is_object_type_E [obj [intfs [flds Hlook]]].
+    rewrite Hlook.
+    case: ifP => //.
+    rewrite declares_in_implementation.
+  Abort.
+  (* Missing info on node -> type of node should be same as the one in scope *)
+  
+
+  
+  
+
+  Lemma nf_queries_eq schema (g : @conformedGraph Name Vals schema) u n α ϕ ϕ' :
+    (forall v, eval_queries schema g v ϕ = eval_queries schema g v ϕ') ->
+    eval schema g u (NestedField n α ϕ) = eval schema g u (NestedField n α ϕ').
+  Proof.
+    move=> Hqs.
+    do 2 rewrite eval_equation_3.
+    case lookup_field_type => //.
+    case=> [nt | lt].
+    case neighbours_with_field => // v1 vn /=.
+    case ohead => // node.
+      by move: (Hqs node) => ->. 
+    case neighbours_with_field => // v1 vn /=.
+    congr cons.
+    congr NestedListResult.
     
+  Admitted.
     
 End QuerySemantic.

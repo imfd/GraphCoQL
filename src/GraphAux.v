@@ -71,6 +71,25 @@ Section GraphAux.
     in
     uniq edges.
 
+
   
+
+  
+  
+  Lemma u_and_target_nodes_in_nodes graph u fld :
+    u \in graph.(nodes) -> all (fun v => v \in graph.(nodes)) (neighbours_with_field graph u fld).
+  Proof.
+  Admitted.
+
+  
+    
+  Lemma ohead_in_nodes graph nds v :
+    all (fun node => node \in graph.(nodes)) nds ->
+    ohead nds = Some v ->
+    v \in graph.(nodes). 
+  Proof.
+    elim: nds => // x nds IH /=.
+    by move=> H; case=> Heq; rewrite Heq in H; move/andP: H => [H _]. 
+  Qed.
 
 End GraphAux.

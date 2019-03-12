@@ -79,9 +79,11 @@ Section WellFormedness.
         * by move=> *; apply/or3P; constructor 1.
       - by move=> * /=; apply/or3P; constructor 2.
       by move=> * /=; apply/or3P; constructor 3.
-  Qed.
+   Qed.
 
-   
+
+ 
+     
          
   (** The two following definitions describe whether a given type is a valid type
       for a field argument (IsValidArgumentType) and if it is a valid type for a field itself 
@@ -145,6 +147,20 @@ Section WellFormedness.
       by move=> t H /= /H; apply VList_Type.
   Qed.
 
+    Lemma obj_subtype sch (ty ty' : type) :
+     is_object_type sch ty ->
+     is_subtype sch ty ty' ->
+     [\/ ty' = ty,
+      is_interface_type sch ty' |
+      is_union_type sch ty'].
+   Proof.
+     move=> Hobj.
+     rewrite /is_subtype /=.
+     case: ty Hobj; case: ty' => // ty ty' Hobj.
+     move/or3P=> [/eqP -> | Hdecl | Hunion].
+       by constructor 1.
+       constructor 2. move/declares_in_implementation: Hdecl.
+   Abort.
   
   (** 
       It checks whether an argument is well-formed by checking that
@@ -583,8 +599,20 @@ Section WellFormedness.
     by move/lookup_type_name_wf: Hlook => ->.
   Qed.
 
- 
-    
+   Lemma is_subtype_obj_eq (schema : wfSchema) ty ty' :
+     is_object_type schema ty' ->
+     is_subtype schema (NT ty) (NT ty') ->
+     ty = ty'.
+   Proof.
+     move=> Hobj.
+     rewrite /is_subtype.
+     move/or3P=> [/eqP // | | ].
+     move/declares_implementation_are_interfaces.
+     by move: (is_object_type_interfaceN Hobj) => ->.
+     move/in_union.
+       by move: (is_object_type_unionN Hobj); rewrite /negb; case: ifP.
+   Qed.
+     
 End WellFormedness.
 
 

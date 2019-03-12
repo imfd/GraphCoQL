@@ -161,6 +161,9 @@ Section SchemaAux.
     | _ => false
     end.
 
+  Definition is_abstract_type (ty : NamedType) : bool :=
+    is_interface_type ty ||  is_union_type ty.
+  
 
   Lemma is_object_type_interfaceN ty :
     is_object_type ty ->
@@ -292,7 +295,15 @@ Section SchemaAux.
     - move=> [fld Hlook <-].
       by rewrite /lookup_field_type Hlook.
   Qed.
-  
+
+    
+  Lemma lookup_field_or_type lookup_type ty name fld :
+    lookup_field_in_type lookup_type name = Some fld ->
+    lookup_field_type lookup_type name = Some ty ->
+    ty = fld.(return_type).
+  Proof.
+    by rewrite /lookup_field_type; move=> ->; case. Qed.
+
 
   Lemma lookup_field_type_is_obj_or_intf ty fname :
     lookup_field_type ty fname ->
@@ -504,7 +515,6 @@ Section SchemaAux.
     - rewrite /implements_interface /declares_implementation Htdef.
       by case: tdef Htdef.
   Qed.
-
 
   Lemma get_possible_types_objectE ty :
     is_object_type ty ->
