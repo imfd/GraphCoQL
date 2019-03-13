@@ -8,7 +8,7 @@ Set Asymmetric Patterns.
 
 From Equations Require Import Equations.
 
-From extructures Require Import ord fmap.
+From extructures Require Import ord fset fmap.
 
 Require Import Schema.
 Require Import SchemaAux.
@@ -16,6 +16,10 @@ Require Import SchemaWellFormedness.
 Require Import Query.
 Require Import QueryAux.
 Require Import QueryConformance.
+
+Require Import Graph.
+Require Import GraphAux.
+Require Import GraphConformance.
 
 Require Import NRGTNF.
 
@@ -30,15 +34,9 @@ Section QueryRewrite.
 
   Notation is_field := (@QueryAux.is_field Name Vals).
   Notation is_inline_fragment := (@QueryAux.is_inline_fragment Name Vals).
-  
-  Inductive multi {X : Type} (R : relation X) : relation X :=
-  | multi_refl : forall (x : X), multi R x x
-  | multi_step : forall (x y z : X),
-      R x y ->
-      multi R y z ->
-      multi R x z.
 
 
+ 
   Equations map_In {A B : Type} (l : list A) (f : forall (x : A), In x l -> B) : list B :=
       map_In nil _ := nil;
       map_In (cons hd tl) f := cons (f hd _) (map_In (fun x H => f x _)).
@@ -51,89 +49,66 @@ Section QueryRewrite.
     Admitted.
 
 
-  Equations β__subqueryextract (filter query: @Query Name Vals) : seq (@Query Name Vals) :=
-    {
-      β__subqueryextract (NestedField f α β) (NestedField f' α' χ) <= (f == f') && (α == α') => {
-          | true => χ;
-          | false => [::]
-      };
-
-      β__subqueryextract (NestedLabeledField l f α β) (NestedLabeledField l' f' α' χ) <= [&& (l == l'), (f == f') & (α == α')] => {
-      | true => χ;
-      | false => [::]
-      };
-
-      β__subqueryextract (InlineFragment t β) (InlineFragment t' χ) <= t == t' => {
-      | true => χ;
-      | false => [::]
-      };
-      
-      β__subqueryextract _ _ := [::]
-    }.
-   
-
-  Equations lift (query : @Query Name Vals) : seq (@Query Name Vals) :=
-    {
-      lift (InlineFragment _ φ) := φ;
-      lift _ := [::]
-    }.
-
-  Equations lift__queries (queries : seq (@Query Name Vals)) : seq (@Query Name Vals) :=
-    {
-      lift__queries [::] := [::];
-      lift__queries (cons hd tl) := (lift hd) ++ (lift__queries tl)
-    }.
   
   
-  Equations β__queries (flt : @Query Name Vals) (queries : seq (@Query Name Vals)) : seq (@Query Name Vals) :=
-    {
-      β__queries _ [::] := [::];
-      β__queries flt (cons hd tl) := (β__subqueryextract flt hd) ++ (β__queries flt tl)
-    }.
-
-  
-  Definition γ__φ (flt : Query) (queries : seq Query) : seq (@Query Name Vals) :=
-    [seq query <- queries | ~~ partial_query_eq flt query].
-
-  Obligation Tactic := intros; program_simpl; try ssromega.
+  Obligation Tactic := intros; program_simpl; rewrite -/(queries_size _); try ssromega. 
   Equations normalize schema (type_in_scope : @NamedType Name) (queries : seq (@Query Name Vals))  : seq (@Query Name Vals) :=
     normalize schema type_in_scope queries by rec (queries_size queries) lt :=
       normalize _ _ [::] := [::];
-      normalize schema type_in_scope (cons (InlineFragment t φ) queries) := 
-          let normalized := normalize schema type_in_scope queries in
-          if t == type_in_scope then
-            normalize schema type_in_scope (φ ++ queries)
-          else
-          if is_subtype schema (NT t) (NT type_in_scope) then
-            (InlineFragment t (normalize schema t φ)) :: normalized
-          else
-            if is_fragment_spread_possible schema type_in_scope t then 
-              normalize schema type_in_scope (φ ++ queries)
-            else
-              (* Should not happen ? *)
-              [::];
-
-            
-      normalize schema type_in_scope (cons query queries) :=
+      normalize schema type_in_scope (cons (SingleField f α) queries) :=
           let normalized := normalize schema type_in_scope queries in
           if is_object_type schema type_in_scope then
-              (* In a valid query, if there are fragments, they must be
-                 on supertype or the same type. Then, every field in those
-                 subqueries exist in the current type, therefore they should
-                 be lifted on normalization. *)
-              query :: normalized
+            (SingleField f α) :: normalized
           else
-          if is_interface_type schema type_in_scope then
-            if all is_inline_fragment normalized then
-              map_In (fun q (H : In q normalized) =>
-                        if q is InlineFragment t φ then
-                          InlineFragment t (query :: φ)
-                        else
-                          q)
-            else
-              query :: normalized
+            let possible_types := get_possible_types schema type_in_scope in
+            [seq (InlineFragment ty [:: (SingleField f α)]) | ty <- possible_types] ++ normalized;
+
+      normalize schema type_in_scope (cons (LabeledField l f α) queries) :=
+          let normalized := normalize schema type_in_scope queries in
+          if is_object_type schema type_in_scope then
+            (LabeledField l f α) :: normalized
           else
-            [::]
+            let possible_types := get_possible_types schema type_in_scope in
+            [seq (InlineFragment ty [:: (LabeledField l f α)]) | ty <- possible_types] ++ normalized;
+                                                                                    
+      normalize schema type_in_scope (cons (NestedField f α φ) queries) :=
+          let normalized := normalize schema type_in_scope queries in
+          if is_object_type schema type_in_scope then
+            match lookup_field_type schema type_in_scope f with
+            | Some return_type => (NestedField f α (normalize schema return_type φ)) :: normalized
+            | _ => [::]
+            end
+          else
+            let possible_types := get_possible_types schema type_in_scope in
+            let normalized_head := normalize schema type_in_scope φ in
+            [seq (InlineFragment ty [:: NestedField f α normalized_head]) | ty <- possible_types] ++ normalized;
+         
+              
+     normalize schema type_in_scope (cons (NestedLabeledField l f α φ) queries) :=
+          let normalized := normalize schema type_in_scope queries in
+          if is_object_type schema type_in_scope then
+            match lookup_field_type schema type_in_scope f with
+            | Some return_type => (NestedLabeledField l f α (normalize schema return_type φ)) :: normalized
+            | _ => [::]
+            end
+          else
+            let possible_types := get_possible_types schema type_in_scope in
+            let normalized_head := normalize schema type_in_scope φ in
+            [seq (InlineFragment ty [:: NestedLabeledField l f α normalized_head]) | ty <- possible_types] ++ normalized;
+              
+     normalize schema type_in_scope (cons (InlineFragment t φ) queries) := 
+          let normalized := normalize schema type_in_scope queries in
+          if is_object_type schema type_in_scope then
+            (normalize schema type_in_scope φ) ++ normalized
+          else
+          if is_object_type schema t && is_subtype schema (NT t) (NT type_in_scope) then
+            (InlineFragment t (normalize schema t φ)) :: normalized
+          else
+            (* abstract type in scope & guard has abstract type *)
+            let possible_types := get_possible_types schema t in
+            let scope_possible_types := get_possible_types schema type_in_scope in
+            let intersection := (scope_possible_types :&: possible_types)%fset in
+            [seq (InlineFragment ty (normalize schema ty φ)) | ty <- intersection] ++ normalized
   .
   Next Obligation.
   Qed.
@@ -142,57 +117,88 @@ Section QueryRewrite.
   Next Obligation.
   Qed.
   Next Obligation.
-      by rewrite queries_size_app -/(queries_size _); ssromega.
   Qed.
   Next Obligation.
-      by rewrite -/(queries_size _); ssromega.
   Qed.
   Next Obligation.
-          by rewrite queries_size_app -/(queries_size _); ssromega.
+  Qed.
+  Next Obligation.
+  Qed.
+  Next Obligation.
+  Qed.
+  Next Obligation.
+  Qed.
+  Next Obligation.
   Qed.
 
 
-  Lemma normalize_in_object_scope_are_fields schema root current queries :
-    all (has_valid_fragments schema root current) queries ->
-    is_object_type schema current ->
-    all is_field (normalize schema current queries).
-  Proof.
-    funelim (normalize schema current queries) => //.
-    all: do ?[by rewrite {1}/all -/(all _ _) => /andP [Hval Hvals] Hobj; rewrite Hobj;
-              rewrite /all; apply/andP; split => //; apply: (H root)]. 
+  
 
-    rewrite {1}/all -/(all _ _) => /andP [Hval Hvals] Hobj.
-    case: eqP => // Heq.
-    apply: (H0 root).
-    rewrite all_cat; apply/andP; split => //.
-    rewrite Heq in Hval.
-    by apply: (has_valid_fragments_inline_subqueries Hval) => //.
-    exact: Hobj.
-    case: ifP => //.
-    move/(is_subtype_obj_eq Hobj) => Hteq. by rewrite Hteq in Heq.
-    move=> _.
-    case: ifP=> // Hspread.
-    apply: (H0 root) => //.
-    rewrite all_cat; apply/andP; split => //.
-    
-    rewrite has_valid_fragmentsP in Hval.
+ 
+  Ltac query_conforms := rewrite /query_conforms -/(query_conforms _ _); try move/and4P; try apply/and4P.
 
-    
-  Lemma normalize_to_normal_form schema root current queries :
-    all (has_valid_fragments schema root current) queries ->
-    are_in_normal_form schema (normalize schema current queries).
+  Lemma normalize_in_object_scope_are_fields schema graph u type_in_scope queries :
+    all (query_conforms schema type_in_scope) queries ->
+    all (has_valid_fragments schema graph u type_in_scope) queries ->
+    is_object_type schema type_in_scope ->
+    (forall q u ty, q \in queries ->
+                     query_conforms schema ty q ->
+                     has_valid_fragments schema graph u ty ->
+                     is_field 
+    all is_field (normalize schema type_in_scope queries).
   Proof.
-    elim: queries root current => // hd tl IH root current.
-    rewrite /all => /andP [Hval Htlval].
-    case: hd Hval.
-    - move=> f α.
-      rewrite normalize_equation_2.
-    rewrite /are_in_normal_form.
-    apply/andP; split.
-    apply/orP. left.
-    simpl.
-    move: (H root Htlval).
-    rewrite /are_in_normal_form.
+    elim: queries => // hd.
+    elim hd using Query_ind with
+        (Pl := fun qs =>
+                all (query_conforms schema type_in_scope) qs ->
+                all (has_valid_fragments schema graph u type_in_scope) qs ->
+                is_object_type schema type_in_scope ->
+                all is_field (normalize schema type_in_scope qs)) => //;
+    [move=> f α tl IH; rewrite normalize_equation_2 | 
+     move=> l f α tl IH; rewrite normalize_equation_3 |
+     move=> f α φ IH tl IH'; rewrite normalize_equation_4 |
+     move=> l f α φ IH tl IH'; rewrite normalize_equation_5 |
+     move=> t φ IH tl IH'; rewrite normalize_equation_6].
+
+    all: do ?[by rewrite /all -/(all _ _) => /andP [_ Hqsc] /andP [Hval Hvals] Hobj; rewrite Hobj;
+             rewrite /all; apply/andP; split => //; apply: (IH Hqsc Hvals Hobj)].
+    - rewrite /all -/(all _ _) => /andP [/nf_conforms_lookup_some [fld Hlook] Hqsc].
+      do 2 rewrite  -/(all _ _).
+      move=> /andP [Hval Hvals] Hobj; rewrite Hobj.
+      move/lookup_field_in_type_has_type :  Hlook => Hlook.
+      case lookup_field_type => //= rty.
+      by apply: (IH' Hqsc Hvals Hobj).
+    - rewrite /all -/(all _ _) => /andP [/nf_conforms_lookup_some [fld Hlook] Hqsc].
+      do 2 rewrite  -/(all _ _).
+      move=> /andP [Hval Hvals] Hobj; rewrite Hobj.
+      move/lookup_field_in_type_has_type :  Hlook => Hlook.
+      case lookup_field_type => //= rty.
+      by apply: (IH' Hqsc Hvals Hobj).
+    - rewrite /all -/(all _ _) => /andP [Hqc Hqsc].
+      do 2 rewrite  -/(all _ _).
+      move=> /andP [Hval Hvals] Hobj; rewrite Hobj.
+      rewrite all_cat; apply/andP; split; last first.
+      apply: (IH' Hqsc Hvals Hobj).
+      apply: IH => //; last first.
+      move: Hval;
+        rewrite /has_valid_fragments is_object_ifunionF => //.
+      by rewrite is_object_ifinterfaceF => // /andP [_ H].
+  Abort.
+      
+    
+  Lemma normalize_to_normal_form schema graph u type_in_scope queries :
+    all (query_conforms schema type_in_scope) queries ->
+    all (has_valid_fragments schema graph u type_in_scope) queries ->
+    are_in_normal_form schema (normalize schema type_in_scope queries).
+  Proof.
+    funelim (normalize schema type_in_scope queries) => //;  rewrite {1}/all -/(all _ _)=> /andP [Hqc Hqsc].
+    rewrite /all -/(all _ _) => /andP [Hval Htlval].
+    - rewrite /are_in_normal_form.
+      apply/andP; split.
+      apply/orP.
+      case Hobj: is_object_type; [left | right].
+      
+      
 
   
   Equations normalize schema (type_in_scope : @NamedType Name) (queries : seq (@Query Name Vals)) : seq (@Query Name Vals) :=
