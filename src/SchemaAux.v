@@ -175,18 +175,35 @@ Section SchemaAux.
 
   Lemma is_object_type_unionN ty :
     is_object_type ty ->
-    ~~(is_union_type ty).
+    is_union_type ty = false.
   Proof.
     by funelim (is_object_type ty); rewrite is_union_type_equation_1 Heq /=.
   Qed.
 
   Lemma is_interface_type_unionN ty :
     is_interface_type ty ->
-    ~~(is_union_type ty).
+    is_union_type ty = false.
   Proof.
       by funelim (is_interface_type ty); rewrite is_union_type_equation_1 Heq /=.
   Qed.
-  
+
+  Lemma is_object_ifT {A : Type} ty (Tb Fb : A) :
+    is_object_type ty -> (if is_object_type ty then Tb else Fb) = Tb.
+  Proof.
+      by case is_object_type.
+  Qed.
+
+  Lemma is_object_ifinterfaceF {A : Type} ty (Tb Fb : A) :
+    is_object_type ty -> (if is_interface_type ty then Tb else Fb) = Fb.
+  Proof.
+    by move=> Hobj; move: (is_object_type_interfaceN Hobj) => ->. 
+  Qed.
+
+  Lemma is_object_ifunionF {A : Type} ty (Tb Fb : A) :
+    is_object_type ty -> (if is_union_type ty then Tb else Fb) = Fb.
+  Proof.
+    by move=> Hobj; move: (is_object_type_unionN Hobj) => ->.
+  Qed.
   
   (** Get all unduplicated argument names from a field **)
   Definition field_arg_names (fld : FieldDefinition) : {fset Name} := fset [seq arg.(argname) | arg <- fld.(fargs)].
@@ -314,8 +331,15 @@ Section SchemaAux.
     have H: isSome (lookup_field_in_type ty fname) by rewrite /isSome Hlook.
     apply: (lookup_field_in_type_is_obj_or_intf H).
   Qed.
+
+  Lemma lookup_field_in_type_has_type ty fname fld :
+    lookup_field_in_type ty fname = Some fld ->
+    lookup_field_type ty fname. 
+  Proof.
+      by rewrite /lookup_field_type => ->.
+  Qed.
+
   
-    
     (**
      Get the union's types' names.
      If the type is not declared as Union in the Schema, then returns None.
