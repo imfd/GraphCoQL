@@ -610,7 +610,7 @@ Section WellFormedness.
      move/declares_implementation_are_interfaces.
      by move: (is_object_type_interfaceN Hobj) => ->.
      move/in_union.
-       by move: (is_object_type_unionN Hobj); rewrite /negb; case: ifP.
+     by move: (is_object_type_unionN Hobj) => ->.
    Qed.
      
 End WellFormedness.
