@@ -26,8 +26,8 @@ Section NRGTNF.
   Implicit Type schema : @wfSchema Name Vals.
   Implicit Type queries : seq (@Query Name Vals).
   Implicit Type query : @Query Name Vals.
-  Definition is_field := @is_field Name Vals.
-  Definition is_inline_fragment := @QueryAux.is_inline_fragment Name Vals.
+  Notation is_field := (@is_field Name Vals).
+  Notation is_inline_fragment := (@QueryAux.is_inline_fragment Name Vals).
 
   
   
