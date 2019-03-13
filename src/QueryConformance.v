@@ -175,7 +175,35 @@ Section QueryConformance.
     queries != [::] /\ all (query_conforms schema ty) queries.
   Proof. by rewrite /queries_conform; move/andP. Qed.
   *)
+
+  Lemma queries_conform_cons schema ty x s :
+    queries_conform schema ty (x :: s) = (query_conforms schema ty x && all (query_conforms schema ty) s).
+  Proof.
+      by rewrite /queries_conform => /=.
+  Qed.
+
+  Lemma queries_conform_inv schema ty queries :
+    queries != [::] ->
+    all (query_conforms schema ty) queries ->
+    queries_conform schema ty queries.
+  Proof. by move=> *; rewrite /queries_conform; apply/andP. Qed.
+
   
+  Lemma nf_conformsP schema type_in_scope f α φ :
+    reflect (exists2 fld, lookup_field_in_type schema type_in_scope f = Some fld &
+                          [&& ~~(is_scalar_type schema fld.(return_type) || is_enum_type schema fld.(return_type)),
+                           arguments_conform schema fld.(fargs) α &
+                           queries_conform schema fld.(return_type) φ])
+            (query_conforms schema type_in_scope (NestedField f α φ)).
+  Proof.
+    apply: (iffP idP).
+    - rewrite /query_conforms.
+      case Hlook : lookup_field_in_type => [fld |] // H.
+      by exists fld.
+    - move=> [fld Hlook H].
+      by rewrite /query_conforms Hlook. 
+  Qed.
+             
   Lemma ty_not_scalar_or_enum schema ty tdef:
     lookup_type schema ty = Some tdef ->
     ~~(is_scalar_type schema ty || is_enum_type schema ty) ->
@@ -333,17 +361,7 @@ Section QueryConformance.
 
 
     
-  Lemma nf_union_subqueries_inlines schema ty f α ϕ :
-    is_union_type schema f ->
-    query_conforms schema ty (NestedField f α ϕ) ->
-    all is_inline_fragment ϕ.
-  Proof.
-    rewrite is_union_type_E.
-    case=> u; case=> mbs Hlook.
-    rewrite /query_conforms.
-    case Hlookf : lookup_field_in_type => [fld|] //.
-  Abort.
-
+ 
   
 
             
@@ -388,27 +406,9 @@ Section QueryConformance.
     by apply: (type_in_scope_N_scalar_enum Hhd).
   Qed.
 
-  
-  Lemma nf_queries_conform schema ty fld n α ϕ :
-    lookup_field_in_type schema ty n = Some fld ->
-    query_conforms schema ty (NestedField n α ϕ) ->
-    queries_conform schema fld.(return_type) ϕ.
-  Proof.
-    rewrite /query_conforms.
-    move=> Hlook; rewrite Hlook.
-    rewrite -/(query_conforms schema fld.(return_type)).
-    move/and4P=> [_ HNempty Hargs Hall].
-    rewrite /queries_conform. 
-    by apply/andP.  
-  Qed.
+ 
 
-  Lemma nf_conforms_lookup_some schema ty  n α ϕ :
-    query_conforms schema ty (NestedField n α ϕ) ->
-    exists fld, lookup_field_in_type schema ty n = Some fld.
-  Proof. rewrite /query_conforms.
-    case Hlook : lookup_field_in_type => [fld'|] //.
-    by exists fld'.
-  Qed.
+ 
   
    Lemma nlf_conforms_lookup_some schema ty l n α ϕ :
     query_conforms schema ty (NestedLabeledField l n α ϕ) ->
@@ -467,12 +467,6 @@ Section QueryConformance.
  
 
   
-  Lemma queries_conform_cons schema ty hd tl :
-    queries_conform schema ty (hd :: tl) -> query_conforms schema ty hd.
-  Proof.
-    rewrite /queries_conform.
-      by move/andP=> [_ /= /andP [Hhd _]].
-  Qed.
 
 
   Lemma nested_conforms_list schema ty n α ϕ :
@@ -494,10 +488,5 @@ Section QueryConformance.
 
   
   
-  Lemma queries_conform_inv schema ty queries :
-    queries != [::] ->
-    all (query_conforms schema ty) queries ->
-    queries_conform schema ty queries.
-  Proof. by move=> *; rewrite /queries_conform; apply/andP. Qed.
-  
+ 
 End QueryConformance.
