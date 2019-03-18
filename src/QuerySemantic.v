@@ -28,22 +28,16 @@ Section QuerySemantic.
 
   Variables N Name Vals : ordType.
   
-  Notation "'ϵ'" := Empty.
-  Notation "l <- 'null'" := (Null l) (at level 50).
-  Notation "l <- v" := (SingleResult l v) (at level 50).
-  Notation "l <<- vals" := (ListResult l vals) (at level 50).
-  Notation "l <- {{ ρ }}" := (NestedResult l ρ) (at level 40). 
-  Notation "l <<- [{ ρ }]" := (NestedListResult l ρ) (at level 40).
-
-
+ 
   
   Section Aux.    
     Variables (T1 T2 : Type).
     
-    Equations indexed_map_In s (f : forall (i : nat) (x : T1), In x s -> T2) (index : nat) : seq.seq T2 :=
-      indexed_map_In [::] _ _ := [::];
-      indexed_map_In (cons hd tl) f i := cons (f i hd _) (indexed_map_In (fun i x H => f i x _) i.+1).
-
+    Equations indexed_map_In s (f : forall (i : nat) (x : T1), In x s -> T2) (index : nat) : seq T2 :=
+      { 
+        indexed_map_In (s := [::]) _ _ := [::];
+        indexed_map_In (s := hd :: tl) f i := (f i hd _) :: (indexed_map_In (fun i x H => f i x _) i.+1)
+      }.
 
     (**
        indexed_map : (s : seq T1) -> (nat -> x : T1 -> x ∈ s -> T2) -> seq T2
@@ -55,8 +49,14 @@ Section QuerySemantic.
        obligations afterwards.
      **)
     Equations indexed_map (s : list T1) (f : forall (i : nat) (x : T1), In x s -> T2)  : list T2 :=
-      indexed_map s f := indexed_map_In f 0.
-
+      indexed_map f :=
+        indexed_map_In f 0
+    where indexed_map_In s (f : forall (i : nat) (x : T1), In x s -> T2) (index : nat) : seq T2 :=
+            { 
+              indexed_map_In (s := [::]) _ _ := [::];
+              indexed_map_In (s := hd :: tl) f i := (f i hd _) :: (indexed_map_In (fun i x H => f i x _) i.+1)
+            }.
+    
     
     Variables (T : Type) (dflt : T).
 
@@ -132,12 +132,12 @@ Section QuerySemantic.
        **)
 
       Equations β_aux (result flt : @ResponseObject Name Vals) (i : nat) : seq.seq (@ResponseObject Name Vals) :=
-        β_aux (NestedListResult l rs) (NestedListResult l' rs') i <= l == l' => {
-          β_aux (NestedListResult l rs) _ i true := get_nth [::] rs i;
-          β_aux _ _ _ false => [::]
-        };
-        β_aux _ _ _ := [::].
-     
+        β_aux (NestedListResult l rs) (NestedListResult l' rs') i with l == l' :=
+          {
+          | true := get_nth [::] rs i;
+          | false => [::]
+          };
+            β_aux _ _ _ := [::].
       (**
          indexed_β_filter : seq ResponseObject -> ResponseObject -> nat -> seq ResponseObject 
          Traverses the list and extracts the i-th element from a response, whenever it 
@@ -148,35 +148,45 @@ Section QuerySemantic.
        **)
       
       Equations indexed_β_filter (responses : seq.seq (@ResponseObject Name Vals)) (filter :  @ResponseObject Name Vals) (index : nat) : seq.seq (@ResponseObject Name Vals) :=
-        indexed_β_filter [::] _ _ := [::];
-        indexed_β_filter (cons hd tl) filter index := (β_aux hd filter index) ++ (indexed_β_filter tl filter index).
+        {
+          indexed_β_filter [::] _ _ := [::];
+          indexed_β_filter (cons hd tl) filter index :=
+            (β_aux hd filter index) ++ (indexed_β_filter tl filter index)
+            where β_aux (result flt : @ResponseObject Name Vals) (i : nat) : seq.seq (@ResponseObject Name Vals) :=
+                    {
+                      β_aux (NestedListResult l rs) (NestedListResult l' rs') i with l == l' :=
+                        {
+                        | true := get_nth [::] rs i;
+                        | false => [::]
+                        };
+                      β_aux _ _ _ := [::]
+                    }
+        }.
     
     
 
       (** Auxiliary lemmas **)
       
-      Lemma indexed_β_cons  (lst : seq.seq ResponseObject) (r x : ResponseObject) (i : nat) :
-        indexed_β_filter (x :: lst) r i = (β_aux x r i) ++ (indexed_β_filter lst r i).
-      Proof. by []. Qed.
+    
   
       Lemma indexed_β_size_reduced (lst : seq.seq ResponseObject) (r : ResponseObject) (i : nat) :
         responses_size (indexed_β_filter lst r i) <= responses_size lst.
       Proof.
-        elim: lst i => [//| x lst' IH] i.
-        rewrite indexed_β_cons responses_size_app /=.
-        funelim (β_aux x r i) => //=; do ?[move: (IH i) => H]; do ?ssromega.
-        
-        have: responses_size (get_nth [::] l1 i) <= response_size (s4 <<- [{l1}]).
-        funelim (get_nth [::] l1 i) => //.
-        - case: t => //.
-          move=> *. rewrite response_size_helper_1_equation_2 response_size_equation_5.
-          rewrite response_size_helper_2_equation_2. rewrite response_size_helper_1_equation_2. ssromega.
-        - rewrite response_size_equation_5 /= [responses_size t + _]addnC. 
-            rewrite two_times_Sn; rewrite [4 + (2 * size l + 2)]addnA.
-            rewrite -addnA -[2 + _]addnCA addnA; rewrite -[4 + 2 * size l + responses_size' l]/(response_size (s4 <<- [{l}])).
-            by move: (H s4 s5 l2 Heq lst' IH (IH n)) => *; apply: leq_addr. 
-            by move=> Hl; apply: sum_lt' => //. 
+        apply (@indexed_β_filter_elim (fun rsp flt index res => responses_size res <= responses_size rsp)
+                                      (fun hd tl flt index r1 r2 i res => responses_size res <= response_size r1)) => //.
+        - move=> hd tl flt index IH IH'.
+          rewrite responses_size_app /=. ssromega.
+        -  move=> l1 l2 hd tl flt index rs rs' i'.
+          
+          funelim (get_nth [::] rs i') => //= Heq.
+          simp response_size. ssromega.
+          simp response_size.
+          rewrite [responses_size t + _]addnC. 
+          rewrite two_times_Sn; rewrite [4 + (2 * size l + 2)]addnA.
+          rewrite -addnA -[2 + _]addnCA addnA; rewrite -[4 + 2 * size l + responses_size' l]/(response_size (NestedListResult l1 l)).
+            by move: (H lst r i l1 l2 hd tl flt index rs' Heq ) => *; apply: leq_addr. 
       Qed.
+          
       
     End Indexed_Beta.
 
@@ -189,12 +199,14 @@ Section QuerySemantic.
        **)
       
       Equations β (filter response: @ResponseObject Name Vals) : seq.seq (@ResponseObject Name Vals) :=
-        β (NestedResult l' _) (NestedResult l χ) <= l == l' => {
-          β (NestedResult l' _) (NestedResult l χ) true => χ;
-          β (NestedResult l' _) (NestedResult l χ) false => [::]
-        };
-        β _ _ := [::].
-
+        {
+          β (NestedResult l' _) (NestedResult l χ) with l == l' :=
+            {
+            | true => χ;
+            | false => [::]
+            };
+          β _ _ := [::]
+          }.
      
 
        (**
@@ -220,12 +232,9 @@ Section QuerySemantic.
         responses_size (β_filter flt lst) <= responses_size lst.
       Proof.
         funelim (β_filter flt lst) => //=.
+        funelim (β flt r) => //=; try ssromega.
         rewrite responses_size_app.
-        have: responses_size (β filter r) <= response_size r.
-          move: response_size_n_0 => H0.
-          funelim (β filter r) => //=.
-            by rewrite -/(responses_size l1); ssromega.
-            move=> H'; ssromega.
+        by simp response_size; ssromega.
       Qed.
   
     End Beta.
@@ -297,16 +306,17 @@ Section QuerySemantic.
   End Filters.
 
 
-  Lemma in_responses_size (r : seq.seq (@ResponseObject Name Vals)) rs : In r rs -> responses_size r <= responses_size' rs.
+  Lemma in_responses_size (r : seq (@ResponseObject Name Vals)) rs : In r rs -> responses_size r <= responses_size' rs.
   Proof.
-    elim: rs => [//| r' rs' IH] Hin; rewrite response_size_helper_2_equation_2.
+    elim: rs => [//| r' rs' IH] Hin /=; rewrite -/(responses_size _).
     move: (in_inv Hin) => [-> | Htl] //.
       by ssromega.
       by move: (IH Htl) => Hleq; ssromega.
   Qed.
-    
-  Equations collect (responses : seq (@ResponseObject Name Vals)) : seq (@ResponseObject Name Vals) := 
-    collect responses by rec (responses_size responses) lt :=
+
+ 
+  Equations collect (responses : seq (@ResponseObject Name Vals)) : seq (@ResponseObject Name Vals)
+    by wf (responses_size responses) lt :=
       collect [::] := [::];
       collect (cons (NestedResult l σ) tl) :=
                        (NestedResult l (collect (σ ++ (β_filter (NestedResult l σ) tl))))   
@@ -321,13 +331,13 @@ Section QuerySemantic.
                                
       collect (cons hd tl) := hd :: (collect (γ_filter hd tl)).
   Next Obligation.
-      by move: (γ_responses_size_reduced tl hd) => *;  ssromega.
+    by move: (γ_responses_size_reduced tl (Null s)) => *; simp response_size; ssromega.
   Qed.
   Next Obligation.
-      by move: (γ_responses_size_reduced tl hd) => *;  ssromega.
+      by move: (γ_responses_size_reduced tl (SingleResult s0 s1)) => *; simp response_size; ssromega.
   Qed.
   Next Obligation.
-      by move: (γ_responses_size_reduced tl hd) => *;  ssromega.
+    by move: (γ_responses_size_reduced tl (ListResult s2 l0)) => *; simp response_size; ssromega.
   Qed.
   Next Obligation.
     rewrite responses_size_app. move: (β_responses_size_reduced tl (NestedResult l σ)) => *.
@@ -336,16 +346,16 @@ Section QuerySemantic.
         by move=> *; apply: sum_lt.
   Qed.    
   Next Obligation.
-      by move: (γ_responses_size_reduced tl (NestedResult l σ)) => *;  ssromega.
+      by move: (γ_responses_size_reduced tl (NestedResult l σ)) => *; simp response_size;  ssromega.
   Qed.
   Next Obligation.
     rewrite responses_size_app -/(responses_size' rs).
     move: (in_responses_size H) => Hleq.
-    move: (indexed_β_size_reduced tl (l <<- [{rs}]) i) => Hleq'.
+    move: (indexed_β_size_reduced tl (NestedListResult l rs) i) => Hleq'; simp response_size.
       by ssromega.
   Qed.
   Next Obligation.
-      by move: (γ_responses_size_reduced tl (NestedListResult l rs)) => *;  ssromega.
+      by move: (γ_responses_size_reduced tl (NestedListResult l rs)) => *; simp response_size; ssromega.
   Qed.
   
   Implicit Type schema : @wfSchema Name Vals.
@@ -415,16 +425,20 @@ Section QuerySemantic.
   
   Equations eval schema graph u query : seq.seq (@ResponseObject Name Vals) :=
     {
-      eval schema graph u (SingleField name args) :=
-        match u.(fields) (Field name args) with
-        | Some (inl value) =>  [:: SingleResult name value]
+      eval schema graph u (SingleField name args)
+        with u.(fields) (Field name args) :=
+        {
+        | Some (inl value) =>  [:: SingleResult name value];
         | _ => [:: Null name]
-        end;
-      eval schema graph u (LabeledField label name args) :=
-        match u.(fields) (Field name args) with
-        | Some (inl value) => [:: SingleResult label value]
+        };
+      
+      eval schema graph u (LabeledField label name args)
+        with u.(fields) (Field name args) :=
+        {
+        | Some (inl value) => [:: SingleResult label value];
         | _ => [:: Null label]
-        end;
+        };
+      
       eval schema graph u (NestedField name args ϕ) :=
         let target_nodes := neighbours_with_field graph u (Field name args) in
         match lookup_field_type schema u.(type) name with
@@ -451,22 +465,23 @@ Section QuerySemantic.
           end
         | _ => [:: Null label]
         end;
-      eval schema graph u (InlineFragment t ϕ) :=
-        match lookup_type schema t with
-        | Some (ObjectTypeDefinition _ _ _) => if t == u.(type) then
+      eval schema graph u (InlineFragment t ϕ) 
+        with lookup_type schema t :=
+        {
+        | Some (ObjectTypeDefinition _ _ _) := if t == u.(type) then
                                                 eval_queries schema graph u ϕ
                                               else
-                                                [::]
-        | Some (InterfaceTypeDefinition _ _) => if declares_implementation schema u.(type) t then
+                                                [::];
+        | Some (InterfaceTypeDefinition _ _) := if declares_implementation schema u.(type) t then
                                                  eval_queries schema graph u ϕ
                                                else
-                                                 [::]
-        | Some (UnionTypeDefinition _ mbs) => if u.(type) \in mbs then
+                                                 [::];
+        | Some (UnionTypeDefinition _ mbs) := if u.(type) \in mbs then
                                                eval_queries schema graph u ϕ
                                              else
-                                               [::]
+                                               [::];
         | _ =>  [::]
-        end
+        }
     }
   where
   eval_queries schema graph u (queries : seq (@Query Name Vals)) : seq (@ResponseObject Name Vals) :=

@@ -67,7 +67,7 @@ Section QueryAux.
 
 
   (** Get the response's size, according to Jorge and Olaf's version **)
-  Equations(noind) response_size response : nat :=
+  Equations response_size response : nat :=
     {
       response_size (Null _) := 3;
       response_size (SingleResult _ _) := 3;

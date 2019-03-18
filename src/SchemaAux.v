@@ -95,10 +95,10 @@ Section SchemaAux.
       
   (** Checks whether the given type is defined as an Object in the Schema **)
   Equations is_object_type (ty : @NamedType Name) : bool :=
-    is_object_type ty with (lookup_type ty) =>
+    is_object_type ty with lookup_type ty :=
     {
       | Some (ObjectTypeDefinition _ _ _) := true;
-      | _ => false
+      | _ := false
     }.
 
   Lemma is_object_type_E ty :
@@ -111,10 +111,10 @@ Section SchemaAux.
 
   (** Checks whether the given type is defined as an Interface in the Schema **)
   Equations is_interface_type (ty : @NamedType Name) : bool :=
-    is_interface_type ty with (lookup_type ty) =>
+    is_interface_type ty with lookup_type ty :=
     {
       | Some (InterfaceTypeDefinition _ _) := true;
-      | _ => false
+      | _ := false
     }.
 
   Lemma is_interface_type_E ty :
@@ -130,10 +130,10 @@ Section SchemaAux.
   
   (** Checks whether the given type is defined as a Union in the Schema **)
   Equations is_union_type (ty : @NamedType Name) : bool :=
-    is_union_type ty with (lookup_type ty) =>
+    is_union_type ty with lookup_type ty :=
     {
       | Some (UnionTypeDefinition _ _) := true;
-      | _ => false
+      | _ := false
     }.
 
     Lemma is_union_type_E ty:
@@ -286,6 +286,14 @@ Section SchemaAux.
       by left; rewrite is_object_type_equation_1 Hlook.
     - move=> i flds Hlook _.
         by right; rewrite is_interface_type_equation_1 Hlook.
+  Qed.
+
+  Lemma lookup_field_in_union_empty ty fname :
+    is_union_type ty ->
+    lookup_field_in_type ty fname = None.
+  Proof.
+    funelim (is_union_type ty) => //.
+    by rewrite /lookup_field_in_type Heq /=.
   Qed.
 
   

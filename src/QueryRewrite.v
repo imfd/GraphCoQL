@@ -49,9 +49,10 @@ Section QueryRewrite.
     Admitted.
 
 
+  Ltac foo := intros; program_simpl; rewrite -/(queries_size _); try ssromega.
+
+  Hint Extern 100 => foo:Below.
   
-  
-  Obligation Tactic := intros; program_simpl; rewrite -/(queries_size _); try ssromega. 
   Equations normalize schema (type_in_scope : @NamedType Name) (queries : seq (@Query Name Vals))  : seq (@Query Name Vals) :=
     normalize schema type_in_scope queries by rec (queries_size queries) lt :=
       normalize _ _ [::] := [::];

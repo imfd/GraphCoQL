@@ -214,9 +214,9 @@ Section QueryConformance.
     rewrite /is_scalar_type /is_enum_type.
     case Hlook: lookup_type => [sm|] //.
     case: sm Hlook => //.
-    by move=> o intfs flds Hlook _ _ _; constructor; rewrite /is_object_type Hlook.
-    by move=> i flds Hlook _ _; constructor; rewrite /is_interface_type Hlook.
-    by move=> u mbs Hlook _ _; constructor; rewrite /is_union_type Hlook.
+    by move=> o intfs flds Hlook _ _ _; constructor; rewrite is_object_type_equation_1 Hlook.
+    by move=> i flds Hlook _ _; constructor; rewrite is_interface_type_equation_1 Hlook.
+    by move=> u mbs Hlook _ _; constructor; rewrite is_union_type_equation_1 Hlook.
   Qed.
 
 
@@ -383,14 +383,12 @@ Section QueryConformance.
     rewrite /is_fragment_spread_possible.
     rewrite /get_possible_types fsetIC.
     case Hlook: lookup_type => [tdef|] //.
-    case: tdef Hlook => //; do ?[rewrite fset0I //=].
-    move=> obj intfs flds Hlook _.
-      by constructor 1; rewrite /is_object_type Hlook /=.
-      move=> i flds Hlook _.
-        by constructor 2; rewrite /is_interface_type Hlook /=.
-      move=> u mbs Hlook _.
-        by constructor 3; rewrite /is_union_type Hlook /=.  
-      by rewrite fset0I /=.
+    by case: tdef Hlook => //; do ?[rewrite fset0I //=];
+                         [constructor 1; simp is_object_type
+                         | constructor 2; simp is_interface_type
+                         | constructor 3; simp is_union_type]; rewrite Hlook.
+    
+    by rewrite fset0I /=.
   Qed.
   
 

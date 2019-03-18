@@ -417,7 +417,7 @@ Section WellFormedness.
     - funelim (is_object_type schema ty) => // _.
       by exists f, l; rewrite Heq; move/lookup_type_name_wf: Heq => ->.
     - move=> [intfs [flds Hlook]].
-        by rewrite /is_object_type Hlook.
+        by rewrite is_object_type_equation_1 Hlook.
   Qed.
 
   Lemma is_interface_type_wfP (schema : wfSchema) ty :
@@ -428,7 +428,7 @@ Section WellFormedness.
     - funelim (is_interface_type schema ty) => // _.
         by exists l0; rewrite Heq; move/lookup_type_name_wf: Heq => ->.
     - move=> [flds Hlook].
-        by rewrite /is_interface_type Hlook.
+        by rewrite is_interface_type_equation_1 Hlook.
   Qed.
  
 
@@ -440,7 +440,7 @@ Section WellFormedness.
     - funelim (is_union_type schema ty) => // _.
         by exists f0; rewrite Heq; move/lookup_type_name_wf: Heq => ->.
     - move=> [mbs Hlook].
-        by rewrite /is_union_type Hlook.
+        by rewrite is_union_type_equation_1 Hlook.
   Qed.
 
 
@@ -545,7 +545,7 @@ Section WellFormedness.
       rewrite /union_members Heq.
       move/lookup_in_schemaP: Heq.
       wfschema.
-      move/(Hok (ty, UnionTypeDefinition s2 f0)) => /=.
+      move/(Hok (ty0, UnionTypeDefinition s2 f0)) => /=.
       by rewrite is_type_def_wf_unionE => /andP [H _].
   Qed.
 
