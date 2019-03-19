@@ -56,15 +56,15 @@ Section QueryRewrite.
       
                                                                                     
        normalize schema  type_in_scope (NestedField f α φ)
-         with lookup_field_type schema type_in_scope f :=
+         with lookup_field_in_type schema type_in_scope f :=
          {
-          | Some return_type
+          | Some fld
               with is_object_type schema type_in_scope :=
               {
-              | true := [:: NestedField f α (normalize__φ schema return_type φ)];
+              | true := [:: NestedField f α (normalize__φ schema fld.(return_type) φ)];
               | _ :=
                 let possible_types := get_possible_types schema type_in_scope in
-                let normalized_head := normalize__φ schema return_type φ in
+                let normalized_head := normalize__φ schema fld.(return_type) φ in
                 [seq (InlineFragment ty [:: NestedField f α normalized_head]) | ty <- possible_types]
               };
           | _ => [::]
@@ -73,15 +73,15 @@ Section QueryRewrite.
 
 
       normalize schema  type_in_scope (NestedLabeledField l f α φ)
-       with lookup_field_type schema type_in_scope f :=
+       with lookup_field_in_type schema type_in_scope f :=
          {
-          | Some return_type
+          | Some fld
               with is_object_type schema type_in_scope :=
               {
-              | true := [:: NestedLabeledField l f α (normalize__φ schema return_type φ)];
+              | true := [:: NestedLabeledField l f α (normalize__φ schema fld.(return_type) φ)];
               | _ :=
                 let possible_types := get_possible_types schema type_in_scope in
-                let normalized_head := normalize__φ schema return_type φ in
+                let normalized_head := normalize__φ schema fld.(return_type) φ in
                 [seq (InlineFragment ty [:: NestedLabeledField l f α normalized_head]) | ty <- possible_types]
               };
           | _ => [::]
@@ -89,19 +89,17 @@ Section QueryRewrite.
               
               
       normalize schema  type_in_scope (InlineFragment t φ)
-        with is_object_type schema type_in_scope :=
+        with is_object_type schema type_in_scope, is_object_type schema t :=
         {
-        | true := (normalize__φ schema  type_in_scope φ);
-        | false with is_object_type schema t :=
-            {
-            | true := [:: InlineFragment t (normalize__φ schema  t φ)];
-            | false :=
+        | true | _ := (normalize__φ schema type_in_scope φ);
+        | false | true := [:: InlineFragment t (normalize__φ schema t φ)];
+        | false | false :=
             (* abstract type in scope & guard has abstract type *)
             let possible_types := get_possible_types schema t in
             let scope_possible_types := get_possible_types schema type_in_scope in
             let intersection := (scope_possible_types :&: possible_types)%fset in
             [seq (InlineFragment ty (normalize__φ schema  ty φ)) | ty <- intersection]
-            }
+            
         }
     }
   where

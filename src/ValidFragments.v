@@ -30,15 +30,15 @@ Section ValidFragments.
   Equations has_valid_fragments schema (type_in_scope : @NamedType Name) query : bool :=
     {
       has_valid_fragments schema ty (NestedField f _ φ)
-        with lookup_field_type schema ty f :=
+        with lookup_field_in_type schema ty f :=
         {
-        | Some return_type := all (has_valid_fragments schema return_type) φ;
+        | Some fld := all (has_valid_fragments schema fld.(return_type)) φ;
         | _ := false
         };
       has_valid_fragments schema ty (NestedLabeledField _ f _ φ)
-        with lookup_field_type schema ty f :=
+        with lookup_field_in_type schema ty f :=
         {
-        | Some return_type := all (has_valid_fragments schema return_type) φ;
+        | Some fld := all (has_valid_fragments schema fld.(return_type)) φ;
         | _ := false
         };
 
