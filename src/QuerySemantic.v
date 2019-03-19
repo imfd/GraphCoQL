@@ -545,12 +545,12 @@ Section QuerySemantic.
   Proof. done. Qed.
 
 
-  Lemma collect_nested_result l r :
+ (* Lemma collect_nested_result l r :
     collect [:: NestedResult l r] = [:: NestedResult l (collect r)].
   Proof.
     funelim (collect [:: NestedResult l r]) => //=.
       by rewrite collect_equation_1 collect_app_nil.
-  Qed.
+  Qed. *)
 
   Lemma collect_nested_list_result (l : Name) (r : seq (seq (@ResponseObject Name Vals))) :
     collect [:: NestedListResult l r] = [:: NestedListResult l (map collect r)].
@@ -568,15 +568,14 @@ Section QuerySemantic.
 
   Lemma eval_same_query_in_list schema graph u query :
     eval schema graph u query = eval_queries schema graph u [:: query].
-  Proof.
-      by rewrite eval_helper_1_equation_2. Qed.
+  Proof. done. Qed.
 
   Lemma eval_query_inline schema (g : conformedGraph schema) qs :
     eval schema g g.(root) (InlineFragment schema.(query_type) qs) = eval_queries schema g g.(root) qs.
   Proof.
-    rewrite eval_equation_5.
+    simp eval.
     move: (query_has_object_type schema) => /is_object_type_E [obj [intfs [flds Hlook]]].
-    rewrite Hlook.
+    rewrite Hlook /=.
     move: (root_query_type g) => -> /=.
     case: ifP => //; case/eqP => //.
   Qed.
@@ -629,10 +628,9 @@ Section QuerySemantic.
     funelim (is_interface_type schema ti) => //.
     rewrite Heq.
     move: (in_implementation_is_object Himpl) => /is_object_type_E [obj [intfs [flds Hlook]]].
-    rewrite Hlook.
+    rewrite Hlook /=.
     case: ifP => //.
-    rewrite declares_in_implementation.
-  Abort.
+    Abort.
   (* Missing info on node -> type of node should be same as the one in scope *)
   
 

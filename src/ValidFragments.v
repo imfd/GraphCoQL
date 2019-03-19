@@ -6,6 +6,8 @@ Set Asymmetric Patterns.
 
 From extructures Require Import ord fset.
 
+From Equations Require Import Equations.
+
 Require Import Schema.
 Require Import SchemaAux.
 Require Import SchemaWellFormedness.
@@ -22,52 +24,44 @@ Section ValidFragments.
 
   Variables N Name Vals : ordType.
   Implicit Type schema : @wfSchema Name Vals.
+  Implicit Type query : @Query Name Vals.
 
-  Fixpoint has_valid_fragments schema graph (u : @node Name Vals) (type_in_scope : NamedType) query : bool :=
-    match query with
-    | SingleField f α
-    | LabeledField _ f α => lookup_field_in_type schema u.(type) f
-                                                                
-    | NestedField f α φ
-    | NestedLabeledField _ f α φ =>
-      let target_nodes := neighbours_with_field graph u (Field f α) in
-      match lookup_field_type schema u.(type) f with
-      | Some (ListType return_type) =>
-        all (fun v => all (has_valid_fragments schema graph v return_type) φ) target_nodes
-          
-      | Some (NT return_type) =>
-        match ohead target_nodes with
-        | Some v => all (has_valid_fragments schema graph v return_type) φ
-        | _ =>  false
-        end
-      | _ => false         (* If the field ∉ fields(u) then it's null, right? *)
-      end
 
-    | InlineFragment t φ =>
-      if is_union_type schema type_in_scope then
-        (is_subtype schema (NT u.(type)) (NT t)) ==> all (has_valid_fragments schema graph u t) φ
-      else
-      if is_interface_type schema type_in_scope then
-        is_subtype schema (NT u.(type)) (NT t) &&  
-        all (has_valid_fragments schema graph u type_in_scope) φ                                        
-      else
-        is_subtype schema (NT u.(type)) (NT t) &&
-        all (has_valid_fragments schema graph u type_in_scope) φ
-    end.
+  Equations has_valid_fragments schema (type_in_scope : @NamedType Name) query : bool :=
+    {
+      has_valid_fragments schema ty (NestedField f _ φ)
+        with lookup_field_type schema ty f :=
+        {
+        | Some return_type := all (has_valid_fragments schema return_type) φ;
+        | _ := false
+        };
+      has_valid_fragments schema ty (NestedLabeledField _ f _ φ)
+        with lookup_field_type schema ty f :=
+        {
+        | Some return_type := all (has_valid_fragments schema return_type) φ;
+        | _ := false
+        };
 
-  Ltac query_conforms := rewrite /query_conforms -/(query_conforms _ _); try move/and4P; try apply/and4P.
+      has_valid_fragments schema ty (InlineFragment t φ)
+        with is_object_type schema ty :=
+        {
+        | true := (t == ty) && all (has_valid_fragments schema ty) φ;
+        | false := ((t == ty) || is_object_type schema t) && all (has_valid_fragments schema t) φ
+        }; 
+      
+      has_valid_fragments _ _ _ := true
+    }.
 
-  Lemma valid_fragments_inline_guard_supertype_of_node schema graph u type_in_scope t φ :
-    is_object_type schema type_in_scope ->
-    has_valid_fragments schema graph u type_in_scope (InlineFragment t φ) ->
-    is_subtype schema (NT u.(type)) (NT t).
+
+  Lemma valid_fragments_inline_obj schema ty t φ :
+    is_object_type schema ty ->
+    has_valid_fragments schema ty (InlineFragment t φ) ->
+    t = ty.
   Proof.
     move=> Hobj.
-    rewrite /has_valid_fragments.
-    rewrite (is_object_ifunionF _ _ Hobj).
-    by rewrite (is_object_ifinterfaceF _ _ Hobj) => /andP [H _].
+    simp has_valid_fragments.
+    by rewrite Hobj /= => /andP [/eqP].
   Qed.
-
   
 
   
