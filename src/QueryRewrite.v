@@ -181,133 +181,262 @@ Section QueryRewrite.
       by apply IH.
   Qed.
 
+  Lemma normalize__φ_in_abstract_scope_are_inlines :
+    forall schema ty qs,
+      all (query_conforms schema ty) qs ->
+      all (has_valid_fragments schema ty) qs ->
+      is_abstract_type schema ty ->
+      all is_inline_fragment (normalize__φ schema ty qs).
+  Proof.
+    move=> schema ty.
+    elim=> // hd tl IH.
+    rewrite {1}/all -/(all _ _) => /andP [Hqc Hqsc].
+    rewrite {1}/all -/(all _ _) => /andP [Hv Hvs] Habs.
+    rewrite normalize__φ_equation_2 all_cat; apply/andP; split.
+    case: hd Hqc Hv; simp normalize;
+      do ?[intros; simp normalize;
+           move: (abstract_type_N_obj Habs) => -> /=;
+             by apply/allP=> x /mapP [t _ ->]].
 
-  Lemma normalize_in_normal_form schema query :
-    forall type_in_scope,
+    all: do? [intros; simp normalize;
+              case lookup_field_in_type => // fld /=;
+              move: (abstract_type_N_obj Habs) => -> /=;
+                by apply/allP=> x /mapP [t _ ->]].
+
+    - move=> t φ Hqc Hv; simp normalize.
+      move: (abstract_type_N_obj Habs) => -> /=.
+      by case is_object_type; [rewrite all_seq1| apply/allP=> x /mapP [t' _ ->]].
+  Qed.
+
+  Ltac orL := apply/orP; left.
+  Ltac orR := apply/orP; right.
+  
+  Lemma normalize_in_normal_form :
+    forall schema type_in_scope query,
       query_conforms schema type_in_scope query ->
       has_valid_fragments schema type_in_scope query ->
       are_in_normal_form schema (normalize schema type_in_scope query).
   Proof.
-    elim query using Query_ind with
-        (Pl := fun queries =>
-                forall type_in_scope,
-                   all (query_conforms schema type_in_scope) queries ->
-                   all (has_valid_fragments schema type_in_scope) queries ->
-                   are_in_normal_form schema (normalize__φ schema type_in_scope queries)) => //.
-    - move=> f α ty Hqc Hv.
-      simp normalize; case is_object_type => /=.
-      * apply/andP; split => //; apply: H.
-      * rewrite /are_in_normal_form.
-        apply/andP; split.
-        apply/orP; right. apply/allP=> x /mapP [t Hin ->] /=.
-        by simp is_inline_fragment.
-        apply/allP => x /mapP [t Hpty ->].
-        rewrite is_in_normal_form_equation_5.
-        apply/and3P; split => //=.
-        move: (type_in_scope_N_scalar_enum Hqc) => [Hobj | Hintf | Hunion].
-      + by move/(in_object_possible_types Hobj): Hpty => ->. 
-      + rewrite (get_possible_types_interfaceE Hintf) in Hpty.
-        by apply: (in_implementation_is_object Hpty).
-      + rewrite (get_possible_types_unionE Hunion) in Hpty.
-          by apply: (in_union_is_object Hpty).
-    - move=> l f α ty Hqc Hv.
-      simp normalize; case is_object_type => /=.
-      * apply/andP; split => //; apply: H.
-      * rewrite /are_in_normal_form.
-        apply/andP; split.
-        apply/orP; right. apply/allP=> x /mapP [t Hin ->] /=.
-          by simp is_inline_fragment.
-        apply/allP => x /mapP [t Hpty ->].
-        rewrite is_in_normal_form_equation_5.
-        apply/and3P; split => //=.
-        move: (type_in_scope_N_scalar_enum Hqc) => [Hobj | Hintf | Hunion].
-      + by move/(in_object_possible_types Hobj): Hpty => ->. 
+    apply (normalize_elim
+             (fun schema type_in_scope query qn =>
+                query_conforms schema type_in_scope query ->
+                has_valid_fragments schema type_in_scope query ->
+                are_in_normal_form schema (normalize schema type_in_scope query))
+             (fun schema type_in_scope queries qsn =>
+                all (query_conforms schema type_in_scope) queries ->
+                all (has_valid_fragments schema type_in_scope) queries ->
+                are_in_normal_form schema (normalize__φ schema type_in_scope queries))) => //;
+    move=> schema; [ move=> ty f α Hobj Hqc Hv
+                  | move=> ty f α Hobj Hqc Hv
+                  | move=> ty l f α Hobj Hqc Hv
+                  | move=> ty l f α Hobj Hqc Hv
+                  | move=> ty f α φ Hlook
+                  | move=> ty f fld α φ IH Hobj Hlook Hqc Hv
+                  | move=> ty f fld α φ IH Hobj Hlook Hqc Hv
+                  | move=> ty l f α φ Hlook
+                  | move=> ty l f fld α φ IH Hobj Hlook Hqc Hv
+                  | move=> ty l f fld α φ IH Hobj Hlook Hqc Hv
+                  | move=> t b ty φ IH Hobj Hinobj Hqc Hv
+                  | move=> t ty φ IH Hinty Hobj Hqc Hv
+                  | move=> t ty φ IH Hinty Hscope Hqc Hv
+                  | move=> ty q qs IH IH'
+                  ];
+          rewrite ?/are_in_normal_form;
+          simp normalize.
+    
+    - by rewrite Hobj; apply/andP; split.
+    - rewrite Hobj /=.
+      apply/andP; split => //.
+      *  apply/orP; right. apply/allP=> x /mapP [t Hin ->] /=.
+           by simp is_inline_fragment.
+      *  apply/allP => x /mapP [t Hpty ->].
+         simp is_in_normal_form.
+         apply/and3P; split => //=.
+         move: (type_in_scope_N_scalar_enum Hqc) => [Hcontr | Hintf | Hunion].
+      + by rewrite Hobj in Hcontr.
       + rewrite (get_possible_types_interfaceE Hintf) in Hpty.
         by apply: (in_implementation_is_object Hpty).
       + rewrite (get_possible_types_unionE Hunion) in Hpty.
           by apply: (in_union_is_object Hpty).
 
-    - move=> f α φ IH ty Hqc Hv.
-      set Hqc' := Hqc.
-      simp normalize; case Hlook: lookup_field_type => [rty|] //=.
-      move/nf_conformsP: Hqc' => [fld Hlook' /and3P [_ _ H]].
-      move: (lookup_field_or_type Hlook' Hlook) => Heq.
-      move: Hv; simp has_valid_fragments; rewrite Hlook /= => Hvals.
-      rewrite Heq in Hvals *.
-      case Hobj : is_object_type => /=.
-      * rewrite /are_in_normal_form /=; apply/andP; split=> //=.
-        apply/andP; split=> //.
-        simp is_in_normal_form.
-        rewrite -/(are_in_normal_form _ _).
-        apply: IH => //.
-          by rewrite /queries_conform in H; move/andP: H => [_ H].
-      * rewrite /are_in_normal_form; apply/andP; split.
-        + apply/orP; right.
-          by apply/allP => x /mapP [t Hin ->]; program_simpl.
-        + apply/allP=> x /mapP [t Hin ->]; simp is_in_normal_form.
-          move: (type_in_scope_N_scalar_enum Hqc) => [Hobj' | Hintf | Hunion].
-          (* Obj *)
-            by rewrite Hobj in Hobj'.
-          (* Intf *)
-          rewrite (get_possible_types_interfaceE Hintf) in Hin.
-          apply/and3P; split=> //.
-            by apply: (in_implementation_is_object Hin).
-            rewrite all_seq1; simp is_in_normal_form.
-            rewrite -/(are_in_normal_form _ _).
-            apply: IH => //.
-              by rewrite /queries_conform in H; move/andP: H => [_ H].
-          (* Union *)
-          rewrite (get_possible_types_unionE Hunion) in Hin.     
-          move/in_union_is_object: Hin => Hobj'.
-          apply/and3P; split=> //.
-          rewrite all_seq1; simp is_in_normal_form.
-            rewrite -/(are_in_normal_form _ _).
-            apply: IH => //.
-              by rewrite /queries_conform in H; move/andP: H => [_ H].
-    -  move=> l f α φ IH ty Hqc Hv.
-      set Hqc' := Hqc.
-      simp normalize; case Hlook: lookup_field_type => [rty|] //=.
-      move/nf_conformsP: Hqc' => [fld Hlook' /and3P [_ _ H]].
-      move: (lookup_field_or_type Hlook' Hlook) => Heq.
-      move: Hv; simp has_valid_fragments; rewrite Hlook /= => Hvals.
-      rewrite Heq in Hvals *.
-      case Hobj : is_object_type => /=.
-      * rewrite /are_in_normal_form /=; apply/andP; split=> //=.
-        apply/andP; split=> //.
-        simp is_in_normal_form.
-        rewrite -/(are_in_normal_form _ _).
-        apply: IH => //.
-          by rewrite /queries_conform in H; move/andP: H => [_ H].
-      * rewrite /are_in_normal_form; apply/andP; split.
-        + apply/orP; right.
-          by apply/allP => x /mapP [t Hin ->]; program_simpl.
-        + apply/allP=> x /mapP [t Hin ->]; simp is_in_normal_form.
-          move: (type_in_scope_N_scalar_enum Hqc) => [Hobj' | Hintf | Hunion].
-          (* Obj *)
-            by rewrite Hobj in Hobj'.
-          (* Intf *)
-          rewrite (get_possible_types_interfaceE Hintf) in Hin.
-          apply/and3P; split=> //.
-            by apply: (in_implementation_is_object Hin).
-            rewrite all_seq1; simp is_in_normal_form.
-            rewrite -/(are_in_normal_form _ _).
-            apply: IH => //.
-              by rewrite /queries_conform in H; move/andP: H => [_ H].
-          (* Union *)
-          rewrite (get_possible_types_unionE Hunion) in Hin.     
-          move/in_union_is_object: Hin => Hobj'.
-          apply/and3P; split=> //.
-          rewrite all_seq1; simp is_in_normal_form.
-            rewrite -/(are_in_normal_form _ _).
-            apply: IH => //.
-              by rewrite /queries_conform in H; move/andP: H => [_ H].
-    - move=> t φ IH ty Hqc Hv.
-      simp normalize; case Hobj: is_object_type => //=.
-      rewrite /are_in_normal_form; apply/andP; split.
-      * simp normalize; case Hobj: is_object_type => /=.
-        apply/orP; right => /=.
-        simp
+    - by rewrite Hobj; apply/andP; split.
 
-              
+    - rewrite Hobj /=.
+      apply/andP; split => //.
+      *  apply/orP; right. apply/allP=> x /mapP [t Hin ->] /=.
+           by simp is_inline_fragment.
+      *  apply/allP => x /mapP [t Hpty ->].
+         simp is_in_normal_form.
+         apply/and3P; split => //=.
+         move: (type_in_scope_N_scalar_enum Hqc) => [Hcontr | Hintf | Hunion].
+      + by rewrite Hobj in Hcontr.
+      + rewrite (get_possible_types_interfaceE Hintf) in Hpty.
+        by apply: (in_implementation_is_object Hpty).
+      + rewrite (get_possible_types_unionE Hunion) in Hpty.
+          by apply: (in_union_is_object Hpty).
+
+    - by rewrite Hlook.
+    - move: Hv; simp has_valid_fragments; rewrite Hlook /= Hobj /= => Hvals.
+      apply/and3P; split => //.
+      simp is_in_normal_form.
+      rewrite -/(are_in_normal_form _ _).
+      apply: IH => //.
+      by move: Hqc; rewrite {1}/query_conforms Hlook => /and4P [_ _ _ H].
+
+    - move: Hv; simp has_valid_fragments; rewrite Hlook /= Hobj /= => Hvals.
+      apply/andP; split => //.
+      * apply/orP; right.
+          by apply/allP => x /mapP [t Hin ->]; program_simpl.
+      * apply/allP=> x /mapP [t Hin ->]; simp is_in_normal_form.
+        move: (type_in_scope_N_scalar_enum Hqc) => [Hcontr | Hintf | Hunion].
+        + by rewrite Hobj in Hcontr.
+        + rewrite (get_possible_types_interfaceE Hintf) in Hin.
+          apply/and3P; split=> //.
+            by apply: (in_implementation_is_object Hin).
+            rewrite all_seq1; simp is_in_normal_form.
+            rewrite -/(are_in_normal_form _ _).
+            apply: IH => //.
+              by move: Hqc; rewrite {1}/query_conforms Hlook => /and4P [_ _ _ H].
+
+        + rewrite (get_possible_types_unionE Hunion) in Hin.     
+          move/in_union_is_object: Hin => Hobj'.
+          apply/and3P; split=> //.
+          rewrite all_seq1; simp is_in_normal_form.
+            rewrite -/(are_in_normal_form _ _).
+            apply: IH => //.
+              by move: Hqc; rewrite {1}/query_conforms Hlook => /and4P [_ _ _ H].
+
+    - by rewrite Hlook.
+    - move: Hv; simp has_valid_fragments; rewrite Hlook /= Hobj /= => Hvals.
+      apply/and3P; split => //.
+      simp is_in_normal_form.
+      rewrite -/(are_in_normal_form _ _).
+      apply: IH => //.
+      by move: Hqc; rewrite {1}/query_conforms Hlook => /and4P [_ _ _ H].
+
+    - move: Hv; simp has_valid_fragments; rewrite Hlook /= Hobj /= => Hvals.
+      apply/andP; split => //.
+      * apply/orP; right.
+          by apply/allP => x /mapP [t Hin ->]; program_simpl.
+      * apply/allP=> x /mapP [t Hin ->]; simp is_in_normal_form.
+        move: (type_in_scope_N_scalar_enum Hqc) => [Hcontr | Hintf | Hunion].
+        + by rewrite Hobj in Hcontr.
+        + rewrite (get_possible_types_interfaceE Hintf) in Hin.
+          apply/and3P; split=> //.
+            by apply: (in_implementation_is_object Hin).
+            rewrite all_seq1; simp is_in_normal_form.
+            rewrite -/(are_in_normal_form _ _).
+            apply: IH => //.
+              by move: Hqc; rewrite {1}/query_conforms Hlook => /and4P [_ _ _ H].
+
+        + rewrite (get_possible_types_unionE Hunion) in Hin.     
+          move/in_union_is_object: Hin => Hobj'.
+          apply/and3P; split=> //.
+          rewrite all_seq1; simp is_in_normal_form.
+            rewrite -/(are_in_normal_form _ _).
+            apply: IH => //.
+              by move: Hqc; rewrite {1}/query_conforms Hlook => /and4P [_ _ _ H].
+    - rewrite Hobj Hinobj /=.
+      rewrite -/(are_in_normal_form _ _).
+      move: Hv. simp has_valid_fragments; rewrite Hinobj /= => /andP [/eqP Heq Hvs]. 
+      apply: IH => //.
+      rewrite Heq in Hqc.
+      move: Hqc; query_conforms.
+      by move=> [_ _ _ Hqsc].        
+    - rewrite Hobj Hinty /=.
+      apply/andP; split => //.
+      apply/andP; split=> //.
+      simp is_in_normal_form.
+      move: Hqc; query_conforms.
+      move=> [_ _ _ Hqsc].
+      move: Hv; simp has_valid_fragments; rewrite Hobj /= => /andP [_ Hvs].
+      apply/and3P; split=> //.
+        by apply: normalize__φ_in_object_scope_are_fields.
+      by move: (IH Hqsc Hvs); rewrite /are_in_normal_form => /andP [_ H].
+
+    - rewrite Hscope Hinty /=.
+      apply/andP; split=> //.
+      * apply/orP; right.
+          by apply/allP=> x /mapP [ty' H ->].
+      * apply/allP=> x /mapP [ty' H ->].
+        move: Hv; simp has_valid_fragments.
+        rewrite Hscope /= Hinty.
+        admit.
+
+    - rewrite {1}/all -/(all _ _) => /andP [Hqc Hqsc].
+      rewrite {1}/all -/(all _ _) => /andP [Hv Hvs].
+      
+      move: (IH Hqc Hv) => Hnf {IH}.
+      move: (IH' Hqsc Hvs) => Hnfs {IH'}.
+      rewrite ! all_cat;  apply/andP; split; first last.
+        by apply/andP; split; [move: Hnf | move: Hnfs]; rewrite /are_in_normal_form => /andP [_ H].
+       
+      case: q Hqc Hv Hnf => [f α | l f α | f α φ | l f α φ | t φ] Hqc Hv Hnf.
+      * simp normalize; case Hobj : is_object_type => //=; apply/orP.
+        + left.
+          apply/andP=> //; split => //.
+            by apply: normalize__φ_in_object_scope_are_fields.
+        + right.
+          apply/andP; split=> //.
+            by apply/allP=> x /mapP [t H ->].
+          move: (type_in_scope_N_obj_is_abstract Hqc Hobj) => Habs.
+          by apply: normalize__φ_in_abstract_scope_are_inlines.
+      * simp normalize; case Hobj : is_object_type => //=; apply/orP.
+        + left.
+          apply/andP=> //; split => //.
+            by apply: normalize__φ_in_object_scope_are_fields.
+        + right.
+          apply/andP; split=> //.
+            by apply/allP=> x /mapP [t H ->].
+          move: (type_in_scope_N_obj_is_abstract Hqc Hobj) => Habs.
+          by apply: normalize__φ_in_abstract_scope_are_inlines.
+      * simp normalize; case Hlook: lookup_field_in_type => [fld|] //=.
+          case Hobj : is_object_type => //=; apply/orP.
+        + left.
+          apply/andP=> //; split => //.
+            by apply: normalize__φ_in_object_scope_are_fields.
+        + right.
+          apply/andP; split=> //.
+            by apply/allP=> x /mapP [t H ->].
+          move: (type_in_scope_N_obj_is_abstract Hqc Hobj) => Habs.
+          by apply: normalize__φ_in_abstract_scope_are_inlines.
+          move/nf_conformsP: Hqc => [fld Hcontr _].
+          by rewrite Hcontr in Hlook.
+
+      * simp normalize; case Hlook: lookup_field_in_type => [fld|] //=.
+          case Hobj : is_object_type => //=; apply/orP.
+        + left.
+          apply/andP=> //; split => //.
+            by apply: normalize__φ_in_object_scope_are_fields.
+        + right.
+          apply/andP; split=> //.
+            by apply/allP=> x /mapP [t H ->].
+          move: (type_in_scope_N_obj_is_abstract Hqc Hobj) => Habs.
+          by apply: normalize__φ_in_abstract_scope_are_inlines.
+          move/nf_conformsP: Hqc => [fld Hcontr _].
+          by rewrite Hcontr in Hlook.
+
+      * simp normalize; case Hscope : (is_object_type _ ty) => //=.  
+        +  orL; apply/andP; split.
+           move: Hqc; query_conforms.
+           move=> [_ _ _ Hqsc'].
+           move: Hv; simp has_valid_fragments. rewrite Hscope /= => /andP [/eqP Heq Hvs'].
+           rewrite Heq in Hqsc' Hvs' *.
+           by apply: normalize__φ_in_object_scope_are_fields.
+           by apply: normalize__φ_in_object_scope_are_fields.
+        + case Ht : is_object_type.
+          orR; apply/andP; split.
+            by rewrite all_seq1.
+          move: (type_in_scope_N_obj_is_abstract Hqc Hscope) => Habs.
+            by apply: normalize__φ_in_abstract_scope_are_inlines.
+
+          orR; apply/andP; split.
+          by apply/allP=> x /mapP [t' _ ->].
+           move: (type_in_scope_N_obj_is_abstract Hqc Hscope) => Habs.
+            by apply: normalize__φ_in_abstract_scope_are_inlines.
+  Qed.
+
+
+         
 End QueryRewrite.
 
