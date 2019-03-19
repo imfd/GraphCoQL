@@ -117,37 +117,68 @@ Section QueryRewrite.
  
   Ltac query_conforms := rewrite /query_conforms -/(query_conforms _ _); try move/and4P; try apply/and4P.
 
-  Lemma normalize_in_object_scope_are_fields schema query :
-    forall type_in_scope,
+ 
+  Lemma normalize_in_object_scope_are_fields :
+    forall schema type_in_scope query,
     query_conforms schema type_in_scope query ->
     has_valid_fragments schema type_in_scope query ->
     is_object_type schema type_in_scope ->
     all is_field (normalize schema type_in_scope query).
   Proof.
-    elim query using Query_ind with
-        (Pl := fun qs =>
-                forall ty,
-                  all (query_conforms schema ty) qs ->
-                  all (has_valid_fragments schema ty) qs ->
-                  is_object_type schema ty ->
-                  all is_field (normalize__φ schema ty qs)).
+    apply (normalize_elim
+             (fun s type_in_scope query nq =>
+                 query_conforms s type_in_scope query ->
+                 has_valid_fragments s type_in_scope query ->
+                 is_object_type s type_in_scope ->
+                 all is_field (normalize s type_in_scope query))
+             (fun schema ty qs nqs =>
+                all (query_conforms schema ty) qs ->
+                all (has_valid_fragments schema ty) qs ->
+                is_object_type schema ty ->
+                all is_field (normalize__φ schema ty qs))) => //;
+      move=> schema ty.
+   
     all: do ?[intros; simp normalize; rewrite H1 /=; simp is_field].
-    - move=> f α φ IH ty Hqc Hval Hobj.
-      by simp normalize; case lookup_field_type => // rty /=; rewrite Hobj.
-    - move=> l f α φ IH ty Hqc Hval Hobj.
-      by simp normalize; case lookup_field_type => // rty /=; rewrite Hobj.
-    - move=> t φ IH ty Hqc Hval Hobj.
-      simp normalize; rewrite Hobj /=.
-      move: Hqc; query_conforms; move=> [_ _ _ Hqsc].
-      move: Hval; simp has_valid_fragments; rewrite Hobj /=; move/andP=> [/eqP Heq Hvs].
-      by rewrite Heq in Hqsc; apply: IH.
+    - move=> f α φ Hlook.
+      by simp normalize; rewrite Hlook /=.
+    - move=> f rty α φ IH Hobj Hlook Hqc Hv _.
+        by simp normalize; rewrite Hlook /= Hobj.
+    - by move=> f rty α φ H Hcontr _ _ _ Hobj; rewrite Hcontr in Hobj.
+    - move=> l f α φ Hlook.
+      by simp normalize; rewrite Hlook.
+    - move=> l rty f α φ IH Hobj Hlook Hqc Hv _.
+        by simp normalize; rewrite Hlook /= Hobj.
+    - by move=> l rty f α φ H Hcontr _ _ _ Hobj; rewrite Hcontr in Hobj.
 
-    - move=> hd IH tl IH' ty.
+    - move=> b t φ IH Hobj Hinobj Hqc Hval _.
+      simp normalize; rewrite Hobj /= Hinobj /=.
+      move: Hqc; query_conforms; move=> [_ _ _ Hqsc].
+      move: Hval; simp has_valid_fragments; rewrite Hinobj /=; move/andP=> [/eqP Heq Hvs].
+      by rewrite Heq in Hqsc; apply: IH.
+    - by move=> t φ _ _ Hcontr _ _ Hobj; rewrite Hcontr in Hobj.
+    - by move=> t φ _ _ Hcontr _ _ Hobj; rewrite Hcontr in Hobj.
+            
+    - move=> hd tl IH IH'.
       rewrite {1}/all -/(all _ _) => /andP [Hqc Hqsc].
       rewrite {1}/all -/(all _ _) => /andP [Hv Hvs] Hobj.
       rewrite normalize__φ_equation_2 all_cat; apply/andP.
-      by split; [apply: IH | apply: IH'].
-  
+        by split; [apply: IH | apply: IH'].
+  Qed.
+
+  Lemma normalize__φ_in_object_scope_are_fields :
+    forall schema ty qs,
+      all (query_conforms schema ty) qs ->
+      all (has_valid_fragments schema ty) qs ->
+      is_object_type schema ty ->
+      all is_field (normalize__φ schema ty qs).
+  Proof.
+    move=> schema ty.
+    elim=> // hd tl IH.
+    rewrite {1}/all -/(all _ _) => /andP [Hqc Hqsc].
+    rewrite {1}/all -/(all _ _) => /andP [Hv Hvs] Hobj.
+    rewrite normalize__φ_equation_2 all_cat; apply/andP; split.
+    by apply: normalize_in_object_scope_are_fields.
+      by apply IH.
   Qed.
 
 
