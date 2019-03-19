@@ -180,12 +180,28 @@ Section SchemaAux.
     by funelim (is_object_type ty); rewrite is_union_type_equation_1 Heq /=.
   Qed.
 
+  Lemma is_interface_type_objectN ty :
+    is_interface_type ty ->
+    is_object_type ty = false.
+  Proof.
+    by funelim (is_interface_type ty); simp is_object_type; rewrite Heq.
+  Qed.
+  
   Lemma is_interface_type_unionN ty :
     is_interface_type ty ->
     is_union_type ty = false.
   Proof.
       by funelim (is_interface_type ty); rewrite is_union_type_equation_1 Heq /=.
   Qed.
+
+  
+  Lemma is_union_type_objectN ty :
+    is_union_type ty ->
+    is_object_type ty = false.
+  Proof.
+    by funelim (is_union_type ty); simp is_object_type; rewrite Heq.
+  Qed.
+  
 
   Lemma is_object_ifT {A : Type} ty (Tb Fb : A) :
     is_object_type ty -> (if is_object_type ty then Tb else Fb) = Tb.
@@ -204,6 +220,14 @@ Section SchemaAux.
   Proof.
     by move=> Hobj; move: (is_object_type_unionN Hobj) => ->.
   Qed.
+
+  
+  Lemma abstract_type_N_obj ty :
+    is_abstract_type ty -> is_object_type ty = false.
+  Proof.
+    by rewrite /is_abstract_type => /orP [/is_interface_type_objectN -> | /is_union_type_objectN ->].
+  Qed.
+
   
   (** Get all unduplicated argument names from a field **)
   Definition field_arg_names (fld : FieldDefinition) : {fset Name} := fset [seq arg.(argname) | arg <- fld.(fargs)].

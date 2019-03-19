@@ -390,8 +390,15 @@ Section QueryConformance.
     
     by rewrite fset0I /=.
   Qed.
-  
 
+  Lemma type_in_scope_N_obj_is_abstract schema type_in_scope φ :
+    query_conforms schema type_in_scope φ ->
+    is_object_type schema type_in_scope = false ->
+    is_abstract_type schema type_in_scope.
+  Proof.
+    by move/type_in_scope_N_scalar_enum => [-> | Hintf | Hunion ] _ //; rewrite /is_abstract_type; apply/orP; [left | right].
+  Qed.
+  
   Lemma queries_conform_obj_int_union schema type_in_scope ϕ :
     queries_conform schema type_in_scope ϕ ->
     [\/ is_object_type schema type_in_scope,
