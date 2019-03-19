@@ -556,6 +556,15 @@ Section SchemaAux.
     by rewrite /get_possible_types Hlook.
   Qed.
 
+  Lemma in_object_possible_types t ty :
+    is_object_type ty ->
+    t \in get_possible_types ty ->
+          t = ty.
+  Proof.
+    move/get_possible_types_objectE => ->.
+    by rewrite in_fset1 => /eqP.
+  Qed.
+  
   Lemma get_possible_types_unionE ty :
     is_union_type ty ->
     get_possible_types ty = union_members ty.
