@@ -545,7 +545,7 @@ Section WellFormedness.
       rewrite /union_members Heq.
       move/lookup_in_schemaP: Heq.
       wfschema.
-      move/(Hok (ty0, UnionTypeDefinition s2 f0)) => /=.
+      move/(Hok (ty, UnionTypeDefinition s2 f0)) => /=.
       by rewrite is_type_def_wf_unionE => /andP [H _].
   Qed.
 

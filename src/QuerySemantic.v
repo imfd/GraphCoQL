@@ -1,7 +1,6 @@
 Require Import List.
 
 From mathcomp Require Import all_ssreflect.
-Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 Set Asymmetric Patterns.
@@ -33,12 +32,8 @@ Section QuerySemantic.
   Section Aux.    
     Variables (T1 T2 : Type).
     
-    Equations indexed_map_In s (f : forall (i : nat) (x : T1), In x s -> T2) (index : nat) : seq T2 :=
-      { 
-        indexed_map_In (s := [::]) _ _ := [::];
-        indexed_map_In (s := hd :: tl) f i := (f i hd _) :: (indexed_map_In (fun i x H => f i x _) i.+1)
-      }.
-
+   
+      
     (**
        indexed_map : (s : seq T1) -> (nat -> x : T1 -> x ∈ s -> T2) -> seq T2
        Applies the function to every element in the given list.
@@ -49,14 +44,13 @@ Section QuerySemantic.
        obligations afterwards.
      **)
     Equations indexed_map (s : list T1) (f : forall (i : nat) (x : T1), In x s -> T2)  : list T2 :=
-      indexed_map f :=
-        indexed_map_In f 0
+       indexed_map s f := indexed_map_In s f 0
+    
     where indexed_map_In s (f : forall (i : nat) (x : T1), In x s -> T2) (index : nat) : seq T2 :=
             { 
-              indexed_map_In (s := [::]) _ _ := [::];
-              indexed_map_In (s := hd :: tl) f i := (f i hd _) :: (indexed_map_In (fun i x H => f i x _) i.+1)
+              indexed_map_In [::] _ _ := [::];
+              indexed_map_In (hd :: tl) f i := (f i hd _) :: (indexed_map_In tl (fun i x H => f i x _) i.+1)
             }.
-    
     
     Variables (T : Type) (dflt : T).
 
@@ -116,28 +110,14 @@ Section QuerySemantic.
     
   End Aux.
 
-
+  Arguments indexed_map  [T1 T2].
+  Arguments get_nth [T].
   
   Section Filters.
 
 
     Section Indexed_Beta.
 
-      (** 
-          β_aux : ResponseObject -> ResponseObject -> nat -> seq ResponseObject.
- 
-          Auxiliary function used in indexed_β function, that extracts the i-th 
-          element from a NestedListResult, whenever this response matches the 
-          filter response passed as second argument. 
-       **)
-
-      Equations β_aux (result flt : @ResponseObject Name Vals) (i : nat) : seq.seq (@ResponseObject Name Vals) :=
-        β_aux (NestedListResult l rs) (NestedListResult l' rs') i with l == l' :=
-          {
-          | true := get_nth [::] rs i;
-          | false => [::]
-          };
-            β_aux _ _ _ := [::].
       (**
          indexed_β_filter : seq ResponseObject -> ResponseObject -> nat -> seq ResponseObject 
          Traverses the list and extracts the i-th element from a response, whenever it 
@@ -232,7 +212,7 @@ Section QuerySemantic.
         responses_size (β_filter flt lst) <= responses_size lst.
       Proof.
         funelim (β_filter flt lst) => //=.
-        funelim (β flt r) => //=; try ssromega.
+        funelim (β filter r) => //=; try ssromega.
         rewrite responses_size_app.
         by simp response_size; ssromega.
       Qed.
@@ -324,7 +304,7 @@ Section QuerySemantic.
                          
       collect (cons (NestedListResult l rs)  tl) :=
                          (NestedListResult l
-                           (indexed_map                
+                           (indexed_map rs             
                               (fun i r (H : In r rs) =>
                                  (collect (r ++ (indexed_β_filter tl (NestedListResult l rs) i))))))
                            :: (collect (γ_filter (NestedListResult l rs) tl));
@@ -350,7 +330,7 @@ Section QuerySemantic.
   Qed.
   Next Obligation.
     rewrite responses_size_app -/(responses_size' rs).
-    move: (in_responses_size H) => Hleq.
+    move: (in_responses_size r rs H) => Hleq.
     move: (indexed_β_size_reduced tl (NestedListResult l rs) i) => Hleq'; simp response_size.
       by ssromega.
   Qed.
