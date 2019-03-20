@@ -1,6 +1,5 @@
 Require Import List.
 From mathcomp Require Import all_ssreflect.
-Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
@@ -75,7 +74,7 @@ Section NRGTNF.
                        exists t ϕ, query = InlineFragment t ϕ /\ is_object_type schema t.
   Proof.
     move=> Hinlines Hnf q Hin.
-    move: (all_inlines_shape Hinlines Hin).
+    move: (all_inlines_shape queries Hinlines q Hin).
     case=> t; case=> ϕ Heq.    
     move/allP: Hnf; move/(_ q Hin).
     rewrite Heq.
@@ -85,61 +84,29 @@ Section NRGTNF.
   Qed.
 
  
-  Fixpoint no_repeated_query (queries : list (@Query Name Vals)) : bool :=
-     match queries with
-        | [::] => true
-        | hd :: tl => if has (partial_query_eq hd) tl then
-                       false
-                     else
-                       no_repeated_query tl
-     end.
-
-
+  
+  
   Equations is_non_redundant (query : @Query Name Vals) : bool :=
     {
-      is_non_redundant (NestedField _ _ ϕ) := no_repeated_query ϕ && all is_non_redundant ϕ;
-      is_non_redundant (NestedLabeledField _ _ _ ϕ) := no_repeated_query ϕ && all is_non_redundant ϕ;
-      is_non_redundant (InlineFragment _ ϕ) := no_repeated_query ϕ && all is_non_redundant ϕ;
+      is_non_redundant (NestedField _ _ φ) := are_non_redundant φ;
+      is_non_redundant (NestedLabeledField _ _ _ φ) := are_non_redundant φ;
+      is_non_redundant (InlineFragment _ φ) := are_non_redundant φ;
       is_non_redundant _ := true
+                             
+    }
+  where are_non_redundant (queries : seq (@Query Name Vals)) : bool :=
+    {
+      are_non_redundant [::] := true;
+      are_non_redundant (hd :: tl)
+        with has (partial_query_eq hd) tl :=
+        {
+        | true := false;
+        | _ := (is_non_redundant hd) && are_non_redundant tl
+             
+        }
     }.
 
-  Definition are_non_redundant (queries : seq (@Query Name Vals)) : bool :=
-    no_repeated_query queries && all is_non_redundant queries.
 
-  Lemma are_non_redundantE (queries : seq (@Query Name Vals)) :
-    are_non_redundant queries ->
-    no_repeated_query queries /\ all is_non_redundant queries.
-  Proof. by rewrite /are_non_redundant; move/andP. Qed.
-  
-  Lemma is_are_non_redundant_nf n α ϕ :
-    is_non_redundant (NestedField n α ϕ) = are_non_redundant ϕ.
-  Proof. done. Qed.
-
-  Lemma is_are_non_redundant_nlf l n α ϕ :
-    is_non_redundant (NestedLabeledField l n α ϕ) = are_non_redundant ϕ.
-  Proof. done. Qed.
-
-  Lemma is_are_non_redundant_if t ϕ :
-    is_non_redundant (InlineFragment t ϕ) = are_non_redundant ϕ.
-  Proof. done. Qed.
-
-  Lemma non_redundant_inv (queries : seq (@Query Name Vals)) :
-    no_repeated_query queries ->
-    all is_non_redundant queries ->
-    are_non_redundant queries.
-  Proof.
-      by move=> Hnrep Hnr; rewrite /are_non_redundant; apply/andP.
-  Qed.
-
-  Lemma adf schema ty ϕ :
-    is_object_type schema ty ->
-    all (query_conforms schema ty) ϕ ->
-    all is_inline_fragment ϕ ->
-    are_non_redundant ϕ ->
-    exists ϕ', ϕ = [:: InlineFragment ty ϕ'].
-  Proof.
-    funelim (is_object_type schema ty) => // _.
-  Admitted.
 
   Lemma sub_nf schema ty ϕ ϕ' :
     ϕ = [:: InlineFragment ty ϕ'] ->
@@ -147,19 +114,19 @@ Section NRGTNF.
     all is_field ϕ' /\ all (is_in_normal_form schema) ϕ'.
   Proof.
     move=> -> H.
-    move: (are_in_normal_form_E H) => [_ Hnf].
+    move: (are_in_normal_form_E _ _ H) => [_ Hnf].
     move: Hnf; rewrite {1}/all is_in_normal_form_equation_5.
       by move/andP=> [/and3P [Hobj Hfld H'] _].
   Qed.
 
-  Lemma filter_preserves_non_repeated (ϕ : seq (@Query Name Vals)) p :
-    no_repeated_query ϕ ->
-    no_repeated_query (filter p ϕ).
-  Proof.
-  Admitted.
+  
 
 
 
 
   
 End NRGTNF.
+
+Arguments are_in_normal_form [Name Vals].
+Arguments are_non_redundant [Name Vals].
+Arguments is_non_redundant  [Name Vals].

@@ -1,4 +1,3 @@
-Require Import List Relations Lia.
 
 From mathcomp Require Import all_ssreflect.
 Unset Strict Implicit.
@@ -26,10 +25,13 @@ Require Import ValidFragments.
 
 Require Import Ssromega.
 
+Require Import SeqExtra.
+
 Section QueryRewrite.
 
   Variables N Name Vals : ordType.
   Implicit Type schema : @wfSchema Name Vals.
+  Implicit Type query : @Query Name Vals.
 
   Notation is_field := (@QueryAux.is_field Name Vals).
   Notation is_inline_fragment := (@QueryAux.is_inline_fragment Name Vals).
@@ -294,7 +296,7 @@ Section QueryRewrite.
     - move: Hv; simp has_valid_fragments; rewrite Hlook /= Hobj /= => Hvals.
       apply/andP; split => //.
       * apply/orP; right.
-          by apply/allP => x /mapP [t Hin ->]; program_simpl.
+          by apply/allP => x /mapP [t Hin ->].
       * apply/allP=> x /mapP [t Hin ->]; simp is_in_normal_form.
         move: (type_in_scope_N_scalar_enum Hqc) => [Hcontr | Hintf | Hunion].
         + by rewrite Hobj in Hcontr.
@@ -325,7 +327,7 @@ Section QueryRewrite.
     - move: Hv; simp has_valid_fragments; rewrite Hlook /= Hobj /= => Hvals.
       apply/andP; split => //.
       * apply/orP; right.
-          by apply/allP => x /mapP [t Hin ->]; program_simpl.
+          by apply/allP => x /mapP [t Hin ->].
       * apply/allP=> x /mapP [t Hin ->]; simp is_in_normal_form.
         move: (type_in_scope_N_scalar_enum Hqc) => [Hcontr | Hintf | Hunion].
         + by rewrite Hobj in Hcontr.
@@ -450,8 +452,168 @@ Section QueryRewrite.
   Qed.
 
 
-  
 
+  Equations β__φ (flt : @Query Name Vals) (queries : seq (@Query Name Vals)) : seq (@Query Name Vals) :=
+    {
+      β__φ _ [::] := [::];
+      β__φ flt (cons hd tl) := (β__subqueryextract flt hd) ++ (β__φ flt tl)
+      where
+      β__subqueryextract : @Query Name Vals -> @Query Name Vals -> seq (@Query Name Vals) :=
+        {
+          β__subqueryextract (NestedField f α β) (NestedField f' α' χ)
+            with f == f', α == α' :=
+            {
+            | true | true := χ;
+            | _ | _ := [::]
+            };
+          
+          β__subqueryextract (NestedLabeledField l f α β) (NestedLabeledField l' f' α' χ)
+            with [&& l == l', (f == f') & (α == α')] :=
+            {
+            | true := χ;
+            | _ := [::]
+            };
+          
+          β__subqueryextract (InlineFragment t β) (InlineFragment t' χ)
+            with (t == t') :=
+            {
+            | true => χ;
+            | false => [::]
+            };
+          
+          β__subqueryextract _ _ := [::]
+        }
+    }.
+  
+  Lemma β__φ_size_reduced :
+    forall flt queries,
+    queries_size (β__φ flt queries) <= queries_size queries.
+  Proof.
+    apply (β__φ_elim
+             (fun flt qs bqs =>
+                queries_size bqs <= queries_size qs)
+             (fun flt hd tl q q' qs =>
+                queries_size qs <= query_size q')) => //=;
+      do ?[by intros; simp query_size]. 
+    by intros; rewrite queries_size_app; ssromega.
+  Qed.
+
+  
+  Definition γ__φ (flt : Query) (queries : seq Query) : seq (@Query Name Vals) :=
+    [seq query <- queries | ~~ partial_query_eq flt query].
+
+
+  Lemma γ__φ_no_repetition flt queries :
+    forall q, q \in (γ__φ flt queries) ->
+               partial_query_eq flt q = false.
+  Proof.
+    move=> q.
+    rewrite /γ__φ mem_filter => /andP [H _].
+    by move: H; rewrite /negb; case: ifP.
+  Qed.
+
+    
+    
+  Obligation Tactic := intros; simp query_size; do ? ssromega.  
+  Equations remove_redundancies (queries : seq (@Query Name Vals)) : seq (@Query Name Vals)
+    by wf (queries_size queries) lt :=
+    {
+      remove_redundancies nil := [::];
+      
+      remove_redundancies ((SingleField f α) :: queries) :=
+        let filtered := remove_redundancies queries in
+        (SingleField f α) :: (γ__φ (SingleField f α) filtered) ;
+      
+      remove_redundancies ((LabeledField l f α) :: queries) :=
+        let filtered := remove_redundancies queries in
+        (LabeledField l f α) :: (γ__φ (LabeledField l f α) filtered);
+
+      remove_redundancies ((NestedField f α φ) :: queries) :=
+        let filtered := remove_redundancies queries in
+        (NestedField f α (remove_redundancies (φ ++ (β__φ (NestedField f α φ) queries)))) :: (γ__φ (NestedField f α φ) filtered);
+
+      remove_redundancies ((NestedLabeledField l f α φ) :: queries) :=
+        let filtered := remove_redundancies queries in
+        (NestedLabeledField l f α (remove_redundancies (φ ++ (β__φ (NestedLabeledField l f α φ) queries)))) :: (γ__φ (NestedLabeledField l f α φ) filtered);
+
+      remove_redundancies ((InlineFragment t φ) :: queries) :=
+        let filtered := remove_redundancies queries in
+        (InlineFragment t (remove_redundancies (φ ++ (β__φ (InlineFragment t φ) queries)))) :: (γ__φ (InlineFragment t φ) filtered)
+      
+    }.
+  Next Obligation.
+    rewrite queries_size_app.
+    move: (β__φ_size_reduced (NestedField f α φ) queries) => Hlt.
+    by ssromega.
+  Qed.
+  Next Obligation.
+     simp query_size; rewrite queries_size_app.
+     move: (β__φ_size_reduced (NestedLabeledField l f α φ) queries) => Hlt.
+    by ssromega.
+  Qed.
+  Next Obligation.
+     simp query_size; rewrite queries_size_app.
+     move: (β__φ_size_reduced (InlineFragment t φ) queries) => Hlt.
+    by ssromega.
+  Qed.
+
+  Equations remove_redundancies__φ query : @Query Name Vals  :=
+    {
+      remove_redundancies__φ (SingleField f α) := (SingleField f α);
+      
+      remove_redundancies__φ (LabeledField l f α)  :=   (LabeledField l f α);
+
+      remove_redundancies__φ (NestedField f α φ) := (NestedField f α (remove_redundancies φ)) ;
+
+      remove_redundancies__φ (NestedLabeledField l f α φ) :=
+        (NestedLabeledField l f α (remove_redundancies φ)) ;
+
+      remove_redundancies__φ (InlineFragment t φ) :=
+        (InlineFragment t (remove_redundancies φ)) 
+    }.
+
+
+  Lemma filter_preserves_non_redundancy flt queries :
+    are_non_redundant queries ->
+    are_non_redundant (γ__φ flt queries).
+  Proof.
+    elim: queries => // hd tl IH.
+    rewrite are_non_redundant_equation_2.
+    case Hhas: has => //=.
+    move/andP=> [Hnr Hnrtl].
+    case: ifP => //; last first.
+      by move=> _; apply: IH.
+    rewrite are_non_redundant_equation_2.
+    case Hhas': has => //=.  
+    move/negbT: Hhas => /hasPn Hhas.
+    move/hasP: Hhas' => [q].
+    rewrite mem_filter => /andP [Hneq Hin].
+    by move: (Hhas q Hin) => /negbTE ->.
+    by move=> _; apply/andP; split => //; apply IH.
+  Qed.
+
+
+      
+  Lemma remove_redundancies_is_non_redundant queries :
+    are_non_redundant (remove_redundancies queries).
+  Proof.
+    funelim (remove_redundancies queries) => //;
+    rewrite are_non_redundant_equation_2;
+    case Hhas: has => //=.
+
+    all: do ?[by move/hasP: Hhas => [q Hin];
+              move: (γ__φ_no_repetition _ _ q Hin) ->].
+
+    all: do ?[by apply/andP; split => //=;
+              apply (filter_preserves_non_redundancy _ _ H)].
+    all:  move/hasP: Hhas => [q Hin];
+          move: (γ__φ_no_repetition _ _ q Hin);
+          rewrite /partial_query_eq; case: q Hin => //=.
+    - by move=> f' α' χ Hin ->.
+    - by move=> l' f' α' χ Hin ->.
+    - by move=> t' χ Hin ->.
+  Qed.
+         
          
 End QueryRewrite.
 
