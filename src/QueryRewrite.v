@@ -93,13 +93,7 @@ Section QueryRewrite.
         {
         | true | _ := (normalize__φ schema type_in_scope φ);
         | false | true := [:: InlineFragment t (normalize__φ schema t φ)];
-        | false | false :=
-            (* abstract type in scope & guard has abstract type *)
-            let possible_types := get_possible_types schema t in
-            let scope_possible_types := get_possible_types schema type_in_scope in
-            let intersection := (scope_possible_types :&: possible_types)%fset in
-            [seq (InlineFragment ty (normalize__φ schema  ty φ)) | ty <- intersection]
-            
+        | false | false := (normalize__φ schema type_in_scope φ)     
         }
     }
   where
@@ -188,24 +182,38 @@ Section QueryRewrite.
       is_abstract_type schema ty ->
       all is_inline_fragment (normalize__φ schema ty qs).
   Proof.
-    move=> schema ty.
-    elim=> // hd tl IH.
-    rewrite {1}/all -/(all _ _) => /andP [Hqc Hqsc].
-    rewrite {1}/all -/(all _ _) => /andP [Hv Hvs] Habs.
-    rewrite normalize__φ_equation_2 all_cat; apply/andP; split.
-    case: hd Hqc Hv; simp normalize;
-      do ?[intros; simp normalize;
-           move: (abstract_type_N_obj Habs) => -> /=;
-             by apply/allP=> x /mapP [t _ ->]].
+    apply (normalize_elim
+             (fun schema ty q nq =>
+                query_conforms schema ty q ->
+                has_valid_fragments schema ty q ->
+                is_abstract_type schema ty ->
+                all is_inline_fragment (normalize schema ty q))
+             (fun schema ty qs nqs =>
+                 all (query_conforms schema ty) qs ->
+                 all (has_valid_fragments schema ty) qs ->
+                 is_abstract_type schema ty ->
+                 all is_inline_fragment (normalize__φ schema ty qs)));
+      move=> schema ty.
+      all: do ?[by intros; move: (abstract_type_N_obj H1) => Hcontr; rewrite Hcontr in Heq].
+      all: do ?[by intros; simp normalize; rewrite Heq /=; apply/allP => x /mapP [t _ ->]].
+      all: do ?[by intros; rewrite /query_conforms in H; case Hlook : lookup_field_in_type in H; rewrite Hlook in Heq].
+      all: do ?[by intros; simp normalize; case lookup_field_in_type => // fld /=;
+                move: (abstract_type_N_obj H2) => -> /=; apply/allP=> x /mapP [t _ ->]].
 
-    all: do? [intros; simp normalize;
-              case lookup_field_in_type => // fld /=;
-              move: (abstract_type_N_obj Habs) => -> /=;
-                by apply/allP=> x /mapP [t _ ->]].
-
-    - move=> t φ Hqc Hv; simp normalize.
-      move: (abstract_type_N_obj Habs) => -> /=.
-      by case is_object_type; [rewrite all_seq1| apply/allP=> x /mapP [t' _ ->]].
+    - by intros; move: (abstract_type_N_obj H2) => Hcontr; rewrite Hcontr in Heq0.
+    - by intros; simp normalize; rewrite Heq Heq0 /=.
+    - intros; simp normalize; rewrite Heq Heq0 /=.
+      move: H0; query_conforms.
+      move=> [_ _ _ Hqc].
+      move: H1; simp has_valid_fragments; rewrite Heq0 /= => /andP [/orP [/eqP Heq' | Hcontr] Hv]; last first.
+      by rewrite Hcontr in Heq.
+      apply: H; rewrite -Heq' in H2 * => //.
+      
+    - move=> hd tl IH IH'.
+      rewrite {1}/all -/(all _ _) => /andP [Hqc Hqsc].
+      rewrite {1}/all -/(all _ _) => /andP [Hv Hvs] Hobj.
+      by rewrite normalize__φ_equation_2 all_cat; apply/andP; split; [apply: IH | apply: IH'].
+    
   Qed.
 
   Ltac orL := apply/orP; left.
@@ -355,13 +363,12 @@ Section QueryRewrite.
       by move: (IH Hqsc Hvs); rewrite /are_in_normal_form => /andP [_ H].
 
     - rewrite Hscope Hinty /=.
-      apply/andP; split=> //.
-      * apply/orP; right.
-          by apply/allP=> x /mapP [ty' H ->].
-      * apply/allP=> x /mapP [ty' H ->].
-        move: Hv; simp has_valid_fragments.
-        rewrite Hscope /= Hinty.
-        admit.
+      move: Hqc; query_conforms.
+      move=> [_ _ _ Hqsc].
+      move: Hv; simp has_valid_fragments; rewrite Hscope /= => /andP [/orP [/eqP Heq | Hcontr] Hv].     
+      rewrite -/(are_in_normal_form _ _); apply: IH; rewrite Heq in Hqsc Hv => //.
+      by rewrite Hcontr in Hinty.
+        
 
     - rewrite {1}/all -/(all _ _) => /andP [Hqc Hqsc].
       rewrite {1}/all -/(all _ _) => /andP [Hv Hvs].
@@ -430,12 +437,20 @@ Section QueryRewrite.
           move: (type_in_scope_N_obj_is_abstract Hqc Hscope) => Habs.
             by apply: normalize__φ_in_abstract_scope_are_inlines.
 
-          orR; apply/andP; split.
-          by apply/allP=> x /mapP [t' _ ->].
-           move: (type_in_scope_N_obj_is_abstract Hqc Hscope) => Habs.
-            by apply: normalize__φ_in_abstract_scope_are_inlines.
+            
+          move: (type_in_scope_N_obj_is_abstract Hqc Hscope) => Habs.
+          move: (normalize__φ_in_abstract_scope_are_inlines _ _ _ Hqsc Hvs Habs) => Hinlines {Hqsc Hvs}.
+          move: Hqc; query_conforms.
+          move=> [_ _ _ Hqsc].
+          move: Hv; simp has_valid_fragments; rewrite Hscope /= => /andP [/orP [/eqP Heq | Hcontr] Hv].
+          rewrite -Heq in Habs Hinlines.
+          move: (normalize__φ_in_abstract_scope_are_inlines _ _ _ Hqsc Hv Habs) => Hinlines'.
+          by orR; apply/andP; split; rewrite -Heq.
+          by rewrite Hcontr in Ht.
   Qed.
 
+
+  
 
          
 End QueryRewrite.
