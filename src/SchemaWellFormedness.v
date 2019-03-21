@@ -568,20 +568,16 @@ Section WellFormedness.
   Proof.
     move=> Hobj.
     apply: (iffP idP).
-    * rewrite /get_possible_types.
-      case Hlook : lookup_type => [tdef|] //.
-      case: tdef Hlook => //.
-      - move=> obj intfs flds Hlook.
-          by rewrite in_fset1; move/eqP; constructor 1.
-      - move=> intf flds Hlook.
-        move: (lookup_type_name_wf Hlook) => -> /=.
-          by rewrite in_fset; constructor 2.
-      - move=> un mbs Hlook.
-          by rewrite in_fset /union_members Hlook; constructor 3.
-    * move=> [<- | Hintfs | Hunion]; rewrite /get_possible_types.
-      - move/is_object_type_wfP: Hobj => [intfs [flds Hlook]].
+    - apply_funelim (get_possible_types schema ty) => //=.
+      * by move=> ty' o i flds _;  rewrite in_fset1 => /eqP ->; constructor 1.
+      * by move=> ty' i flds /lookup_type_name_wf /= ->; constructor 2.
+      * by move=> ty' u mbs Hlook; rewrite /union_members Hlook; constructor 3.
+      
+        
+    - move=> [<- | Hintfs | Hunion]; simp get_possible_types.
+      * move/is_object_type_wfP: Hobj => [intfs [flds Hlook]].
           by rewrite Hlook; apply/fset1P.
-      - move: (declares_in_implementation schema t ty).
+      * move: (declares_in_implementation schema t ty).
         case=> _ H.
         move: (H Hintfs) => /declares_implementation_are_interfaces.
         move/is_interface_type_wfP=> [flds Hlook].
@@ -595,7 +591,7 @@ Section WellFormedness.
     get_possible_types schema ty = implementation schema ty.
   Proof.
     move/is_interface_type_E=> [i [flds Hlook]].
-    rewrite /get_possible_types Hlook.
+    simp get_possible_types; rewrite Hlook.
     by move/lookup_type_name_wf: Hlook => ->.
   Qed.
 

@@ -95,12 +95,12 @@ Section QueryConformance.
     apply/in_possible_typesPwf=> //.
     move: Hspread.
     rewrite /is_fragment_spread_possible.
-    rewrite /get_possible_types.
+    simp get_possible_types.
     move/is_object_type_wfP: Hobj => [intfs [flds Hlook]].
-    rewrite Hlook.
+    rewrite Hlook /=.
     case lookup_type; case.
-    - by move=> _; rewrite fsetI0.
-    - by move=> _ _ _ /fset1I_eq ->; rewrite in_fset1.
+    - by move=> s; rewrite fsetI0.
+    - by move=> o i fs /fset1I_eq ->; rewrite in_fset1.
     - by move=> i ifldsc; rewrite fset1I; case: ifP => //.
     - by move=> u mbs; rewrite fset1I; case: ifP.
     - by move=> e ev; rewrite fsetI0.
@@ -251,7 +251,7 @@ Section QueryConformance.
       move/andP=> [Hne Hall].
       apply/and4P; split=> //.
         by apply/or3P; constructor 1.
-        rewrite /is_fragment_spread_possible /get_possible_types.
+        rewrite /is_fragment_spread_possible. simp get_possible_types => /=.
         by rewrite H; apply: fset1I_N_fset0.
       by rewrite Heq in Hall.
   Qed.
@@ -265,7 +265,7 @@ Section QueryConformance.
     move/is_object_type_wfP=> [intfs [flds Hlook]].
     move/is_interface_type_wfP=> [iflds Hlook'].
     rewrite /query_conforms=> /and4P [_ Hspread _ _].
-    move: Hspread; rewrite /is_fragment_spread_possible /get_possible_types Hlook Hlook'.
+    move: Hspread; rewrite /is_fragment_spread_possible; simp get_possible_types; rewrite Hlook Hlook' /=.
     rewrite fsetIC fset1I.
     by case: ifP.
   Qed.
@@ -280,7 +280,7 @@ Section QueryConformance.
     funelim (is_union_type schema t) => // _.
     rewrite /query_conforms.
     move/and4P=> [_ Hspread _ _].
-    move: Hspread; rewrite /is_fragment_spread_possible /get_possible_types Heq Heq0.
+    move: Hspread; rewrite /is_fragment_spread_possible; simp get_possible_types; rewrite Heq Heq0 /=.
     rewrite fsetIC fset1I.
     case: ifP => //.
     by rewrite /union_members Heq.
@@ -304,7 +304,7 @@ Section QueryConformance.
       * by apply/or3P; case: Htype; [constructor 2 | constructor 3].
       * move/is_object_type_wfP: Hobj => [intfs [flds Holook]].
         case: H => [Himpl | Hmb]; 
-        rewrite /is_fragment_spread_possible /get_possible_types.
+        rewrite /is_fragment_spread_possible; simp get_possible_types.
         move: (has_implementation_is_interface Himpl) => /is_interface_type_wfP [iflds Hilook].
         by rewrite Holook Hilook fsetIC fset1I Himpl.
         move: (in_union Hmb) => /is_union_type_wfP [mbs Hulook].
@@ -381,9 +381,9 @@ Section QueryConformance.
     move/and4P=> [/or3P Hty Hspread Hne _] => //.
     move: Hspread.
     rewrite /is_fragment_spread_possible.
-    rewrite /get_possible_types fsetIC.
+    simp get_possible_types; rewrite fsetIC /=.
     case Hlook: lookup_type => [tdef|] //.
-    by case: tdef Hlook => //; do ?[rewrite fset0I //=];
+    by case: tdef Hlook => //=; do ?[rewrite fset0I //=];
                          [constructor 1; simp is_object_type
                          | constructor 2; simp is_interface_type
                          | constructor 3; simp is_union_type]; rewrite Hlook.
@@ -464,7 +464,7 @@ Section QueryConformance.
     move=> Hqc.
     apply/and4P; split=> //.
     apply/or3P. apply: (type_in_scope_N_scalar_enum Hqc).
-    rewrite /is_fragment_spread_possible /get_possible_types.
+    rewrite /is_fragment_spread_possible; simp get_possible_types.
     
     move: (type_in_scope_N_scalar_enum Hqc) => [Hobj | Hint | Hunion].
     funelim (is_object_type schema type_in_scope) => //.

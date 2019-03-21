@@ -464,13 +464,17 @@ Section SchemaAux.
      3. Union : Possible types are all members of the union.
 
    **)
-  Definition get_possible_types (ty : NamedType) : {fset NamedType} :=
-    match lookup_type ty with
-    | Some (ObjectTypeDefinition _ _ _) => fset1 ty
-    | Some (InterfaceTypeDefinition iname _) => implementation iname
-    | Some (UnionTypeDefinition _ mbs) => mbs
-    | _ => fset0
-    end.
+  Equations get_possible_types (ty : @NamedType Name) : {fset @NamedType Name} :=
+    {
+      get_possible_types ty with lookup_type ty :=
+        {
+        | Some (ObjectTypeDefinition _ _ _) => fset1 ty;
+        | Some (InterfaceTypeDefinition iname _) => implementation iname;
+        | Some (UnionTypeDefinition _ mbs) => mbs;
+        | _ => fset0
+        }
+    }.
+      
   
   
 
@@ -577,7 +581,7 @@ Section SchemaAux.
     get_possible_types ty = fset1 ty.
   Proof.
     move/is_object_type_E=> [o [intfs [flds Hlook]]].
-    by rewrite /get_possible_types Hlook.
+    by simp get_possible_types; rewrite Hlook.
   Qed.
 
   Lemma in_object_possible_types t ty :
@@ -594,7 +598,7 @@ Section SchemaAux.
     get_possible_types ty = union_members ty.
   Proof.
     move/is_union_type_E => [u [mbs Hlook]].
-    by rewrite /get_possible_types /union_members Hlook.
+      by simp get_possible_types; rewrite /union_members Hlook.
   Qed.
 (*
   Lemma in_possible_types_E t ty :
@@ -623,6 +627,7 @@ End SchemaAux.
 
 Arguments lookup_type [Name].
 Arguments is_enum_type [Name].
+
 
 Arguments lookup_field_in_type [Name].
 Arguments lookup_field_type [Name].
