@@ -145,7 +145,7 @@ Section QueryConformance.
                                 end
     | NestedField fname α ϕ =>
       match lookup_field_in_type schema ty fname with
-      | Some fld => [&& ~~(is_scalar_type schema fld.(return_type) || is_enum_type schema fld.(return_type)),
+      | Some fld => [&& (is_object_type schema fld.(return_type) || is_abstract_type schema fld.(return_type)),
                     arguments_conform schema fld.(fargs) α,
                     ϕ != [::] &
                     all (query_conforms schema fld.(return_type)) ϕ]
@@ -154,7 +154,7 @@ Section QueryConformance.
       
     | NestedLabeledField _ fname α ϕ =>
         match lookup_field_in_type schema ty fname with
-        | Some fld => [&& ~~(is_scalar_type schema fld.(return_type) || is_enum_type schema fld.(return_type)),
+        | Some fld => [&& (is_object_type schema fld.(return_type) || is_abstract_type schema fld.(return_type)),
                       arguments_conform schema fld.(fargs) α,
                        ϕ != [::] &
                       all (query_conforms schema fld.(return_type)) ϕ]
@@ -191,10 +191,25 @@ Section QueryConformance.
   
   Lemma nf_conformsP schema type_in_scope f α φ :
     reflect (exists2 fld, lookup_field_in_type schema type_in_scope f = Some fld &
-                          [&& ~~(is_scalar_type schema fld.(return_type) || is_enum_type schema fld.(return_type)),
+                          [&& (is_object_type schema fld.(return_type) || is_abstract_type schema fld.(return_type)),
                            arguments_conform schema fld.(fargs) α &
                            queries_conform schema fld.(return_type) φ])
             (query_conforms schema type_in_scope (NestedField f α φ)).
+  Proof.
+    apply: (iffP idP).
+    - rewrite /query_conforms.
+      case Hlook : lookup_field_in_type => [fld |] // H.
+      by exists fld.
+    - move=> [fld Hlook H].
+      by rewrite /query_conforms Hlook. 
+  Qed.
+
+  Lemma nlf_conformsP schema type_in_scope l f α φ :
+    reflect (exists2 fld, lookup_field_in_type schema type_in_scope f = Some fld &
+                          [&& (is_object_type schema fld.(return_type) || is_abstract_type schema fld.(return_type)),
+                           arguments_conform schema fld.(fargs) α &
+                           queries_conform schema fld.(return_type) φ])
+            (query_conforms schema type_in_scope (NestedLabeledField l f α φ)).
   Proof.
     apply: (iffP idP).
     - rewrite /query_conforms.

@@ -194,7 +194,20 @@ Section SchemaAux.
       by funelim (is_interface_type ty); rewrite is_union_type_equation_1 Heq /=.
   Qed.
 
-  
+  Lemma is_interface_is_abstract ty :
+    is_interface_type ty ->
+    is_abstract_type ty.
+  Proof.
+    by intros; rewrite /is_abstract_type; apply/orP; left.
+  Qed.
+
+  Lemma is_union_is_abstract ty :
+    is_union_type ty  ->
+    is_abstract_type ty.
+  Proof.
+    by intros; rewrite /is_abstract_type; apply/orP; right.
+  Qed.
+
   Lemma is_union_type_objectN ty :
     is_union_type ty ->
     is_object_type ty = false.
