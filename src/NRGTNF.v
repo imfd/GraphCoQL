@@ -53,6 +53,14 @@ Section NRGTNF.
     by move/andP=> [/orP H H'].
   Qed.
 
+  Lemma are_in_normal_form_fields_inv schema queries :
+    all is_field queries ->
+    all (is_in_normal_form schema) queries ->
+    are_in_normal_form schema queries.
+  Proof.
+    move=> Hf Hnf; rewrite /are_in_normal_form.
+    by apply/andP; split; [apply/orP; left|].
+  Qed.
 
   Lemma all_inlines_shape queries :
     all is_inline_fragment queries ->
@@ -127,6 +135,7 @@ Section NRGTNF.
   
 End NRGTNF.
 
+Arguments is_in_normal_form [Name Vals].
 Arguments are_in_normal_form [Name Vals].
 Arguments are_non_redundant [Name Vals].
 Arguments is_non_redundant  [Name Vals].

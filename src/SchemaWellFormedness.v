@@ -586,6 +586,18 @@ Section WellFormedness.
         by rewrite /union_members Hlook in Hunion *.
   Qed. 
 
+  Lemma in_possible_types_is_object (schema : wfSchema) t ty :
+    t \in get_possible_types schema ty ->
+          is_object_type schema t.
+  Proof.
+    funelim (get_possible_types schema ty) => //.
+    - rewrite in_fset1 => /eqP ->.
+      by simp is_object_type; rewrite Heq.
+    - by move/in_implementation_is_object.
+    - have <-: union_members schema ty = f0 by rewrite /union_members Heq.
+        by move/in_union_is_object.
+  Qed.
+  
   Lemma get_possible_types_interfaceE (schema : wfSchema) ty :
     is_interface_type schema ty ->
     get_possible_types schema ty = implementation schema ty.
