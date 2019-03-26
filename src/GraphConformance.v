@@ -17,10 +17,8 @@ Section Conformance.
 
   Variables (N Name Vals: ordType).
 
-  Variables (sch : @schema Name).
   
-  
-  Implicit Type schema : @wfSchema Name Vals sch.
+  Implicit Type schema : @wfSchema Name Vals.
   Implicit Type graph : @graphQLGraph Name Vals. 
 
 
@@ -32,34 +30,44 @@ Section Conformance.
 
 
   (** 
-      It states whether a given field's arguments conform to 
-      what the Schema requires of them.
+      It states whether a given field's argument conforms to 
+      what the Schema requires of it.
 
-      Given a schema type 'src', a graph field 'f' with a partial mapping α.
-      ∀ v ∈ Vals, arg ∈ dom(α) st. α(arg) = v
-      
-      1. arg ∈ args (src, f) : The argument must be declared in the given type for that given field.
-      2. v ∈ values (type (arg)) : The value must be of the type declared for that argument in the schema.  
+      Given a node's type 'ty', one of the nodes' field name 'f' and an argument (argname, value).
+     
+     1. argname ∈ args (src, f) : The argument must be declared in the given type for that given field.
+     2. value ∈ values (type (arg)) : The value must be of the type declared for that argument in the schema.  
  
    **)     
-      
+  Definition argument_conforms schema (ty fname : Name) (arg : Name * Vals) : bool :=
+    let: (argname, value) := arg in
+    match lookup_argument_in_type_and_field schema ty fname argname with
+    | Some field_arg => (hasType schema) field_arg.(argtype) value    (* If the argument is declared then check its value's type *)
+    | _ => false
+    end.
+
+
+  (** Checks whether all of the field's arguments conform to the schema **)
+  Definition arguments_conform schema ty (f : fld) : bool :=
+    all (argument_conforms schema ty f.(label)) f.(args).
+ 
+
+  Lemma argument_conformsP schema ty fname arg :
+    reflect (exists2 fld_arg, lookup_argument_in_type_and_field schema ty fname arg.1 = Some fld_arg & schema.(hasType) fld_arg.(argtype) arg.2)
+            (argument_conforms schema ty fname arg).
+  Proof.
+    apply: (iffP idP); rewrite /argument_conforms; case: arg => argname value.
+    - case Hlook : lookup_argument_in_type_and_field => [arg|] // Hty.
+        by exists arg.
+    - by case=> fld_arg Hlook Hty; rewrite Hlook.
+  Qed.
     
-  Definition arguments_conform schema (srcNode : @node Name Vals) (f : fld) :=
-    let argument_conforms arg :=
-        let: (argname, value) := arg in
-        match lookup_argument_in_type_and_field schema srcNode.(type) f argname with
-        | Some (FieldArgument _ ty) => (hasType schema) ty value    (* If the argument is declared then check its value's type *)
-        | _ => false
-        end
-    in
-    all argument_conforms f.(args).
-  
     
 
 
   
   (** 
-      It checks whether a field's unwrapped type (if its List type) and a type 
+      It checks whether a field's unwrapped type (if it's List type) and a type 
       conform.
 
       This is used when checking that an edge conforms to a Schema (see next definition).
@@ -93,17 +101,18 @@ Section Conformance.
         that given field.
 
    **)
+  Definition edge_conforms schema graph (edge : node * fld * (@node Name Vals)) : bool :=
+    let: (src, fld, target) := edge in
+    match lookup_field_type schema src.(type) fld.(label) with
+    | Some return_type => [&& is_subtype schema return_type (NT target.(type)),
+                          (is_list_type return_type || is_field_unique_for_src_node graph src fld) &
+                          arguments_conform schema src.(type) fld]
+    | _ => false
+    end.
+
+  
   Definition edges_conform schema graph :=
-    let edge_conforms edge :=
-        let: (u, f, v) := edge in
-        match lookup_field_type schema u.(type) f.(label) with    (* Check if field is declared in type *)
-        | Some fieldType => [&& (field_type_conforms schema fieldType v.(type)),
-                            (is_list_type fieldType || is_field_unique_for_src_node graph u f) &
-                            arguments_conform schema u f]
-        | _ => false
-        end
-    in
-    all edge_conforms graph.(E).
+    all (edge_conforms schema graph) graph.(E).
 
   
   (**
@@ -120,21 +129,20 @@ Section Conformance.
      3. The arguments of 'f' must conform to what the Schema requires of them.
 
    **)
-    
+
+  Definition field_conforms schema ty (fd : fld * (Vals + seq Vals)) : bool :=
+    match lookup_field_type schema ty fd.1.(label) with
+    | Some return_type =>
+      arguments_conform schema ty fd.1 &&
+      match fd.2 with
+      | (inl value) => hasType schema return_type value
+      | (inr values) => all (hasType schema return_type) values
+      end
+    | _ => false
+    end.
+  
   Definition node_fields_conform schema (u : node) :=
-    let field_conforms f :=
-        let: (f', vals) := f in
-        match lookup_field_type schema u.(type) f'.(label) with
-        | Some fieldType =>                (* Field is declared in the node's type *)
-          arguments_conform schema  u f' &&    
-                           match vals with
-                           | (inl value) => hasType schema fieldType value
-                           | (inr values) => all (hasType schema fieldType) values
-                           end
-        | _ => false
-        end
-    in
-    all field_conforms u.(fields).
+    all (field_conforms schema u.(type)) u.(fields).
 
   
   Definition fields_conform schema graph :=
@@ -144,6 +152,11 @@ Section Conformance.
   Definition nodes_have_object_type schema graph : bool :=
     all (fun node : node => is_object_type schema node.(type)) graph.(nodes).
 
+  
+  Lemma nodes_have_object_typeP schema graph :
+    reflect (forall node, node \in graph.(nodes) -> is_object_type schema node.(type))
+            (nodes_have_object_type schema graph).
+  Proof. by apply: (iffP allP). Qed.
 
   (**
      A GraphQL graph conforms to a given Schema if:

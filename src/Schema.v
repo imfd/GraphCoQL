@@ -3,7 +3,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-From extructures Require Import ord fset.
+From extructures Require Import ord fset fmap.
 
 Require Import treeordtype.
 
@@ -62,7 +62,6 @@ Section Schema.
       end.
 
     Coercion tname : type >-> Ord.sort.
-
 
     (** Packing and unpacking of a type, needed for canonical instances **)
     Fixpoint tree_of_type (ty : type) : GenTree.tree Name :=
@@ -190,7 +189,6 @@ Section Schema.
       | EnumTypeDefinition name _ => name
       end.
 
-    Coercion tdname : TypeDefinition >-> Ord.sort.
 
     Definition tfields tdef : seq FieldDefinition :=
       match tdef with 
@@ -269,13 +267,15 @@ Section Schema.
         a "schema", which only describes the types for the operations: query, mutation and suscription.
    **)
     Inductive schema := Schema (query_type : NamedType)
-                              (type_definitions : seq TypeDefinition).
+                              (type_definitions : {fmap Name -> TypeDefinition}).
 
     (** Extractors for a schema **)
     Definition query_type sch := let: Schema q _ := sch in q.
     Definition type_definitions sch := let: Schema _ tdefs := sch in tdefs.
 
-    Coercion type_definitions : schema >-> seq.
+    Definition fun_of_schema sch := fun p => p \in sch.(type_definitions).
+
+    Coercion fun_of_schema : schema >-> Funclass.
 
     (** Packing and unpacking of a schema **)
     Definition prod_of_schema (s : schema) := let: Schema q tdefs := s in (q, tdefs).
@@ -288,6 +288,7 @@ Section Schema.
     Canonical schema_choiceType := ChoiceType schema (CanChoiceMixin prod_of_schemaK).
     Canonical schema_ordType := OrdType schema (CanOrdMixin prod_of_schemaK).
 
+    
   End TypeSystem.
     
     
