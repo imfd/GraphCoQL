@@ -200,10 +200,128 @@ Section Query.
     by move=> l n α; case=> // l' n' α'; rewrite query_eq_equation_7; move/and3P=> [/eqP -> /eqP -> /eqP ->].
   Admitted.
 
+
+  Fixpoint tree_of_query query : GenTree.tree (option Name * Name * {fmap Name -> Vals}):=
+    match query with
+    | SingleField f α => GenTree.Node 0 [:: GenTree.Leaf  (None, f, α)]
+    | LabeledField l f α => GenTree.Node 1 [:: GenTree.Leaf (Some l, f, α)]
+    | NestedField f α φ => GenTree.Node 2  (GenTree.Leaf (@None Name, f, α) :: [seq (tree_of_query subquery) | subquery <- φ])
+    | NestedLabeledField l f α φ => GenTree.Node 3 (GenTree.Leaf (Some l, f, α) :: [seq (tree_of_query subquery) | subquery <- φ])
+    | InlineFragment t φ => GenTree.Node 4 (GenTree.Leaf (None, t, emptym) :: [seq (tree_of_query subquery) | subquery <- φ])
+    end.
+
+ (* Equations get_subqueries : seq (option Query) -> seq Query :=
+    {
+      get_subqueries [::] := [::];
+      get_subqueries ((Some q) :: tl) := q :: get_subqueries tl;
+      get_subqueries (None :: tl) := get_subqueries tl
+    }.
+*)
+
+  Fixpoint get_subqueries (queries : seq (option Query)) : seq Query :=
+    match queries with
+      | [::] => [::]
+      | ((Some q) :: tl) => q :: get_subqueries tl
+      | (None :: tl) => get_subqueries tl
+    end.
+
+  Fixpoint query_of_tree tree : option Query :=
+    match tree with
+    | (GenTree.Node 0 [:: GenTree.Leaf  (None, f, α)]) => Some (SingleField f α)
+      | (GenTree.Node 1 [:: GenTree.Leaf (Some l, f, α)]) => Some (LabeledField l f α)
+      | (GenTree.Node 2  (GenTree.Leaf (None, f, α) :: subtree)) =>
+        Some (NestedField f α (get_subqueries [seq (query_of_tree t) | t <- subtree]))
+      
+      | (GenTree.Node 3  (GenTree.Leaf (Some l, f, α) :: subtree)) =>
+          Some (NestedLabeledField l f α (get_subqueries [seq (query_of_tree t) | t <- subtree]))
+      
+      | (GenTree.Node 4  (GenTree.Leaf (None, t, emptym) :: subtree)) =>
+        Some (InlineFragment t (get_subqueries [seq (query_of_tree t) | t <- subtree]))
+         
+
+      | _ => None
+    end.
+
+  (*
+  Equations query_of_tree (tree : GenTree.tree (option Name * Name * {fmap Name -> Vals})) : option Query :=
+    {
+      query_of_tree (GenTree.Node 0 [:: GenTree.Leaf  (None, f, α)]) := Some (SingleField f α);
+      query_of_tree (GenTree.Node 1 [:: GenTree.Leaf (Some l, f, α)]) := Some (LabeledField l f α);
+      query_of_tree (GenTree.Node 2  (GenTree.Leaf (None, f, α) :: subtree)) :=
+        Some (NestedField f α (get_subqueries [seq (query_of_tree t) | t <- subtree]));
+      
+      query_of_tree (GenTree.Node 3  (GenTree.Leaf (Some l, f, α) :: subtree)) :=
+          Some (NestedLabeledField l f α (get_subqueries [seq (query_of_tree t) | t <- subtree]));
+      
+      query_of_tree (GenTree.Node 4  (GenTree.Leaf (None, t, emptym) :: subtree)) :=
+        Some (InlineFragment t (get_subqueries [seq (query_of_tree t) | t <- subtree]));
+         
+
+      query_of_tree _ := None
+
+    }. *)
+  (*
+  Next Obligation.
+    elim: tree => //.
+    - case=> [[l f] α] => //=.
+      by rewrite query_of_tree_equation_1; constructor.
+    - case=> //=.
+      * case=> //= [| hd tl].
+          by rewrite query_of_tree_equation_2; constructor.
+        case: hd => //=.
+        case=> [[l f] α].
+        case: l => [l|].
+          by rewrite query_of_tree_equation_3; constructor.
+          case: tl.
+            by rewrite query_of_tree_equation_4; constructor.
+            by intros; rewrite query_of_tree_equation_5; constructor.
+        by intros; rewrite query_of_tree_equation_6; constructor.
+
+      * case.
+        case; [rewrite query_of_tree_equation_7; constructor| move=> hd tl].
+        case: hd.
+        case=> [[l f] α].
+        case: l => [l|]; [| by rewrite query_of_tree_equation_10; constructor].
+        case: tl; intros; rewrite ?query_of_tree_equation_8 ?query_of_tree_equation_9 ; constructor.
+        by intros; rewrite query_of_tree_equation_11; constructor.
+      * case.
+        case; [rewrite query_of_tree_equation_12; constructor| move=> hd tl].
+        case: hd.
+        case=> [[l f] α].
+        case: l => [l|]; [by rewrite query_of_tree_equation_13; constructor |].
+        case: tl; intros.
+        rewrite query_of_tree_equation_14 /= get_subqueries_equation_1.
+        constructor.
+        move=> t. apply: x1.
+        ?query_of_tree_equation_15 ; constructor.
+        by intros; rewrite query_of_tree_equation_17; constructor. *)
+
+  Lemma tree_of_queryK : pcancel tree_of_query query_of_tree.
+  Proof.
+    move=> q.
+    elim q using Query_ind with
+        (Pl := fun qs =>
+                Forall (fun q' => query_of_tree (tree_of_query q') = Some q') qs) => //=
+    [ f α φ /Forall_forall H
+    | l f α φ /Forall_forall H
+    | t φ /Forall_forall H
+    | hd IH tl IH'];
+    rewrite -?map_comp; try congr Some;
+      [congr (NestedField f α) | congr (NestedLabeledField l f α) | congr (InlineFragment t) | ].
+
+    all: do ?[elim: φ H => //= hd tl IH H;
+              have Heq : (hd = hd \/ In hd tl) by left].
+    all: do ?[by rewrite (H hd Heq); congr cons; apply: IH => x Hin; apply: H; right].
+    by apply: Forall_cons.
+  Qed.
+
   
-  Canonical query_eqType := EqType Query (EqMixin query_eqP).
 
+  Canonical query_eqType := EqType Query (PcanEqMixin tree_of_queryK).
+  Canonical query_choiceType := ChoiceType Query (PcanChoiceMixin tree_of_queryK).
+  Canonical query_ordType := OrdType Query (PcanOrdMixin tree_of_queryK).
 
+  
   (** Extractors for queries **)
   Definition qname query : option Name :=
     match query with
