@@ -165,41 +165,7 @@ Section Query.
   
   
 
-  (** Boolean predicate to state equivalence between queries, needed for canonical instance.
-
-   Maybe an isomorphism to another structure would be better (tree) but it was a bit chaotic,
-   so I left it there hanging for a while. **)
-  Equations query_eq (q1 q2 : Query) : bool :=
-    {
-      query_eq (SingleField n α) (SingleField n' α') := (n == n') && (α == α');
-      query_eq (LabeledField l n α) (LabeledField l' n' α') := [&& (l == l'), (n == n') & (α == α')];
-      query_eq (NestedField n α ϕ) (NestedField n' α' ϕ') := [&& (n == n'), (α == α') & queries_eq ϕ ϕ'];
-      query_eq (NestedLabeledField l n α ϕ) (NestedLabeledField l' n' α' ϕ') := [&& (l == l'), (n == n'), (α == α') & queries_eq ϕ ϕ'];
-      query_eq (InlineFragment t ϕ) (InlineFragment t' ϕ') := (t == t') && (queries_eq ϕ ϕ');
-      query_eq _ _ := false
-    }
-  where
-  queries_eq (q1 q2 : seq Query) : bool :=
-    {
-      queries_eq [::] [::] := true;
-      queries_eq (cons hd tl) (cons hd' tl') := query_eq hd hd' && queries_eq tl tl';
-      queries_eq _ _ := false
-    }.
-
-  Lemma Forall_cons_inv {A : Type} (P : A -> Prop) x s : Forall P (x :: s) -> P x /\ Forall P s.
-  Proof. by move=> H; inversion H. Qed.
-    
   
-
-  Lemma query_eqP : Equality.axiom query_eq.
-  Proof.
-    move=> q1 q2; apply (iffP idP) => [| <-].
-    move: q2.
-    elim q1 using Query_ind with (Pl := (fun qs => forall qs', queries_eq qs qs' -> qs = qs')).
-    by move=> n α; case=> // n' α'; rewrite query_eq_equation_1; move/andP=> [/eqP -> /eqP ->].
-    by move=> l n α; case=> // l' n' α'; rewrite query_eq_equation_7; move/and3P=> [/eqP -> /eqP -> /eqP ->].
-  Admitted.
-
 
   Fixpoint tree_of_query query : GenTree.tree (option Name * Name * {fmap Name -> Vals}):=
     match query with

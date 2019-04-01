@@ -360,7 +360,20 @@ Section QueryConformance.
       * by move: Hqsc; rewrite /queries_conform => /andP [H _].
       * by move: Hqsc; rewrite /queries_conform => /andP [_ H].
   Qed.
-        
+
+
+  Lemma scope_is_obj_or_abstract_for_field schema ty q :
+    is_field q ->
+    query_conforms schema ty q ->
+    is_object_type schema ty \/ is_interface_type schema ty.
+  Proof.
+    case: q => //= [f α | l f α | f α φ | l f α φ] _;
+    case Hlook: lookup_field_in_type => [fld|] // _;
+    have H: lookup_field_in_type schema ty f by rewrite /isSome Hlook.
+
+    all: by apply: (lookup_field_in_type_is_obj_or_intf H).
+  Qed.
+  
   Lemma nested_field_is_obj_or_abstract schema ty n α ϕ :
     query_conforms schema ty (NestedField n α ϕ) ->
     is_object_type schema ty \/ is_interface_type schema ty.
@@ -371,6 +384,16 @@ Section QueryConformance.
       by apply: (lookup_field_in_type_is_obj_or_intf H).
   Qed.
 
+  Lemma scope_is_obj_or_abstract_for_nlf schema ty l f α φ :
+    query_conforms schema ty (NestedLabeledField l f α φ) ->
+    is_object_type schema ty \/ is_interface_type schema ty.
+  Proof.
+    rewrite /query_conforms.
+    case Hlook: lookup_field_in_type => [fld|] // _.
+    have H: lookup_field_in_type schema ty f by rewrite /isSome Hlook.
+      by apply: (lookup_field_in_type_is_obj_or_intf H).
+  Qed.
+  
 
   Notation is_inline_fragment := (@is_inline_fragment Name Vals).
 
@@ -505,6 +528,31 @@ Section QueryConformance.
     move/and4P=> [_ _ Hne H].
     by rewrite /queries_conform; apply/andP. 
   Qed.
+
+  Lemma sf_conforms_in_interface_in_obj schema ti tyo f α :
+    tyo \in implementation schema ti ->
+            query_conforms schema ti (SingleField f α) ->
+            query_conforms schema tyo (SingleField f α).
+  Proof.
+    move=> Hin.
+    rewrite /query_conforms.
+    case Hlook : lookup_field_in_type => [fld |] //= /andP [Hty Hα].
+    move: (in_implementation_is_object Hin) => Hobj.
+    move: (field_in_interface_in_object_same_return_type Hin Hlook) => [fld' Hlook' Hrty].
+    rewrite Hlook' -Hrty.
+    apply/andP; split => //.
+    move: Hα; rewrite /arguments_conform.
+    move/allP=> Hα.
+    apply/allP=> arg Hain.
+    move: (Hα arg Hain) => {Hα Hain}.
+    case: arg => n v.
+    have: lookup_field_in_type schema ti f = Some fld -> fld \in fields schema ti.
+    move: (has_implementation_is_interface Hin) => /is_interface_type_E.
+    case=> [i [flds Hilook]].
+    
+    rewrite /fields /lookup_field_in_type Hilook.
+  Admitted.
+    
 
   
   

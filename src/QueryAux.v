@@ -47,7 +47,7 @@ Section QueryAux.
     | SingleField n α, SingleField n' α'
     | NestedField n α _, NestedField n' α' _ => (n == n') && (α == α')
     | LabeledField l n α, LabeledField l' n' α'
-    | NestedLabeledField l n α _, NestedLabeledField l' n' α' _ => (l == l') && (n == n') && (α == α')
+    | NestedLabeledField l n α _, NestedLabeledField l' n' α' _ => [&& (l == l'), (n == n') & (α == α')]
     | InlineFragment t _, InlineFragment t' _ => t == t'
     | _, _ => false
     end.

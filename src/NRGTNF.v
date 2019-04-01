@@ -18,6 +18,8 @@ Require Import QueryConformance.
 
 Require Import CpdtTactics.
 
+Require Import SeqExtra.
+
 Section NRGTNF.
 
   Variables Name Vals : ordType.
@@ -72,8 +74,200 @@ Section NRGTNF.
     funelim (is_inline_fragment q) => // _.
     by exists s5; exists l1.
   Qed.
+
+
+   Equations is_grounded_2 schema (type_in_scope : @NamedType Name) (query : @Query Name Vals) : bool :=
+    {
+      is_grounded_2 schema type_in_scope (NestedField f _ φ)
+        with lookup_field_in_type schema type_in_scope f :=
+        {
+        | Some fld := are_grounded_2 schema fld.(return_type) φ;
+        | _ := false
+        };
+
+      is_grounded_2 schema type_in_scope (NestedLabeledField _ f _ φ)
+        with lookup_field_in_type schema type_in_scope f :=
+        {
+        | Some fld := are_grounded_2 schema fld.(return_type) φ;
+        | _ := false
+        };
+
+      is_grounded_2 schema type_in_scope(InlineFragment t ϕ) := [&& (is_object_type schema t), (all is_field ϕ) & all (is_grounded_2 schema t) ϕ];
+      
+      is_grounded_2 _ _ _ := true
+    }
+   where
+   are_grounded_2 schema (type_in_scope : @NamedType Name) (queries : seq (@Query Name Vals)) : bool :=
+     {
+       are_grounded_2 _ _ [::] := true;
+       are_grounded_2 schema ty (hd :: tl)
+         with is_object_type schema ty :=
+         {
+         | true := [&& is_field hd, is_grounded_2 schema ty hd & are_grounded_2 schema ty tl];
+         | _ := [&& is_inline_fragment hd, is_grounded_2 schema ty hd & are_grounded_2 schema ty tl]
+         }
+     }.
+
+
+   Lemma are_grounded_2E schema ty queries :
+     are_grounded_2 schema ty queries = ((is_object_type schema ty && all is_field queries) ||
+                                         (~~is_object_type schema ty && all is_inline_fragment queries))
+                                          && all (is_grounded_2 schema ty) queries.
+   Proof.
+     elim: queries => //=.
+     - by case is_object_type.
+     - move=> hd tl IH.
+       case Hobj: is_object_type => //=.
+       by rewrite IH Hobj !orbF /=  [is_grounded_2 _ _ _ && _]andbCA andbA.
+       by rewrite IH Hobj /=  [is_grounded_2 _ _ _ && _]andbCA andbA.
+   Qed.
+
+   
+   Lemma are_grounded_2E2 schema ty queries :
+     all (query_conforms schema ty) queries ->
+     are_grounded_2 schema ty queries = ((is_object_type schema ty && all is_field queries) ||
+                                         (is_abstract_type schema ty && all is_inline_fragment queries))
+                                          && all (is_grounded_2 schema ty) queries.
+   Proof.
+     elim: queries => //.
+     - case Hobj: is_object_type => //=.
+   Admitted.
   
 
+
+   Lemma are_grounded_2_cons schema ty q qs :
+     are_grounded_2 schema ty (q :: qs) ->
+     is_grounded_2 schema ty q && are_grounded_2 schema ty qs.
+   Proof.
+     rewrite are_grounded_2_equation_2.
+       by case is_object_type => /= /and3P [_ Hg Hgs]; apply/andP; split.
+   Qed.
+   
+   Lemma are_grounded_2_cat schema ty qs qs' :
+     are_grounded_2 schema ty qs /\  are_grounded_2 schema ty qs' <->
+     are_grounded_2 schema ty (qs ++ qs').
+   Proof.
+     split.
+     - elim: qs qs' => [qs' | hd tl IH qs'] //=.
+       * by case.
+
+       * case Hobj : is_object_type => //=;
+         move=> [/and3P [Hf Hg Hgs] Hgs'];
+         apply/and3P; split=> //;
+           by apply: IH.
+
+     - elim: qs qs' => // hd tl IH qs'.
+       rewrite cat_cons /=.
+       case is_object_type => /= /and3P [Hty Hg Hgs];
+       move: (IH qs' Hgs) => [Htlg Hgs'];
+       by split=> //; apply/and3P; split.
+   Qed.
+   
+         
+   Ltac all_cons := rewrite {1}/all -/(all _ _) => /andP; case.
+  
+   Lemma are_grounded_in_object_scope_are_fields schema ty queries :
+     is_object_type schema ty ->
+     are_grounded_2 schema ty queries ->
+     all is_field queries.
+   Proof.
+     elim: queries => // hd tl IH /= Heq.
+     rewrite Heq /= => /and3P [Hf _ Hg].
+     apply/andP; split=> //.
+     by apply: IH.
+   Qed.
+
+   Lemma are_grounded_in_abstract_scope_are_inlines schema ty queries :
+     is_abstract_type schema ty ->
+     are_grounded_2 schema ty queries ->
+     all is_inline_fragment queries.
+   Proof.
+     elim: queries => // hd tl IH /= Heq.
+     rewrite abstract_type_N_obj //= => /and3P [Hf _ Hg].
+     apply/andP; split=> //.
+     by apply: IH.
+   Qed.
+   
+   Lemma all_grounded_fields_in_object_scope_are_grounded schema ty queries :
+     is_object_type schema ty ->
+     all is_field queries ->
+     all (is_grounded_2 schema ty) queries ->
+     are_grounded_2 schema ty queries.
+   Proof.
+     elim: queries => // hd tl IH Hobj.
+     all_cons => [Hfld Hflds].
+     all_cons => [Hg Hgs] /=; rewrite Hobj /=.
+       by apply/and3P; split=> //; apply: IH.
+   Qed.
+   
+   Lemma is_grounded_2_in_normal_form schema query :
+     forall ty,
+       query_conforms schema ty query ->
+       is_grounded_2 schema ty query ->
+       is_in_normal_form schema query.
+   Proof.
+     elim query using Query_ind with
+         (Pl := fun qs =>
+                 forall ty,
+                   all (query_conforms schema ty) qs ->
+                   are_grounded_2 schema ty qs ->
+                   all (is_in_normal_form schema) qs) => // [f α | l f α | t | hd IHhd tl IHtl ]; last first.
+     - move=> ty.
+       all_cons => [Hqc Hqsc] /=.
+       case: is_object_type => /= /and3P [Hty Hg Hgs];
+       by apply/andP; split; [apply: (IHhd ty) | apply: (IHtl ty)].
+       
+     all: do [move=> φ IH ty]; simp is_grounded_2; simp is_in_normal_form.
+
+     - rewrite /query_conforms => /and4P [_ _ Hne Hqsc] /and3P [Hobj Hflds Hg].
+       apply/and3P; split => //.
+       apply: (IH t) => //= {IH}.
+         by apply: all_grounded_fields_in_object_scope_are_grounded.
+
+     - move/nlf_conformsP=> [fld Hlook /and3P [/orP [Hobj | Habs] _]];
+       rewrite /queries_conform Hlook /= => /andP [Hne Hqsc] Hg; apply/andP.
+       * split.
+           by apply/orP; left; apply: (are_grounded_in_object_scope_are_fields schema fld.(return_type)).
+           by apply: (IH fld.(return_type)).
+
+       * split.
+           by apply/orP; right; apply: (are_grounded_in_abstract_scope_are_inlines schema fld.(return_type)).
+           by apply: (IH fld.(return_type)).
+ 
+      - move/nf_conformsP=> [fld Hlook /and3P [/orP [Hobj | Habs] _]];
+       rewrite /queries_conform Hlook /= => /andP [Hne Hqsc] Hg; apply/andP.
+       * split.
+           by apply/orP; left; apply: (are_grounded_in_object_scope_are_fields schema fld.(return_type)).
+           by apply: (IH fld.(return_type)).
+
+       * split.
+           by apply/orP; right; apply: (are_grounded_in_abstract_scope_are_inlines schema fld.(return_type)).
+           by apply: (IH fld.(return_type)).
+   Qed.
+
+   Lemma are_grounded_2_in_normal_form schema queries :
+     forall ty,
+       all (query_conforms schema ty) queries ->
+       are_grounded_2 schema ty queries ->
+       are_in_normal_form schema queries.
+   Proof.
+     elim: queries => // hd tl IH ty.
+     all_cons => [Hqc Hqsc].
+     rewrite are_grounded_2_equation_2; case Hobj: is_object_type => /=; move/and3P=> [Hf Hg Hgs];
+     move: (IH ty Hqsc Hgs); rewrite /are_in_normal_form => /andP [_ Hnfs];
+     move: Hgs; rewrite are_grounded_2E Hobj /= ?orbF => /andP [Hfs Hgs];
+     rewrite /are_in_normal_form;
+     apply/andP; split.
+     - apply/orP; left; apply/andP; split=> //.
+       apply/andP; split=> //.
+         by apply: (is_grounded_2_in_normal_form schema hd ty).
+     - apply/orP; right; apply/andP; split=> //.
+     - apply/andP; split=> //.
+         by apply: (is_grounded_2_in_normal_form schema hd ty).
+   Qed.
+
+
+     
     
   Lemma inlines_in_normal_form_have_object_guards schema queries :
     all is_inline_fragment queries ->
@@ -115,6 +309,9 @@ Section NRGTNF.
     }.
 
 
+      
+
+
 
   Lemma sub_nf schema ty ϕ ϕ' :
     ϕ = [:: InlineFragment ty ϕ'] ->
@@ -137,5 +334,10 @@ End NRGTNF.
 
 Arguments is_in_normal_form [Name Vals].
 Arguments are_in_normal_form [Name Vals].
+Arguments is_grounded_2 [Name Vals].
+Arguments are_grounded_2 [Name Vals].
 Arguments are_non_redundant [Name Vals].
 Arguments is_non_redundant  [Name Vals].
+Arguments are_grounded_in_object_scope_are_fields [Name Vals].
+Arguments are_grounded_2_in_normal_form [Name Vals].
+Arguments are_grounded_in_abstract_scope_are_inlines [Name Vals].

@@ -6,7 +6,7 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 
-
+From Equations Require Import Equations.
 
 
   Lemma filter_preserves_pred T (p pred : T -> bool) (s : seq T) :
@@ -70,3 +70,17 @@ Unset Printing Implicit Defensive.
   
 
   Lemma singleton (A : Type) (x y : A) : x = y -> [:: x] = [:: y]. Proof. by move=> ->. Qed.
+
+
+    
+
+
+    Fixpoint onth {T : Type} (s : seq T) (i : nat) : option T :=
+      match s, i with
+      | [::], _ => None
+      | (hd :: tl), 0 => Some hd
+      | (hd :: tl), n.+1 => onth tl n
+      end.
+
+
+    

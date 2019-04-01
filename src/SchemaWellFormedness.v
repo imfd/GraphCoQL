@@ -521,7 +521,22 @@ Section WellFormedness.
       by rewrite -Heq.
   Qed.
 
+   Lemma field_in_interface_in_object_E (schema : wfSchema) ty ti f fld fld' :
+    ty \in implementation schema ti ->
+           lookup_field_in_type schema ti f = Some fld ->
+           [/\ lookup_field_in_type schema ty f = Some fld',
+            fld.(fname) = fld'.(fname) &
+            fld.(return_type) = fld'.(return_type)].
+  Proof.
+  Admitted.
 
+  
+  Lemma field_in_interface_in_object_same_return_type (schema : wfSchema) ty ti f fld :
+    ty \in implementation schema ti ->
+           lookup_field_in_type schema ti f = Some fld ->
+           exists2 fld', lookup_field_in_type schema ty f = Some fld' & fld.(return_type) = fld'.(return_type).
+  Admitted.
+           
   
   Lemma union_members_has_objects (schema : wfSchema) ty :
     all (is_object_type schema) (union_members schema ty).
@@ -586,11 +601,12 @@ Section WellFormedness.
         by rewrite /union_members Hlook in Hunion *.
   Qed. 
 
-  Lemma in_possible_types_is_object (schema : wfSchema) t ty :
+  Lemma in_possible_types_is_object (schema : wfSchema) ty :
+    forall t,
     t \in get_possible_types schema ty ->
           is_object_type schema t.
   Proof.
-    funelim (get_possible_types schema ty) => //.
+    funelim (get_possible_types schema ty) => // t.
     - rewrite in_fset1 => /eqP ->.
       by simp is_object_type; rewrite Heq.
     - by move/in_implementation_is_object.
@@ -620,7 +636,18 @@ Section WellFormedness.
      move/in_union.
      by move: (is_object_type_unionN Hobj) => ->.
    Qed.
-     
+
+   
+   Lemma args_are_subset_in_implementation (schema : wfSchema) ity oty  :
+     oty \in implementation schema ity ->
+      forall fld, fld \in ity.(fields schema) ->
+      exists fld', fld' \in oty.(fields schema) ->                                     
+      [/\ fld'.(fname) = fld.(fname),                
+       fsubset fld.(fargs) fld'.(fargs) &
+       is_subtype schema fld'.(return_type) fld.(return_type)].
+   Proof.
+   Admitted.
+       
 End WellFormedness.
 
 
