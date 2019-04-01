@@ -4,7 +4,7 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 From Equations Require Import Equations.
-From extructures Require Import ord fmap.
+From extructures Require Import ord fmap fset.
 
 
 Require Import Query.
@@ -104,22 +104,37 @@ Section NRGTNF.
          with is_object_type schema ty :=
          {
          | true := [&& is_field hd, is_grounded_2 schema ty hd & are_grounded_2 schema ty tl];
-         | _ := [&& is_inline_fragment hd, is_grounded_2 schema ty hd & are_grounded_2 schema ty tl]
+         | _ with get_possible_types schema ty != fset0 :=
+             {
+             | true := [&& is_inline_fragment hd, is_grounded_2 schema ty hd & are_grounded_2 schema ty tl];
+             | _ := [&& is_field hd, is_grounded_2 schema ty hd & are_grounded_2 schema ty tl]
+             }
          }
      }.
 
 
    Lemma are_grounded_2E schema ty queries :
-     are_grounded_2 schema ty queries = ((is_object_type schema ty && all is_field queries) ||
-                                         (~~is_object_type schema ty && all is_inline_fragment queries))
+     are_grounded_2 schema ty queries = [|| (is_object_type schema ty && all is_field queries),
+                                         [&& ~~is_object_type schema ty,
+                                          get_possible_types schema ty != fset0 &
+                                          all is_inline_fragment queries] |
+                                         [&& ~~is_object_type schema ty,
+                                          get_possible_types schema ty == fset0 &
+                                          all is_field queries]]
+                                         
                                           && all (is_grounded_2 schema ty) queries.
    Proof.
      elim: queries => //=.
-     - by case is_object_type.
+     - case is_object_type => //=.
+       by case get_possible_types; case=> //=.
      - move=> hd tl IH.
        case Hobj: is_object_type => //=.
        by rewrite IH Hobj !orbF /=  [is_grounded_2 _ _ _ && _]andbCA andbA.
-       by rewrite IH Hobj /=  [is_grounded_2 _ _ _ && _]andbCA andbA.
+       case: eqP => //= /eqP Heq;
+       rewrite IH Heq /= ?andbF ?orFb Hobj /=.
+       * by rewrite -[RHS]andbA [all is_field tl && _ in RHS]andbCA.
+       * move/negbTE: Heq => -> /=; rewrite ! orbF. 
+         by rewrite -[RHS]andbA [all is_inline_fragment tl && _ in RHS]andbCA.
    Qed.
 
    
@@ -140,7 +155,8 @@ Section NRGTNF.
      is_grounded_2 schema ty q && are_grounded_2 schema ty qs.
    Proof.
      rewrite are_grounded_2_equation_2.
-       by case is_object_type => /= /and3P [_ Hg Hgs]; apply/andP; split.
+     case is_object_type => //=; [by move/and3P=> [_ Hg Hgs]; apply/andP; split |].
+     by case get_possible_types; case=> //= [_| hd tl _] /and3P [_ Hg Hgs]; apply/andP; split.
    Qed.
    
    Lemma are_grounded_2_cat schema ty qs qs' :
@@ -151,16 +167,27 @@ Section NRGTNF.
      - elim: qs qs' => [qs' | hd tl IH qs'] //=.
        * by case.
 
-       * case Hobj : is_object_type => //=;
-         move=> [/and3P [Hf Hg Hgs] Hgs'];
-         apply/and3P; split=> //;
-           by apply: IH.
+       * case Hobj : is_object_type => //=.
+         + move=> [/and3P [Hf Hg Hgs] Hgs'];
+           apply/and3P; split=> //;
+             by apply: IH.
 
+         + case get_possible_types; case=> //= [_ | hd' tl' _];
+           move=> [/and3P [Hty Hg Hgs] Hgs']; apply/and3P; split=> //;
+             by apply: IH.
      - elim: qs qs' => // hd tl IH qs'.
        rewrite cat_cons /=.
-       case is_object_type => /= /and3P [Hty Hg Hgs];
-       move: (IH qs' Hgs) => [Htlg Hgs'];
-       by split=> //; apply/and3P; split.
+       case is_object_type => /=.
+       
+       * move=> /= /and3P [Hty Hg Hgs].
+         move: (IH qs' Hgs) => [Htlg Hgs'].
+           by split=> //; apply/and3P; split.
+
+       * case get_possible_types; case=> /= [_ | hd' tl' _];
+         move/and3P=> [Hty Hg Hgs]; 
+         move: (IH qs' Hgs) => [Htlg Hgs'];
+           by split=> //; apply/and3P; split.
+                       
    Qed.
    
          
@@ -171,21 +198,19 @@ Section NRGTNF.
      are_grounded_2 schema ty queries ->
      all is_field queries.
    Proof.
-     elim: queries => // hd tl IH /= Heq.
-     rewrite Heq /= => /and3P [Hf _ Hg].
-     apply/andP; split=> //.
-     by apply: IH.
+     move=> Hobj.
+     by rewrite are_grounded_2E Hobj /= orbF => /andP [H _].
    Qed.
 
-   Lemma are_grounded_in_abstract_scope_are_inlines schema ty queries :
+  
+   Lemma are_grounded_in_abstract_scope_are_any schema ty queries :
      is_abstract_type schema ty ->
      are_grounded_2 schema ty queries ->
-     all is_inline_fragment queries.
+     all is_field queries \/ all is_inline_fragment queries.
    Proof.
-     elim: queries => // hd tl IH /= Heq.
-     rewrite abstract_type_N_obj //= => /and3P [Hf _ Hg].
-     apply/andP; split=> //.
-     by apply: IH.
+     move=> Habs; rewrite are_grounded_2E.
+     rewrite abstract_type_N_obj //=.
+     by move/andP=> [/orP [/andP [_ Hinl] | /andP [_ Hflds]] _]; [right | left].
    Qed.
    
    Lemma all_grounded_fields_in_object_scope_are_grounded schema ty queries :
@@ -194,10 +219,7 @@ Section NRGTNF.
      all (is_grounded_2 schema ty) queries ->
      are_grounded_2 schema ty queries.
    Proof.
-     elim: queries => // hd tl IH Hobj.
-     all_cons => [Hfld Hflds].
-     all_cons => [Hg Hgs] /=; rewrite Hobj /=.
-       by apply/and3P; split=> //; apply: IH.
+       by move=> Hobj; rewrite are_grounded_2E Hobj /= orbF => Hflds Hgs; apply/andP.
    Qed.
    
    Lemma is_grounded_2_in_normal_form schema query :
@@ -214,7 +236,7 @@ Section NRGTNF.
                    all (is_in_normal_form schema) qs) => // [f α | l f α | t | hd IHhd tl IHtl ]; last first.
      - move=> ty.
        all_cons => [Hqc Hqsc] /=.
-       case: is_object_type => /= /and3P [Hty Hg Hgs];
+       case: is_object_type => /=; [| case get_possible_types; case=> /= [_ | hd' tl' _]]; move/and3P=> [Hty Hg Hgs];
        by apply/andP; split; [apply: (IHhd ty) | apply: (IHtl ty)].
        
      all: do [move=> φ IH ty]; simp is_grounded_2; simp is_in_normal_form.
@@ -231,7 +253,7 @@ Section NRGTNF.
            by apply: (IH fld.(return_type)).
 
        * split.
-           by apply/orP; right; apply: (are_grounded_in_abstract_scope_are_inlines schema fld.(return_type)).
+           by apply/orP; apply: (are_grounded_in_abstract_scope_are_any schema fld.(return_type)).
            by apply: (IH fld.(return_type)).
  
       - move/nf_conformsP=> [fld Hlook /and3P [/orP [Hobj | Habs] _]];
@@ -241,7 +263,7 @@ Section NRGTNF.
            by apply: (IH fld.(return_type)).
 
        * split.
-           by apply/orP; right; apply: (are_grounded_in_abstract_scope_are_inlines schema fld.(return_type)).
+           by apply/orP; apply: (are_grounded_in_abstract_scope_are_any schema fld.(return_type)).
            by apply: (IH fld.(return_type)).
    Qed.
 
@@ -253,17 +275,22 @@ Section NRGTNF.
    Proof.
      elim: queries => // hd tl IH ty.
      all_cons => [Hqc Hqsc].
-     rewrite are_grounded_2_equation_2; case Hobj: is_object_type => /=; move/and3P=> [Hf Hg Hgs];
+     rewrite are_grounded_2_equation_2; case Hobj: is_object_type => /=;
+     [| case eqP => //= /eqP Heq];
+     move/and3P=> [Hf Hg Hgs];
      move: (IH ty Hqsc Hgs); rewrite /are_in_normal_form => /andP [_ Hnfs];
-     move: Hgs; rewrite are_grounded_2E Hobj /= ?orbF => /andP [Hfs Hgs];
+     move: Hgs; rewrite are_grounded_2E Hobj /= ?orbF => /andP [Hty Hgs];
      rewrite /are_in_normal_form;
-     apply/andP; split.
+     apply/and3P; split => //=.
      - apply/orP; left; apply/andP; split=> //.
-       apply/andP; split=> //.
-         by apply: (is_grounded_2_in_normal_form schema hd ty).
+       by apply: (is_grounded_2_in_normal_form schema hd ty).
+     - apply/orP; left; apply/andP; split=> //.
+         by move: Hty; rewrite Heq.
+       by apply: (is_grounded_2_in_normal_form schema hd ty).
+
      - apply/orP; right; apply/andP; split=> //.
-     - apply/andP; split=> //.
-         by apply: (is_grounded_2_in_normal_form schema hd ty).
+         by move: Hty; move/negbTE: Heq => -> /=; rewrite orbF.
+       by apply: (is_grounded_2_in_normal_form schema hd ty).
    Qed.
 
 
@@ -340,4 +367,4 @@ Arguments are_non_redundant [Name Vals].
 Arguments is_non_redundant  [Name Vals].
 Arguments are_grounded_in_object_scope_are_fields [Name Vals].
 Arguments are_grounded_2_in_normal_form [Name Vals].
-Arguments are_grounded_in_abstract_scope_are_inlines [Name Vals].
+Arguments are_grounded_in_abstract_scope_are_any [Name Vals].
