@@ -1517,41 +1517,18 @@ Section QueryRewrite.
 
     all: do ?[by rewrite /all; apply_andP; apply: filter_preserves_pred; apply: H].
 
-    - rewrite /all; apply_andP.
-      * pose Hqc' := Hqc.
-        move/nf_conformsP: Hqc' => [fld Hlook /and4P [Hty Hargs Hne Hqc']].
-        rewrite /query_conforms Hlook; apply/and4P; split => //.
-        apply: remove_redundancies_in_nil_N_nil.
-          by apply: cat_N_nil.
-        apply: H0.
-        rewrite all_cat; apply_andP.
-          by apply: (β__φ_preserves_conformance_nf schema ty).
-        apply: filter_preserves_pred.
-        by apply: H.
+    all: do ?[rewrite /all; apply_andP; last by apply: filter_preserves_pred; apply: H].
 
-    - rewrite /all; apply_andP.
-      * pose Hqc' := Hqc.
-        move/nlf_conformsP: Hqc' => [fld Hlook /and4P [Hty Hargs Hne Hqc']].
-        rewrite /query_conforms Hlook; apply/and4P; split => //.
-        apply: remove_redundancies_in_nil_N_nil.
-          by apply: cat_N_nil.
-        apply: H0.
-        rewrite all_cat; apply_andP.
-          by apply: (β__φ_preserves_conformance_nlf schema ty).
-        apply: filter_preserves_pred.
-          by apply: H.
-
-    - rewrite /all; apply_andP.
-      * pose Hqc' := Hqc.
-        move: Hqc'; query_conforms; move=> [Hty Hspread Hne Hqc'].
-        apply/and4P; split=> //.
-        apply: remove_redundancies_in_nil_N_nil.
-          by apply: cat_N_nil.
-        apply: H0.
-        rewrite all_cat; apply_andP.
-          by apply: (β__φ_preserves_conformance_inline schema ty).
-        apply: filter_preserves_pred.
-        by apply: H.
+    all: do [pose Hqc' := Hqc].
+    all: do ?[move/nf_conformsP: Hqc' => [fld Hlook /and4P [Hty Hargs Hne Hqc']]; rewrite /query_conforms Hlook].
+    all: do ?[move/nlf_conformsP: Hqc' => [fld Hlook /and4P [Hty Hargs Hne Hqc']]; rewrite /query_conforms Hlook].
+    all: do ?[move: Hqc'; query_conforms; move=> [Hty Hspread Hne Hqc']].
+    all: do ?[apply/and4P; split => //].
+    all: do ?[by apply: remove_redundancies_in_nil_N_nil; apply: cat_N_nil].
+    all: do ?[apply: H0; rewrite all_cat; apply_andP].
+    - by apply: (β__φ_preserves_conformance_nf schema ty).
+    - by apply: (β__φ_preserves_conformance_nlf schema ty).
+    - by apply: (β__φ_preserves_conformance_inline schema ty).
   Qed.
   
   Lemma remove_redundancies_preserves_normal_form :
@@ -1572,3 +1549,9 @@ Section QueryRewrite.
       
 End QueryRewrite.
 
+
+Arguments normalize [Name Vals].
+Arguments normalize_elim [Name Vals].
+Arguments normalize__φ [Name Vals].
+
+Arguments remove_redundancies [Name Vals].

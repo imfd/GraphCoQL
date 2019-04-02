@@ -635,3 +635,7 @@ Section QuerySemantic.
   Admitted.
     
 End QuerySemantic.
+
+
+Arguments eval [Name Vals].
+Arguments eval_queries [Name Vals].
