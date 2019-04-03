@@ -50,11 +50,11 @@ Section QueryRewrite.
 
   Open Scope fset.
 
-  Equations try_inline_query query (possible_types : {fset (@NamedType Name)}) : seq (@Query Name Vals) :=
+  Equations try_inline_query query (possible_types : seq (@NamedType Name)) : seq (@Query Name Vals) :=
     {
-      try_inline_query q types with types != fset0 :=
+      try_inline_query q types with types != [::] :=
         {
-        | true := (fun ty => InlineFragment ty [:: q]) @: types;
+        | true := [seq InlineFragment ty [:: q] | ty <- types];
         | _ := [:: q]
         }
     }.
@@ -281,22 +281,17 @@ Section QueryRewrite.
    *)
 
   
-  Lemma imfset_inline_are_grounded_in_interface schema ty sbq :
+  Lemma map_inline_are_grounded_in_interface schema ty sbq :
     is_interface_type schema ty ->
     all is_field sbq ->
     all (is_grounded_2 schema ty) sbq -> 
-    all (is_grounded_2 schema ty) ((fun t => InlineFragment t sbq) @: (get_possible_types schema ty)).
+    all (is_grounded_2 schema ty) [seq InlineFragment t sbq | t <- (get_possible_types schema ty)].
   Proof.
     move=> Hintf Hflds Hg.
     move: (@in_possible_types_is_object Name Vals schema ty).
-    rewrite get_possible_types_interfaceE //.
-    
-    elim/fset_ind: (implementation schema ty); [by rewrite imfset0| move=> x tl Hnin IH Hinobj].
-    rewrite imfsetU all_fsetU; apply_andP.
-    - rewrite imfset1 /=; apply_andP.
-      simp is_grounded_2; apply_and3P.
-      by have/Hinobj: x \in x |: tl by rewrite in_fsetU1; orL.
-  Abort.
+    elim: get_possible_types => //= hd tl IH Hin.
+    apply_andP.
+  Admitted.
       
   
       
@@ -326,13 +321,14 @@ Section QueryRewrite.
     all: do?[by intros => /=; rewrite Heq /=; apply/and3P; split].
 
     - intros => /=; rewrite are_grounded_2E Heq /=; apply_andP.
-      elim/fset_ind: (get_possible_types schema s) => //= hd tl Hnin IH.
+
+      (* elim/fset_ind: (get_possible_types schema s) => //= hd tl Hnin IH.
       orL; apply_andP.
         by apply: fset1UNfset0.
         simp try_inline_query; rewrite fset1UNfset0 /=.
         by apply: imfset_inline_are_inlines.
       move: (@in_possible_types_is_object Name Vals schema s).
-      rewrite get_possible_types_interfaceE //.
+      rewrite get_possible_types_interfaceE //. *)
       Admitted.
       (*
       elim/fset_ind: (implementation schema s); [by rewrite imfset0|].
@@ -937,9 +933,11 @@ Section QueryRewrite.
 *)
 
   Lemma remove_redundancies_inlined_query schema type_in_scope q :
-    remove_redundancies ((fun ty => InlineFragment ty [:: q]) @: (get_possible_types schema type_in_scope)) =
-    ((fun ty => InlineFragment ty (remove_redundancies [:: q])) @: (get_possible_types schema type_in_scope)).
+    remove_redundancies [seq InlineFragment ty [:: q] | ty <- get_possible_types schema type_in_scope] =
+    [seq InlineFragment ty (remove_redundancies [:: q]) | ty <- get_possible_types schema type_in_scope].
   Proof.
+    elim: get_possible_types => //= hd tl IH.
+    simp remove_redundancies => /=.
       
   Admitted.
 
@@ -1319,7 +1317,7 @@ Section QueryRewrite.
     move=> Hobj Hintf Hin.
     rewrite /is_fragment_spread_possible.
     rewrite (get_possible_types_interfaceE Hintf) in Hin *.
-    by rewrite get_possible_types_objectE // fset1I Hin.
+    by rewrite get_possible_types_objectE // seq1I Hin.
   Qed.
 
   Lemma imfset_on_Nfset0_N_fset0 {A B : ordType} (xs : {fset A}) (f : A -> B) :
@@ -1330,6 +1328,13 @@ Section QueryRewrite.
     by rewrite imfsetU1 fset1UNfset0.
   Qed.
 
+  Lemma map_N_nil {A B : eqType} (xs : seq A) (f : A -> B) :
+    xs != [::] ->
+    map f xs != [::].
+  Proof.
+      by case: xs.
+  Qed.
+        
   Lemma cat_N_nil {T : eqType} (xs xs' : seq T) :
 
     xs != [::] ->
@@ -1354,8 +1359,8 @@ Section QueryRewrite.
                 all (has_valid_fragments schema ty) qs ->
                 nqs != [::])) => //.
     all: do ?[intros => /=; simp try_inline_query;
-              case Hpty: (_ != fset0) => //=;
-                by apply: imfset_on_Nfset0_N_fset0].
+              case Hpty: (_ != [::]) => //=;
+                by apply: map_N_nil].
     all: do ?[by intros; rewrite /query_conforms Heq in H].
 
     - move=> schema t b ty φ IH Ht Hscope.
@@ -1412,7 +1417,7 @@ Section QueryRewrite.
       all: do ?[intros; simp try_inline_query; rewrite [query_conforms]lock;
                 case: eqP => //= Hpty; rewrite -lock ?andbT //].
 
-      - rewrite all_fset; apply/allP=> x /mapP [q Hin ->].
+      - apply/allP=> x /mapP [q Hin ->].
         apply/and4P; split=> //.
         * by apply/or3P; constructor 1; apply (in_possible_types_is_object Hin).
         * move: (in_possible_types_is_object Hin) => Hobj.
@@ -1425,7 +1430,7 @@ Section QueryRewrite.
           rewrite get_possible_types_interfaceE // in Hin.
             by apply (sf_conforms_in_interface_in_obj Hin).
             
-      - rewrite all_fset; apply/allP=> x /mapP [q Hin ->].
+      - apply/allP=> x /mapP [q Hin ->].
         apply/and4P; split=> //.
         * by apply/or3P; constructor 1; apply (in_possible_types_is_object Hin).
         * move: (in_possible_types_is_object Hin) => Hobj.

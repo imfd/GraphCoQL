@@ -477,17 +477,22 @@ Section SchemaAux.
      3. Union : Possible types are all members of the union.
 
    **)
-  Equations get_possible_types (ty : @NamedType Name) : {fset @NamedType Name} :=
+  Equations get_possible_types (ty : @NamedType Name) : seq (@NamedType Name) :=
     {
       get_possible_types ty with lookup_type ty :=
         {
-        | Some (ObjectTypeDefinition _ _ _) => fset1 ty;
+        | Some (ObjectTypeDefinition _ _ _) => [:: ty];
         | Some (InterfaceTypeDefinition iname _) => implementation iname;
         | Some (UnionTypeDefinition _ mbs) => mbs;
-        | _ => fset0
+        | _ => [::]
         }
     }.
-      
+
+  Lemma uniq_get_possible_types ty :
+    uniq (get_possible_types ty).
+  Proof.
+    by funelim (get_possible_types ty) => //; apply: uniq_fset.
+  Qed.
   
   
 

@@ -12,7 +12,7 @@ Require Import SchemaAux.
 Require Import Query.
 Require Import QueryAux.
 Require Import SchemaWellFormedness.
-
+Require Import SeqExtra.
 
 Section QueryConformance.
 
@@ -23,6 +23,7 @@ Section QueryConformance.
   Implicit Type query : @Query Name Vals.
   Implicit Type type : @type Name.
 
+  Notation is_inline_fragment := (@is_inline_fragment Name Vals).
 
   
   Lemma fset1I_eq {A : ordType} (a b : A) :
@@ -65,6 +66,7 @@ Section QueryConformance.
     all (argument_conforms schema args) α.
      
 
+  
   (** Checks whether a type can be used as an inline fragment's guard 
       in a given context with another type in scope (parent type).
 
@@ -80,9 +82,10 @@ Section QueryConformance.
   Definition is_fragment_spread_possible schema parent_type ty : bool :=
     let ty_possible_types := get_possible_types schema ty in
     let parent_possible_types := get_possible_types schema parent_type in
-    let applicable_types := (ty_possible_types :&: parent_possible_types)%fset in
-    applicable_types != fset0.
+    let applicable_types := (ty_possible_types :&: parent_possible_types)%SEQ in
+    applicable_types != [::].
 
+  
   (* TODO: rename **)
   Lemma object_spreads_E schema parent_type ty :
     is_object_type schema ty ->
@@ -98,13 +101,8 @@ Section QueryConformance.
     simp get_possible_types.
     move/is_object_type_wfP: Hobj => [intfs [flds Hlook]].
     rewrite Hlook /=.
-    case lookup_type; case.
-    - by move=> s; rewrite fsetI0.
-    - by move=> o i fs /fset1I_eq ->; rewrite in_fset1.
-    - by move=> i ifldsc; rewrite fset1I; case: ifP => //.
-    - by move=> u mbs; rewrite fset1I; case: ifP.
-    - by move=> e ev; rewrite fsetI0.
-    - by rewrite fsetI0.
+    by case lookup_type => [t|] //=; case: t => //=; intros; apply: seq1I_N_nil.
+    
   Qed.
 
 
@@ -267,7 +265,7 @@ Section QueryConformance.
       apply/and4P; split=> //.
         by apply/or3P; constructor 1.
         rewrite /is_fragment_spread_possible. simp get_possible_types => /=.
-        by rewrite H; apply: fset1I_N_fset0.
+        by rewrite H /= /seqI /=; case: ifP => //=; rewrite inE => /eqP.
       by rewrite Heq in Hall.
   Qed.
 
@@ -281,8 +279,7 @@ Section QueryConformance.
     move/is_interface_type_wfP=> [iflds Hlook'].
     rewrite /query_conforms=> /and4P [_ Hspread _ _].
     move: Hspread; rewrite /is_fragment_spread_possible; simp get_possible_types; rewrite Hlook Hlook' /=.
-    rewrite fsetIC fset1I.
-    by case: ifP.
+    by rewrite -seq1IC; apply: seq1I_N_nil.
   Qed.
 
   Lemma union_spreads_in_object_scope schema type_in_scope t ϕ :
@@ -296,9 +293,8 @@ Section QueryConformance.
     rewrite /query_conforms.
     move/and4P=> [_ Hspread _ _].
     move: Hspread; rewrite /is_fragment_spread_possible; simp get_possible_types; rewrite Heq Heq0 /=.
-    rewrite fsetIC fset1I.
-    case: ifP => //.
-    by rewrite /union_members Heq.
+    rewrite /union_members Heq.
+    by rewrite -seq1IC; apply: seq1I_N_nil.
   Qed.
 
   Lemma abstract_spreads_in_object_scope schema type_in_scope t ϕ :
@@ -321,9 +317,10 @@ Section QueryConformance.
         case: H => [Himpl | Hmb]; 
         rewrite /is_fragment_spread_possible; simp get_possible_types.
         move: (has_implementation_is_interface Himpl) => /is_interface_type_wfP [iflds Hilook].
-        by rewrite Holook Hilook fsetIC fset1I Himpl.
+          by rewrite Holook Hilook /= -seq1IC seq1I Himpl.
+          
         move: (in_union Hmb) => /is_union_type_wfP [mbs Hulook].
-        rewrite Holook Hulook fsetIC fset1I.
+        rewrite Holook Hulook /= -seq1IC seq1I.
         rewrite /union_members Hulook in Hmb.
         by rewrite Hmb.
   Qed.
@@ -356,7 +353,7 @@ Section QueryConformance.
       * rewrite /is_fragment_spread_possible.
         move/get_possible_types_interfaceE: Hintf => ->.
         move/get_possible_types_objectE: Hobj => ->.
-        by rewrite fset1I Himpl.
+        by rewrite seq1I Himpl.
       * by move: Hqsc; rewrite /queries_conform => /andP [H _].
       * by move: Hqsc; rewrite /queries_conform => /andP [_ H].
   Qed.
@@ -395,7 +392,6 @@ Section QueryConformance.
   Qed.
   
 
-  Notation is_inline_fragment := (@is_inline_fragment Name Vals).
 
 
     
@@ -419,7 +415,8 @@ Section QueryConformance.
     move/and4P=> [/or3P Hty Hspread Hne _] => //.
     move: Hspread.
     rewrite /is_fragment_spread_possible.
-    simp get_possible_types; rewrite fsetIC /=.
+    simp get_possible_types.
+    (*
     case Hlook: lookup_type => [tdef|] //.
     by case: tdef Hlook => //=; do ?[rewrite fset0I //=];
                          [constructor 1; simp is_object_type
@@ -427,7 +424,8 @@ Section QueryConformance.
                          | constructor 3; simp is_union_type]; rewrite Hlook.
     
     by rewrite fset0I /=.
-  Qed.
+  Qed.*)
+    Admitted.
 
   Lemma type_in_scope_N_obj_is_abstract schema type_in_scope φ :
     query_conforms schema type_in_scope φ ->

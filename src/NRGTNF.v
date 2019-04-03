@@ -126,7 +126,7 @@ Section NRGTNF.
    Proof.
      elim: queries => //=.
      - case is_object_type => //=.
-       by case get_possible_types; case=> //=.
+         by case get_possible_types.
      - move=> hd tl IH.
        case Hobj: is_object_type => //=.
        by rewrite IH Hobj !orbF /=  [is_grounded_2 _ _ _ && _]andbCA andbA.
@@ -156,7 +156,7 @@ Section NRGTNF.
    Proof.
      rewrite are_grounded_2_equation_2.
      case is_object_type => //=; [by move/and3P=> [_ Hg Hgs]; apply/andP; split |].
-     by case get_possible_types; case=> //= [_| hd tl _] /and3P [_ Hg Hgs]; apply/andP; split.
+     by case get_possible_types => //= [| hd tl] /and3P [_ Hg Hgs]; apply/andP; split.
    Qed.
    
    Lemma are_grounded_2_cat schema ty qs qs' :
@@ -172,8 +172,7 @@ Section NRGTNF.
            apply/and3P; split=> //;
              by apply: IH.
 
-         + case get_possible_types; case=> //= [_ | hd' tl' _];
-           move=> [/and3P [Hty Hg Hgs] Hgs']; apply/and3P; split=> //;
+         + case get_possible_types => //= [| hd' tl'] [/and3P [Hty Hg Hgs] Hgs']; apply/and3P; split=> //;
              by apply: IH.
      - elim: qs qs' => // hd tl IH qs'.
        rewrite cat_cons /=.
@@ -183,7 +182,7 @@ Section NRGTNF.
          move: (IH qs' Hgs) => [Htlg Hgs'].
            by split=> //; apply/and3P; split.
 
-       * case get_possible_types; case=> /= [_ | hd' tl' _];
+       * case get_possible_types => //= [| hd' tl'];
          move/and3P=> [Hty Hg Hgs]; 
          move: (IH qs' Hgs) => [Htlg Hgs'];
            by split=> //; apply/and3P; split.
@@ -236,7 +235,7 @@ Section NRGTNF.
                    all (is_in_normal_form schema) qs) => // [f α | l f α | t | hd IHhd tl IHtl ]; last first.
      - move=> ty.
        all_cons => [Hqc Hqsc] /=.
-       case: is_object_type => /=; [| case get_possible_types; case=> /= [_ | hd' tl' _]]; move/and3P=> [Hty Hg Hgs];
+       case: is_object_type => //=; [| case get_possible_types => //= [| hd' tl']]; move/and3P=> [Hty Hg Hgs];
        by apply/andP; split; [apply: (IHhd ty) | apply: (IHtl ty)].
        
      all: do [move=> φ IH ty]; simp is_grounded_2; simp is_in_normal_form.
