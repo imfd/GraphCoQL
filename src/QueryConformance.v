@@ -425,7 +425,17 @@ Section QueryConformance.
     
     by rewrite fset0I /=.
   Qed.*)
-    Admitted.
+  Admitted.
+
+  Lemma type_in_scope_N_scalar schema type_in_scope φ :
+    query_conforms schema type_in_scope φ ->
+    is_scalar_type schema type_in_scope = false.
+  Admitted.
+
+  Lemma type_in_scope_N_enum schema type_in_scope φ :
+    query_conforms schema type_in_scope φ ->
+    is_enum_type schema type_in_scope = false.
+  Admitted.
 
   Lemma type_in_scope_N_obj_is_abstract schema type_in_scope φ :
     query_conforms schema type_in_scope φ ->

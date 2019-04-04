@@ -29,7 +29,7 @@ Require Import SeqExtra.
 
 Section QueryRewrite.
 
-  Variables N Name Vals : ordType.
+  Variables Name Vals : ordType.
   Implicit Type schema : @wfSchema Name Vals.
   Implicit Type query : @Query Name Vals.
 
@@ -1536,7 +1536,7 @@ Section QueryRewrite.
     - by apply: (β__φ_preserves_conformance_inline schema ty).
   Qed.
   
-  Lemma remove_redundancies_preserves_normal_form :
+  Lemma remove_redundancies_normalize_preserves_normal_form :
     forall schema type_in_scope query,
       query_conforms schema type_in_scope query ->
       has_valid_fragments schema type_in_scope query -> 
@@ -1549,8 +1549,30 @@ Section QueryRewrite.
     apply: remove_redundancies_preserves_conformance.
       by apply: normalize_preserves_conformance.
   Qed.
-           
 
+  Lemma remove_redundancies_normalize__φ_are_in_normal_form :
+    forall schema type_in_scope queries,
+      all (query_conforms schema type_in_scope) queries ->
+      all (has_valid_fragments schema type_in_scope) queries -> 
+      are_in_normal_form schema (remove_redundancies (normalize__φ schema type_in_scope queries)).
+  Proof.
+    move=> schema ty qs Hqc Hv.
+    move: (normalize__φ_are_grounded _ _ _ Hqc Hv) => Hg.
+    move: (remove_redundancies_preserves_grounded_normalize__φ _ _ _ Hqc Hv).
+    apply are_grounded_2_in_normal_form.
+     apply: remove_redundancies_preserves_conformance.
+      by apply: normalize__φ_preserves_conformance.
+  Qed.
+
+
+  Lemma remove_redundancies_preserves_valid_fragments schema ty queries :
+    all (has_valid_fragments schema ty) queries ->
+    all (has_valid_fragments schema ty) (remove_redundancies queries).
+  Admitted.
+ 
+        
+    
+    
       
 End QueryRewrite.
 
@@ -1560,3 +1582,6 @@ Arguments normalize_elim [Name Vals].
 Arguments normalize__φ [Name Vals].
 
 Arguments remove_redundancies [Name Vals].
+Arguments normalize_preserves_conformance [Name Vals].
+
+Arguments normalize_in_normal_form [Name Vals].

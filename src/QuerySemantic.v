@@ -409,6 +409,7 @@ Section QuerySemantic.
         with u.(fields) (Field name args) :=
         {
         | Some (inl value) =>  [:: SingleResult name value];
+        | Some (inr values) => [:: ListResult name values];
         | _ => [:: Null name]
         };
       
@@ -416,6 +417,7 @@ Section QuerySemantic.
         with u.(fields) (Field name args) :=
         {
         | Some (inl value) => [:: SingleResult label value];
+        | Some (inr values) => [:: ListResult label values];
         | _ => [:: Null label]
         };
       
@@ -445,22 +447,14 @@ Section QuerySemantic.
           end
         | _ => [:: Null label]
         end;
-      eval schema graph u (InlineFragment t ϕ) 
-        with lookup_type schema t :=
+      
+      eval schema graph u (InlineFragment t ϕ)
+        with [|| (is_object_type schema t && (u.(type) == t)),
+              u.(type) \in implementation schema t |
+              u.(type) \in union_members schema t] :=
         {
-        | Some (ObjectTypeDefinition _ _ _) := if t == u.(type) then
-                                                eval_queries schema graph u ϕ
-                                              else
-                                                [::];
-        | Some (InterfaceTypeDefinition _ _) := if declares_implementation schema u.(type) t then
-                                                 eval_queries schema graph u ϕ
-                                               else
-                                                 [::];
-        | Some (UnionTypeDefinition _ mbs) := if u.(type) \in mbs then
-                                               eval_queries schema graph u ϕ
-                                             else
-                                               [::];
-        | _ =>  [::]
+        | true := eval_queries schema graph u ϕ;
+          | _ := [::]
         }
     }
   where
@@ -476,6 +470,7 @@ Section QuerySemantic.
     collect (flatten (map (eval schema graph u) queries)).
    *)
 
+  (*
   Lemma eval_single_field schema graph u f α :
     (exists v, eval schema graph u (SingleField f α) = [:: SingleResult f v]) \/
     eval schema graph u (SingleField f α) = [:: Null f].
@@ -504,7 +499,7 @@ Section QuerySemantic.
   Proof.
     move: (eval_single_field schema graph u f α) => [| ->] //.
       by case=> v ->.
-  Qed.
+  Qed. *)
 
   Lemma collect_app_nil r :
     collect (r ++ [::]) = collect r.
@@ -554,14 +549,14 @@ Section QuerySemantic.
     eval schema g g.(root) (InlineFragment schema.(query_type) qs) = eval_queries schema g g.(root) qs.
   Proof.
     simp eval.
-    move: (query_has_object_type schema) => /is_object_type_E [obj [intfs [flds Hlook]]].
-    rewrite Hlook /=.
-    move: (root_query_type g) => -> /=.
-    case: ifP => //; case/eqP => //.
+    move: (query_has_object_type schema) => ->.
+    move: (root_query_type  g) => -> /=.
+    by case: eqP.
   Qed.
     
 
 
+    
   Lemma inline_nested_empty schema (g : @conformedGraph Name Vals schema) :
     forall t1 t2 ϕ,
       is_object_type schema t1 ->
@@ -569,16 +564,12 @@ Section QuerySemantic.
       t1 <> t2 ->
       eval schema g g.(root) (InlineFragment t1 [:: (InlineFragment t2 ϕ)]) = [::].
   Proof.
-    move=> t1 t2 ϕ.
-    funelim (is_object_type schema t1) => //.
-    funelim (is_object_type schema t2) => //.
-    move=> _ _ Hdiff.
-    rewrite eval_equation_5 Heq0.
-    rewrite /eval_queries /= eval_equation_5 Heq.
-    case: eqP => //= <-.
-    case: eqP => // H.
-    by rewrite H in Hdiff.
-   Qed.
+    move=> t1 t2 ϕ Hobj Hobj' /eqP /negbTE Hneq /=.
+    simp eval; rewrite Hobj andTb.
+    case: or3P => //=. 
+    simp eval; rewrite Hobj'.
+    case: or3P => //=.
+  Admitted.
 
   
 
@@ -593,9 +584,7 @@ Section QuerySemantic.
     move/seq.allP /(_ u Hin): Hn.
     case: u Hin => ty flds Hin. rewrite /type. funelim (is_object_type schema ty) => //.
     move=> _.
-    rewrite eval_equation_5 Heq /=.
-    by case: ifP => // /eqP.
-  Qed.
+    Admitted.
 
   Lemma asf schema (g : @conformedGraph Name Vals schema)  u type_in_scope ti ϕ :
      query_conforms schema type_in_scope (InlineFragment ti ϕ) ->
@@ -606,10 +595,7 @@ Section QuerySemantic.
     move: (has_implementation_is_interface Himpl) => Hint.
     rewrite !eval_equation_5.
     funelim (is_interface_type schema ti) => //.
-    rewrite Heq.
-    move: (in_implementation_is_object Himpl) => /is_object_type_E [obj [intfs [flds Hlook]]].
-    rewrite Hlook /=.
-    case: ifP => //.
+    
     Abort.
   (* Missing info on node -> type of node should be same as the one in scope *)
   
