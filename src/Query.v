@@ -1,7 +1,6 @@
 Require Import List.
 
 From mathcomp Require Import all_ssreflect.
-Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
@@ -16,8 +15,7 @@ Require Import Schema.
 Require Import SchemaAux.
 
 
-Require Import CpdtTactics.
-
+Require Import Ssromega.
 
 Delimit Scope query_scope with QUERY.
 Open Scope query_scope.
@@ -30,6 +28,15 @@ Section Forallt.
         P x -> Forallt P l -> Forallt P (x :: l).
 
 End Forallt.
+
+Section ListIn.
+  
+  Equations map_In {A B : Type}
+     (l : list A) (f : forall (x : A), In x l -> B) : list B :=
+    map_In nil _ := nil;
+    map_In (cons x xs) f := cons (f x _) (map_In xs (fun x H => f x _)).
+
+End ListIn.
 
 Section Query.
   
@@ -107,22 +114,30 @@ Section Query.
 
   
   Definition ResponseObject_rect (P : ResponseObject -> Type)
+             (Pl : seq ResponseObject -> Prop)
+             (Pl2 : seq (seq ResponseObject) -> Prop) 
              (IH_Null : forall n, P (Null n))
              (IH_SR : forall n v, P (SingleResult n v))
              (IH_LR : forall n vals, P (ListResult n vals))
-             (IH_NR : forall n ρ, Forallt P ρ -> P (NestedResult n ρ))
-             (IH_NLR : forall n ρ, Forallt (fun rs => Forallt P rs) ρ -> P (NestedListResult n ρ)) :=
+             (IH_NR : forall n ρ, Pl ρ -> P (NestedResult n ρ))
+             (IH_NLR : forall n ρ, Pl2 ρ -> P (NestedListResult n ρ))
+             (IH_Nil : Pl [::])
+             (IH_Cons : forall r, P r -> forall rs, Pl rs -> Pl (r :: rs))
+             (IH_Nil2 : Pl2 [::])
+             (IH_Cons2 : forall rs, Pl rs -> forall rss, Pl2 rss -> Pl2 (rs :: rss))
+
+    :=
       fix loop response : P response :=
-        let fix F0 (ρ : seq ResponseObject) : Forallt P ρ :=
+        let fix F0 (ρ : seq ResponseObject) : Pl ρ :=
             match ρ with
-            | [::] => Forallt_nil _
-            | hd :: tl => @Forallt_cons _ P hd tl (loop hd) (F0 tl)
+            | [::] => IH_Nil
+            | hd :: tl => IH_Cons hd (loop hd) tl (F0 tl)
             end
         in
-        let fix F1 (ρ : seq (seq ResponseObject)) : Forallt (fun rs => Forallt P rs) ρ :=
+        let fix F1 (ρ : seq (seq ResponseObject)) : Pl2 ρ :=
             match ρ as r with
-            | [::] => Forallt_nil _
-            | hd :: tl => @Forallt_cons _ (fun rs => Forallt P rs) hd tl (F0 hd) (F1 tl)
+            | [::] => IH_Nil2
+            | hd :: tl => IH_Cons2 hd (F0 hd) tl (F1 tl)
             end
         in
         match response with
@@ -136,23 +151,30 @@ Section Query.
   Definition ResponseObject_rec (P : ResponseObject -> Set) := @ResponseObject_rect P.
 
   Definition ResponseObject_ind (P : ResponseObject -> Prop)
+             (Pl : seq ResponseObject -> Prop)
+             (Pl2 : seq (seq ResponseObject) -> Prop) 
              (IH_Null : forall n, P (Null n))
              (IH_SR : forall n v, P (SingleResult n v))
              (IH_LR : forall n vals, P (ListResult n vals))
-             (IH_NR : forall n ρ, Forall P ρ -> P (NestedResult n ρ))
-             (IH_NLR : forall n ρ, Forall (fun rs => Forall P rs) ρ -> P (NestedListResult n ρ))
+             (IH_NR : forall n ρ, Pl ρ -> P (NestedResult n ρ))
+             (IH_NLR : forall n ρ, Pl2 ρ -> P (NestedListResult n ρ))
+             (IH_Nil : Pl [::])
+             (IH_Cons : forall r, P r -> forall rs, Pl rs -> Pl (r :: rs))
+             (IH_Nil2 : Pl2 [::])
+             (IH_Cons2 : forall rs, Pl rs -> forall rss, Pl2 rss -> Pl2 (rs :: rss))
+
     :=
       fix loop response : P response :=
-        let fix F0 (ρ : seq ResponseObject) : Forall P ρ :=
+        let fix F0 (ρ : seq ResponseObject) : Pl ρ :=
             match ρ with
-            | [::] => Forall_nil _
-            | hd :: tl => @Forall_cons _ P hd tl (loop hd) (F0 tl)
+            | [::] => IH_Nil
+            | hd :: tl => IH_Cons hd (loop hd) tl (F0 tl)
             end
         in
-        let fix F1 (ρ : seq (seq ResponseObject)) : Forall (fun rs => Forall P rs) ρ :=
+        let fix F1 (ρ : seq (seq ResponseObject)) : Pl2 ρ :=
             match ρ as r with
-            | [::] => Forall_nil _
-            | hd :: tl => @Forall_cons _ (fun rs => Forall P rs) hd tl (F0 hd) (F1 tl)
+            | [::] => IH_Nil2
+            | hd :: tl => IH_Cons2 hd (F0 hd) tl (F1 tl)
             end
         in
         match response with
@@ -176,13 +198,7 @@ Section Query.
     | InlineFragment t φ => GenTree.Node 4 (GenTree.Leaf (None, t, emptym) :: [seq (tree_of_query subquery) | subquery <- φ])
     end.
 
- (* Equations get_subqueries : seq (option Query) -> seq Query :=
-    {
-      get_subqueries [::] := [::];
-      get_subqueries ((Some q) :: tl) := q :: get_subqueries tl;
-      get_subqueries (None :: tl) := get_subqueries tl
-    }.
-*)
+
 
   Fixpoint get_subqueries (queries : seq (option Query)) : seq Query :=
     match queries with
@@ -208,59 +224,6 @@ Section Query.
       | _ => None
     end.
 
-  (*
-  Equations query_of_tree (tree : GenTree.tree (option Name * Name * {fmap Name -> Vals})) : option Query :=
-    {
-      query_of_tree (GenTree.Node 0 [:: GenTree.Leaf  (None, f, α)]) := Some (SingleField f α);
-      query_of_tree (GenTree.Node 1 [:: GenTree.Leaf (Some l, f, α)]) := Some (LabeledField l f α);
-      query_of_tree (GenTree.Node 2  (GenTree.Leaf (None, f, α) :: subtree)) :=
-        Some (NestedField f α (get_subqueries [seq (query_of_tree t) | t <- subtree]));
-      
-      query_of_tree (GenTree.Node 3  (GenTree.Leaf (Some l, f, α) :: subtree)) :=
-          Some (NestedLabeledField l f α (get_subqueries [seq (query_of_tree t) | t <- subtree]));
-      
-      query_of_tree (GenTree.Node 4  (GenTree.Leaf (None, t, emptym) :: subtree)) :=
-        Some (InlineFragment t (get_subqueries [seq (query_of_tree t) | t <- subtree]));
-         
-
-      query_of_tree _ := None
-
-    }. *)
-  (*
-  Next Obligation.
-    elim: tree => //.
-    - case=> [[l f] α] => //=.
-      by rewrite query_of_tree_equation_1; constructor.
-    - case=> //=.
-      * case=> //= [| hd tl].
-          by rewrite query_of_tree_equation_2; constructor.
-        case: hd => //=.
-        case=> [[l f] α].
-        case: l => [l|].
-          by rewrite query_of_tree_equation_3; constructor.
-          case: tl.
-            by rewrite query_of_tree_equation_4; constructor.
-            by intros; rewrite query_of_tree_equation_5; constructor.
-        by intros; rewrite query_of_tree_equation_6; constructor.
-
-      * case.
-        case; [rewrite query_of_tree_equation_7; constructor| move=> hd tl].
-        case: hd.
-        case=> [[l f] α].
-        case: l => [l|]; [| by rewrite query_of_tree_equation_10; constructor].
-        case: tl; intros; rewrite ?query_of_tree_equation_8 ?query_of_tree_equation_9 ; constructor.
-        by intros; rewrite query_of_tree_equation_11; constructor.
-      * case.
-        case; [rewrite query_of_tree_equation_12; constructor| move=> hd tl].
-        case: hd.
-        case=> [[l f] α].
-        case: l => [l|]; [by rewrite query_of_tree_equation_13; constructor |].
-        case: tl; intros.
-        rewrite query_of_tree_equation_14 /= get_subqueries_equation_1.
-        constructor.
-        move=> t. apply: x1.
-        ?query_of_tree_equation_15 ; constructor.
-        by intros; rewrite query_of_tree_equation_17; constructor. *)
 
   Lemma tree_of_queryK : pcancel tree_of_query query_of_tree.
   Proof.
@@ -332,7 +295,118 @@ Section Query.
     | NestedResult name _
     | NestedListResult name _ => name
     end.
+
+
   
+
+  Fixpoint tree_of_response response : GenTree.tree (Name * option (Vals + seq Vals)) :=
+    match response with
+    | Null l => GenTree.Node 0 [:: GenTree.Leaf (l, None)]
+    | SingleResult l v => GenTree.Node 1 [:: GenTree.Leaf (l, Some (inl v))]
+    | ListResult l vs => GenTree.Node 2 [:: GenTree.Leaf (l, Some (inr vs))]
+    | NestedResult l ρ => GenTree.Node 3 (GenTree.Leaf (l, None) :: [seq tree_of_response r | r <- ρ])
+    | NestedListResult l ρs =>
+      GenTree.Node 4 (GenTree.Leaf (l, None) :: [seq GenTree.Node 5 [seq tree_of_response r | r <- ρ] | ρ <- ρs])
+    end.
+  
+  Fixpoint get_subresponses (responses : seq (option ResponseObject)) : seq ResponseObject :=
+    match responses with
+      | [::] => [::]
+      | ((Some r) :: tl) => r :: get_subresponses tl
+      | (None :: tl) => get_subresponses tl
+    end.
+
+  Definition get_subtree tree : seq (GenTree.tree (Name * option (Vals + seq Vals))) :=
+    match tree with
+    | GenTree.Node 5 st =>  st
+    | _ => [::]
+    end.
+
+
+  Equations(noind) response_tree_size (tree : GenTree.tree (Name * option (Vals + seq Vals))) : nat 
+    :=
+    {
+      response_tree_size (GenTree.Node 0 [:: GenTree.Leaf (l, None)]) := 3;
+      response_tree_size (GenTree.Node 1 [:: GenTree.Leaf (l, Some (inl v))]) := 3;
+      response_tree_size (GenTree.Node 2 [:: GenTree.Leaf (l, Some (inr vs))]) := 4 + size vs;
+      response_tree_size (GenTree.Node 3 (GenTree.Leaf (l, None) :: subtree)) := 4 + sumn [seq response_tree_size t | t <- subtree];
+      response_tree_size (GenTree.Node 4 (GenTree.Leaf (l, None) :: subtree)) :=
+          4 + 2 * size subtree + sumn [seq response_tree_size t | t <- subtree];
+      response_tree_size (GenTree.Node 5 subtree) := sumn [seq response_tree_size t | t <- subtree];
+      response_tree_size _ := 0
+    }.
+
+
+  Lemma response_tree_size_lt x s :
+    In x s ->
+    response_tree_size x <= sumn [seq response_tree_size t | t <- s].
+  Proof.
+    elim: s x => //= hd tl IH x.
+    case=> [->| Hin].
+      by ssromega.
+    move: (IH x Hin) => Hlt.
+      by ssromega.
+  Qed.
+
+   Lemma get_subtree_size_lt s :
+     sumn [seq response_tree_size t | t <- get_subtree s] <= response_tree_size s.
+   Proof.
+     case: s => //.
+     do ?[case => //].
+   Qed.
+ 
+  
+  Equations response_of_tree (tree : GenTree.tree (Name * option (Vals + seq Vals))) : option ResponseObject
+    by wf (response_tree_size tree) lt 
+    :=
+    {
+      response_of_tree (GenTree.Node 0 [:: GenTree.Leaf (l, None)]) := Some (Null l);
+      response_of_tree (GenTree.Node 1 [:: GenTree.Leaf (l, Some (inl v))]) := Some (SingleResult l v);
+      response_of_tree (GenTree.Node 2 [:: GenTree.Leaf (l, Some (inr vs))]) := Some (ListResult l vs);
+      response_of_tree (GenTree.Node 3 (GenTree.Leaf (l, None) :: subtree)) :=
+        Some (NestedResult l (get_subresponses (map_In subtree (fun t H => response_of_tree t))));
+
+
+      response_of_tree (GenTree.Node 4 (GenTree.Leaf (l, None) :: subtree)) :=
+        Some (NestedListResult l (map_In subtree (fun st H1 =>
+                                                    get_subresponses (map_In (get_subtree st) (fun t H2 => response_of_tree t)))));
+
+      response_of_tree _ := None
+
+    }.
+  Next Obligation.
+    simp response_tree_size.
+    move: (response_tree_size_lt t subtree H) => Hlt.
+      by ssromega.
+
+  Qed.
+  Next Obligation.
+    simp response_tree_size.
+    move: (response_tree_size_lt st subtree H1) => Hlt1.
+    move: (response_tree_size_lt t _ H2) => Hlt.
+    move: (get_subtree_size_lt st) => Hlt3.
+      by ssromega.
+  Qed.
+
+  Lemma tree_of_responseK : pcancel tree_of_response response_of_tree.
+  Proof.
+    move=> r.
+    elim r using ResponseObject_ind with
+        (Pl := fun rs =>
+                Forall (fun r => response_of_tree (tree_of_response r) = Some r) rs)
+        (Pl2 := fun rss =>
+                 Forall (fun rs => Forall (fun r => response_of_tree (tree_of_response r) = Some r) rs) rss) => //.
+
+    - move=> l ρ IH /=.
+      simp response_of_tree.
+      congr Some.
+  Admitted.
+
+  
+  Canonical response_eqType := EqType ResponseObject (PcanEqMixin tree_of_responseK).
+  Canonical response_choiceType := ChoiceType ResponseObject (PcanChoiceMixin tree_of_responseK).
+  Canonical response_ordType := OrdType ResponseObject (PcanOrdMixin tree_of_responseK).
+
   
 End Query.
 
@@ -345,3 +419,7 @@ Arguments InlineFragment [Name Vals].
 
 Arguments ResponseObject [Name Vals].
 Arguments Null [Name Vals].
+Arguments SingleResult [Name Vals].
+Arguments ListResult [Name Vals].
+Arguments NestedResult [Name Vals].
+Arguments NestedListResult [Name Vals].

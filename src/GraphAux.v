@@ -44,8 +44,8 @@ Section GraphAux.
 
   (** Get all neighbours of a node irrespective of the field in the edge 
       connecting the two **)
-  Definition neighbours graph (u : node) : {fset node} :=
-    fset (foldr (fun e acc =>
+  Definition neighbours graph (u : node) : seq node :=
+    undup (foldr (fun e acc =>
                    let: (u', _, v) := e in
                    if u' == u then
                      v :: acc
@@ -57,8 +57,8 @@ Section GraphAux.
 
   (** Get all neighbours of a node that are linked via an edge with a given
       field. **)
-  Definition neighbours_with_field graph (u : node) (f : fld) : {fset node} :=
-    fset [seq (edge_target edge) |  edge <- graph.(E) & ((edge_source edge == u) && (edge_field edge == f))].
+  Definition neighbours_with_field graph (u : node) (f : fld) : seq node :=
+    undup [seq (edge_target edge) |  edge <- graph.(E) & ((edge_source edge == u) && (edge_field edge == f))].
 
 
   (** 

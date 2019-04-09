@@ -114,7 +114,56 @@ Section QueryAux.
     move: IH; rewrite /negb. case: ifP=> //. rewrite Hhas. done.
   Qed.
 
- 
+  
+  Definition partial_response_eq (r1 r2 : @ResponseObject Name Vals) : bool :=
+    match r1, r2 with
+    | (SingleResult l v), (SingleResult l' v') => (l == l') && (v == v')
+    | (ListResult l v), (ListResult l' v') => (l == l') && (v == v')
+    | (Null l), (Null l') => l == l'
+    | (NestedResult l _), (NestedResult l' _) => l == l' 
+    | (NestedListResult l _), (NestedListResult l' _) => l == l'   
+    | _, _ => false
+    end.
+
+
+   Equations is_non_redundant__ρ response : bool :=
+    {
+      is_non_redundant__ρ (NestedResult _ ρ)  := are_non_redundant__ρ ρ;
+      is_non_redundant__ρ (NestedListResult _ ρs) := all are_non_redundant__ρ ρs;
+      is_non_redundant__ρ _ := true
+                             
+    }
+  where are_non_redundant__ρ (responses : seq (@ResponseObject Name Vals)) : bool :=
+    {
+      are_non_redundant__ρ [::] := true;
+      are_non_redundant__ρ (hd :: tl)
+        with has (partial_response_eq hd) tl :=
+        {
+        | true := false;
+        | _ := (is_non_redundant__ρ hd) && are_non_redundant__ρ tl
+             
+        }
+    }.
+
+   Lemma are_non_redundant__ρ_uniq s :
+     are_non_redundant__ρ s -> uniq s.
+   Proof.
+     elim: s => //= hd tl IH.
+     case Hhas: has => //= /andP [Hnr Hnrs].
+     apply/andP; split; last by apply: IH.
+     apply/memPn => y Hin.
+     move/hasPn : Hhas => /(_ y Hin).
+     case: hd Hnr => // [l | l v | l vs | l ρ | l ρs] _ /=; case: y {Hin} => //.
+     - by move=> l' /eqP Hneq; apply/eqP; case => Hcontr; rewrite Hcontr in Hneq.
+     - by move=> l' v'; rewrite negb_and => /orP [/eqP Heq | /eqP Heq];
+       apply/eqP; case => Hcontr1 Hcontr2; rewrite ?Hcontr1 ?Hcontr2 /= in Heq.
+     - by move=> l' v'; rewrite negb_and => /orP [/eqP Heq | /eqP Heq];
+       apply/eqP; case => Hcontr1 Hcontr2; rewrite ?Hcontr1 ?Hcontr2 /= in Heq.
+     - by move=> l' χ /eqP Hneq; apply/eqP; case => Hcontr; rewrite Hcontr in Hneq.
+     - by move=> l' χ /eqP Hneq; apply/eqP; case => Hcontr; rewrite Hcontr in Hneq.
+   Qed.
+      
+       
 End QueryAux.
 
 

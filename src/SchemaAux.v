@@ -618,6 +618,7 @@ Section SchemaAux.
     move/is_union_type_E => [u [mbs Hlook]].
       by simp get_possible_types; rewrite /union_members Hlook.
   Qed.
+
 (*
   Lemma in_possible_types_E t ty :
     t \in get_possible_types ty ->

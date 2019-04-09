@@ -20,6 +20,8 @@ Require Import GraphConformance.
 
 Require Import NRGTNF.
 
+Require Import SeqExtra.
+
 Section ValidFragments.
 
   Variables N Name Vals : ordType.
@@ -62,7 +64,20 @@ Section ValidFragments.
     simp has_valid_fragments.
     by rewrite Hobj /= => /andP [/eqP].
   Qed.
-  
 
-  
+
+  Lemma wf_inline_with_valid_fragments_is_same_or_subtype schema ty t φ :
+    query_conforms schema ty (InlineFragment t φ) ->
+    has_valid_fragments schema ty (InlineFragment t φ) ->
+    t = ty \/ t \in get_possible_types schema ty.
+  Proof.
+    rewrite /query_conforms => /and4P [Hty Hspread _ _].
+    simp has_valid_fragments; case Hscope : is_object_type => //= /andP.
+    - by case=> /eqP Heq _; left.
+    - move=> [/orP [/eqP Heq | /get_possible_types_objectE Ht] _]; [by left | right].
+      move: Hspread; rewrite /is_fragment_spread_possible.
+      rewrite Ht.
+      apply: seq1I_N_nil.
+  Qed.
+      
 End ValidFragments.

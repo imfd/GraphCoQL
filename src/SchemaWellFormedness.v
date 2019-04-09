@@ -82,6 +82,14 @@ Section WellFormedness.
    Qed.
 
 
+   (* Lemma is_subtype_is_same_or_in_possible_types sch (ty ty' : type) :
+     reflect (ty = ty' \/ ty.(tname) \in get_possible_types sch ty')
+             (is_subtype sch  ty ty').
+   Proof.
+     apply: (iffP idP).
+     - move/subtypeP; case => //.
+       * by intros; left.
+       * move=> n n' Hdecl. *)
  
      
          

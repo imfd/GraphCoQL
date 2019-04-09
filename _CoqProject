@@ -19,9 +19,11 @@
 ./src/Query.v
 ./src/QueryAux.v
 ./src/QueryConformance.v
-./src/QuerySemantic.v
+
 ./src/NRGTNF.v
 ./src/ValidFragments.v
 ./src/QueryRewrite.v
+
+./src/QuerySemantic.v
 ./src/QueryEq.v
 ./src/Example.v

@@ -938,7 +938,7 @@ Section QueryRewrite.
   Proof.
     elim: get_possible_types => //= hd tl IH.
     simp remove_redundancies => /=.
-      
+     
   Admitted.
 
     
@@ -1006,10 +1006,6 @@ Section QueryRewrite.
   Qed.
   
       
-  Definition have_same_shape qs qs' :=
-    (all is_field qs /\ all is_field qs') \/
-    (all is_inline_fragment qs /\ all is_inline_fragment qs').
-
 
   Lemma γ__φ_preserves_grounded schema ty flt qs :
     are_grounded_2 schema ty qs ->
@@ -1026,22 +1022,6 @@ Section QueryRewrite.
 
  
 
-      
-  Lemma remove_redundancies_preserves_grounded_cat schema ty qs qs' :
-    all (query_conforms schema ty) qs ->
-    all (query_conforms schema ty) qs' ->
-    are_grounded_2 schema ty qs ->
-    are_grounded_2 schema ty qs' ->
-    are_non_redundant qs' ->
-    are_grounded_2 schema ty (remove_redundancies (qs ++ qs')).
-  Proof.
-    elim: qs qs' => //=.
-    - move=> qs' _ Hqsc _ Hg Hnr.
-        by rewrite non_redundant_eq_remove.
-        
-    - move=> hd tl IH qs'.
-      all_cons => [Hqc Hqsc] Hqsc' Hg Hg' Hnr.
-  Abort.
 
   Lemma are_grounded_nil {schema ty} : are_grounded_2 schema ty [::]. Proof. done. Qed.
   Lemma are_non_redundant_nil : @are_non_redundant Name Vals [::]. Proof. done. Qed.
@@ -1320,14 +1300,7 @@ Section QueryRewrite.
     by rewrite get_possible_types_objectE // seq1I Hin.
   Qed.
 
-  Lemma imfset_on_Nfset0_N_fset0 {A B : ordType} (xs : {fset A}) (f : A -> B) :
-    xs != fset0 ->
-    imfset f xs != fset0.
-  Proof.
-    elim/fset_ind: xs => //= hd tl _ _ Hne.
-    by rewrite imfsetU1 fset1UNfset0.
-  Qed.
-
+ 
   Lemma map_N_nil {A B : eqType} (xs : seq A) (f : A -> B) :
     xs != [::] ->
     map f xs != [::].

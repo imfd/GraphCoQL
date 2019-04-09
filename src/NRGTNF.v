@@ -16,8 +16,6 @@ Require Import SchemaAux.
 
 Require Import QueryConformance.
 
-Require Import CpdtTactics.
-
 Require Import SeqExtra.
 
 Section NRGTNF.
@@ -334,8 +332,7 @@ Section NRGTNF.
         }
     }.
 
-
-      
+  
 
 
 

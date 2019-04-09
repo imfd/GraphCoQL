@@ -188,6 +188,13 @@ Section Conformance.
       by move: (aux_root_query_type H).
   Qed.
 
+  Lemma node_in_graph_has_object_type schema (graph : conformedGraph schema) :
+    forall u, u \in graph.(nodes) -> is_object_type schema u.(type).
+  Proof.
+    apply/nodes_have_object_typeP.
+    by case: graph.
+  Qed.
+
 End Conformance.
 
 Arguments conformedGraph [Name Vals]. 
