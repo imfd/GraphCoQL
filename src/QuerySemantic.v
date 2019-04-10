@@ -211,6 +211,21 @@ Section QuerySemantic.
         - by move=> l l' _ _ _ _ _ l2 i /eqP -> /eqP.
       Qed.
 
+      Lemma indexed_β_eq flt s i :
+        has (fun r => partial_response_eq flt r) s = false ->
+        indexed_β_filter flt s i = [::].
+      Proof.
+        elim: s => // hd tl IH /hasPn.
+        case: hd => // [l | l v | l vs | l ρ | l ρs] Hhas; simp indexed_β_filter => /=; case: flt IH Hhas => //.
+        
+        all: do ?[by intros=> /=; apply: IH; apply/hasPn => x Hin; apply: Hhas; apply: mem_tail].
+        
+        move=> l' χ IH Hhas /=.
+        case: eqP => Heq //=.
+        move: (Hhas (NestedListResult l ρs) (mem_head (NestedListResult l ρs) _)) => /= /eqP.
+          by rewrite Heq.
+            by apply: IH; apply/hasPn => x Hin; apply: Hhas; apply: mem_tail.
+      Qed.
       
     End Indexed_Beta.
 
@@ -274,10 +289,27 @@ Section QuerySemantic.
         rewrite /partial_response_eq => /eqP.
         by case: eqP => //= ->.
       Qed.
-      
+
+       Lemma β_filter_eq flt s :
+         has (fun r => partial_response_eq flt r) s = false ->
+         β_filter flt s = [::].
+       Proof.
+         elim: s => // hd tl IH /hasPn.
+         case: hd => // [l | l v | l vs | l ρ | l ρs] Hhas; simp β_filter; case: flt IH Hhas => //.
+         all: do ?[by intros; simp β; rewrite cat0s IH //;
+              apply/hasPn => x Hin; apply: Hhas; apply: mem_tail].
+
+         move=> l' χ IH Hhas; simp β.
+         case: eqP => //= Heq.
+         - move: (Hhas (NestedResult l ρ) (mem_head (NestedResult l ρ) _)) => /= /eqP.
+             by rewrite Heq.
+         - apply: IH; apply/hasPn=> x Hin.
+             by apply: Hhas; apply: mem_tail.
+       Qed.
+  
     End Beta.
 
-        Section Gamma.
+    Section Gamma.
 
       (**
          γ : ResponseObject -> ResponseObject -> bool
@@ -303,14 +335,7 @@ Section QuerySemantic.
          where matching responses would return an ϵ result (empty string) but here 
          these are deleted.
        **)
-      (*Equations γ_filter (flt : @ResponseObject Name Vals) (responses : seq.seq (@ResponseObject Name Vals)) : seq.seq (@ResponseObject Name Vals) :=
-        {
-          γ_filter flt nil := nil;
-          γ_filter flt (cons hd tl) <= γ flt hd => {
-            γ_filter flt (cons hd tl) true => γ_filter flt tl;
-            γ_filter flt (cons hd tl) false => cons hd (γ_filter flt tl)
-          }
-        }.*)
+      
 
       Definition γ_filter (flt : @ResponseObject Name Vals) (responses : seq (@ResponseObject Name Vals)) : seq (@ResponseObject Name Vals) :=
         [seq r <- responses | ~~partial_response_eq flt r].
@@ -320,6 +345,12 @@ Section QuerySemantic.
 
       (** Auxiliary Lemmas **)
 
+      Lemma γ_filter_all flt rs :
+        all (fun r => ~~partial_response_eq flt r) (γ_filter flt rs).
+      Proof.
+          by apply/allP=> x; rewrite mem_filter => /andP [H].
+      Qed.
+      
       Lemma γ_responses_size_reduced (lst : seq.seq ResponseObject) (r : ResponseObject) :
         responses_size (γ_filter r lst) <= responses_size lst.
       Proof.
@@ -340,11 +371,62 @@ Section QuerySemantic.
         by rewrite IH.
       Qed.
 
+      Lemma γ_filter_eq flt s :
+        has (fun r => partial_response_eq flt r) s = false ->
+        γ_filter flt s = s.
+      Proof.
+        elim: s => // hd tl IH /hasPn H /=.
+        case: ifP => // Heq.
+        rewrite IH //.
+        apply/hasPn => x Hin.
+          by apply: H; apply: mem_tail.
+        have Hin : hd \in hd :: tl by apply: mem_head.
+          by move: (H hd Hin); rewrite Heq.
+      Qed.
+
+      Lemma γ_filter_same_hasN flt s :
+        γ_filter flt s = s ->
+        forall r, r \in s -> ~~partial_response_eq flt r.
+      Proof.
+        move=> <-.
+          by move=> r; rewrite /γ_filter mem_filter => /andP [H].
+      Qed.
+  
       Lemma γ_filter_cat flt s1 s2 :
         γ_filter flt (s1 ++ s2) = γ_filter flt s1 ++ γ_filter flt s2.
       Proof.
         by rewrite /γ_filter filter_cat. 
       Qed.
+
+      Lemma γ_filter_swap flt1 flt2 s :
+        γ_filter flt1 (γ_filter flt2 s) = γ_filter flt2 (γ_filter flt1 s).
+      Proof.
+        elim: s => //= hd tl IH.
+        case: ifP => Hpeq /=;
+        case: ifP => Hpeq2 /=.
+        
+        all: do ?[by rewrite Hpeq IH].
+        all: do ?[by rewrite IH].
+      Qed.
+
+      Lemma filter_preserves_non_redundancy flt responses :
+        are_non_redundant__ρ responses ->
+        are_non_redundant__ρ (γ_filter flt responses).
+      Proof.
+        elim: responses => //= hd tl IH.
+        case Hhas: has => //=.
+        move/andP=> [Hnr Hnrtl].
+        case: ifP => //; last first.
+          by move=> _; apply: IH => //=.
+        rewrite are_non_redundant__ρ_equation_2.
+        case Hhas': has => //=.  
+        move/negbT: Hhas => /hasPn Hhas.
+        move/hasP: Hhas' => [q].
+        rewrite mem_filter => /andP [Hneq Hin].
+          by move: (Hhas q Hin) => /negbTE ->.
+        by move=> _; apply/andP; split => //; apply IH.
+      Qed.
+
       
     End Gamma.
     
@@ -404,6 +486,23 @@ Section QuerySemantic.
   Qed.
 
 
+  Definition χ__ρ response responses :=
+    match response with
+    | NestedResult l ρ => NestedResult l (collect (ρ ++ (β_filter (NestedResult l ρ) responses)))
+    | NestedListResult l ρs =>
+      (NestedListResult l
+         (indexed_map ρs             
+             (fun i r (H : In r ρs) =>
+                (collect (r ++ (indexed_β_filter (NestedListResult l ρs) responses i))))))
+    | _ => response
+    end.
+
+
+  Lemma collect_χ__ρ r rs :
+    collect (r :: rs) = (χ__ρ r rs) :: collect (γ_filter r rs).
+  Proof.
+    by case_response r; rewrite /χ__ρ; simp collect.
+  Qed.
 
   Lemma collect_nr_with_no_eq l ρ tl :
     all (fun r => ~~partial_response_eq (NestedResult l ρ) r) tl ->
@@ -418,9 +517,9 @@ Section QuerySemantic.
   Lemma indexed_map_In_eq l :
     forall ρ n tl χ,
       all (fun r => ~~partial_response_eq (NestedListResult l χ) r) tl ->
-    indexed_map_In ρ
-    (fun (i : nat) (r : seq ResponseObject) (_ : In r ρ) => collect (r ++ indexed_β_filter (NestedListResult l χ) tl i)) n =
-    indexed_map_In ρ (fun (_ : nat) (r : seq ResponseObject) (_ : In r ρ) => collect r) n.
+      indexed_map_In ρ
+      (fun (i : nat) (r : seq ResponseObject) (_ : In r ρ) => collect (r ++ indexed_β_filter (NestedListResult l χ) tl i)) n =
+      indexed_map_In ρ (fun (_ : nat) (r : seq ResponseObject) (_ : In r ρ) => collect r) n.
   Proof.
     elim=> // hd tl IH n tl0 χ Hneq; simp indexed_map_In.
     rewrite indexed_β_nil // cats0.
@@ -441,88 +540,7 @@ Section QuerySemantic.
   Qed.
 
   
-  Lemma filter_preserves_non_redundancy flt responses :
-    are_non_redundant__ρ responses ->
-    are_non_redundant__ρ (γ_filter flt responses).
-  Proof.
-    elim: responses => //= hd tl IH.
-    case Hhas: has => //=.
-    move/andP=> [Hnr Hnrtl].
-    case: ifP => //; last first.
-      by move=> _; apply: IH => //=.
-    rewrite are_non_redundant__ρ_equation_2.
-    case Hhas': has => //=.  
-    move/negbT: Hhas => /hasPn Hhas.
-    move/hasP: Hhas' => [q].
-    rewrite mem_filter => /andP [Hneq Hin].
-    by move: (Hhas q Hin) => /negbTE ->.
-    by move=> _; apply/andP; split => //; apply IH.
-  Qed.
-
-  
-    
-  Lemma γ_filter_eq flt s :
-    has (fun r => partial_response_eq flt r) s = false ->
-    γ_filter flt s = s.
-  Proof.
-    elim: s => // hd tl IH /hasPn H /=.
-    case: ifP => // Heq.
-    rewrite IH //.
-    apply/hasPn => x Hin.
-      by apply: H; apply: mem_tail.
-    have Hin : hd \in hd :: tl by apply: mem_head.
-      by move: (H hd Hin); rewrite Heq.
-  Qed.
-
-  
-  Lemma β_filter_eq flt s :
-    has (fun r => partial_response_eq flt r) s = false ->
-    β_filter flt s = [::].
-  Proof.
-    elim: s => // hd tl IH /hasPn.
-    case: hd => // [l | l v | l vs | l ρ | l ρs] Hhas; simp β_filter; case: flt IH Hhas => //.
-    all: do ?[by intros; simp β; rewrite cat0s IH //;
-              apply/hasPn => x Hin; apply: Hhas; apply: mem_tail].
-
-    move=> l' χ IH Hhas; simp β.
-    case: eqP => //= Heq.
-    - move: (Hhas (NestedResult l ρ) (mem_head (NestedResult l ρ) _)) => /= /eqP.
-      by rewrite Heq.
-    - apply: IH; apply/hasPn=> x Hin.
-      by apply: Hhas; apply: mem_tail.
-  Qed.
-
-  Lemma indexed_β_eq flt s i :
-     has (fun r => partial_response_eq flt r) s = false ->
-     indexed_β_filter flt s i = [::].
-  Proof.
-    elim: s => // hd tl IH /hasPn.
-    case: hd => // [l | l v | l vs | l ρ | l ρs] Hhas; simp indexed_β_filter => /=; case: flt IH Hhas => //.
-
-    all: do ?[by intros=> /=; apply: IH; apply/hasPn => x Hin; apply: Hhas; apply: mem_tail].
-
-    move=> l' χ IH Hhas /=.
-    case: eqP => Heq //=.
-    move: (Hhas (NestedListResult l ρs) (mem_head (NestedListResult l ρs) _)) => /= /eqP.
-      by rewrite Heq.
-    by apply: IH; apply/hasPn => x Hin; apply: Hhas; apply: mem_tail.
-  Qed.
-
-
- (* Lemma indexed_map_In_eq_2 s s2 flt:
-    are_non_redundant__ρ s2 ->
-    (forall (i : nat) (r : seq ResponseObject),
-       In r s ->
-       are_non_redundant__ρ (r ++ indexed_β_filter flt s2 i) ->
-       collect (r ++ indexed_β_filter flt s2 i) = r ++ indexed_β_filter flt s2 i) ->
-    all (fun x : response_eqType Name Vals => ~~ partial_response_eq flt x) s2 ->
-    (indexed_map s
-       (fun (i : nat) (r : seq ResponseObject) (_ : In r s) => collect (r ++ indexed_β_filter flt s2 i))) =
-    s.
-  Proof.
-    elim: s s2 => // hd tl IH s2 Hnr H Hall.
-    rewrite /indexed_map; simp indexed_map_In.
-  *)
+ 
 
   Lemma map_collect_eq flt s1 s2 i :
     has (partial_response_eq flt) s2 = false ->
@@ -579,17 +597,52 @@ Section QuerySemantic.
       by move=> Hnr; rewrite collect_non_redundant_eq.
   Qed.
     
-    
+
+  Lemma collect_all_not_eq flt ρ :
+    all (fun r => ~~partial_response_eq flt r) ρ ->
+    collect (γ_filter flt ρ) = collect ρ.
+  Proof.
+    move=> Hall; rewrite γ_filter_eq //.
+    by apply/hasPn/allP.
+  Qed.
+
+  Lemma χ__ρ_filter_preserves_not_eq flt x rs :
+    ~~partial_response_eq flt x ->
+    ~~partial_response_eq (χ__ρ flt rs) x.
+  Proof.
+    by case: flt; case: x.
+  Qed.
+
+  Lemma χ__ρ_x_preserves_not_eq flt x rs :
+    ~~partial_response_eq flt x ->
+    ~~partial_response_eq flt (χ__ρ x rs).
+  Proof.
+    by case: flt; case: x.
+  Qed.
+
+                  
+  Lemma collect_preserves_all_not_eq flt ρ :
+     all (fun r => ~~partial_response_eq flt r) ρ ->
+     all (fun r => ~~partial_response_eq flt r) (collect ρ).
+  Proof.
+    elim: ρ => //= hd tl IH /andP [Hneq Htl].
+    rewrite collect_χ__ρ /=; apply/andP; split; last first.
+    rewrite collect_all_not_eq; [apply: (IH Htl)| ].
+    apply/allP => x Hin.
+    move/allP: Htl => /(_ x Hin) Hneq'.
+    rewrite partial_response_eqC in Hneq.
+    apply (partial_response_eq_trans Hneq Hneq').
+    by apply: χ__ρ_x_preserves_not_eq.
+  Qed.
+  
   Lemma in_collect_γ r flt ρ :
     r \in collect (γ_filter flt ρ) ->
     ~~partial_response_eq flt r.
   Proof.
-    elim: ρ flt => //= hd tl IH flt.
-    case: ifP => Heq; last by apply: IH.
-    case: hd Heq => //= [l | l v | l vs | l ρ | l ρs] Heq; simp collect; rewrite inE => /orP [/eqP -> // | Hin];
-    apply: IH.
-    
-  Admitted.
+    move: r; apply/allP.
+    apply: collect_preserves_all_not_eq.
+      by apply: γ_filter_all.
+  Qed.
   
   Lemma collect_are_non_redundant ρs :
     are_non_redundant__ρ (collect ρs).
@@ -598,7 +651,12 @@ Section QuerySemantic.
   Admitted.
     
     
-    
+  Hint Resolve collect_are_non_redundant.
+  Lemma collect_collect_same (r : seq (@ResponseObject Name Vals)) :
+    collect r = collect (collect r).
+  Proof.
+    rewrite [collect (collect r)]collect_non_redundant_eq //.
+  Qed.
  
 
 
@@ -697,109 +755,26 @@ Section QuerySemantic.
       case: ohead => [fld|] //=; rewrite andbT; simp is_non_redundant__ρ; apply: H => //; exact: (NT ty).
       rewrite andbT; simp is_non_redundant__ρ.
       apply/allP => x /mapP [r Hin ->]; apply: H; exact: ty.
-
-     - intros.
-       apply: collect_are_non_redundant.
   Qed.
 
   Lemma eval_queries_are_non_redundant schema g u φ :
     are_non_redundant__ρ (eval_queries schema g u φ).
   Proof.
-      by case: φ => //= hd tl; apply: collect_are_non_redundant.
+      by case: φ => //= hd tl. 
   Qed.
       
-  Lemma gamma_filter_single_result_null f f' v (lst : seq (@ResponseObject Name Vals)) :
-    γ_filter (SingleResult f v) ((Null f') :: lst) = (Null f') :: γ_filter (SingleResult f v) lst. Proof. done. Qed.
-
   
-  Lemma collect_single_result l v :
-    collect [:: (SingleResult l v)] = [:: (SingleResult l v)].
-  Proof. done. Qed.
 
-  Lemma collect_null_result l :
-    collect [:: Null l] = [:: Null l].
-  Proof. done. Qed.
-
-
-  Lemma γ_filter_swap flt1 flt2 s :
-    γ_filter flt1 (γ_filter flt2 s) = γ_filter flt2 (γ_filter flt1 s).
-  Proof.
-    elim: s => //= hd tl IH.
-    case: ifP => Hpeq /=;
-    case: ifP => Hpeq2 /=.
-
-    all: do ?[by rewrite Hpeq IH].
-    all: do ?[by rewrite IH].
-  Qed.
-  
-  Lemma collect_γ_filter flt lst :
-    γ_filter flt (collect (γ_filter flt lst)) = collect (γ_filter flt lst).
-  Proof.
-  Admitted.
-
-
-  Hint Resolve collect_are_non_redundant.
-  Lemma collect_collect_same (r : seq (@ResponseObject Name Vals)) :
-    collect r = collect (collect r).
-  Proof.
-    rewrite [collect (collect r)]collect_non_redundant_eq //.
-  Qed.
+ 
 
   Hint Resolve eval_non_redundant eval_queries_are_non_redundant.
   Lemma eval_collect_same :
     forall schema graph u query,
       eval schema graph u query = collect (eval schema graph u query).
   Proof.
-    intros; rewrite collect_non_redundant_eq //.
+    by intros; rewrite collect_non_redundant_eq.
   Qed.
-   (* apply (eval_elim
-             (fun schema g u q res =>
-                res = collect res)
-             (fun schema g u qs res =>
-                res = collect res)) => schema g u.
-    - move=> f α φ /= IH1 IH2.
-      case Hty: lookup_field_type => [rty|] //=.
-      case: rty Hty => // rty Hty.
-      case: ohead => [v|] //=.
-      rewrite collect_nr_with_no_eq //=; simp collect.
-      rewrite -IH1 //; exact: (NT rty).
-      rewrite collect_nlr_with_no_eq //=; simp collect.
-      congr cons; congr NestedListResult.
-      rewrite indexed_map_eq_map /=.
-      rewrite -map_comp /= /funcomp.
-
-      have H: (forall v : node, eval_queries schema g v φ = collect (eval_queries schema g v φ)) ->
-            forall s, [seq eval_queries schema g v φ | v <- s] =
-                 [seq collect (eval_queries schema g v φ) | v <- s].
-      move=> H; elim=> //= hd tl IH.
-        by rewrite -H IH.
-      apply: H.
-      by apply: IH2.  
-
-    - move=> l f α φ /= IH1 IH2.
-      case Hty: lookup_field_type => [rty|] //=.
-      case: rty Hty => // rty Hty.
-      case: ohead => [v|] //=.
-      rewrite collect_nr_with_no_eq //=; simp collect.
-      rewrite -IH1 //; exact: (NT rty).
-      rewrite collect_nlr_with_no_eq //=; simp collect.
-      congr cons; congr NestedListResult.
-      rewrite indexed_map_eq_map /=.
-      rewrite -map_comp /= /funcomp.
-
-      have H: (forall v : node, eval_queries schema g v φ = collect (eval_queries schema g v φ)) ->
-            forall s, [seq eval_queries schema g v φ | v <- s] =
-                 [seq collect (eval_queries schema g v φ) | v <- s].
-      move=> H; elim=> //= hd tl IH.
-        by rewrite -H IH.
-      apply: H.
-      by apply: IH2.  
-
-    all: do ?[by intros; simp collect].
-      
-    - move=> hd tl IHhd IHtl.
-      by rewrite -collect_collect_same.
-  Qed.*)
+ 
 
 
   Lemma eval_queries_collect_same schema graph u qs :
@@ -823,73 +798,120 @@ Section QuerySemantic.
     by case: eqP.
   Qed.
 
-  Lemma γ_collect_γ flt s :
-    γ_filter flt (collect (γ_filter flt s)) = collect (γ_filter flt s).
+  Lemma γ_collect_γ flt s s2 :
+    γ_filter (χ__ρ flt s2) (collect (γ_filter flt s)) = collect (γ_filter flt s).
+  Proof.
+    rewrite γ_filter_same_with_no_eq //.
+    apply: collect_preserves_all_not_eq.
+    apply/allP=> x.
+    rewrite mem_filter => /andP [Hneq _].
+    by apply: χ__ρ_filter_preserves_not_eq.
+  Qed.
+
+  Lemma γ_size_le flt s :
+    size (γ_filter flt s) <= size s.
   Proof.
     elim: s => //= hd tl IH.
-    case: flt IH => [l | l v | l vs | l ρ | l ρs] IH; case: ifP => //.
-    Admitted.
+    case: ifP => //= _.
+    by ssromega.
+  Qed.
 
-
-  
-  Lemma collect_collect_2_cat s1 s2 :
-    collect (collect s1 ++ s2) = collect (s1 ++ s2).
+  Lemma γ_filter_χ_eq flt s1 s2 :
+    γ_filter flt s1 = γ_filter (χ__ρ flt s2) s1.
   Proof.
-    elim: s1 s2 => // hd tl IH s2.
-    case_response hd; simp collect; do ? rewrite -/(cat _ _).
-    congr cons.
-    rewrite 2!γ_filter_cat γ_collect_γ.
+    elim: s1 => //= hd tl.
+      by case_response flt; rewrite /χ__ρ; case: ifP.
+  Qed. 
+
+
     
-    (*
-    elim: s2 s1 => // [| hd tl IH] s1.
-    - by rewrite 2!cats0 -collect_collect_same.
-    - 
-      case: s1 => //= hd' tl'.
-      case: hd' => //.
-      move=> l; rewrite ?collect_equation_2 -/(cat _ _).
+  Lemma χ__ρ_cat r s1 s2 :
+    χ__ρ r (s1 ++ s2) = χ__ρ (χ__ρ r s1) s2.
+  Proof.
+    elim: s1 => //=.
+    rewrite {3}/χ__ρ.
+    case: r => // [l ρ | l ρs].
+    rewrite β_filter_nil // cats0.
+    case: s2 => //= [| hd tl].
+    rewrite ?β_filter_nil // 2!cats0.
+      by rewrite -collect_collect_same.
+  Admitted.
+                          
+    
+  Lemma χ__ρ_eq r s1 s2 s3 :
+    all (fun r' => ~~partial_response_eq r r') s1 ->
+    χ__ρ (χ__ρ r s2) (s1 ++ s3) = χ__ρ r (s2 ++ s3).
+  Proof.
+    elim: s1 => // [_ | hd tl IH H].
+    - rewrite cat0s.
+      
+  Admitted.
+
+ 
+           
+  Lemma collect_collect_2_cat :
+    forall n s1 s2,
+      n >= size s1 ->
+      collect (collect s1 ++ s2) = collect (s1 ++ s2).
+  Proof.
+    
+    elim=> // [| n IH].
+    - by case.
+    - case => //= hd tl s2; rewrite ltnS => Hlt.     
+      rewrite 2!collect_χ__ρ cat_cons collect_χ__ρ.
+      rewrite γ_filter_cat.
+      rewrite γ_collect_γ.
+      rewrite IH; last first.
+      move: (γ_size_le hd tl) => H.
+        by ssromega.
+      rewrite -γ_filter_χ_eq -γ_filter_cat.
+      congr cons.
+      by apply: χ__ρ_eq; apply: collect_preserves_all_not_eq; apply: γ_filter_all. 
+  Qed.
+ 
+
+  Lemma collect_weird s1 s2 s3 :
+    are_non_redundant__ρ s1 ->
+    are_non_redundant__ρ s2 ->
+    are_non_redundant__ρ s3 ->
+    collect (s1 ++ collect (s2 ++ s3)) = collect (collect (s1 ++ s2) ++ s3).
+  Proof.
+    elim: s1 => //= [| hd tl IH].
+    - move=> _ Hnr2 Hnr3.
+      by rewrite -collect_collect_same [collect s2]collect_non_redundant_eq.
+    - case Hhas : has => //= /andP [Hnr1 Hnrs1] Hnr2 Hnr3.
+      move: Hhas Hnr1.
+      case_response hd => Hhas Hnr1; simp collect; rewrite -/(cat _ _).
       congr cons.
       rewrite 2!γ_filter_cat.
-      
-
-  Abort. *)
-    
-      
-  Lemma collect_collect_3_cat s1 s2 s3 :
-    collect (collect(s1 ++ s2) ++ s3) =
-    collect (s1 ++ collect(s2 ++ s3)).
-  Proof.
-    elim: s1 s2 s3 => // [| hd tl IH] s2 s3.
-    rewrite 2!cat0s.
-    elim: s2 s3 => //=.
-    - by move=> s3; simp collect; rewrite cat0s -collect_collect_same.
-    - move=> hd tl IH s3.
+      rewrite (γ_collect_γ (Null l)).
   Abort.
 
+
+      
   Lemma eval_collect_cat schema g u s1 s2 :
     eval_queries schema g u (s1 ++ s2) =
     collect (eval_queries schema g u s1 ++ eval_queries schema g u s2).
   Proof.
-    elim: s2 s1 => // [ /=| hd tl IH] s1.
-    - by rewrite 2!cats0 -eval_queries_collect_same.
+    elim: s1 s2 => [ /= | hd tl IH] s2.
+    - by apply: eval_queries_collect_same.
+    - rewrite cat_cons /= IH.
 
-    -
-
+      
+  Admitted.
 
       
   Lemma collect_eval_cat schema g u s1 s2 :
     collect (eval_queries schema g u s1 ++ eval_queries schema g u s2) =
     eval_queries schema g u (s1 ++ s2).
   Proof.
-    elim: s2 s1 => //=.
-    - intros; rewrite !cats0.
-        by rewrite -eval_queries_collect_same.
+    elim: s2 s1 => //= [| hd tl IH] s1.
+    - by rewrite !cats0 -eval_queries_collect_same.
 
-    - move=> hd tl IH s1.
-      rewrite [RHS]eval_queries_collect_same.
+    - elim: s1 => //= [ | hd' tl' IH'].
+        by rewrite [collect(collect _)]collect_non_redundant_eq //.
+        
       
-    elim: s1 s2 => //=.
-    - move=> s2. by rewrite -eval_queries_collect_same.
-    - move=> hd tl IH s2.
   Admitted.
   
   Lemma implementation_nil_for_object schema ty :
