@@ -423,3 +423,6 @@ Arguments SingleResult [Name Vals].
 Arguments ListResult [Name Vals].
 Arguments NestedResult [Name Vals].
 Arguments NestedListResult [Name Vals].
+
+
+Arguments rname [Name Vals].

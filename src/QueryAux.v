@@ -12,6 +12,8 @@ Require Import Ssromega.
 
 Section QueryAux.
 
+  Ltac case_response r := case: r => [l | l v | l vs | l ρ | l ρs].
+    
   Variables Name Vals : ordType.
 
   Implicit Type queries : seq (@Query Name Vals).
@@ -125,6 +127,26 @@ Section QueryAux.
     | _, _ => false
     end.
 
+  Lemma partial_response_eqC :
+    commutative partial_response_eq.
+  Proof.
+    case=> [l | l v | l vs | l ρ | l ρs];
+    case=> [l' | l' v' | l' vs' | l' χ | l' χ] //=;
+    case: eqP => [-> /= |].
+    case: eqP => [-> /= |].
+    do ? case eqP => //.
+    by case: eqP => //=; case: eqP => // ->.
+  Admitted.
+
+
+    
+   Lemma partial_response_eq_trans r1 r2 r3 :
+    ~~partial_response_eq r1 r2 ->
+    ~~partial_response_eq r2 r3 ->
+    ~~partial_response_eq r1 r3.
+   Proof.
+     Admitted.
+     
 
    Equations is_non_redundant__ρ response : bool :=
     {
@@ -171,3 +193,4 @@ Arguments partial_query_eq [Name Vals].
 Arguments response_size [Name Vals].
 Arguments is_field [Name Vals].
 Arguments is_inline_fragment [Name Vals].
+
