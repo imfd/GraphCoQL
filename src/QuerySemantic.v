@@ -308,6 +308,7 @@ Section QuerySemantic.
          by apply: IH => x Hin; apply: Hall; apply: mem_tail.       
        Qed.
 
+      
        (*
        Lemma β_filter_nr rs l ρ χ :
          β_filter (NestedResult l ρ) rs = β_filter (NestedResult l χ) rs.
@@ -435,6 +436,22 @@ Section QuerySemantic.
         elim: s1 => //= hd tl IH Heq.
       Admitted.
 
+      Lemma γ_size_le flt s :
+        size (γ_filter flt s) <= size s.
+      Proof.
+        elim: s => //= hd tl IH.
+        case: ifP => //= _.
+          by ssromega.
+      Qed.
+
+      
+      Lemma γ_size_lt flt s n :
+        size s < n.+1 ->
+        size (γ_filter flt s) <= n.
+      Proof.
+          by move=> Hlt; move: (γ_size_le flt s) => Hleq; ssromega.
+      Qed.
+  
       
     End Gamma.
     
@@ -861,13 +878,7 @@ Section QuerySemantic.
     apply/allP => x; rewrite mem_filter => /andP [Hneq _].
   Admitted.
 
-  Lemma γ_size_le flt s :
-    size (γ_filter flt s) <= size s.
-  Proof.
-    elim: s => //= hd tl IH.
-    case: ifP => //= _.
-    by ssromega.
-  Qed.
+ 
 
   Lemma γ_filter_χ_eq flt s1 s2 :
     γ_filter flt s1 = γ_filter (χ__ρ flt s2) s1.
@@ -1047,7 +1058,7 @@ Section QuerySemantic.
     elim=> [| n IH] flt s1.
     - by rewrite leqn0 => /eqP /size0nil -> /=; simp collect.
     - case: s1 => //= hd tl Hlt.
-      case_response hd; simp collect => /=.
+      case_response hd; simp collect => /=;
       case: ifP => Heq; simp collect.
       congr cons.
       rewrite -(IH (Null l) (γ_filter flt _)).
@@ -1055,29 +1066,46 @@ Section QuerySemantic.
       rewrite γ_filter_swap.
       rewrite (IH (Null l) (γ_filter (Null l) (γ_filter flt tl))).
         by rewrite /γ_filter filter_id.
-      all: do ?[apply: γ_size_le].
-      move: (γ_size_le (Null l) (γ_filter flt tl)) => Hltn.
-      move: (γ_size_le flt tl) => Hltn'; ssromega.
-      move: (γ_size_le (Null l) tl) => Hltn'; ssromega.
-      
-      move: (γ_size_le flt (collect (γ_filter (Null l) tl))) => Hltn.
-      move: (collect_size_leq (γ_filter (Null l) tl)) => Hltn'. 
-      move: (γ_size_le (Null l) tl) => Hltn''; ssromega.
-
-      move/negbFE: Heq; rewrite /partial_response_eq.
-
+        admit.
+        admit.
+        admit.
+      move/negbFE: Heq; rewrite /partial_response_eq; case: flt => //= l' /eqP ->.
+      rewrite γ_filter_same_with_no_eq.
+      by rewrite -collect_collect_same.
+      by apply: collect_preserves_all_not_eq; apply: γ_filter_all.
 
   Admitted.
 
-  Lemma β_filter_γ_null_eq flt l s :
-    β_filter flt (γ_filter (Null l) s) = β_filter flt s.
+  Lemma β_filter_γ_Neq flt1 flt2 s :
+    (forall l ρ, ~~partial_response_eq (NestedResult l ρ) flt2) ->
+    β_filter flt1 (γ_filter flt2 s) = β_filter flt1 s.
   Proof.
-    elim: s => //= hd tl IH.
-    case: hd => //= [l' | l' ρ].
-    case: eqP => //.
-    by simp β_filter; case: eqP => //=; rewrite IH.
+    case: flt2 => // [l' _ | l' v' _ | l' vs' _ | l' χ | l' χ _];
+    elim: s => //= hd tl IH; case: hd => //= l.
+
+    all: do ?[by intros; case: ifP; simp β_filter].
+
+    all: do ?[by intros; simp β_filter; case: eqP => //= Heq; rewrite IH].
+
+    move=> ρ Hneq.
+    case: eqP => [Hcontr | /= H]; simp β_filter.
+      by move/eqP: (Hneq l [::]); rewrite Hcontr.
+    by case: eqP => //=; rewrite IH.
   Qed.
-  
+
+  Lemma β_filter_γ_Neq2 flt l ρ s :
+    l <> flt ->
+    β_filter flt (γ_filter (NestedResult l ρ) s) = β_filter flt s.
+  Proof.
+    move=> Hneq.
+    elim: s => //= hd tl IH.
+    case: hd => //= l' χ.
+    case: eqP => //= Heq; simp β_filter.
+    case: eqP => //=.
+      by rewrite -Heq => Hcontr; rewrite Hcontr in Hneq.
+      by case: eqP => //= _; rewrite IH.
+  Qed.
+
   Lemma collect_β :
     forall n flt s1,
       size s1 <= n ->
@@ -1087,23 +1115,19 @@ Section QuerySemantic.
     - by rewrite leqn0 => /eqP /size0nil -> /=; simp collect.
     - case: s1 => //= hd tl Hlt.
       case_response hd; simp collect; simp β_filter.
-      rewrite (IH flt (γ_filter _ tl)).
-        by rewrite β_filter_γ_null_eq.
-        admit.
-        admit.
-        admit.
+      all: do ?[rewrite (IH flt (γ_filter _ tl)); last by apply: γ_size_lt].
+      all: do ?[by rewrite β_filter_γ_Neq].
 
       case: eqP => //= Heq.
       rewrite Heq (β_filter_nil flt ρ (collect _)) ?cats0.
         by rewrite -collect_collect_same.
-        apply: collect_preserves_all_not_eq;  apply: γ_filter_all.
-        rewrite /partial_response_eq.
+      apply: collect_preserves_all_not_eq;  apply: γ_filter_all.
         
-        rewrite (IH flt (γ_filter _ tl)).
-        admit.
-        admit.
-  Admitted.
+      rewrite (IH flt (γ_filter _ tl)); last by apply: γ_size_lt.
+      by rewrite β_filter_γ_Neq2.
+  Qed.
 
+        
   Lemma collect_indexed_β :
     forall n flt s1 i,
       size s1 <= n ->
@@ -1121,7 +1145,38 @@ Section QuerySemantic.
       admit.
   Admitted.
 
-      
+
+  Lemma responses_size_γ_leq flt s n :
+    responses_size s < n ->
+    responses_size (γ_filter flt s) <= n.
+  Proof.
+    move=> Hlt.
+    move: (γ_responses_size_reduced s flt) => Hleq.
+    ssromega.
+  Qed.
+
+(*
+   Lemma collect_collect_cat_tail :
+    forall n s1 s2,
+      size s1 + size s2 <= n ->
+      collect (s1 ++ collect s2) = collect (s1 ++ s2).
+   Proof.
+     elim=> [| n IH] s1 s2.
+     - by rewrite leqn0 addn_eq0 => /andP [/eqP/size0nil -> /eqP/size0nil ->] /=; simp collect.
+     - case: s1 => //=.
+       * by move=> _; rewrite -collect_collect_same.
+       * move=> hd tl /= Hlt.
+         rewrite -cat1s .
+         rewrite -IH.
+         rewrite (IH tl s2).
+         rewrite IH.
+           by rewrite cat1s.
+         rewrite size_cat /= addnA add1n.
+           
+         rewrite -[X in  collect ([:: hd] ++ X)](IH tl (collect s2)).
+ *)
+  
+  Hint Resolve responses_size_γ_leq.
   Lemma collect_collect_cat_tail :
     forall n s1 s2,
       responses_size s1 <= n ->
@@ -1135,24 +1190,38 @@ Section QuerySemantic.
         by rewrite Hcontr.
     - case=> [| hd tl] s2 /= Hlt.
       * by rewrite -collect_collect_same.
-      * case: hd Hlt => [l | l v | l vs | l ρ | l ρs]; simp response_size => Hlt; simp collect;
-        congr cons;
-        rewrite ?γ_filter_cat.
-        rewrite -IH.
+      * case: hd Hlt => [l | l v | l vs | l ρ | l ρs]; simp response_size => Hlt;
+        have Htllt : responses_size tl < n by ssromega.   
+        all: do ?[simp collect; congr cons; rewrite ?γ_filter_cat].
+       
+        rewrite -IH //.
         rewrite -(IH (γ_filter (Null l) tl) (γ_filter (Null l) s2)).
           by rewrite (collect_γ (size s2)).
-          admit.
-          admit.
-          admit.
-          admit.
-          congr NestedResult.
-          rewrite !β_filter_cat !catA.
-          rewrite -IH.
-          rewrite -[RHS]IH.
+        all: do ?[by apply: responses_size_γ_leq].
+        rewrite -IH.
+        rewrite -(IH (γ_filter (SingleResult l v) tl) (γ_filter (SingleResult l v) s2)).
+          by rewrite (collect_γ (size s2)).
+        all: do ?[by apply: responses_size_γ_leq].
+
+        rewrite -IH.
+        rewrite -(IH (γ_filter (ListResult l vs) tl) (γ_filter (ListResult l vs) s2)).
+          by rewrite (collect_γ (size s2)).
+        all: do ?[by apply: responses_size_γ_leq].
+
+        congr NestedResult.
+        rewrite !β_filter_cat !catA.
+        rewrite -IH.
+        rewrite -[RHS]IH.
           by rewrite (collect_β (size s2) l).
-          admit.
-          admit.
-          admit.
+        all: do ?[rewrite responses_size_app;
+                  move: (β_responses_size_reduced l tl) => Hleqb; ssromega].
+
+         
+        rewrite -IH.
+        rewrite -(IH (γ_filter (NestedResult l ρ) tl) (γ_filter (NestedResult l ρ) s2)).
+          by rewrite (collect_γ (size s2)).
+        all: do ?[by apply: responses_size_γ_leq].
+
         congr NestedListResult.
         rewrite /indexed_map.  
         have H : forall n,
@@ -1169,11 +1238,16 @@ Section QuerySemantic.
         rewrite -IH.
         rewrite -[RHS]IH.
         rewrite (collect_indexed_β (size s2) l s2 n') //.
-        admit.
-        admit.
+        all: do ?[rewrite responses_size_app;
+                  move: (indexed_β_size_reduced l tl n') => Hleqb; ssromega].
+
           by ssromega.
-          apply: H.
-  Admitted.
+        apply: H.
+        rewrite -IH.
+        rewrite -(IH (γ_filter (NestedListResult l ρs) tl) (γ_filter (NestedListResult l ρs) s2)).
+          by rewrite (collect_γ (size s2)).
+        all: do ?[by apply: responses_size_γ_leq].
+  Qed.
   
   (* χ 
 
@@ -1324,6 +1398,11 @@ Section QuerySemantic.
     
       
 End QuerySemantic.
+
+
+Arguments γ_filter [Name Vals].
+Arguments β_filter [Name Vals].
+Arguments indexed_β_filter [Name Vals].
 
 Arguments collect [Name Vals].
 Arguments eval [Name Vals].

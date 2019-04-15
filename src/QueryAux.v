@@ -146,7 +146,8 @@ Section QueryAux.
     ~~partial_response_eq r1 r3.
    Proof.
      Admitted.
-     
+
+
 
    Equations is_non_redundant__ρ response : bool :=
     {

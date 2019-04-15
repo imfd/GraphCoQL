@@ -1554,6 +1554,9 @@ Arguments normalize [Name Vals].
 Arguments normalize_elim [Name Vals].
 Arguments normalize__φ [Name Vals].
 
+Arguments γ__φ [Name Vals].
+Arguments β__φ [Name Vals].
+
 Arguments remove_redundancies [Name Vals].
 Arguments remove_redundancies__φ [Name Vals].
 Arguments normalize_preserves_conformance [Name Vals].
