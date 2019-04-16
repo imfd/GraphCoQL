@@ -252,14 +252,14 @@ Section Query.
 
   
   (** Extractors for queries **)
-  Definition qname query : option Name :=
-    match query with
-    | SingleField name _
-    | LabeledField _ name _
-    | NestedField name _ _
-    | NestedLabeledField _ name _ _ => Some name
-    | _ => None
-    end.
+  Equations qname query (pf : forall t φ, query <> InlineFragment t φ) :  Name :=
+    {
+      qname (InlineFragment t φ) pf with pf t φ _ := {};
+      qname (SingleField f _) _ := f;
+      qname (LabeledField _ f _) _ := f;
+      qname (NestedField f _ _) _ := f;
+      qname (NestedLabeledField _ f _ _) _ := f
+    }.
 
   Definition qlabel query : option Name :=
     match query with
@@ -276,16 +276,26 @@ Section Query.
     | _ => [::]
     end.
 
-  Definition qargs query : {fmap Name -> Vals} :=
-    match query with
-    | SingleField _ α
-    | LabeledField _ _ α
-    | NestedField _ α _
-    | NestedLabeledField _ _ α _ => α
-    | _ => emptym
-    end.
+  Equations qargs query (pf : forall t φ, query <> InlineFragment t φ) :  {fmap Name -> Vals} :=
+    {
+      qargs (InlineFragment t φ) pf with pf t φ _ := {};
+      qargs (SingleField _ α) _ := α;
+      qargs (LabeledField _ _ α) _ := α;
+      qargs (NestedField _ α _) _ := α;
+      qargs (NestedLabeledField _ _ α _) _ := α
+    }.
 
-
+  
+  Equations qresponse_name query (pf : forall t φ, query <> InlineFragment t φ) :  Name :=
+    {
+      qresponse_name (InlineFragment t φ) pf with pf t φ _ := {};
+      qresponse_name (SingleField f _) _ := f;
+      qresponse_name (LabeledField l _ _) _ := l;
+      qresponse_name (NestedField f _ _) _ := f;
+      qresponse_name (NestedLabeledField l _ _ _) _ := l
+    }.
+  
+  
   (** Extractors for response objects **)
   Definition rname response : Name :=
     match response with
@@ -424,5 +434,8 @@ Arguments ListResult [Name Vals].
 Arguments NestedResult [Name Vals].
 Arguments NestedListResult [Name Vals].
 
-
+Arguments qname [Name Vals].
+Arguments qargs [Name Vals].
+Arguments qsubquery [Name Vals].
+Arguments qresponse_name [Name Vals].
 Arguments rname [Name Vals].

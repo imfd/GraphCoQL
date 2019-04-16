@@ -126,162 +126,82 @@ Section QueryConformance.
      by elim: s => // hd tl' IH /=; rewrite IH.
  Qed.
  
- Equations have_same_type : @type Name -> @type Name -> bool :=
+ Equations have_same_type schema : @type Name -> @type Name -> bool :=
    {
-     have_same_type (NT rty) (NT rty') := rty == rty';
-     have_same_type (ListType rty) (ListType rty') := have_same_type rty rty';
-     have_same_type _ _ := false
+     have_same_type schema (NT rty) (NT rty')
+       with (is_scalar_type schema rty || is_enum_type schema rty) :=
+       {
+       | true := rty == rty';
+       | _ := is_composite_type schema rty'
+       };
+     have_same_type schema (ListType rty) (ListType rty') := have_same_type schema rty rty';
+     have_same_type _ _ _ := false
    }.
 
  Definition aux_queries_size (queries : seq (Name * @Query Name Vals)) :=
    queries_size [seq q.2 | q <- queries].
 
-
- Obligation Tactic := intros; rewrite /aux_queries_size /= ?map_cat ?queries_size_app -?map_comp; simp query_size; rewrite ?map_snd_pair_comp; do ?ssromega.
+ 
  Equations have_same_response_shape schema (queries : seq (Name * @Query Name Vals)) : bool by wf (aux_queries_size queries) :=
    {
      have_same_response_shape _ [::] := true;
      have_same_response_shape schema [:: q] := true;
-
-     (* SingleField *)
-     have_same_response_shape schema ((pty, SingleField f α) :: (pty', SingleField f' α') :: tl)
-        with f == f', have_same_response_shape schema ((pty', SingleField f' α') :: tl) :=
-        {
-        | true | true :=
-           match lookup_field_type schema pty f, lookup_field_type schema pty' f' with
-            | Some rty, Some rty' => have_same_type rty rty'
-            | _, _ => false
-          end;
-              
-        | _ | false := false;
-        | false | true := have_same_response_shape schema ((pty, SingleField f α) :: tl)
-        };
-
-     have_same_response_shape schema ((pty, SingleField f α) :: (pty', LabeledField l f' α') :: tl)
-        with f == l, have_same_response_shape schema ((pty', LabeledField l f' α') :: tl) :=
-        {
-        | true | true :=
-           match lookup_field_type schema pty f, lookup_field_type schema pty' f' with
-            | Some rty, Some rty' => have_same_type rty rty'
-            | _, _ => false
-          end;
-              
-        | _ | false := false;
-        | false | true := have_same_response_shape schema ((pty, SingleField f α) :: tl)
-                                                  
-        };
-
-    
-      (* LabeledField *)
-     have_same_response_shape schema ((pty, LabeledField l f α) :: (pty', SingleField f' α') :: tl)
-        with l == f', have_same_response_shape schema ((pty', SingleField f' α') :: tl) :=
-        {
-        | true | true :=
-           match lookup_field_type schema pty f, lookup_field_type schema pty' f' with
-            | Some rty, Some rty' => have_same_type rty rty'
-            | _, _ => false
-          end;
-              
-        | _ | false := false;
-        | false | true := have_same_response_shape schema ((pty, LabeledField l f α) :: tl)
-        };
-
-     have_same_response_shape schema ((pty, LabeledField l f α) :: (pty', LabeledField l' f' α') :: tl)
-        with l == l', have_same_response_shape schema ((pty', LabeledField l f' α') :: tl) :=
-        {
-        | true | true :=
-           match lookup_field_type schema pty f, lookup_field_type schema pty' f' with
-            | Some rty, Some rty' => have_same_type rty rty'
-            | _, _ => false
-          end;
-              
-        | _ | false := false;
-        | false | true := have_same_response_shape schema ((pty, LabeledField l f α) :: tl)
-        };
-
-   
-
-     
-     (* NestedField *)
-     have_same_response_shape schema ((pty, NestedField f α φ) :: (pty', NestedField f' α' χ) :: tl)
-        with f == f', have_same_response_shape schema ((pty', NestedField f' α' χ) :: tl) :=
-        {
-        | true | true :=
-          match lookup_field_type schema pty f, lookup_field_type schema pty' f' with
-          | Some rty, Some rty' => have_same_response_shape schema ([seq (rty.(tname), q) | q <- φ] ++ [seq (rty'.(tname), q) | q <- χ])
-          | _, _ => false
-          end;
-              
-        | _ | false := false;
-        | false | true := have_same_response_shape schema ((pty, NestedField f α φ) :: tl)
-       };
-
-     have_same_response_shape schema ((pty, NestedField f α φ) :: (pty', NestedLabeledField l f' α' χ) :: tl)
-        with f == l, have_same_response_shape schema ((pty', NestedLabeledField l f' α' χ) :: tl) :=
-        {
-        | true | true :=
-          match lookup_field_type schema pty f, lookup_field_type schema pty' f' with
-          | Some rty, Some rty' => have_same_response_shape schema ([seq (rty.(tname), q) | q <- φ] ++ [seq (rty'.(tname), q) | q <- χ])
-          | _, _ => false
-          end;
-              
-        | _ | false := false;
-        | false | true := have_same_response_shape schema ((pty, NestedField f α φ) :: tl)
-        };
-      
-
-     have_same_response_shape schema ((pty, NestedField f α φ) :: (pty', InlineFragment t χ) :: tl) :=
-       have_same_response_shape schema ((pty, NestedField f α φ) :: ([seq (t, q) | q <- χ] ++ tl));
-
-
-      (* NestedLabeledField *)
-     have_same_response_shape schema ((pty, NestedLabeledField l f α φ) :: (pty', NestedField f' α' χ) :: tl)
-        with l == f', have_same_response_shape schema ((pty', NestedField f' α' χ) :: tl) :=
-        {
-        | true | true :=
-          match lookup_field_type schema pty f, lookup_field_type schema pty' f' with
-          | Some rty, Some rty' => have_same_response_shape schema ([seq (rty.(tname), q) | q <- φ] ++ [seq (rty'.(tname), q) | q <- χ])
-          | _, _ => false
-          end;
-              
-        | _ | false := false;
-        | false | true := have_same_response_shape schema ((pty, NestedLabeledField l f α φ) :: tl)
-        };
-
-     have_same_response_shape schema ((pty, NestedLabeledField l f α φ) :: (pty', NestedLabeledField l' f' α' χ) :: tl)
-        with l == l', have_same_response_shape schema ((pty', NestedLabeledField l' f' α' χ) :: tl) :=
-        {
-        | true | true :=
-          match lookup_field_type schema pty f, lookup_field_type schema pty' f' with
-          | Some rty, Some rty' => have_same_response_shape schema ([seq (rty.(tname), q) | q <- φ] ++ [seq (rty'.(tname), q) | q <- χ])
-          | _, _ => false
-          end;
-              
-        | _ | false := false;
-        | false | true := have_same_response_shape schema ((pty, NestedLabeledField l f α φ) :: tl)
-        };
-      
-
+     (* I think this never happens? *)
      have_same_response_shape schema ((pty, InlineFragment t φ) :: hd :: tl) :=
        have_same_response_shape schema ([seq (t, q) | q <- φ] ++ (hd :: tl));
-       
+
+     (* I think this never happens? *)
      have_same_response_shape schema (q :: (pty', InlineFragment t φ) :: tl) :=
        have_same_response_shape schema (q :: ([seq (t, q) | q <- φ] ++ tl));
 
-     
-     have_same_response_shape schema (q :: hd :: tl) := have_same_response_shape schema (q :: tl)
+     have_same_response_shape schema ((pty1, q1) :: (pty2, q2) :: tl)
+       with (qresponse_name q1 _) == (qresponse_name q2 _), have_same_response_shape schema ((pty2, q2) :: tl) :=
+       {
+       | true | true :=
+         match lookup_field_type schema pty1 (qname q1 _), lookup_field_type schema pty2 (qname q2 _) with
+         | Some rty1, Some rty2 => [&& have_same_type schema rty1 rty2,
+                                  have_same_response_shape schema
+                                     ([seq (rty1.(tname), q) | q <- q1.(qsubquery)] ++ [seq (rty2.(tname), q) | q <- q2.(qsubquery)]) &
+                                  have_same_response_shape schema ((pty1, q1) :: tl)]
+         | _, _ => false
+         end;
+       | _ | false := false;
+       | false | true := have_same_response_shape schema ((pty1, q1) :: tl)
+       }
    }.
- Next Obligation.
-   by rewrite -/(map _ tl).
- Qed.
+ Solve Obligations with intros; rewrite /aux_queries_size /=; simp query_size; ssromega.
+ Solve Obligations with intros; rewrite /aux_queries_size /= -map_comp map_snd_pair_comp; simp query_size; ssromega.
+ Solve Obligations with intros; rewrite /aux_queries_size /=; simp query_size; rewrite map_cat queries_size_app -map_comp map_snd_pair_comp; ssromega.
+ Solve Obligations with intros; rewrite /aux_queries_size /= map_cat queries_size_app -?map_comp ?map_snd_pair_comp; simp query_size; ssromega.
 
+
+ 
       
-  Equations is_field_merging_possible schema (queries : seq (Name * @Query Name Vals)) : bool :=
+  Equations is_field_merging_possible schema (queries : seq (Name * @Query Name Vals)) : bool by wf (aux_queries_size queries) :=
     {
       is_field_merging_possible schema [::] := true;
 
-      is_field_merging_possible schema (hd :: tl) := have_same_response_shape schema (hd :: tl) && is_field_merging_possible schema tl
+      is_field_merging_possible schema [:: q] := true;
 
+      is_field_merging_possible schema ((pty1, InlineFragment t φ) :: q2 :: tl) :=
+        is_field_merging_possible schema ([seq (t, q) | q <- φ] ++ (q2 :: tl));
+
+      is_field_merging_possible schema (q1 :: (pty2, InlineFragment t φ) :: tl) :=
+        is_field_merging_possible schema (q1 :: ([seq (t, q) | q <- φ] ++ tl));
+
+      
+      is_field_merging_possible schema ((pty1, q1) :: (pty2, q2) :: tl)
+        with lookup_field_type schema (qname q1 _), lookup_field_type schema (qname q2 _) :=
+        {
+        | Some rty1 | Some rty2 :=
+          (have_same_response_shape schema ((pty1, q1) :: (pty2, q2) :: tl)) &&
+          ((pty1 == pty2) || ~(is_object_type schema pty1 && is_object_type schema pty2) ==>
+                             [&& (qname q1 _) == (qname q2 _),
+                              (qargs q1 _) == (qargs q2 _) &
+                              is_field_merging_possible ([seq (rty1.(tname), q) | q <- q1.(qsubquery)] ++ [seq (rty2.(tname), q) | q <- q2.(qsubquery)])]);
+        | _ | _ := false
+        }
+        
     }.
 
   
