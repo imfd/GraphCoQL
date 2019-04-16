@@ -1,5 +1,4 @@
 From mathcomp Require Import all_ssreflect.
-Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
@@ -191,21 +190,24 @@ Section QueryConformance.
 
       
       is_field_merging_possible schema ((pty1, q1) :: (pty2, q2) :: tl)
-        with lookup_field_type schema (qname q1 _), lookup_field_type schema (qname q2 _) :=
+        with lookup_field_type schema pty1 (qname q1 _), lookup_field_type schema pty2 (qname q2 _) :=
         {
         | Some rty1 | Some rty2 :=
           (have_same_response_shape schema ((pty1, q1) :: (pty2, q2) :: tl)) &&
-          ((pty1 == pty2) || ~(is_object_type schema pty1 && is_object_type schema pty2) ==>
+          (((pty1 == pty2) || ~~(is_object_type schema pty1 && is_object_type schema pty2)) ==>
                              [&& (qname q1 _) == (qname q2 _),
                               (qargs q1 _) == (qargs q2 _) &
-                              is_field_merging_possible ([seq (rty1.(tname), q) | q <- q1.(qsubquery)] ++ [seq (rty2.(tname), q) | q <- q2.(qsubquery)])]);
+                              is_field_merging_possible schema ([seq (rty1.(tname), q) | q <- q1.(qsubquery)] ++ [seq (rty2.(tname), q) | q <- q2.(qsubquery)])]);
         | _ | _ := false
         }
         
     }.
+  Solve Obligations with intros; rewrite /aux_queries_size /=; simp query_size; ssromega.
+  Solve Obligations with intros; rewrite /aux_queries_size /= -map_comp map_snd_pair_comp; simp query_size; ssromega.
+  Solve Obligations with intros; rewrite /aux_queries_size /=; simp query_size; rewrite map_cat queries_size_app -map_comp map_snd_pair_comp; ssromega.
+   Solve Obligations with intros; rewrite /aux_queries_size /= map_cat queries_size_app -?map_comp ?map_snd_pair_comp; simp query_size; ssromega.
 
-  
-      
+   
   (** Checks whether a query conforms to a given schema.
       
       Every query (or selection of fields) is set in a given context
@@ -267,24 +269,14 @@ Section QueryConformance.
     }.
 
   
- (* Lemma queries_conformE schema ty queries :
-    queries_conform schema ty queries ->
-    queries != [::] /\ all (query_conforms schema ty) queries.
-  Proof. by rewrite /queries_conform; move/andP. Qed.
-  *)
 
-  Lemma queries_conform_cons schema ty x s :
-    queries_conform schema ty (x :: s) = (query_conforms schema ty x && all (query_conforms schema ty) s).
-  Proof.
-      by rewrite /queries_conform => /=.
-  Qed.
-
+(*
   Lemma queries_conform_inv schema ty queries :
     queries != [::] ->
     all (query_conforms schema ty) queries ->
     queries_conform schema ty queries.
   Proof. by move=> *; rewrite /queries_conform; apply/andP. Qed.
-
+*)
   
   Lemma nf_conformsP schema type_in_scope f α φ :
     reflect (exists2 fld, lookup_field_in_type schema type_in_scope f = Some fld &
@@ -294,11 +286,11 @@ Section QueryConformance.
             (query_conforms schema type_in_scope (NestedField f α φ)).
   Proof.
     apply: (iffP idP).
-    - rewrite /query_conforms.
-      case Hlook : lookup_field_in_type => [fld |] // H.
+    - simp query_conforms.
+      case Hlook : lookup_field_in_type => [fld |] //= H.
       by exists fld.
     - move=> [fld Hlook H].
-      by rewrite /query_conforms Hlook. 
+      by simp query_conforms; rewrite Hlook. 
   Qed.
 
   Lemma nlf_conformsP schema type_in_scope l f α φ :
@@ -309,11 +301,11 @@ Section QueryConformance.
             (query_conforms schema type_in_scope (NestedLabeledField l f α φ)).
   Proof.
     apply: (iffP idP).
-    - rewrite /query_conforms.
+    - simp query_conforms.
       case Hlook : lookup_field_in_type => [fld |] // H.
       by exists fld.
     - move=> [fld Hlook H].
-      by rewrite /query_conforms Hlook. 
+      by simp query_conforms; rewrite Hlook. 
   Qed.
              
   Lemma ty_not_scalar_or_enum schema ty tdef:
@@ -349,9 +341,9 @@ Section QueryConformance.
     move=> Hobj.
     move=> Hqsc.
     split.
-    - rewrite /query_conforms.
+    - simp query_conforms.
       move/and4P=> [/or3P _ Hspread _ _].
-      move: (object_spreads_E Hobj Hspread)=> [||] //.
+      move: (object_spreads_E _ _ _ Hobj Hspread)=> [||] //.
       * move/has_implementation_is_interface=> Hcontr.
         move: (is_object_type_interfaceN Hobj') => //.
           by rewrite Hcontr.
@@ -360,12 +352,13 @@ Section QueryConformance.
           by rewrite Hcontr.
     - move=> Heq; rewrite Heq /=.
       move: Hqsc; rewrite /queries_conform.
-      move/andP=> [Hne Hall].
-      apply/and4P; split=> //.
+      move/and3P=> [Hne Hall Hmerge].
+      apply/and5P; split=> //.
         by apply/or3P; constructor 1.
-        rewrite /is_fragment_spread_possible. simp get_possible_types => /=.
+        rewrite /is_fragment_spread_possible; simp get_possible_types => /=.
         by rewrite H /= /seqI /=; case: ifP => //=; rewrite inE => /eqP.
       by rewrite Heq in Hall.
+      by rewrite -Heq.
   Qed.
 
   Lemma interface_spreads_in_object_scope schema type_in_scope t ϕ :
@@ -376,7 +369,7 @@ Section QueryConformance.
   Proof.
     move/is_object_type_wfP=> [intfs [flds Hlook]].
     move/is_interface_type_wfP=> [iflds Hlook'].
-    rewrite /query_conforms=> /and4P [_ Hspread _ _].
+    simp query_conforms=> /and5P [_ Hspread _ _ _].
     move: Hspread; rewrite /is_fragment_spread_possible; simp get_possible_types; rewrite Hlook Hlook' /=.
     by rewrite -seq1IC; apply: seq1I_N_nil.
   Qed.
@@ -389,7 +382,7 @@ Section QueryConformance.
   Proof.
     funelim (is_object_type schema type_in_scope) => // _.
     funelim (is_union_type schema t) => // _.
-    rewrite /query_conforms.
+    simp query_conforms.
     move/and4P=> [_ Hspread _ _].
     move: Hspread; rewrite /is_fragment_spread_possible; simp get_possible_types; rewrite Heq Heq0 /=.
     rewrite /union_members Heq.
@@ -406,11 +399,11 @@ Section QueryConformance.
     move=> Hobj Hqsc Htype.
     apply: (iffP idP).
     - case: Htype => [Hint | Hunion].
-        by move/(interface_spreads_in_object_scope Hobj Hint); left.
-      by move/(union_spreads_in_object_scope Hobj Hunion); right.
+        by move/(interface_spreads_in_object_scope _ _ _ _ Hobj Hint); left.
+      by move/(union_spreads_in_object_scope _ _ _ _ Hobj Hunion); right.
     - move: Hqsc; rewrite /queries_conform => /andP [Hne Hall].
       move=> H.      
-      rewrite /query_conforms; apply/and4P; split=> //.
+      simp query_conforms; apply/and4P; split=> //.
       * by apply/or3P; case: Htype; [constructor 2 | constructor 3].
       * move/is_object_type_wfP: Hobj => [intfs [flds Holook]].
         case: H => [Himpl | Hmb]; 
@@ -424,7 +417,7 @@ Section QueryConformance.
         by rewrite Hmb.
   Qed.
 
-  Ltac query_conforms := rewrite /query_conforms -/(query_conforms _ _); try move/and4P; try apply/and4P.
+  Ltac query_conforms := simp query_conforms; try move/and5P; try apply/and5P.
 
 
 
@@ -442,7 +435,7 @@ Section QueryConformance.
     apply: (iffP idP).
     - query_conforms.
       move=> [_ Hspread _ _].
-      move: (object_spreads_E Hobj Hspread) => [Heq | // | /in_union Hun].
+      move: (object_spreads_E _ _ _ Hobj Hspread) => [Heq | // | /in_union Hun].
       * move: (is_object_type_interfaceN Hobj); rewrite Heq.
         by rewrite /negb Hintf.
       * by move: (is_interface_type_unionN Hintf); rewrite /negb Hun.
@@ -452,9 +445,9 @@ Section QueryConformance.
       * rewrite /is_fragment_spread_possible.
         move/get_possible_types_interfaceE: Hintf => ->.
         move/get_possible_types_objectE: Hobj => ->.
-        by rewrite seq1I Himpl.
-      * by move: Hqsc; rewrite /queries_conform => /andP [H _].
-      * by move: Hqsc; rewrite /queries_conform => /andP [_ H].
+          by rewrite seq1I Himpl.
+
+      all: do ?[by move: Hqsc; rewrite /queries_conform => /and3P [H1 H2 H3]].
   Qed.
 
 
@@ -463,7 +456,7 @@ Section QueryConformance.
     query_conforms schema ty q ->
     is_object_type schema ty \/ is_interface_type schema ty.
   Proof.
-    case: q => //= [f α | l f α | f α φ | l f α φ] _;
+    case: q => //= [f α | l f α | f α φ | l f α φ] _; simp query_conforms;
     case Hlook: lookup_field_in_type => [fld|] // _;
     have H: lookup_field_in_type schema ty f by rewrite /isSome Hlook.
 
@@ -474,7 +467,7 @@ Section QueryConformance.
     query_conforms schema ty (NestedField n α ϕ) ->
     is_object_type schema ty \/ is_interface_type schema ty.
   Proof.
-    rewrite /query_conforms.
+    simp query_conforms.
     case Hlook: lookup_field_in_type => [fld|] // _.
     have H: lookup_field_in_type schema ty n by rewrite /isSome Hlook.
       by apply: (lookup_field_in_type_is_obj_or_intf H).
@@ -484,7 +477,7 @@ Section QueryConformance.
     query_conforms schema ty (NestedLabeledField l f α φ) ->
     is_object_type schema ty \/ is_interface_type schema ty.
   Proof.
-    rewrite /query_conforms.
+    simp query_conforms.
     case Hlook: lookup_field_in_type => [fld|] // _.
     have H: lookup_field_in_type schema ty f by rewrite /isSome Hlook.
       by apply: (lookup_field_in_type_is_obj_or_intf H).
@@ -499,22 +492,22 @@ Section QueryConformance.
 
             
     
-  Lemma type_in_scope_N_scalar_enum schema type_in_scope ϕ :
+  Lemma type_in_scope_N_scalar_enum :
+    forall schema type_in_scope ϕ,
     query_conforms schema type_in_scope ϕ ->
     [\/ is_object_type schema type_in_scope,
      is_interface_type schema type_in_scope |
      is_union_type schema type_in_scope].
   Proof.
-    case: ϕ; [move=> f α | move=> l f α | move=> f α ϕ | move=> l f α ϕ | move=> t ϕ];
-    do ?[rewrite /query_conforms;
-         case Hlook: lookup_field_in_type => [fld|] // _;
-         have H: lookup_field_in_type schema type_in_scope f by rewrite /isSome Hlook].
+    move=> schema ty.
+    case=> [f α |  l f α |  f α ϕ |  l f α ϕ |  t ϕ]; simp query_conforms.
+    all: do ?[case Hlook: lookup_field_in_type => [fld|] //= _;
+              have H: lookup_field_in_type schema ty f by rewrite /isSome Hlook].
     all: do ?[by move: (lookup_field_in_type_is_obj_or_intf H) => [Hobj | Hint]; [constructor 1 | constructor 2]].
-
+    
     move/and4P=> [/or3P Hty Hspread Hne _] => //.
     move: Hspread.
     rewrite /is_fragment_spread_possible.
-    simp get_possible_types.
     (*
     case Hlook: lookup_type => [tdef|] //.
     by case: tdef Hlook => //=; do ?[rewrite fset0I //=];
@@ -551,9 +544,9 @@ Section QueryConformance.
      is_union_type schema type_in_scope].
   Proof.
     rewrite /queries_conform.
-    case: ϕ => // hd tl.
-    move/andP=> [Hnil /= /andP [Hhd _]].
-    by apply: (type_in_scope_N_scalar_enum Hhd).
+    case: ϕ => //= hd tl.
+    move/andP => [/andP [Hqc Hqsc] _].
+    apply (type_in_scope_N_scalar_enum _ _ _ Hqc).
   Qed.
 
  
@@ -563,7 +556,7 @@ Section QueryConformance.
    Lemma nlf_conforms_lookup_some schema ty l n α ϕ :
     query_conforms schema ty (NestedLabeledField l n α ϕ) ->
     exists fld, lookup_field_in_type schema ty n = Some fld.
-  Proof. rewrite /query_conforms.
+  Proof. simp query_conforms.
     case Hlook : lookup_field_in_type => [fld'|] //.
     by exists fld'.
   Qed.
@@ -576,13 +569,13 @@ Section QueryConformance.
   Proof.
     move=> Himpl Hflds.
     rewrite /queries_conform.
-    move/andP=> [Hne /allP Hqsc].
-    apply/andP; split=> //.
+    move/and3P=> [Hne /allP Hqsc Hmerge].
+    apply/and3P; split=> //.
     apply/allP.
     move=> x Hin.
     move: (Hqsc x Hin) => {Hin}.
     case: x => //; [move=> f α | move=> l f α | move=> f α ϕ | move=> l f α ϕ | move=> t ϕ];
-    rewrite /query_conforms; do ? rewrite (field_in_interface_in_object schema f Himpl);
+    simp query_conforms; do ? rewrite (field_in_interface_in_object schema f Himpl);
      do ? case lookup_field_in_type => //.
     - Admitted. (* Invalid case - all fields *)
 
@@ -605,13 +598,12 @@ Section QueryConformance.
     query_conforms schema type_in_scope ϕ ->
     query_conforms schema type_in_scope (InlineFragment type_in_scope [:: ϕ]).
   Proof.
-    rewrite {2}/query_conforms.
-    move=> Hqc.
-    apply/and4P; split=> //.
-    apply/or3P. apply: (type_in_scope_N_scalar_enum Hqc).
+    simp query_conforms => Hqc.
+    apply/and5P; split=> //.
+    apply/or3P. apply: (type_in_scope_N_scalar_enum _ _ _ Hqc).
     rewrite /is_fragment_spread_possible; simp get_possible_types.
     
-    move: (type_in_scope_N_scalar_enum Hqc) => [Hobj | Hint | Hunion].
+    move: (type_in_scope_N_scalar_enum _ _ _ Hqc) => [Hobj | Hint | Hunion].
     funelim (is_object_type schema type_in_scope) => //.
     Admitted.
  
@@ -622,7 +614,7 @@ Section QueryConformance.
   Lemma nested_conforms_list schema ty n α ϕ :
     query_conforms schema ty (NestedField n α ϕ) -> ϕ != [::].
   Proof.
-    rewrite /query_conforms.
+    simp query_conforms.
     case lookup_field_in_type => // f.
       by move/and4P=> [_ _ Hne _].
   Qed.
@@ -631,7 +623,7 @@ Section QueryConformance.
     query_conforms schema ty (InlineFragment t ϕ) ->
     queries_conform schema t ϕ.
   Proof.
-    rewrite /query_conforms.
+    simp query_conforms.
     move/and4P=> [_ _ Hne H].
     by rewrite /queries_conform; apply/andP. 
   Qed.
@@ -642,11 +634,11 @@ Section QueryConformance.
             query_conforms schema tyo (SingleField f α).
   Proof.
     move=> Hin.
-    rewrite /query_conforms.
+    simp query_conforms.
     case Hlook : lookup_field_in_type => [fld |] //= /andP [Hty Hα].
     move: (in_implementation_is_object Hin) => Hobj.
     move: (field_in_interface_in_object_same_return_type Hin Hlook) => [fld' Hlook' Hrty].
-    rewrite Hlook' -Hrty.
+    rewrite Hlook' /= -Hrty.
     apply/andP; split => //.
     move: Hα; rewrite /arguments_conform.
     move/allP=> Hα.
