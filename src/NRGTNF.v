@@ -144,8 +144,7 @@ Section NRGTNF.
    Proof.
      elim: queries => //.
      - case Hobj: is_object_type => //=.
-   Admitted.
-  
+   Admitted.  
 
 
    Lemma are_grounded_2_cons schema ty q qs :
@@ -238,13 +237,13 @@ Section NRGTNF.
        
      all: do [move=> φ IH ty]; simp is_grounded_2; simp is_in_normal_form.
 
-     - rewrite /query_conforms => /and4P [_ _ Hne Hqsc] /and3P [Hobj Hflds Hg].
+     - simp query_conforms => /and5P [_ _ Hne Hqsc _] /and3P [Hobj Hflds Hg].
        apply/and3P; split => //.
        apply: (IH t) => //= {IH}.
          by apply: all_grounded_fields_in_object_scope_are_grounded.
 
      - move/nlf_conformsP=> [fld Hlook /and3P [/orP [Hobj | Habs] _]];
-       rewrite /queries_conform Hlook /= => /andP [Hne Hqsc] Hg; apply/andP.
+       rewrite /queries_conform Hlook /= => /and3P [Hne Hqsc _] Hg; apply/andP.
        * split.
            by apply/orP; left; apply: (are_grounded_in_object_scope_are_fields schema fld.(return_type)).
            by apply: (IH fld.(return_type)).
@@ -254,7 +253,7 @@ Section NRGTNF.
            by apply: (IH fld.(return_type)).
  
       - move/nf_conformsP=> [fld Hlook /and3P [/orP [Hobj | Habs] _]];
-       rewrite /queries_conform Hlook /= => /andP [Hne Hqsc] Hg; apply/andP.
+       rewrite /queries_conform Hlook /= => /and3P [Hne Hqsc _] Hg; apply/andP.
        * split.
            by apply/orP; left; apply: (are_grounded_in_object_scope_are_fields schema fld.(return_type)).
            by apply: (IH fld.(return_type)).

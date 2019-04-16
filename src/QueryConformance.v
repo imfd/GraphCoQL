@@ -657,3 +657,9 @@ Section QueryConformance.
   
  
 End QueryConformance.
+
+Arguments have_same_response_shape [Name Vals].
+Arguments is_field_merging_possible [Name Vals].
+Arguments is_fragment_spread_possible [Name Vals].
+Arguments query_conforms [Name Vals].
+Arguments queries_conform [Name Vals].

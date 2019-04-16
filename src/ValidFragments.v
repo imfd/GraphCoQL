@@ -71,13 +71,13 @@ Section ValidFragments.
     has_valid_fragments schema ty (InlineFragment t φ) ->
     t = ty \/ t \in get_possible_types schema ty.
   Proof.
-    rewrite /query_conforms => /and4P [Hty Hspread _ _].
+    simp query_conforms => /and4P [Hty Hspread _ _].
     simp has_valid_fragments; case Hscope : is_object_type => //= /andP.
     - by case=> /eqP Heq _; left.
     - move=> [/orP [/eqP Heq | /get_possible_types_objectE Ht] _]; [by left | right].
       move: Hspread; rewrite /is_fragment_spread_possible.
       rewrite Ht.
-      apply: seq1I_N_nil.
+      by apply: seq1I_N_nil.
   Qed.
       
 End ValidFragments.

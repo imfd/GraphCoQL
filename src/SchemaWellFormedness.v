@@ -655,7 +655,9 @@ Section WellFormedness.
        is_subtype schema fld'.(return_type) fld.(return_type)].
    Proof.
    Admitted.
-       
+
+
+
 End WellFormedness.
 
 

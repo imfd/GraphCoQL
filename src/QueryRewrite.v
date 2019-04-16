@@ -46,7 +46,7 @@ Section QueryRewrite.
   Ltac apply_and3P := apply/and3P; split=> //.
   Ltac are_in_normal_form := rewrite /are_in_normal_form => /andP; case.
   Ltac all_cons := rewrite {1}/all -/(all _ _) => /andP; case.
-  Ltac query_conforms := rewrite /query_conforms -/(query_conforms _ _); try move/and4P; try apply/and4P.
+  Ltac query_conforms := simp query_conforms; try move/and5P; try apply/and5P.
 
   Open Scope fset.
 
@@ -168,7 +168,7 @@ Section QueryRewrite.
 
     - move=> b t φ IH Hobj Hinobj Hqc Hval _.
       simp normalize; rewrite Hobj /= Hinobj /=.
-      move: Hqc; query_conforms; move=> [_ _ _ Hqsc].
+      move: Hqc; query_conforms; move=> [_ _ _ Hqsc _].
       move: Hval; simp has_valid_fragments; rewrite Hinobj /=; move/andP=> [/eqP Heq Hvs].
       by rewrite Heq in Hqsc; apply: IH.
     - by move=> t φ _ _ Hcontr _ _ Hobj; rewrite Hcontr in Hobj.
@@ -676,7 +676,7 @@ Section QueryRewrite.
       move: (normalize_in_object_scope_are_fields _ _ _ Hqc Hv Hobj) => Hfld.
       move: (normalize__φ_in_object_scope_are_fields _ _ _ Hqsc Hvs Hobj) => Hflds.
       by orL; apply/andP.
-      move: (type_in_scope_N_obj_is_abstract Hqc Hobj) => Habs.
+      move: (type_in_scope_N_obj_is_abstract _ _ _ _ _ Hqc Hobj) => Habs.
       move: (normalize_in_abstract_scope_are_any _ _ _ Hqc Hv Habs) => Hinline.
       move: (normalize__φ_in_abstract_scope_are_any _ _ _ Hqsc Hvs Habs) => Hinlines.
       (* Change lemmas to use info on get possible types *)
@@ -1048,7 +1048,7 @@ Section QueryRewrite.
 
     case: eqP => //=; [case: eqP => // | by move=> _; apply: IH]; rewrite all_cat //=.
     move=> Hfeq Haeq; apply_andP.
-      by move: Hhdqc; rewrite Hfeq in Hlook; rewrite {1}/query_conforms Hlook => /and4P [_ _ _].
+    by move: Hhdqc; rewrite Hfeq in Hlook; simp query_conforms; rewrite Hlook /= => /and5P [_ _ _].
       by apply: IH.
     by intros; apply: IH.
   Qed.
@@ -1063,7 +1063,7 @@ Section QueryRewrite.
     - by intros; exists ty; rewrite β__φ_empty_for_sf /=.
     - by intros; exists ty; rewrite β__φ_empty_for_lf /=.
       
-    - move=> f α φ ty; rewrite {1}/query_conforms.
+    - move=> f α φ ty; simp query_conforms.
       case Hlook : lookup_field_in_type => [fld|] // /and4P [_ _ _ Hqsc] Hqsc'.
       exists fld.(return_type).
       elim: qs Hqsc' => // hd tl IH.
@@ -1073,11 +1073,11 @@ Section QueryRewrite.
 
       case: eqP => //=; [case: eqP => // | by move=> _; apply: IH]; rewrite all_cat //=.
       move=> Hfeq Haeq; apply_andP.
-        by move: Hqc; rewrite Hfeq in Hlook; rewrite {1}/query_conforms Hlook => /and4P [_ _ _].
+        by move: Hqc; rewrite Hfeq in Hlook; simp query_conforms; rewrite Hlook /= => /and5P [_ _ _].
         by apply: IH.
       by intros; apply: IH.
 
-    - move=> l f α φ ty; rewrite {1}/query_conforms.
+    - move=> l f α φ ty; simp query_conforms.
       case Hlook : lookup_field_in_type => [fld|] // /and4P [_ _ _ Hqsc] Hqsc'.
       exists fld.(return_type).
       elim: qs Hqsc' => // hd tl IH.
@@ -1089,16 +1089,16 @@ Section QueryRewrite.
                     [case: eqP => //= | by intros; apply: IH];
                     [rewrite all_cat //=| by intros; apply: IH].
       move=> _ Hfeq _; apply_andP.
-        by move: Hqc; rewrite Hfeq in Hlook; rewrite {1}/query_conforms Hlook => /and4P [_ _ _].
+        by move: Hqc; rewrite Hfeq in Hlook; simp query_conforms; rewrite Hlook /= => /and5P [_ _ _].
         by apply: IH.
 
 
-    - move=> t φ ty; rewrite {1}/query_conforms -/(query_conforms _ _) => /and4P [_ _ _ Hqsc] Hqsc'.
+    - move=> t φ ty; simp query_conforms => /and5P [_ _ _ Hqsc _] Hqsc'.
       exists t.
       elim: qs Hqsc' => // hd tl IH.
       case: hd => //=; do ?[intros; move/andP: Hqsc' => [_ Hqsc']; simp β__subqueryextract; rewrite cat0s; apply: IH].
 
-      move=> t' χ /andP [/and4P [_ _ _ Hqc] Hqsc'] /=; simp β__subqueryextract.
+      move=> t' χ /andP [/and5P [_ _ _ Hqc _] Hqsc'] /=; simp β__subqueryextract.
         by case: eqP => //=; [move=> Heq; rewrite -Heq ?all_cat in Hqc *; apply_andP; apply: IH | by intros; apply: IH].
   Qed.
 
@@ -1117,7 +1117,7 @@ Section QueryRewrite.
                     [case: eqP => //= | by intros; apply: IH];
                     [rewrite all_cat //=| by intros; apply: IH].
     move=> _ Hfeq _; apply_andP.
-        by move: Hhdqc; rewrite Hfeq in Hlook; rewrite {1}/query_conforms Hlook => /and4P [_ _ _].
+        by move: Hhdqc; rewrite Hfeq in Hlook; simp query_conforms; rewrite Hlook /= => /and5P [_ _ _].
         by apply: IH.
   Qed. 
 
@@ -1131,7 +1131,7 @@ Section QueryRewrite.
     case: hd Hqc => //=.
     all: do ?[by intros; simp β__subqueryextract; move/andP: H => [_ H]; rewrite cat0s; apply: IH].
 
-    move=> t' χ /and4P [_ _ _ Hqc] /=; simp β__subqueryextract.
+    move=> t' χ /and5P [_ _ _ Hqc _] /=; simp β__subqueryextract.
       by case: eqP => //=; [move=> Heq; rewrite -Heq ?all_cat in Hqc *; apply_andP; apply: IH | by intros; apply: IH].
   Qed.
   
@@ -1240,13 +1240,14 @@ Section QueryRewrite.
       all: do ?[case Hlook: lookup_field_in_type => [fld|] //=; try apply: IH].
 
       all: do ?[by rewrite all_cat; apply_andP;
-                [move: Hqc; rewrite /query_conforms Hlook => /and4P [_ _ _]
+                [move: Hqc; simp query_conforms; rewrite Hlook /= => /and5P [_ _ _]
                 | apply: (β__φ_preserves_conformance_nf schema ty) => //]].
       all: do ?[by rewrite -are_grounded_2_cat; split;
                 [move: Hg; simp is_grounded_2; rewrite Hlook /=
                 | apply: (β__φ_preserves_grounded_nf schema ty)]].
-      all: do ?[by rewrite /query_conforms Hlook in Hqc].
+      all: do ?[by simp query_conforms in Hqc; rewrite Hlook /= in Hqc].
 
+      
     - move=> IH ty.
       all_cons => [Hqc Hqsc] /=.
       resolve_grounded => /and3P [Hty Hg Hgs];
@@ -1256,12 +1257,12 @@ Section QueryRewrite.
       all: do ?[case Hlook: lookup_field_in_type => [fld|] //=; try apply: IH].
 
       all: do ?[by rewrite all_cat; apply_andP;
-                [move: Hqc; rewrite /query_conforms Hlook => /and4P [_ _ _]
+                [move: Hqc; simp query_conforms; rewrite Hlook /= => /and5P [_ _ _]
                 | apply: (β__φ_preserves_conformance_nlf schema ty) => //]].
       all: do ?[by rewrite -are_grounded_2_cat; split;
                 [move: Hg; simp is_grounded_2; rewrite Hlook /=
                 | apply: (β__φ_preserves_grounded_nlf schema ty)]].
-      all: do ?[by rewrite /query_conforms Hlook in Hqc].
+      all: do ?[by simp query_conforms in Hqc; rewrite Hlook /= in Hqc].
 
       
 
@@ -1334,23 +1335,24 @@ Section QueryRewrite.
     all: do ?[intros => /=; simp try_inline_query;
               case Hpty: (_ != [::]) => //=;
                 by apply: map_N_nil].
-    all: do ?[by intros; rewrite /query_conforms Heq in H].
+    all: do ?[by intros; simp query_conforms in H; rewrite Heq in H].
 
     - move=> schema t b ty φ IH Ht Hscope.
-      query_conforms; move=> [_ _ Hne Hqsc].
+      query_conforms; move=> [_ _ Hne Hqsc Hmerge].
       simp has_valid_fragments; rewrite Hscope /= => /andP [/eqP Heq Hv].
       rewrite Heq in Hqsc.
-      by apply: IH => //; rewrite /queries_conform; apply_andP.
-
+       apply: IH => //; rewrite /queries_conform -?Heq ; apply_and3P.
+       by rewrite Heq.
     - move=> schema t ty φ IH Ht Hscope.
-      query_conforms; move=> [_ _ Hne Hqsc].
+      query_conforms; move=> [_ _ Hne Hqsc Hmerge].
       simp has_valid_fragments; rewrite Hscope /= => /andP [/orP [/eqP Heq | Hcontr] Hv].
-        by rewrite Heq in Hqsc Hv; apply: IH => //; rewrite /queries_conform; apply_andP.
+      rewrite Heq in Hqsc Hv; apply: IH => //; rewrite  /queries_conform; apply_and3P.
+        by rewrite -Heq.
         by rewrite Ht in Hcontr.
 
     - move=> schema ty hd tl IHhd IHtl.
-      rewrite /queries_conform => /andP [Hne].
-      all_cons=> [Hqc Hqsc].
+      rewrite /queries_conform => /and3P [Hne].
+      all_cons=> [Hqc Hqsc] _.      
       all_cons=> [Hv Hvs].
       by apply: cat_N_nil; apply: IHhd.
   Qed.
@@ -1362,8 +1364,8 @@ Section QueryRewrite.
     normalize__φ schema ty φ != [::].
   Proof.
     case: φ => //= hd tl.
-    rewrite /queries_conform => /andP [Hne].
-    all_cons => [Hqc _].
+    rewrite /queries_conform => /and3P [Hne].
+    all_cons => [Hqc _] _.
     all_cons => [Hv _].
     apply: cat_N_nil.
     by apply: normalize_N_nil.
@@ -1387,36 +1389,35 @@ Section QueryRewrite.
                  all (query_conforms schema ty) nqs)) => schema.
     Proof.
       all: do ?[by intros; rewrite all_seq1].
-      all: do ?[intros; simp try_inline_query; rewrite [query_conforms]lock;
-                case: eqP => //= Hpty; rewrite -lock ?andbT //].
+      all: do ?[intros; simp try_inline_query;
+                case: eqP => //= Hpty; rewrite ?andbT //].
 
       - apply/allP=> x /mapP [q Hin ->].
-        apply/and4P; split=> //.
+        simp query_conforms.
+        apply/and5P; split=> //.
         * by apply/or3P; constructor 1; apply (in_possible_types_is_object Hin).
         * move: (in_possible_types_is_object Hin) => Hobj.
           have Hfld : is_field (SingleField s0 f) by [].
-          move: (scope_is_obj_or_abstract_for_field Hfld H) => [Hcontr | Hintf]; [by rewrite Heq in Hcontr|].
+          move: (scope_is_obj_or_abstract_for_field _ _ _ _ _ Hfld H) => [Hcontr | Hintf]; [by rewrite Heq in Hcontr|].
             by apply: obj_spreads_if_in_possible_types_of_interface.
-        * rewrite -/(query_conforms _ _) [query_conforms]lock all_seq1 -lock.
+        * rewrite all_seq1 //.
           have Hfld : is_field (SingleField s0 f) by [].
-          move: (scope_is_obj_or_abstract_for_field Hfld H) => [Hcontr | Hintf]; [by rewrite Heq in Hcontr|].
+          move: (scope_is_obj_or_abstract_for_field _ _ _ _ _ Hfld H) => [Hcontr | Hintf]; [by rewrite Heq in Hcontr|].
           rewrite get_possible_types_interfaceE // in Hin.
-            by apply (sf_conforms_in_interface_in_obj Hin).
+            by apply (sf_conforms_in_interface_in_obj _ _ _ _ _ _ _ Hin).
             
-      - apply/allP=> x /mapP [q Hin ->].
-        apply/and4P; split=> //.
+      - apply/allP=> x /mapP [q Hin ->]; simp query_conforms.
+        apply/and5P; split=> //.
         * by apply/or3P; constructor 1; apply (in_possible_types_is_object Hin).
         * move: (in_possible_types_is_object Hin) => Hobj.
-          have Hfld : is_field (SingleField s2 f0) by [].
-          move: (scope_is_obj_or_abstract_for_field Hfld H) => [Hcontr | Hintf]; [by rewrite Heq in Hcontr|].
+          have Hfld : is_field (LabeledField s1 s2 f0) by [].
+          move: (scope_is_obj_or_abstract_for_field _ _ _ _ _ Hfld H) => [Hcontr | Hintf]; [by rewrite Heq in Hcontr|].
             by apply: obj_spreads_if_in_possible_types_of_interface.
-        * rewrite -/(query_conforms _ _) [query_conforms]lock all_seq1 -lock.
-          have Hfld : is_field (SingleField s2 f0) by [].
-          move: (scope_is_obj_or_abstract_for_field Hfld H) => [Hcontr | Hintf]; [by rewrite Heq in Hcontr|].
+        * rewrite all_seq1.
+          have Hfld : is_field (LabeledField s1 s2 f0) by [].
+          move: (scope_is_obj_or_abstract_for_field _ _ _ _ _ Hfld H) => [Hcontr | Hintf]; [by rewrite Heq in Hcontr|].
           rewrite get_possible_types_interfaceE // in Hin.
-            by apply (sf_conforms_in_interface_in_obj Hin).
-
-            all: do ?[by intros; rewrite /query_conforms Heq in H].
+            
             Admitted.
 
 
@@ -1498,16 +1499,19 @@ Section QueryRewrite.
     all: do ?[rewrite /all; apply_andP; last by apply: filter_preserves_pred; apply: H].
 
     all: do [pose Hqc' := Hqc].
-    all: do ?[move/nf_conformsP: Hqc' => [fld Hlook /and4P [Hty Hargs Hne Hqc']]; rewrite /query_conforms Hlook].
-    all: do ?[move/nlf_conformsP: Hqc' => [fld Hlook /and4P [Hty Hargs Hne Hqc']]; rewrite /query_conforms Hlook].
-    all: do ?[move: Hqc'; query_conforms; move=> [Hty Hspread Hne Hqc']].
-    all: do ?[apply/and4P; split => //].
+    all: do ?[move/nf_conformsP: Hqc' => [fld Hlook /and5P [Hty Hargs Hne Hqc' Hmerge]]; simp query_conforms; rewrite Hlook /=].
+    all: do ?[move/nlf_conformsP: Hqc' => [fld Hlook /and5P [Hty Hargs Hne Hqc' Hmerge]]; simp query_conforms; rewrite Hlook /=].
+    all: do ?[move: Hqc'; query_conforms; move=> [Hty Hspread Hne Hqc' Hmerge']].
+    all: do ?[apply/and5P; split => //].
     all: do ?[by apply: remove_redundancies_in_nil_N_nil; apply: cat_N_nil].
     all: do ?[apply: H0; rewrite all_cat; apply_andP].
     - by apply: (β__φ_preserves_conformance_nf schema ty).
+      admit.
     - by apply: (β__φ_preserves_conformance_nlf schema ty).
+      admit.
     - by apply: (β__φ_preserves_conformance_inline schema ty).
-  Qed.
+      admit.
+  Admitted.
   
   Lemma remove_redundancies_normalize_preserves_normal_form :
     forall schema type_in_scope query,
