@@ -292,49 +292,61 @@ Section QueryConformance.
       of a particular type, therefore, the conformance is checked
       based on the schema and the current type in context.
 
-  **)
-  Fixpoint query_conforms schema ty query :=
-    match query with
-    | SingleField fname α => match lookup_field_in_type schema ty fname with
-                            | Some fld => (is_scalar_type schema fld.(return_type) ||
-                                          is_enum_type schema fld.(return_type)) &&
-                                          arguments_conform schema fld.(fargs) α
-                            | _ => false
-                            end
-    | LabeledField _ fname α =>  match lookup_field_in_type schema ty fname with
-                                | Some fld => (is_scalar_type schema fld.(return_type) ||
-                                              is_enum_type schema fld.(return_type)) &&
-                                              arguments_conform schema fld.(fargs) α
-                                  
-                                | _ => false
-                                end
-    | NestedField fname α ϕ =>
-      match lookup_field_in_type schema ty fname with
-      | Some fld => [&& (is_object_type schema fld.(return_type) || is_abstract_type schema fld.(return_type)),
-                    arguments_conform schema fld.(fargs) α,
-                    ϕ != [::] &
-                    all (query_conforms schema fld.(return_type)) ϕ]
-      | _ => false
-      end
-      
-    | NestedLabeledField _ fname α ϕ =>
-        match lookup_field_in_type schema ty fname with
-        | Some fld => [&& (is_object_type schema fld.(return_type) || is_abstract_type schema fld.(return_type)),
-                      arguments_conform schema fld.(fargs) α,
-                       ϕ != [::] &
-                      all (query_conforms schema fld.(return_type)) ϕ]
+   **)
+
+  
+  Equations query_conforms schema (ty : Name) query : bool :=
+    {
+      query_conforms schema ty (SingleField fname α)
+        with lookup_field_in_type schema ty fname :=
+        {
+        | Some fld => (is_scalar_type schema fld.(return_type) ||
+                      is_enum_type schema fld.(return_type)) &&
+                      arguments_conform schema fld.(fargs) α;
         | _ => false
-        end
-        
-    | InlineFragment t ϕ =>
-      [&& [|| is_object_type schema t, is_interface_type schema t | is_union_type schema t], (* This might be a bit redundant *)
-       is_fragment_spread_possible schema ty t,
-       ϕ != [::] &
-       all (query_conforms schema t) ϕ]
-    end.
+        };
 
-  Definition queries_conform schema ty queries := (queries != [::]) && (all (query_conforms schema ty) queries).
+      query_conforms schema ty (LabeledField _ fname α)
+        with lookup_field_in_type schema ty fname :=
+        {
+        | Some fld => (is_scalar_type schema fld.(return_type) ||
+                      is_enum_type schema fld.(return_type)) &&
+                      arguments_conform schema fld.(fargs) α;
+        | _ => false
+        };
 
+      query_conforms schema ty (NestedField fname α φ)
+        with lookup_field_in_type schema ty fname :=
+        {
+        | Some fld => [&& (is_object_type schema fld.(return_type) || is_abstract_type schema fld.(return_type)),
+                      arguments_conform schema fld.(fargs) α &
+                      queries_conform schema fld.(return_type) φ];
+        | _ => false
+        };
+
+      query_conforms schema ty (NestedLabeledField _ fname α φ)
+        with lookup_field_in_type schema ty fname :=
+        {
+        | Some fld => [&& (is_object_type schema fld.(return_type) || is_abstract_type schema fld.(return_type)),
+                      arguments_conform schema fld.(fargs) α &
+                      queries_conform schema fld.(return_type) φ];
+        | _ => false
+        };
+
+      query_conforms schema ty (InlineFragment t φ) :=
+        [&& [|| is_object_type schema t, is_interface_type schema t | is_union_type schema t], (* This might be a bit redundant *)
+         is_fragment_spread_possible schema ty t &
+         queries_conform schema t φ]
+    }
+  where
+  queries_conform schema (ty : Name) queries : bool :=
+    {
+      queries_conform schema ty queries := [&& (queries != [::]),
+                                           all (query_conforms schema ty) queries &
+                                           is_field_merging_possible schema [seq (ty, q) | q <- queries]]
+    }.
+
+  
  (* Lemma queries_conformE schema ty queries :
     queries_conform schema ty queries ->
     queries != [::] /\ all (query_conforms schema ty) queries.
