@@ -41,6 +41,28 @@ Section QueryAux.
     elim: qs qs' => //= hd tl IH qs'.
     by rewrite (IH qs') addnA.
   Qed.
+
+  Lemma query_size_gtn_0 q :
+    0 < query_size q.
+  Proof.
+      by case: q.
+  Qed.
+
+  Lemma subqueries_lt_query q :
+    queries_size q.(qsubquery) < query_size q.
+  Proof.
+      by case: q.
+  Qed.
+
+  Lemma in_queries_lt q qs :
+    q \in qs ->
+          query_size q <= queries_size qs.
+  Proof.
+    elim: qs => //= hd tl IH.
+    rewrite inE => /orP [/eqP -> | Hin].
+      by ssromega.
+      by move: (IH Hin) => Hlt; ssromega.
+  Qed.
   
   (** Partial equality between queries.
       It basically ignores subqueries and only checks labels, names and arguments **)

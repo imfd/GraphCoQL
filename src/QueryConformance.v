@@ -27,6 +27,25 @@ Section QueryConformance.
 
   Notation is_inline_fragment := (@is_inline_fragment Name Vals).
 
+  Section All.
+    Equations? all_In {A : eqType} (s : seq A) (f : forall x, x \in s -> bool) : bool :=
+        {
+          all_In [::] _ := true;
+          all_In (hd :: tl) f := (f hd _) && (all_In tl (fun x H => f x _))
+        }.
+    by apply: mem_head.
+    by apply: mem_tail.
+    Defined.
+
+
+    
+    Fixpoint map_all {A : eqType} (p : A -> A -> bool) (s : seq A) : bool :=
+      match s with
+      | [::] => true
+      | (hd :: tl) => all (p hd) tl && map_all p tl
+      end.
+
+  End All.
   
   Lemma fset1I_eq {A : ordType} (a b : A) :
     (fset1 a :&: fset1 b)%fset != fset0 -> a = b.
@@ -140,74 +159,95 @@ Section QueryConformance.
  Definition aux_queries_size (queries : seq (Name * @Query Name Vals)) :=
    queries_size [seq q.2 | q <- queries].
 
+
+ Definition unline query : seq Query :=
+   if query is InlineFragment t φ then φ else [:: query].
+
+
  
- Equations have_same_response_shape schema (queries : seq (Name * @Query Name Vals)) : bool by wf (aux_queries_size queries) :=
+ Equations have_same_response_shape schema
+           (q1 : @Query Name Vals) (pty1 : Name)
+           (q2 : @Query Name Vals) (pty2 : Name) : bool by wf (query_size q1 + query_size q2) :=
    {
-     have_same_response_shape _ [::] := true;
-     have_same_response_shape schema [:: q] := true;
-     (* I think this never happens? *)
-     have_same_response_shape schema ((pty, InlineFragment t φ) :: hd :: tl) :=
-       have_same_response_shape schema ([seq (t, q) | q <- φ] ++ (hd :: tl));
-
-     (* I think this never happens? *)
-     have_same_response_shape schema (q :: (pty', InlineFragment t φ) :: tl) :=
-       have_same_response_shape schema (q :: ([seq (t, q) | q <- φ] ++ tl));
-
-     have_same_response_shape schema ((pty1, q1) :: (pty2, q2) :: tl)
-       with (qresponse_name q1 _) == (qresponse_name q2 _), have_same_response_shape schema ((pty2, q2) :: tl) :=
+     have_same_response_shape schema (InlineFragment t φ) pty1 q2 pty2 :=
+       all_In φ (fun q Hin => have_same_response_shape schema q t q2 pty2);
+     
+     have_same_response_shape schema q1 pty1 (InlineFragment t φ) pty2 :=
+       all_In φ (fun q Hin => have_same_response_shape schema q1 pty1 q t);
+     
+     have_same_response_shape schema q1 pty1 q2 pty2
+       with (qresponse_name q1 _) == (qresponse_name q2 _) :=
        {
-       | true | true :=
+       | true :=
          match lookup_field_type schema pty1 (qname q1 _), lookup_field_type schema pty2 (qname q2 _) with
-         | Some rty1, Some rty2 => [&& have_same_type schema rty1 rty2,
-                                  have_same_response_shape schema
-                                     ([seq (rty1.(tname), q) | q <- q1.(qsubquery)] ++ [seq (rty2.(tname), q) | q <- q2.(qsubquery)]) &
-                                  have_same_response_shape schema ((pty1, q1) :: tl)]
+         | Some rty1, Some rty2 =>
+           have_same_type schema rty1 rty2 &&
+           all_In q1.(qsubquery) (fun q Hin1 => all_In  q2.(qsubquery) (fun q' Hin2 => have_same_response_shape schema q rty1 q' rty2)) 
+                                    
          | _, _ => false
          end;
-       | _ | false := false;
-       | false | true := have_same_response_shape schema ((pty1, q1) :: tl)
+
+       | _ := true
        }
    }.
- Solve Obligations with intros; rewrite /aux_queries_size /=; simp query_size; ssromega.
- Solve Obligations with intros; rewrite /aux_queries_size /= -map_comp map_snd_pair_comp; simp query_size; ssromega.
- Solve Obligations with intros; rewrite /aux_queries_size /=; simp query_size; rewrite map_cat queries_size_app -map_comp map_snd_pair_comp; ssromega.
- Solve Obligations with intros; rewrite /aux_queries_size /= map_cat queries_size_app -?map_comp ?map_snd_pair_comp; simp query_size; ssromega.
-
-
+ Solve Obligations with intros; simp query_size; move: (in_queries_lt Hin) => Hlt; ssromega.
+ Next Obligation.
+   intros; simp query_size; move: (in_queries_lt Hin1) (in_queries_lt Hin2) => Hlt1 Hlt2; ssromega.
+ Qed.
+ Next Obligation.
+   intros; simp query_size; move: (in_queries_lt Hin1) (in_queries_lt Hin2) => Hlt1 Hlt2; ssromega.
+ Qed.
+ Next Obligation.
+   intros; simp query_size; move: (in_queries_lt Hin1) (in_queries_lt Hin2) => Hlt1 Hlt2; ssromega.
+ Qed.
+ Next Obligation.
+   intros; simp query_size; move: (in_queries_lt Hin1) (in_queries_lt Hin2) => Hlt1 Hlt2; ssromega.
+ Qed.
+    
  
-      
-  Equations is_field_merging_possible schema (queries : seq (Name * @Query Name Vals)) : bool by wf (aux_queries_size queries) :=
-    {
-      is_field_merging_possible schema [::] := true;
 
-      is_field_merging_possible schema [:: q] := true;
+ Equations is_field_merging_possible schema
+           (q1 : @Query Name Vals) (pty1 : Name)
+           (q2 : @Query Name Vals) (pty2 : Name) : bool by wf (query_size q1 + query_size q2) :=
+   {
+     is_field_merging_possible schema (InlineFragment t φ) _ q2 pty2 :=
+       all_In φ (fun q Hin => is_field_merging_possible schema q t q2 pty2);
+     
+     is_field_merging_possible schema q1 pty1 (InlineFragment t φ) _ :=
+       all_In φ (fun q Hin => is_field_merging_possible schema q1 pty1 q t);
 
-      is_field_merging_possible schema ((pty1, InlineFragment t φ) :: q2 :: tl) :=
-        is_field_merging_possible schema ([seq (t, q) | q <- φ] ++ (q2 :: tl));
-
-      is_field_merging_possible schema (q1 :: (pty2, InlineFragment t φ) :: tl) :=
-        is_field_merging_possible schema (q1 :: ([seq (t, q) | q <- φ] ++ tl));
-
-      
-      is_field_merging_possible schema ((pty1, q1) :: (pty2, q2) :: tl)
-        with lookup_field_type schema pty1 (qname q1 _), lookup_field_type schema pty2 (qname q2 _) :=
-        {
-        | Some rty1 | Some rty2 :=
-          (have_same_response_shape schema ((pty1, q1) :: (pty2, q2) :: tl)) &&
-          (((pty1 == pty2) || ~~(is_object_type schema pty1 && is_object_type schema pty2)) ==>
-                             [&& (qname q1 _) == (qname q2 _),
-                              (qargs q1 _) == (qargs q2 _) &
-                              is_field_merging_possible schema ([seq (rty1.(tname), q) | q <- q1.(qsubquery)] ++ [seq (rty2.(tname), q) | q <- q2.(qsubquery)])]);
-        | _ | _ := false
+     is_field_merging_possible schema q1 pty1 q2 pty2
+       with lookup_field_type schema pty1 (qname q1 _), lookup_field_type schema pty2 (qname q2 _) :=
+       {
+       | Some rty1 | Some rty2 :=
+         (have_same_response_shape schema q1 pty1 q2 pty2 &&
+         (((pty1 == pty2) || ~~(is_object_type schema pty1 && is_object_type schema pty2)) ==>
+          [&& (qname q1 _) == (qname q2 _),
+           (qargs q1 _) == (qargs q2 _) &
+           all_In q1.(qsubquery) (fun q Hin1 =>
+                                    all_In q2.(qsubquery) (fun q' Hin2 =>
+                                                             is_field_merging_possible schema q rty1 q' rty2))]));
+        | _ | _ := false 
         }
-        
-    }.
-  Solve Obligations with intros; rewrite /aux_queries_size /=; simp query_size; ssromega.
-  Solve Obligations with intros; rewrite /aux_queries_size /= -map_comp map_snd_pair_comp; simp query_size; ssromega.
-  Solve Obligations with intros; rewrite /aux_queries_size /=; simp query_size; rewrite map_cat queries_size_app -map_comp map_snd_pair_comp; ssromega.
-   Solve Obligations with intros; rewrite /aux_queries_size /= map_cat queries_size_app -?map_comp ?map_snd_pair_comp; simp query_size; ssromega.
+      
 
-   
+   }.
+ Solve Obligations with intros; simp query_size; move: (in_queries_lt Hin) => Hlt; ssromega.
+ Next Obligation.
+   intros; simp query_size; move: (in_queries_lt Hin1) (in_queries_lt Hin2) => Hlt1 Hlt2; ssromega.
+ Qed.
+ Next Obligation.
+   intros; simp query_size; move: (in_queries_lt Hin1) (in_queries_lt Hin2) => Hlt1 Hlt2; ssromega.
+ Qed.
+ Next Obligation.
+   intros; simp query_size; move: (in_queries_lt Hin1) (in_queries_lt Hin2) => Hlt1 Hlt2; ssromega.
+ Qed.
+  Next Obligation.
+   intros; simp query_size; move: (in_queries_lt Hin1) (in_queries_lt Hin2) => Hlt1 Hlt2; ssromega.
+ Qed.
+
+
+  
   (** Checks whether a query conforms to a given schema.
       
       Every query (or selection of fields) is set in a given context
@@ -216,6 +256,7 @@ Section QueryConformance.
 
    **)
 
+ 
   
   Equations query_conforms schema (ty : Name) query : bool :=
     {
@@ -241,7 +282,8 @@ Section QueryConformance.
         with lookup_field_in_type schema ty fname :=
         {
         | Some fld => [&& (is_object_type schema fld.(return_type) || is_abstract_type schema fld.(return_type)),
-                      arguments_conform schema fld.(fargs) α &
+                      arguments_conform schema fld.(fargs) α,
+                      φ != [::] &
                       queries_conform schema fld.(return_type) φ];
         | _ => false
         };
@@ -250,22 +292,23 @@ Section QueryConformance.
         with lookup_field_in_type schema ty fname :=
         {
         | Some fld => [&& (is_object_type schema fld.(return_type) || is_abstract_type schema fld.(return_type)),
-                      arguments_conform schema fld.(fargs) α &
+                      arguments_conform schema fld.(fargs) α,
+                      φ != [::] &
                       queries_conform schema fld.(return_type) φ];
         | _ => false
         };
 
       query_conforms schema ty (InlineFragment t φ) :=
         [&& [|| is_object_type schema t, is_interface_type schema t | is_union_type schema t], (* This might be a bit redundant *)
-         is_fragment_spread_possible schema ty t &
+         is_fragment_spread_possible schema ty t,
+         φ != [::] &
          queries_conform schema t φ]
     }
   where
   queries_conform schema (ty : Name) queries : bool :=
     {
-      queries_conform schema ty queries := [&& (queries != [::]),
-                                           all (query_conforms schema ty) queries &
-                                           is_field_merging_possible schema [seq (ty, q) | q <- queries]]
+      queries_conform schema ty queries :=  all (query_conforms schema ty) queries &&
+                                           map_all (fun q1 q2 => is_field_merging_possible schema q1 ty q2 ty) queries
     }.
 
   
@@ -281,7 +324,8 @@ Section QueryConformance.
   Lemma nf_conformsP schema type_in_scope f α φ :
     reflect (exists2 fld, lookup_field_in_type schema type_in_scope f = Some fld &
                           [&& (is_object_type schema fld.(return_type) || is_abstract_type schema fld.(return_type)),
-                           arguments_conform schema fld.(fargs) α &
+                           arguments_conform schema fld.(fargs) α,
+                           φ != [::] &
                            queries_conform schema fld.(return_type) φ])
             (query_conforms schema type_in_scope (NestedField f α φ)).
   Proof.
@@ -296,7 +340,8 @@ Section QueryConformance.
   Lemma nlf_conformsP schema type_in_scope l f α φ :
     reflect (exists2 fld, lookup_field_in_type schema type_in_scope f = Some fld &
                           [&& (is_object_type schema fld.(return_type) || is_abstract_type schema fld.(return_type)),
-                           arguments_conform schema fld.(fargs) α &
+                           arguments_conform schema fld.(fargs) α,
+                           φ != [::] &
                            queries_conform schema fld.(return_type) φ])
             (query_conforms schema type_in_scope (NestedLabeledField l f α φ)).
   Proof.
@@ -330,6 +375,7 @@ Section QueryConformance.
   Lemma object_spreads_in_object_scope schema type_in_scope t ϕ :
     is_object_type schema type_in_scope ->
     is_object_type schema t ->
+    ϕ != [::] ->
     queries_conform schema t ϕ -> 
     query_conforms schema type_in_scope (InlineFragment t ϕ) <->
     t = type_in_scope.
@@ -337,9 +383,7 @@ Section QueryConformance.
     wfquery.
     move=> Hobj'.
     pose H' := Hobj'.
-    move/is_object_type_E: H' => [obj [intfs [flds H]]].
-    move=> Hobj.
-    move=> Hqsc.
+    move/is_object_type_E: H' => [obj [intfs [flds H]]] Hobj Hne Hqsc.
     split.
     - simp query_conforms.
       move/and4P=> [/or3P _ Hspread _ _].
@@ -352,7 +396,7 @@ Section QueryConformance.
           by rewrite Hcontr.
     - move=> Heq; rewrite Heq /=.
       move: Hqsc; rewrite /queries_conform.
-      move/and3P=> [Hne Hall Hmerge].
+      move/andP=> [Hall Hmerge].
       apply/and5P; split=> //.
         by apply/or3P; constructor 1.
         rewrite /is_fragment_spread_possible; simp get_possible_types => /=.
@@ -391,19 +435,20 @@ Section QueryConformance.
 
   Lemma abstract_spreads_in_object_scope schema type_in_scope t ϕ :
     is_object_type schema type_in_scope ->
+    ϕ != [::] ->
     queries_conform schema t ϕ ->
     (is_interface_type schema t \/ is_union_type schema t) ->
     reflect (type_in_scope \in implementation schema t \/ type_in_scope \in union_members schema t)
             (query_conforms schema type_in_scope (InlineFragment t ϕ)).
   Proof.
-    move=> Hobj Hqsc Htype.
+    move=> Hobj Hne Hqsc Htype.
     apply: (iffP idP).
     - case: Htype => [Hint | Hunion].
         by move/(interface_spreads_in_object_scope _ _ _ _ Hobj Hint); left.
       by move/(union_spreads_in_object_scope _ _ _ _ Hobj Hunion); right.
-    - move: Hqsc; rewrite /queries_conform => /andP [Hne Hall].
+    - move: Hqsc; rewrite /queries_conform => /andP [Hall Hmerge].
       move=> H.      
-      simp query_conforms; apply/and4P; split=> //.
+      simp query_conforms; apply/and5P; split=> //.
       * by apply/or3P; case: Htype; [constructor 2 | constructor 3].
       * move/is_object_type_wfP: Hobj => [intfs [flds Holook]].
         case: H => [Himpl | Hmb]; 
@@ -427,11 +472,12 @@ Section QueryConformance.
   Lemma object_spreads_in_interface_scope schema type_in_scope t ϕ :
     is_object_type schema t ->
     is_interface_type schema type_in_scope ->
+    ϕ != [::] ->
     queries_conform schema t ϕ ->
     reflect (t \in implementation schema type_in_scope)
             (query_conforms schema type_in_scope (InlineFragment t ϕ)).
   Proof.
-    move=> Hobj Hintf Hqsc.
+    move=> Hobj Hintf Hne Hqsc.
     apply: (iffP idP).
     - query_conforms.
       move=> [_ Hspread _ _].
@@ -447,7 +493,7 @@ Section QueryConformance.
         move/get_possible_types_objectE: Hobj => ->.
           by rewrite seq1I Himpl.
 
-      all: do ?[by move: Hqsc; rewrite /queries_conform => /and3P [H1 H2 H3]].
+      all: do ?[by move: Hqsc; rewrite /queries_conform => /andP [H1 H2]].
   Qed.
 
 
@@ -538,13 +584,14 @@ Section QueryConformance.
   Qed.
   
   Lemma queries_conform_obj_int_union schema type_in_scope ϕ :
+    ϕ != [::] ->
     queries_conform schema type_in_scope ϕ ->
     [\/ is_object_type schema type_in_scope,
      is_interface_type schema type_in_scope |
      is_union_type schema type_in_scope].
   Proof.
     rewrite /queries_conform.
-    case: ϕ => //= hd tl.
+    case: ϕ => //= hd tl _.
     move/andP => [/andP [Hqc Hqsc] _].
     apply (type_in_scope_N_scalar_enum _ _ _ Hqc).
   Qed.
@@ -569,8 +616,8 @@ Section QueryConformance.
   Proof.
     move=> Himpl Hflds.
     rewrite /queries_conform.
-    move/and3P=> [Hne /allP Hqsc Hmerge].
-    apply/and3P; split=> //.
+    move/andP=> [/allP Hqsc Hmerge].
+    apply/andP; split=> //.
     apply/allP.
     move=> x Hin.
     move: (Hqsc x Hin) => {Hin}.
@@ -624,8 +671,8 @@ Section QueryConformance.
     queries_conform schema t ϕ.
   Proof.
     simp query_conforms.
-    move/and4P=> [_ _ Hne H].
-    by rewrite /queries_conform; apply/andP. 
+    move/and5P=> [_ _ Hne H Hmerge].
+    by apply/andP. 
   Qed.
 
   Lemma sf_conforms_in_interface_in_obj schema ti tyo f α :
@@ -652,12 +699,14 @@ Section QueryConformance.
     rewrite /fields /lookup_field_in_type Hilook.
   Admitted.
     
-
+S
   
   
  
 End QueryConformance.
 
+
+Arguments aux_queries_size [Name Vals].
 Arguments have_same_response_shape [Name Vals].
 Arguments is_field_merging_possible [Name Vals].
 Arguments is_fragment_spread_possible [Name Vals].
