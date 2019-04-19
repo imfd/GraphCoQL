@@ -170,42 +170,36 @@ Section QueryAux.
      Admitted.
 
 
-
    Equations is_non_redundant__ρ response : bool :=
-    {
-      is_non_redundant__ρ (NestedResult _ ρ)  := are_non_redundant__ρ ρ;
-      is_non_redundant__ρ (NestedListResult _ ρs) := all are_non_redundant__ρ ρs;
-      is_non_redundant__ρ _ := true
-                             
-    }
-  where are_non_redundant__ρ (responses : seq (@ResponseObject Name Vals)) : bool :=
-    {
-      are_non_redundant__ρ [::] := true;
-      are_non_redundant__ρ (hd :: tl)
-        with has (partial_response_eq hd) tl :=
-        {
-        | true := false;
-        | _ := (is_non_redundant__ρ hd) && are_non_redundant__ρ tl
-             
-        }
-    }.
+     {
+       is_non_redundant__ρ (NestedResult _ ρ)  := are_non_redundant__ρ ρ;
+       is_non_redundant__ρ (NestedListResult _ ρs) := all are_non_redundant__ρ ρs;
+       is_non_redundant__ρ _ := true                 
+     }
+   where
+   are_non_redundant__ρ (responses : seq (@ResponseObject Name Vals)) : bool :=
+     {
+       are_non_redundant__ρ [::] := true;
+       are_non_redundant__ρ (hd :: tl) :=
+         [&& all (fun r => r.(rname) != hd.(rname)) tl,
+          is_non_redundant__ρ hd &
+          are_non_redundant__ρ tl]
+           
+     }.
 
+   
    Lemma are_non_redundant__ρ_uniq s :
      are_non_redundant__ρ s -> uniq s.
    Proof.
-     elim: s => //= hd tl IH.
-     case Hhas: has => //= /andP [Hnr Hnrs].
+     elim: s => //= hd tl IH /and3P [Hall Hnr Hnrs].
      apply/andP; split; last by apply: IH.
      apply/memPn => y Hin.
-     move/hasPn : Hhas => /(_ y Hin).
-     case: hd Hnr => // [l | l v | l vs | l ρ | l ρs] _ /=; case: y {Hin} => //.
-     - by move=> l' /eqP Hneq; apply/eqP; case => Hcontr; rewrite Hcontr in Hneq.
-     - by move=> l' v'; rewrite negb_and => /orP [/eqP Heq | /eqP Heq];
-       apply/eqP; case => Hcontr1 Hcontr2; rewrite ?Hcontr1 ?Hcontr2 /= in Heq.
-     - by move=> l' v'; rewrite negb_and => /orP [/eqP Heq | /eqP Heq];
-       apply/eqP; case => Hcontr1 Hcontr2; rewrite ?Hcontr1 ?Hcontr2 /= in Heq.
-     - by move=> l' χ /eqP Hneq; apply/eqP; case => Hcontr; rewrite Hcontr in Hneq.
-     - by move=> l' χ /eqP Hneq; apply/eqP; case => Hcontr; rewrite Hcontr in Hneq.
+     move/allP: Hall => /(_ y Hin) {Hin Hnr}.
+     case: eqP => //= Heq _.
+     case: y Heq => //= [l | l v | l vs | l ρ | l ρs];
+                     case: hd => //= l'.
+     by case: eqP => //; case=> ->.
+     all: do [by move=> x; case: eqP => //; case=> ->].
    Qed.
       
        

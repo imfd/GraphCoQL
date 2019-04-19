@@ -699,7 +699,7 @@ Section QueryConformance.
     rewrite /fields /lookup_field_in_type Hilook.
   Admitted.
     
-S
+
   
   
  

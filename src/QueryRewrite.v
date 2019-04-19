@@ -682,93 +682,165 @@ Section QueryRewrite.
       (* Change lemmas to use info on get possible types *)
 
    Admitted.
-    
 
-   Equations  β__subqueryextract : @Query Name Vals -> @Query Name Vals -> seq (@Query Name Vals) :=
-        {
-          β__subqueryextract (NestedField f α β) (NestedField f' α' χ)
-            with f == f', α == α' :=
-            {
-            | true | true := χ;
-            | _ | _ := [::]
-            };
-          
-          β__subqueryextract (NestedLabeledField l f α β) (NestedLabeledField l' f' α' χ)
-            with [&& l == l', (f == f') & (α == α')] :=
-            {
-            | true := χ;
-            | _ := [::]
-            };
-          
-          β__subqueryextract (InlineFragment t β) (InlineFragment t' χ)
-            with (t == t') :=
-            {
-            | true => χ;
-            | false => [::]
-            };
-          
-          β__subqueryextract _ _ := [::]
-        }.
+
    
-   Fixpoint β__φ (flt : @Query Name Vals) queries : seq Query :=
-     match queries with
-     | [::] => [::]
-     | hd :: tl =>  (β__subqueryextract flt hd) ++ (β__φ flt tl)
-     end.
+   Section Beta.
+ 
+     Equations β__φ (flt : Name) (queries : seq (@Query Name Vals)) : seq (@Query Name Vals) :=
+       {
+         β__φ _ [::] := [::];
+         
+         β__φ flt (q :: tl)
+           with has_same_response_name_or_guard flt q :=
+           {
+           | true := q.(qsubquery) ++ β__φ flt tl;
+           | _ := β__φ flt tl
+           }
+       }.
 
-  Lemma β__subqueryextract_size_reduced flt q :
-    queries_size (β__subqueryextract flt q) < query_size q.
-  Proof.
-    by apply_funelim (β__subqueryextract flt q) => //=; intros; case: q0; intros; simp query_size.
-  Qed.
-  
-  Lemma β__φ_size_reduced flt queries :
-    queries_size (β__φ flt queries) <= queries_size queries.
-  Proof.
-    elim: queries => //= hd tl IH.
-    rewrite queries_size_app.
-    move: (β__subqueryextract_size_reduced flt hd) => Hlt.
-    by ssromega.
-  Qed.
+     Lemma β__φ_size_reduced flt queries :
+       queries_size (β__φ flt queries) <= queries_size queries.
+     Proof.
+       funelim (β__φ flt queries) => //=.
+       move: (subqueries_lt_query q) => Hlt. 
+         by rewrite queries_size_app; ssromega.
+           by case: q Heq; intros; ssromega.
+     Qed.
+
+
 
   
-  Lemma cat2s {T : Type} (x y : T) (s : seq T) :
-    [:: x] ++ (y :: s) = [:: x, y & s].
-  Proof. by case: s. Qed.
-  
-  Lemma β__φ_cons q qs x : 
-    β__φ q (x :: qs) = (β__φ q [:: x]) ++ (β__φ q qs).
-  Proof.
-    elim: qs x => //.
-      by move=> x; simp β__φ; rewrite ! cats0.
-    move=> hd tl IH x /=.
-    by rewrite cats0.
-  Qed.
+     Lemma cat2s {T : Type} (x y : T) (s : seq T) :
+       [:: x] ++ (y :: s) = [:: x, y & s].
+     Proof. by case: s. Qed.
 
+     Lemma β__φ_cons q x qs : 
+       β__φ q (x :: qs) = (β__φ q [:: x]) ++ (β__φ q qs).
+     Proof.
+         by funelim (β__φ q (x :: qs)) => //=; simp β__φ; rewrite Heq /=; simp β__φ; rewrite ?cats0 ?cat0s.
+     Qed.
+  
       
-  Lemma β__φ_cat q qs qs' :
-    β__φ q (qs ++ qs') = (β__φ q qs) ++ (β__φ q qs').
-  Proof.
-    elim: qs qs' => // hd tl IH qs'.    
-    rewrite cat_cons.
-    rewrite β__φ_cons [β__φ q (hd :: tl)]β__φ_cons.
-    by rewrite (IH qs') catA.
-  Qed.
-  
-  Definition γ__φ (flt : Query) (queries : seq Query) : seq (@Query Name Vals) :=
-    [seq query <- queries | ~~ partial_query_eq flt query].
+     Lemma β__φ_cat q qs qs' :
+       β__φ q (qs ++ qs') = (β__φ q qs) ++ (β__φ q qs').
+     Proof.
+       elim: qs qs' => // hd tl IH qs'.    
+       rewrite cat_cons.
+       rewrite β__φ_cons [β__φ q (hd :: tl)]β__φ_cons.
+         by rewrite (IH qs') catA.
+     Qed.
+
+     Lemma β__φ_has_none_nil flt queries :
+       all (fun q => ~~has_same_response_name_or_guard flt q) queries ->
+       β__φ flt queries = [::].
+     Proof.
+       elim: queries => //= hd tl IH /andP [/negbTE Hneq Hall].
+       rewrite β__φ_cons. 
+       rewrite (IH Hall) cats0.
+       by simp β__φ; rewrite Hneq /=.
+     Qed.
 
 
-  Lemma γ__φ_no_repetition flt queries :
-    forall q, q \in (γ__φ flt queries) ->
-               partial_query_eq flt q = false.
-  Proof.
-    move=> q.
-    rewrite /γ__φ mem_filter => /andP [H _].
-    by move: H; rewrite /negb; case: ifP.
-  Qed.
+
+     Lemma β__φ_preserves_conformance schema flt qs :
+       forall ty,
+         all (query_conforms schema ty) qs ->
+         exists ty', all (query_conforms schema ty') (β__φ flt qs).
+     Proof.
+       funelim (β__φ flt qs) => //= ty /andP [Hqc Hqsc].
+       all: do [move: (H _ _ Hqsc) => [ty' Hqsc']];
+         exists ty' => //.
+       rewrite all_cat; apply_andP.
+     Abort.
+
+     Lemma β__φ_preserves_grounded schema ty flt qs :
+       are_grounded_2 schema ty qs ->
+       are_grounded_2 schema ty (β__φ flt qs).
+     Proof.
+       funelim (β__φ flt qs) => //=; case Hscope: is_object_type => //=.
+       move/and3P=> [Hty Hg Hgs].
+       rewrite -are_grounded_2_cat; split=> //.
+       case: q Hg Heq Hty => //=.
+     Abort.
+
+       
+     
+   End Beta.
+
+
+  Section Gamma.
+    
+    Definition γ__φ (flt : Name) (queries : seq (@Query Name Vals)) :=
+      [seq q <- queries | ~~(has_same_response_name_or_guard flt q)].
+
+
+    Lemma γ__φ_queries_size_reduced flt queries :
+      queries_size (γ__φ flt queries) <= queries_size queries.
+    Proof.
+      elim: queries => //= hd tl IH.
+      by case: ifP => //= Heq; ssromega.
+    Qed.
+    
+    Lemma γ__φ_all_neq flt queries :
+      all (fun q => ~~has_same_response_name_or_guard flt q) (γ__φ flt queries).
+    Proof.
+      apply/allP => q.
+      rewrite /γ__φ mem_filter => /andP [H _].
+        by move: H; rewrite /negb; case: ifP.
+    Qed.
+
+    Lemma γ__φ_N_has flt queries :
+      forall q, q \in (γ__φ flt queries) ->
+                 has_same_response_name_or_guard flt q = false.
+
+    Proof.
+      move=> q.
+      rewrite /γ__φ mem_filter => /andP [H _].
+        by move: H; rewrite /negb; case: ifP.
+    Qed.
 
     
+    Lemma γ__φ_no_repetition_eq flt qs :
+      all (fun q => ~~has_same_response_name_or_guard flt q) qs ->
+      γ__φ flt qs = qs.
+    Proof.
+      elim: qs => //= hd tl IH /andP [Hneq Hall].
+      case: ifP => Hf.
+      by rewrite (IH Hall).
+      by rewrite Hneq in Hf.
+    Qed.
+
+  
+    Lemma γ__φ_preserves_non_redundancy flt queries :
+      are_non_redundant queries ->
+      are_non_redundant (γ__φ flt queries).
+    Proof.
+      elim: queries => // hd tl IH.
+      case: hd => //= [f α | l f α | f α φ | l f α φ | t φ]; simp are_non_redundant; simp qresponse_name => /and3P [Hall Hnr Hnrs]; case: ifP => //= Heq; last first.
+      all: do ?[by apply: IH].
+
+      all: do ?[simp are_non_redundant; apply_and3P].
+      all: do ?[move/allP: Hall => Hall;
+                apply/allP => q; rewrite mem_filter => /andP [_ Hin];
+                apply: (Hall q Hin)].
+    Qed.
+
+    Lemma γ__φ_preserves_grounded schema ty flt qs :
+      are_grounded_2 schema ty qs ->
+      are_grounded_2 schema ty (γ__φ flt qs).
+    Proof.
+      elim: qs => //= hd tl IH;
+      case: ifP => //= _;
+      case Hobj : is_object_type => //=.
+      all: do ?[case: eqP => //= /eqP Heq].
+      all: do ?[move=> /and3P [Hty Hg Hgs]].
+      all: do ?[apply_and3P].
+      all: do ?[by apply: IH].
+    Qed.
+    
+  End Gamma.
+
     
   Obligation Tactic := intros; simp query_size; do ? ssromega; rewrite ?queries_size_app.  
   Equations remove_redundancies (queries : seq (@Query Name Vals)) : seq (@Query Name Vals)
@@ -777,36 +849,37 @@ Section QueryRewrite.
       remove_redundancies [::] := [::];
       
       remove_redundancies ((SingleField f α) :: queries) :=
-        let filtered := remove_redundancies queries in
-        (SingleField f α) :: (γ__φ (SingleField f α) filtered);
+        (SingleField f α) :: remove_redundancies (γ__φ f queries);
       
       remove_redundancies ((LabeledField l f α) :: queries) :=
-        let filtered := remove_redundancies queries in
-        (LabeledField l f α) :: (γ__φ (LabeledField l f α) filtered);
+        (LabeledField l f α) :: remove_redundancies (γ__φ l queries);
 
       remove_redundancies ((NestedField f α φ) :: queries) :=
-        let filtered := remove_redundancies queries in
-        (NestedField f α (remove_redundancies (φ ++ (β__φ (NestedField f α φ) queries)))) :: (γ__φ (NestedField f α φ) filtered);
+        (NestedField f α (remove_redundancies (φ ++ (β__φ f queries)))) :: remove_redundancies (γ__φ f queries);
 
       remove_redundancies ((NestedLabeledField l f α φ) :: queries) :=
-        let filtered := remove_redundancies queries in
-        (NestedLabeledField l f α (remove_redundancies (φ ++ (β__φ (NestedLabeledField l f α φ) queries)))) :: (γ__φ (NestedLabeledField l f α φ) filtered);
+        (NestedLabeledField l f α (remove_redundancies (φ ++ (β__φ l queries)))) :: remove_redundancies (γ__φ l queries);
 
       remove_redundancies ((InlineFragment t φ) :: queries) :=
-        let filtered := remove_redundancies queries in
-        (InlineFragment t (remove_redundancies (φ ++ (β__φ (InlineFragment t φ) queries)))) :: (γ__φ (InlineFragment t φ) filtered)
+        (InlineFragment t (remove_redundancies (φ ++ (β__φ t queries)))) :: remove_redundancies (γ__φ t queries)
       
     }.
+  Solve Obligations with intros; simp query_size; move: (γ__φ_queries_size_reduced f queries) => Hlt; ssromega.
+  Solve Obligations with intros; simp query_size; move: (γ__φ_queries_size_reduced l queries) => Hlt; ssromega.
+  
   Next Obligation.
-    by move: (β__φ_size_reduced (NestedField f α φ) queries) => Hlt; ssromega.
+    by move: (β__φ_size_reduced f queries) => Hlt; ssromega.
   Qed.
   Next Obligation.
-     by move: (β__φ_size_reduced (NestedLabeledField l f α φ) queries) => Hlt; ssromega.
+     by move: (β__φ_size_reduced l queries) => Hlt; ssromega.
   Qed.
   Next Obligation.
-    by move: (β__φ_size_reduced (InlineFragment t φ) queries) => Hlt; ssromega.
+    by move: (β__φ_size_reduced t queries) => Hlt; ssromega.
   Qed.
-
+  Next Obligation.
+    move: (γ__φ_queries_size_reduced t queries) => Hlt; ssromega.
+  Qed.
+  
   Equations remove_redundancies__φ query : @Query Name Vals  :=
     {
       remove_redundancies__φ (SingleField f α) := (SingleField f α);
@@ -823,65 +896,46 @@ Section QueryRewrite.
     }.
 
 
-  Lemma filter_preserves_non_redundancy flt queries :
-    are_non_redundant queries ->
-    are_non_redundant (γ__φ flt queries).
+  Lemma remove_redundancies_preserves_all_neq flt queries :
+    all (fun q => ~~has_same_response_name_or_guard flt q) queries ->
+    all (fun q => ~~has_same_response_name_or_guard flt q) (remove_redundancies queries).
   Proof.
-    elim: queries => // hd tl IH.
-    rewrite are_non_redundant_equation_2.
-    case Hhas: has => //=.
-    move/andP=> [Hnr Hnrtl].
-    case: ifP => //; last first.
-      by move=> _; apply: IH.
-    rewrite are_non_redundant_equation_2.
-    case Hhas': has => //=.  
-    move/negbT: Hhas => /hasPn Hhas.
-    move/hasP: Hhas' => [q].
-    rewrite mem_filter => /andP [Hneq Hin].
-    by move: (Hhas q Hin) => /negbTE ->.
-    by move=> _; apply/andP; split => //; apply IH.
+    funelim (remove_redundancies queries) => //= /andP [Hneq Hall]; apply_andP.
+     
+    all: do ?[by apply: H; move/allP: Hall => Hall;
+              apply/allP => x; rewrite mem_filter => /andP [_ Hin]; apply: Hall].
+    all: do ?[by apply: H0; move/allP: Hall => Hall;
+              apply/allP => x; rewrite mem_filter => /andP [_ Hin]; apply: Hall].
+
   Qed.
+    
+ 
 
-
-      
+    
   Lemma remove_redundancies_is_non_redundant queries :
     are_non_redundant (remove_redundancies queries).
   Proof.
-    funelim (remove_redundancies queries) => //;
-    rewrite are_non_redundant_equation_2;
-    case Hhas: has => //=.
-
-    all: do ?[by move/hasP: Hhas => [q Hin];
-              move: (γ__φ_no_repetition _ _ q Hin) ->].
-
-    all: do ?[by apply/andP; split => //=;
-              apply (filter_preserves_non_redundancy _ _ H)].
-    all:  move/hasP: Hhas => [q Hin];
-          move: (γ__φ_no_repetition _ _ q Hin);
-          rewrite /partial_query_eq; case: q Hin => //=.
-    - by move=> f' α' χ Hin ->.
-    - by move=> l' f' α' χ Hin ->.
-    - by move=> t' χ Hin ->.
+    funelim (remove_redundancies queries) => //=;
+    simp are_non_redundant; simp qresponse_name; apply_and3P;
+    apply: remove_redundancies_preserves_all_neq; apply: γ__φ_all_neq.
   Qed.
 
   Lemma remove_redundancies_preserves_all_fields queries :
     all is_field queries ->
     all is_field (remove_redundancies queries).
   Proof.
-    elim: queries => //= hd tl IH.
-    by case: hd => //=;
-    intros; move/andP: H => [Hf Hfs]; simp remove_redundancies => /=;
-    apply/andP; split=> //; apply: filter_preserves_pred; apply: IH.
+    funelim (remove_redundancies queries) => //= /andP [Hfld Hflds]; apply_andP.
+    all: do ?[by apply: H; apply: filter_preserves_pred].
+    all: do ?[by apply: H0; apply: filter_preserves_pred].
   Qed.
 
   Lemma remove_redundancies_preserves_all_inlines queries :
     all is_inline_fragment queries ->
     all is_inline_fragment (remove_redundancies queries).
   Proof.
-    elim: queries => //= hd tl IH.
-    by case: hd => //=;
-    intros; move/andP: H => [Hin Hins]; simp remove_redundancies => /=;
-    apply/andP; split=> //; apply: filter_preserves_pred; apply: IH.
+    funelim (remove_redundancies queries) => //= /andP [Hinl Hinls]; apply_andP.
+    all: do ?[by apply: H; apply: filter_preserves_pred].
+    all: do ?[by apply: H0; apply: filter_preserves_pred].
   Qed.
   
 
@@ -894,44 +948,6 @@ Section QueryRewrite.
 
  
 
-  Lemma γ__φ_no_repetition_eq q qs :
-    (forall x, x \in qs -> ~~partial_query_eq q x) ->
-               γ__φ q qs = qs.
-  Proof.
-    elim: qs => //= hd tl IH H.
-    case: ifP => Hf.
-    congr cons.
-    by apply: IH => x Hin; apply: H; apply: mem_tail.
-    have: hd \in hd :: tl by apply: mem_head.
-    by move/H; rewrite Hf.
-  Qed.
-  
-  Lemma remove_redundancies_uniq q qs :
-    ~~ has (partial_query_eq q) qs ->
-    remove_redundancies (q :: qs) = [seq (remove_redundancies__φ q') | q' <- q :: qs].
-  Proof.
-    move/hasPn.
-    case: q => //.
-    - move=> f α H; simp remove_redundancies => /=; simp remove_redundancies__φ; congr cons.
-      rewrite (γ__φ_no_repetition_eq _ (remove_redundancies qs)).
-  Abort.
-
-
-  (*
-  Lemma remove_redundancies_inlined_query schema type_in_scope q :
-    remove_redundancies [seq (InlineFragment ty [:: q]) | ty <- get_possible_types schema type_in_scope] =
-    [seq (InlineFragment ty (remove_redundancies [:: q])) | ty <- get_possible_types schema type_in_scope].
-  Proof.
-    apply_funelim (get_possible_types schema type_in_scope) => //=.
-    - move=> ty o intfs flds /lookup_type_name_wf /= ->.
-      simp remove_redundancies => /=.
-        by simp β__φ => /=; simp remove_redundancies.
-    - move=> ty i flds Hlook.
-      elim/fset_ind: (implementation schema i) => //= x xs Hnin IH.
-      
-  Admitted.
-*)
-
   Lemma remove_redundancies_inlined_query schema type_in_scope q :
     remove_redundancies [seq InlineFragment ty [:: q] | ty <- get_possible_types schema type_in_scope] =
     [seq InlineFragment ty (remove_redundancies [:: q]) | ty <- get_possible_types schema type_in_scope].
@@ -940,354 +956,51 @@ Section QueryRewrite.
     simp remove_redundancies => /=.
      
   Admitted.
-
-    
-    
- 
-
-
-
-  (*
-  Ltac contr_scope_type s ty :=
-    match goal with
-    | [ H : is_object_type s ty, Hcontr : is_object_type s ty = false |- _ ] => rewrite H in Hcontr; inversion Hcontr
-    end.
-   *)
-
-  Lemma γ__φ_non_redundant_eq q qs :
-    are_non_redundant (q :: qs) ->
-    γ__φ q qs = qs.
-  Proof.
-    rewrite are_non_redundant_equation_2.
-    case Hhas: has => //= _.
-    move/hasPn: Hhas => /allP /all_filterP Heq.
-      by rewrite /γ__φ Heq.
-  Qed.
-
-  Lemma β__subqueryextract_not_eq_nil q1 q2 :
-    ~~partial_query_eq q1 q2 ->
-    β__subqueryextract q1 q2 = [::].
-  Proof.
-    apply_funelim (β__subqueryextract q1 q2) => //=.
-    - move=> α α' f f' φ χ /eqP Hα /eqP Hf /nandP.
-        by case=> [/eqP Hnf | /eqP Hnα]; [rewrite Hf in Hnf | rewrite Hα in Hnα].
-    - by move=> l f α l' f' α' φ χ /and3P [/eqP Hl /eqP Hf /eqP Hα]
-              /nandP [/eqP Hnl | /nandP [ /eqP Hnf | /eqP Hnα]];
-     [rewrite Hl in Hnl | rewrite Hf in Hnf | rewrite Hα in Hnα].
-    - by move=> t t' α χ /eqP -> /eqP.
-  Qed.
   
-  Lemma β__φ_has_none_nil flt queries :
-    has (partial_query_eq flt) queries = false ->
-    β__φ flt queries = [::].
-  Proof.
-    elim: queries => // hd tl IH.
-    move/hasPn/allP=> /= /andP [Hneq /allP/hasPn/negbTE Hntl].
-    rewrite (IH Hntl) cats0.
-    by apply: β__subqueryextract_not_eq_nil.
-  Qed.
-    
-    
+   
+  Hint Resolve γ__φ_preserves_non_redundancy.
   Lemma non_redundant_eq_remove qs :
     are_non_redundant qs ->
     remove_redundancies qs = qs.
   Proof.
-    apply_funelim (remove_redundancies qs) => // [f α | l f α | f α φ | l f α φ | t φ] χ IH.
+    apply_funelim (remove_redundancies qs) => //= [f α | l f α | f α φ | l f α φ | t φ] χ IH.
+    all: do ?[by simp are_non_redundant; simp qresponse_name => /and3P [Hall Hnr Hnrs];
+              congr cons;
+              rewrite IH; [apply: γ__φ_no_repetition_eq | apply: γ__φ_preserves_non_redundancy]].
     
-    all: do ?[by intros; simp remove_redundancies => /=; congr cons;
-              rewrite IH //=; [apply: γ__φ_non_redundant_eq | move: H => /=; case: has => //=]]. 
 
-    all: do ?[move=> IH2 Hnr;
-              pose Hnr' := Hnr; move: Hnr' => /=;
-              case Hhas: has => //= /andP [Hhdnr Htlnr];
-              rewrite IH2 => //=; rewrite β__φ_has_none_nil => //; rewrite cats0].
-    all: do ?[by rewrite IH => //; congr cons; apply: γ__φ_non_redundant_eq].
-    all: do [by simp is_non_redundant in Hhdnr].
+    all: do ?[by move=> IH2;
+              simp are_non_redundant; simp qresponse_name => /and3P [Hall /= Hnr Hnrs];
+              rewrite IH ?β__φ_has_none_nil ?cats0 //; congr cons;
+              rewrite IH2; [apply: γ__φ_no_repetition_eq | apply: γ__φ_preserves_non_redundancy]].
   Qed.
   
       
-
-  Lemma γ__φ_preserves_grounded schema ty flt qs :
-    are_grounded_2 schema ty qs ->
-    are_grounded_2 schema ty (γ__φ flt qs).
-  Proof.
-    elim: qs => //= hd tl IH.
-    case: ifP => // _; rewrite  ?are_grounded_2_equation_2;
-    case Hobj : is_object_type => //=.
-    all: do ?[case: eqP => //= /eqP Heq].
-    all: do ?[move=> /and3P [Hty Hg Hgs]].
-    all: do ?[apply_and3P].
-    all: do ?[by apply: IH].
-  Qed.
-
- 
-
 
   Lemma are_grounded_nil {schema ty} : are_grounded_2 schema ty [::]. Proof. done. Qed.
   Lemma are_non_redundant_nil : @are_non_redundant Name Vals [::]. Proof. done. Qed.
 
-  Lemma β__φ_empty_for_sf f α qs :
-    β__φ (SingleField f α) qs = [::].
-  Proof. by elim: qs. Qed.
 
-  Lemma β__φ_empty_for_lf l f α qs :
-    β__φ (LabeledField l f α) qs = [::].
-  Proof. by elim: qs. Qed.
+ 
 
-
-  
-  Lemma β__φ_preserves_conformance_nf schema ty f α φ fld qs :
-    query_conforms schema ty (NestedField f α φ) ->
-    lookup_field_in_type schema ty f = Some fld ->
-    all (query_conforms schema ty) qs ->
-    all (query_conforms schema (return_type fld)) (β__φ (NestedField f α φ) qs).
-  Proof.
-    elim: qs => // hd tl IH Hqc Hlook /=.
-    case: hd => // [f' α' | l f' α' | f' α' χ | l f' α' χ | t χ] /andP [Hhdqc Hqsc];
-    intros; simp β__subqueryextract; rewrite ?cat0s; do ?[apply: IH => //].
-
-    case: eqP => //=; [case: eqP => // | by move=> _; apply: IH]; rewrite all_cat //=.
-    move=> Hfeq Haeq; apply_andP.
-    by move: Hhdqc; rewrite Hfeq in Hlook; simp query_conforms; rewrite Hlook /= => /and5P [_ _ _].
-      by apply: IH.
-    by intros; apply: IH.
-  Qed.
-
-  Lemma β__φ_preserves_conformance schema q qs :
-    forall ty,
-    query_conforms schema ty q ->
-    all (query_conforms schema ty) qs ->
-    exists ty', all (query_conforms schema ty') (β__φ q qs).
-  Proof.
-    case: q.
-    - by intros; exists ty; rewrite β__φ_empty_for_sf /=.
-    - by intros; exists ty; rewrite β__φ_empty_for_lf /=.
-      
-    - move=> f α φ ty; simp query_conforms.
-      case Hlook : lookup_field_in_type => [fld|] // /and4P [_ _ _ Hqsc] Hqsc'.
-      exists fld.(return_type).
-      elim: qs Hqsc' => // hd tl IH.
-      all_cons => [Hqc Hqsc'] /=.
-      case: hd Hqc => // [f' α' | l f' α' | f' α' χ | l f' α' χ | t χ] Hqc;
-      intros; simp β__subqueryextract; rewrite ?cat0s; do ?[apply: IH => //].
-
-      case: eqP => //=; [case: eqP => // | by move=> _; apply: IH]; rewrite all_cat //=.
-      move=> Hfeq Haeq; apply_andP.
-        by move: Hqc; rewrite Hfeq in Hlook; simp query_conforms; rewrite Hlook /= => /and5P [_ _ _].
-        by apply: IH.
-      by intros; apply: IH.
-
-    - move=> l f α φ ty; simp query_conforms.
-      case Hlook : lookup_field_in_type => [fld|] // /and4P [_ _ _ Hqsc] Hqsc'.
-      exists fld.(return_type).
-      elim: qs Hqsc' => // hd tl IH.
-      all_cons => [Hqc Hqsc'] /=.
-      case: hd Hqc => // [f' α' | l' f' α' | f' α' χ | l' f' α' χ | t χ] Hqc;
-      intros; simp β__subqueryextract; rewrite ?cat0s; do ?[apply: IH => //].
-
-      case: eqP => //=; [case: eqP => //= | by intros; apply: IH];
-                    [case: eqP => //= | by intros; apply: IH];
-                    [rewrite all_cat //=| by intros; apply: IH].
-      move=> _ Hfeq _; apply_andP.
-        by move: Hqc; rewrite Hfeq in Hlook; simp query_conforms; rewrite Hlook /= => /and5P [_ _ _].
-        by apply: IH.
-
-
-    - move=> t φ ty; simp query_conforms => /and5P [_ _ _ Hqsc _] Hqsc'.
-      exists t.
-      elim: qs Hqsc' => // hd tl IH.
-      case: hd => //=; do ?[intros; move/andP: Hqsc' => [_ Hqsc']; simp β__subqueryextract; rewrite cat0s; apply: IH].
-
-      move=> t' χ /andP [/and5P [_ _ _ Hqc _] Hqsc'] /=; simp β__subqueryextract.
-        by case: eqP => //=; [move=> Heq; rewrite -Heq ?all_cat in Hqc *; apply_andP; apply: IH | by intros; apply: IH].
-  Qed.
-
-
-  Lemma β__φ_preserves_conformance_nlf schema ty l f α φ fld qs :
-    query_conforms schema ty (NestedLabeledField l f α φ) ->
-    lookup_field_in_type schema ty f = Some fld ->
-    all (query_conforms schema ty) qs ->
-    all (query_conforms schema (return_type fld)) (β__φ (NestedLabeledField l f α φ) qs).
-  Proof.
-    elim: qs => // hd tl IH Hqc Hlook /=.
-    case: hd => // [f' α' | l' f' α' | f' α' χ | l' f' α' χ | t χ] /andP [Hhdqc Hqsc];
-    intros; simp β__subqueryextract; rewrite ?cat0s; do ?[apply: IH => //].
-
-    case: eqP => //=; [case: eqP => //= | by intros; apply: IH];
-                    [case: eqP => //= | by intros; apply: IH];
-                    [rewrite all_cat //=| by intros; apply: IH].
-    move=> _ Hfeq _; apply_andP.
-        by move: Hhdqc; rewrite Hfeq in Hlook; simp query_conforms; rewrite Hlook /= => /and5P [_ _ _].
-        by apply: IH.
-  Qed. 
-
-  Lemma β__φ_preserves_conformance_inline schema ty t φ qs :
-    query_conforms schema ty (InlineFragment t φ) ->
-    all (query_conforms schema ty) qs ->
-    all (query_conforms schema t) (β__φ (InlineFragment t φ) qs).
-  Proof.
-    elim: qs => // hd tl IH Hqsc.
-    all_cons => [Hqc Hqsc'].
-    case: hd Hqc => //=.
-    all: do ?[by intros; simp β__subqueryextract; move/andP: H => [_ H]; rewrite cat0s; apply: IH].
-
-    move=> t' χ /and5P [_ _ _ Hqc _] /=; simp β__subqueryextract.
-      by case: eqP => //=; [move=> Heq; rewrite -Heq ?all_cat in Hqc *; apply_andP; apply: IH | by intros; apply: IH].
-  Qed.
-  
-  Lemma β__φ_preserves_grounded_nf schema ty f α φ fld qs :
-    query_conforms schema ty (NestedField f α φ) ->
-    lookup_field_in_type schema ty f = Some fld ->
-    are_grounded_2 schema ty qs ->
-    are_grounded_2 schema (return_type fld) (β__φ (NestedField f α φ) qs).
-  Proof.
-    elim: qs => // hd tl IH Hqc Hlook.
-    move/are_grounded_2_cons => /andP; case. 
-    case: hd => // [f' α' | l f' α' | f' α' χ | l f' α' χ | t χ] /=; simp β__subqueryextract; rewrite ?cat0s.
-    
-    move=> Hg Hgs.
-    case: eqP => //=;
-    [case: eqP => // [Hfeq Haeq | _ _] | by move=> _; apply IH];
-                  rewrite -are_grounded_2_cat //=; split=> //; do ?[apply: IH => //].
-      by move: Hg; simp is_grounded_2; rewrite -Hfeq Hlook /=.
-  Qed.
-
-  
-  Lemma β__φ_preserves_grounded_nlf schema ty l f α φ fld qs :
-    query_conforms schema ty (NestedLabeledField l f α φ) ->
-    lookup_field_in_type schema ty f = Some fld ->
-    are_grounded_2 schema ty qs ->
-    are_grounded_2 schema (return_type fld) (β__φ (NestedLabeledField l f α φ) qs).
-  Proof.
-    elim: qs => // hd tl IH Hqc Hlook.
-    move/are_grounded_2_cons => /andP; case. 
-    case: hd => // [f' α' | l' f' α' | f' α' χ | l' f' α' χ | t χ] /=;
-    simp β__subqueryextract.
-
-     case: eqP => //=; [case: eqP => //= | by intros; apply: IH];
-                    [case: eqP => //= | by intros; apply: IH];
-                    [rewrite -are_grounded_2_cat //=| by intros; apply: IH].
-
-    - move=> _ Hfeq _ Hg Hgs; split.
-        by move: Hg; simp is_grounded_2; rewrite -Hfeq Hlook /=.
-        by apply: IH.
-  Qed.
-  
-  Lemma β__φ_preserves_grounded_inline schema ty t φ qs :
-    are_grounded_2 schema ty qs ->
-    are_grounded_2 schema t (β__φ (InlineFragment t φ) qs).
-  Proof.
-    elim: qs => // hd tl IH.
-    move/are_grounded_2_cons => /andP; case. 
-    case: hd => //= t' χ Hg Hgs; simp β__subqueryextract.
-
-    case: eqP => //= Heq; [ | by apply: IH].
-    rewrite -are_grounded_2_cat; split=> //.
-    rewrite Heq ?are_grounded_2E in Hg *.
-    move: Hg; simp is_grounded_2 => /and3P [Ht Hflds Hg].
-    apply_andP.
-    orL; apply_andP.
-      by apply: IH.
-  Qed.
-
-
-  
-  Lemma β__φ_preserves_all_fields schema ty t φ qs :
-    is_object_type schema ty = false ->
-    are_grounded_2 schema ty qs ->
-    get_possible_types schema ty != fset0 ->
-    all is_field (β__φ (InlineFragment t φ) qs).
-  Proof.
-  Admitted.
-  (*
-    move=> Hscope.
-    elim: qs => // hd tl IH.
-    case: hd => //.
-
-    all: do ?[by intros => /=; move: H => /=; rewrite Hscope /= => /and3P [_ _ Hgs];
-              simp β__subqueryextract; rewrite cat0s; apply: IH].
-
-    move=> t' χ /=; rewrite Hscope /= => /and3P [Hty Hg Hgs].
-    simp β__subqueryextract.
-    case: eqP => //= Heq; last by apply: IH.
-    rewrite all_cat; apply_andP; last by apply: IH.
-      by move: Hg; simp is_grounded_2 => /and3P [_ H _].
-  Qed.
-   *)
 
   Ltac resolve_grounded := case Hobj : is_object_type => //=; [| case: eqP => //= /eqP Heq].
 
   
-  Lemma remove_redundancies_preserves_grounded schema qs :
-    forall ty,
-    all (query_conforms schema ty) qs ->
-    are_grounded_2 schema ty qs ->
-    are_grounded_2 schema ty (remove_redundancies qs).
+  Lemma remove_redundancies_preserves_grounded schema qs ty :
+      are_grounded_2 schema ty qs ->
+      are_grounded_2 schema ty (remove_redundancies qs).
   Proof.
-    apply_funelim (remove_redundancies qs) => // [f α | l f α | f α φ | l f α φ | t φ] tl IHtl.
-
-    all: do ?[move=> ty;
-              all_cons => [Hqc Hqsc] /=;
-              resolve_grounded; move/and3P=> [Hty Hg Hgs];
-                by apply_and3P; apply: γ__φ_preserves_grounded; apply: IHtl].
-
-    - move=> IH ty.
-      all_cons => [Hqc Hqsc] /=.
-      resolve_grounded => /and3P [Hty Hg Hgs];
-      apply_and3P; simp is_grounded_2.
-      all: do ?[by apply: γ__φ_preserves_grounded; apply: (IHtl ty)].
-
-      all: do ?[case Hlook: lookup_field_in_type => [fld|] //=; try apply: IH].
-
-      all: do ?[by rewrite all_cat; apply_andP;
-                [move: Hqc; simp query_conforms; rewrite Hlook /= => /and5P [_ _ _]
-                | apply: (β__φ_preserves_conformance_nf schema ty) => //]].
-      all: do ?[by rewrite -are_grounded_2_cat; split;
-                [move: Hg; simp is_grounded_2; rewrite Hlook /=
-                | apply: (β__φ_preserves_grounded_nf schema ty)]].
-      all: do ?[by simp query_conforms in Hqc; rewrite Hlook /= in Hqc].
-
-      
-    - move=> IH ty.
-      all_cons => [Hqc Hqsc] /=.
-      resolve_grounded => /and3P [Hty Hg Hgs];
-      apply_and3P; simp is_grounded_2.
-      all: do ?[by apply: γ__φ_preserves_grounded; apply: (IHtl ty)].
-
-      all: do ?[case Hlook: lookup_field_in_type => [fld|] //=; try apply: IH].
-
-      all: do ?[by rewrite all_cat; apply_andP;
-                [move: Hqc; simp query_conforms; rewrite Hlook /= => /and5P [_ _ _]
-                | apply: (β__φ_preserves_conformance_nlf schema ty) => //]].
-      all: do ?[by rewrite -are_grounded_2_cat; split;
-                [move: Hg; simp is_grounded_2; rewrite Hlook /=
-                | apply: (β__φ_preserves_grounded_nlf schema ty)]].
-      all: do ?[by simp query_conforms in Hqc; rewrite Hlook /= in Hqc].
-
-      
-
-    - move=> IH ty.
-      all_cons => [Hqc Hqsc] /=.
-      case Hobj : is_object_type => //=.
-      case: eqP => //= /eqP Heq /and3P [Hty Hg Hgs].
-      apply_and3P; simp is_grounded_2; last first.
-        by apply: γ__φ_preserves_grounded; apply: IHtl.
-      move: Hg; simp is_grounded_2 => /and3P [Htobj Hflds Hg].
-      apply_and3P.
-      * apply: remove_redundancies_preserves_all_fields; rewrite all_cat; apply_andP.
-          by apply: (β__φ_preserves_all_fields schema ty).
-      * have H: forall qs, are_grounded_2 schema t qs -> all (is_grounded_2 schema t) qs.
-          by move=> qs'; rewrite are_grounded_2E => /andP [_].
-        apply: H.
-        apply: IH.
-        rewrite all_cat; apply_andP.
-          by move: Hqc; query_conforms; move=> [_ _ _].
-          by apply: (β__φ_preserves_conformance_inline schema ty).
-        rewrite -are_grounded_2_cat; split=> //.
-        rewrite are_grounded_2E.
-        apply_andP; orL; apply_andP.
-        by apply: (β__φ_preserves_grounded_inline schema ty).
-  Qed.
+    funelim (remove_redundancies qs) => //=; case Hscope: is_object_type => //=.
+    
+    all: do ?[case: eqP => //= Hpty].
+    all: do ?[move/and3P=> [Hty Hg Hgs]; apply_and3P].
+    
+    all: do ?[move: Hg; simp is_grounded_2; case Hlook: lookup_field_in_type => [fld|] //= Hg].
+    all: do ?[by apply: H; apply: γ__φ_preserves_grounded].
+    apply: H. rewrite -are_grounded_2_cat; split=> //.
+  Admitted.
+  
 
   Lemma obj_spreads_if_in_possible_types_of_interface schema ty ti :
     is_object_type schema ty ->
@@ -1329,6 +1042,7 @@ Section QueryRewrite.
                 has_valid_fragments schema ty q ->
                 nqs != [::])
              (fun schema ty qs nqs =>
+                qs != [::] ->
                 queries_conform schema ty qs ->
                 all (has_valid_fragments schema ty) qs ->
                 nqs != [::])) => //.
@@ -1341,17 +1055,17 @@ Section QueryRewrite.
       query_conforms; move=> [_ _ Hne Hqsc Hmerge].
       simp has_valid_fragments; rewrite Hscope /= => /andP [/eqP Heq Hv].
       rewrite Heq in Hqsc.
-       apply: IH => //; rewrite /queries_conform -?Heq ; apply_and3P.
+       apply: IH => //; rewrite /queries_conform -?Heq; apply_andP.
        by rewrite Heq.
     - move=> schema t ty φ IH Ht Hscope.
       query_conforms; move=> [_ _ Hne Hqsc Hmerge].
       simp has_valid_fragments; rewrite Hscope /= => /andP [/orP [/eqP Heq | Hcontr] Hv].
-      rewrite Heq in Hqsc Hv; apply: IH => //; rewrite  /queries_conform; apply_and3P.
+      rewrite Heq in Hqsc Hv; apply: IH => //; rewrite  /queries_conform; apply_andP.
         by rewrite -Heq.
         by rewrite Ht in Hcontr.
 
-    - move=> schema ty hd tl IHhd IHtl.
-      rewrite /queries_conform => /and3P [Hne].
+    - move=> schema ty hd tl IHhd IHtl Hne.
+      rewrite /queries_conform; case/andP.
       all_cons=> [Hqc Hqsc] _.      
       all_cons=> [Hv Hvs].
       by apply: cat_N_nil; apply: IHhd.
@@ -1359,12 +1073,13 @@ Section QueryRewrite.
       
         
   Lemma normalize__φ_N_nil schema ty φ :
+    φ != [::] ->
     queries_conform schema ty φ ->
     all (has_valid_fragments schema ty) φ ->
     normalize__φ schema ty φ != [::].
   Proof.
-    case: φ => //= hd tl.
-    rewrite /queries_conform => /and3P [Hne].
+    case: φ => //= hd tl _.
+    rewrite /queries_conform; case/andP.
     all_cons => [Hqc _] _.
     all_cons => [Hv _].
     apply: cat_N_nil.
@@ -1418,7 +1133,7 @@ Section QueryRewrite.
           move: (scope_is_obj_or_abstract_for_field _ _ _ _ _ Hfld H) => [Hcontr | Hintf]; [by rewrite Heq in Hcontr|].
           rewrite get_possible_types_interfaceE // in Hin.
             
-            Admitted.
+    Admitted.
 
 
 
@@ -1445,7 +1160,6 @@ Section QueryRewrite.
   Proof.
     move=> Hqc Hv.
     apply: remove_redundancies_preserves_grounded.
-      by apply: normalize_preserves_conformance.
       by apply: normalize_is_grounded.
   Qed.
         
@@ -1456,7 +1170,6 @@ Section QueryRewrite.
   Proof.
     move=> Hqsc Hvs.
     apply: remove_redundancies_preserves_grounded => //.
-      by apply: normalize__φ_preserves_conformance.
       by apply: normalize__φ_are_grounded.
   Qed.
 
@@ -1476,8 +1189,6 @@ Section QueryRewrite.
   Proof.
     intros.
     apply: remove_redundancies_preserves_grounded.
-    rewrite all_cat; apply_andP.
-      by apply: normalize__φ_preserves_conformance.
     rewrite -are_grounded_2_cat; split => //.
       by apply: normalize__φ_are_grounded.
   Qed.
@@ -1505,12 +1216,10 @@ Section QueryRewrite.
     all: do ?[apply/and5P; split => //].
     all: do ?[by apply: remove_redundancies_in_nil_N_nil; apply: cat_N_nil].
     all: do ?[apply: H0; rewrite all_cat; apply_andP].
-    - by apply: (β__φ_preserves_conformance_nf schema ty).
+    -
       admit.
-    - by apply: (β__φ_preserves_conformance_nlf schema ty).
-      admit.
-    - by apply: (β__φ_preserves_conformance_inline schema ty).
-      admit.
+    -  admit.
+    -  admit.
   Admitted.
   
   Lemma remove_redundancies_normalize_preserves_normal_form :

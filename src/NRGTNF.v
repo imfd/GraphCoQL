@@ -18,6 +18,8 @@ Require Import QueryConformance.
 
 Require Import SeqExtra.
 
+Require Import Ssromega.
+
 Section NRGTNF.
 
   Variables Name Vals : ordType.
@@ -90,7 +92,9 @@ Section NRGTNF.
         | _ := false
         };
 
-      is_grounded_2 schema type_in_scope(InlineFragment t ϕ) := [&& (is_object_type schema t), (all is_field ϕ) & all (is_grounded_2 schema t) ϕ];
+      is_grounded_2 schema type_in_scope (InlineFragment t ϕ) := [&& (is_object_type schema t),
+                                                                (all is_field ϕ) &
+                                                                all (is_grounded_2 schema t) ϕ];
       
       is_grounded_2 _ _ _ := true
     }
@@ -110,6 +114,15 @@ Section NRGTNF.
          }
      }.
 
+   Lemma field_subqueries_are_grounded schema ty q fld (H : forall t φ, q <> InlineFragment t φ) :
+     lookup_field_in_type schema ty (qname q H) = Some fld ->
+     is_grounded_2 schema ty q ->
+     are_grounded_2 schema fld.(return_type) q.(qsubquery).
+   Proof.
+     case: q H => //= [f α φ | l f α φ | t φ] H Hlook; simp is_grounded_2; rewrite ?Hlook //.
+       by move: (H t φ).
+   Qed.
+     
 
    Lemma are_grounded_2E schema ty queries :
      are_grounded_2 schema ty queries = [|| (is_object_type schema ty && all is_field queries),
@@ -308,30 +321,45 @@ Section NRGTNF.
       by exists t; exists ϕ.
   Qed.
 
- 
-  
-  
-  Equations is_non_redundant (query : @Query Name Vals) : bool :=
+
+   Equations has_same_response_name_or_guard (rname : Name) query : bool :=
     {
-      is_non_redundant (NestedField _ _ φ) := are_non_redundant φ;
-      is_non_redundant (NestedLabeledField _ _ _ φ) := are_non_redundant φ;
-      is_non_redundant (InlineFragment _ φ) := are_non_redundant φ;
-      is_non_redundant _ := true
-                             
-    }
-  where are_non_redundant (queries : seq (@Query Name Vals)) : bool :=
-    {
-      are_non_redundant [::] := true;
-      are_non_redundant (hd :: tl)
-        with has (partial_query_eq hd) tl :=
-        {
-        | true := false;
-        | _ := (is_non_redundant hd) && are_non_redundant tl
-             
-        }
+      has_same_response_name_or_guard rname (InlineFragment t _) := t == rname;
+      has_same_response_name_or_guard rname q := (qresponse_name q _) == rname
     }.
 
+   
+  Equations have_same_response_name_or_guard (q1 q2 : @Query Name Vals) : bool :=
+    {
+      have_same_response_name_or_guard (InlineFragment t _) q :=
+        has_same_response_name_or_guard t q;
+      have_same_response_name_or_guard q1 q2 :=
+        has_same_response_name_or_guard (qresponse_name q1 _) q2
+    }.
+
+ 
+
   
+  Equations are_non_redundant (queries : seq (@Query Name Vals)) : bool
+    by wf (queries_size queries) :=
+    {
+      are_non_redundant [::] := true;
+
+      are_non_redundant ((InlineFragment t φ) :: tl) :=
+        [&&  all (fun q => ~~has_same_response_name_or_guard t q) tl,
+         are_non_redundant φ &
+         are_non_redundant tl];           
+        
+      
+      are_non_redundant (hd :: tl) :=
+        [&& all (fun q => ~~has_same_response_name_or_guard (qresponse_name hd _) q) tl,
+         are_non_redundant hd.(qsubquery) &
+         are_non_redundant tl]
+    }.
+  Solve All Obligations with intros; simp query_size; ssromega.
+
+  Definition is_non_redundant query :=
+    are_non_redundant query.(qsubquery).
 
 
 
@@ -359,6 +387,8 @@ Arguments are_in_normal_form [Name Vals].
 Arguments is_grounded_2 [Name Vals].
 Arguments are_grounded_2 [Name Vals].
 Arguments are_non_redundant [Name Vals].
+Arguments has_same_response_name_or_guard [Name Vals].
+Arguments have_same_response_name_or_guard [Name Vals].
 Arguments is_non_redundant  [Name Vals].
 Arguments are_grounded_in_object_scope_are_fields [Name Vals].
 Arguments are_grounded_2_in_normal_form [Name Vals].
