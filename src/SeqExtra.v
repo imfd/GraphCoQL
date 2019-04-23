@@ -82,12 +82,75 @@ Section SeqExtra.
     | (hd :: tl), n.+1 => onth tl n
     end.
 
+  Fixpoint map_all (p : A -> A -> bool) (s : seq A) : bool :=
+      match s with
+      | [::] => true
+      | (hd :: tl) => all (p hd) tl && map_all p tl
+      end.
 
-
- 
+  Lemma map_all_cat_2 p s1 s2 :
+    map_all p (s1 ++ s2) -> map_all p s2.
+  Proof.
+    elim: s1 => //= hd tl IH /andP [_].
+    by apply: IH.
+  Qed.
   
+  Lemma mem_tail s (x hd : A) : x \in s -> x \in (hd :: s).
+  Proof.
+      by rewrite in_cons => Hin; apply/orP; right.
+  Qed.
+
+  Lemma filter_preserves_map_all (p : A -> A -> bool) (pred : A -> bool) (s : seq A) :
+    map_all p s ->
+    map_all p [seq x <- s | pred x].
+  Proof.
+    elim: s => [//| x s' IH] /=.
+    move/andP=> [Hpx Hall].
+    case (pred x) => //=.
+    apply/andP; split=> //.
+      by apply: filter_preserves_pred.
+    all: do [by apply: IH].
+  Qed.
+  
+ Lemma in_zip (x1 x2 : A) s1 s2 : (x1, x2) \in zip s1 s2 ->
+                                               x1 \in s1 /\ x2 \in s2.
+ Proof.
+   elim: s1 s2 => //= [| hd tl IH] s2.
+   - by case: s2.
+   - case: s2 => //= hd2 tl2 Hin.
+     rewrite inE in Hin.
+     move/orP: Hin => [/eqP | Htl].
+     * by case=> -> ->; split; apply: mem_head.
+     * move: (IH tl2 Htl) => [Htl1 Htl2].
+         by split; apply: mem_tail.
+ Qed.
+ 
 End SeqExtra.
 
+Unset Implicit Arguments.
+
+Section All.
+  
+    Equations all_In {A : eqType} (s : seq A) (f : forall x, x \in s -> bool) : bool :=
+        {
+          all_In [::] _ := true;
+          all_In (hd :: tl) f := (f hd _) && (all_In tl (fun x H => f x _))
+        }.
+    Next Obligation.
+        by apply: mem_head.
+    Qed.
+    Next Obligation.
+        by apply: mem_tail.
+    Defined.
+
+
+    
+    
+
+End All.
+
+Set Implicit Arguments.
+ 
 Section SeqI.
   Variable (A : eqType).
   

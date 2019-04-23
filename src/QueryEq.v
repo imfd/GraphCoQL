@@ -119,13 +119,13 @@ Section Eq.
                 forall (g : @conformedGraph Name Vals schema) u,
                   u \in g.(nodes) ->
                   u.(type) \in get_possible_types schema ty ->
-                  all (query_conforms schema ty) qs ->
+                  queries_conform schema ty qs ->
                   all (has_valid_fragments schema ty) qs ->
                   eval_queries schema g u qs = eval_queries schema g u nqs)) => schema //.
     
 
     all: do ?[by intros; apply: eval_same_query_in_list].
-
+    all: do ?[by intros; simp query_conforms in H1; rewrite Heq /= in H1].
      
     - move=> ty f α Hscope g u Hin Hupty Gqc Hv.
       simp try_inline_query.
@@ -140,33 +140,31 @@ Section Eq.
       * by rewrite cats0; apply: eval_collect_same.
       * by apply: inlined_query_eq_eval.
 
-    all: do ?[by intros; rewrite /query_conforms Heq in H1].
-
     
     - admit.
     - admit.
     - admit.
     - admit.
-      
+       
     - move=> t b ty φ IH Ht Hscope g u Hin.
-      rewrite get_possible_types_objectE //= inE => Huty /and4P [_ _ _ Hqsc].
+      rewrite get_possible_types_objectE //= inE => Huty /and5P [_ _ _ Hqsc Hmerge].
       simp has_valid_fragments; rewrite Hscope /= => /andP [/eqP Hteq Hv].
       rewrite -Hteq in Huty.
       simp eval; rewrite Huty /=.
       apply: IH => //=.
         by rewrite get_possible_types_objectE //= inE -Hteq.
-        by rewrite Hteq in Hqsc.
-
+      by rewrite /queries_conform Hteq in Hqsc Hmerge *; apply/andP; split.
+          
     - move=> t ty φ IH Ht Hscope g u Hin Hpty Hqc Hv.
-      move: Hqc => /= /and4P [_ _ _] Hqc.
+      move: Hqc => /= /and5P [_ _ _ Hqsc Hmerge].
       move: Hv; simp has_valid_fragments; rewrite Hscope /= => /andP [_] Hv.  
-
  
       simp eval; case: eqP => Heq //=.
       * rewrite cats0.
         rewrite -IH //.
           by apply: eval_queries_collect_same.
           by rewrite get_possible_types_objectE //= inE Heq.
+          by rewrite /queries_conform; apply/andP; split.
           by rewrite implementation_nil_for_object //= union_nil_for_object.
             
     - move=> t ty φ IH Ht Hscope g u Hin Hpty Hqc Hv; simp eval.
@@ -174,7 +172,7 @@ Section Eq.
       * move: (node_in_graph_has_object_type Hin) => Huty.
         by rewrite Heq Ht in Huty.
 
-      * move: (type_in_scope_N_obj_is_abstract Hqc Hscope).
+      * move: (type_in_scope_N_obj_is_abstract _ _ _ _ _  Hqc Hscope).
         move: Hv; simp has_valid_fragments; rewrite Hscope /= => {Heq} /andP [/orP [/eqP Heq | Hcontr] Hv]; last first.
           by rewrite Hcontr in Ht.
         rewrite /is_abstract_type => /orP [Hintf | Hunion].
@@ -182,19 +180,22 @@ Section Eq.
         rewrite -Heq in Hpty IH *.
         rewrite Hpty /=.
         apply: IH => //.
-          by move: Hqc; rewrite /query_conforms => /and4P [_ _ _].
+          by move: Hqc; simp query_conforms => /and5P [_ _ _ Hqsc Hmerge]; rewrite /queries_conform; apply/andP; split.
 
         rewrite get_possible_types_unionE // in Hpty IH.
         rewrite -Heq in Hpty IH Hunion *.
 
         rewrite implementation_nil_for_union //= Hpty /=.
         apply: IH => //.
-          by move: Hqc; rewrite /query_conforms => /and4P [_ _ _].
+          by move: Hqc; simp query_conforms => /and5P [_ _ _ Hqsc Hmerge]; rewrite /queries_conform; apply/andP; split.
 
     - move=> ty hd tl IHhd IHtl g u Hin Hpty.
-      all_cons => [Hqc Hqsc].
-      all_cons => [Hv Hvs] /=.
-      rewrite IHhd // IHtl //.
+      rewrite /queries_conform. case/andP.
+      all_cons => [Hqc Hqsc] /=.
+      all_cons => [Hmerge Hmerges].
+      all_cons => [Hv Hvs].
+      rewrite IHhd // IHtl //; last first.
+        by rewrite /queries_conform; apply/andP; split.
         by apply: collect_eval_cat.
   Admitted.
         
@@ -222,23 +223,27 @@ Section Eq.
    Proof.
      funelim (remove_redundancies φ) => // ty u Hin Hpty;
      all_cons => [Hqc Hqsc];
-     all_cons => [Hv Hvs] /=;
-     rewrite (H schema g ty u) // -?eval_queries_equation_2.
+     all_cons => [Hv Hvs] /=.
+
+     all: do ?[rewrite -(H schema g ty u) // -?eval_queries_equation_2].
+     all: do ?[by apply: filter_preserves_pred].
      admit.
      admit.
-     simpl.
+
+
+     rewrite -(H0 schema g ty u) //.
      simp eval => /=.
      case Hlook : lookup_field_type => [rty |] //.
      case: rty Hlook => rty Hlook.
      case ohead => [v |] //=.
-     rewrite -(H0 schema g rty v).
+     rewrite -(H schema g rty v) //=.
      simp collect.
      congr cons. congr NestedResult.
      
      rewrite eval_collect_cat.
-     rewrite (collect_collect_2_cat nat_ordType Name Vals (responses_size (eval_queries schema g v l0 ++ eval_queries schema g v (β__φ (NestedField s2 f1 l0) l)))) //.
+     rewrite (collect_collect_2_cat Name Vals (responses_size (eval_queries schema g v l0 ++ eval_queries schema g v (β__φ s2 l)))) //.
      rewrite -catA.
-     rewrite (β_filter_nil Name Vals s2 [::] (eval_queries schema g u (γ__φ _ _))).
+     rewrite (β_filter_nil Name Vals s2 (eval_queries schema g u (γ__φ _ _))).
      rewrite cats0.
      admit.
      admit.

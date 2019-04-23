@@ -27,25 +27,7 @@ Section QueryConformance.
 
   Notation is_inline_fragment := (@is_inline_fragment Name Vals).
 
-  Section All.
-    Equations? all_In {A : eqType} (s : seq A) (f : forall x, x \in s -> bool) : bool :=
-        {
-          all_In [::] _ := true;
-          all_In (hd :: tl) f := (f hd _) && (all_In tl (fun x H => f x _))
-        }.
-    by apply: mem_head.
-    by apply: mem_tail.
-    Defined.
-
-
-    
-    Fixpoint map_all {A : eqType} (p : A -> A -> bool) (s : seq A) : bool :=
-      match s with
-      | [::] => true
-      | (hd :: tl) => all (p hd) tl && map_all p tl
-      end.
-
-  End All.
+ 
   
   Lemma fset1I_eq {A : ordType} (a b : A) :
     (fset1 a :&: fset1 b)%fset != fset0 -> a = b.

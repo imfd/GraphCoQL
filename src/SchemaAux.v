@@ -50,11 +50,7 @@ Section SchemaAux.
       by apply: IH.
   Qed.
 
-  Lemma mem_tail {A : eqType} (tl : seq A) (x hd : A) : x \in tl -> x \in (hd :: tl).
-  Proof.
-      by rewrite in_cons => Hin; apply/orP; right.
-  Qed.
-  
+
 
       
  Lemma get_first_E A (p : pred A) s tdef : (get_first p s = Some tdef) -> get_first p s.

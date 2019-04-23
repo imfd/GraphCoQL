@@ -817,7 +817,8 @@ Section QueryRewrite.
       are_non_redundant (γ__φ flt queries).
     Proof.
       elim: queries => // hd tl IH.
-      case: hd => //= [f α | l f α | f α φ | l f α φ | t φ]; simp are_non_redundant; simp qresponse_name => /and3P [Hall Hnr Hnrs]; case: ifP => //= Heq; last first.
+      case: hd => //= [f α | l f α | f α φ | l f α φ | t φ]; simp are_non_redundant; simp qresponse_name => /and3P [Hall Hnr Hnrs].
+      all: do ?[case: ifP => //= Heq].
       all: do ?[by apply: IH].
 
       all: do ?[simp are_non_redundant; apply_and3P].
