@@ -109,17 +109,7 @@ Section QueryConformance.
   Qed.
 
 
-  (*Lemma eq_spreads schema ty :
-    [\/ is_object_type schema ty, is_interface_type schema ty | is_union_type schema ty] ->
-    is_fragment_spread_possible schema ty ty.
-  Proof.
-    case.
-    - move/is_object_type_E=> [obj [intf [flds Hlook]]].
-      rewrite /is_fragment_spread_possible /get_possible_types Hlook.
-        by apply: fset1I_N_fset0.
-    - move/is_interface_type_E => [intf [flds Hlook]].
-      rewrite /is_fragment_spread_possible /get_possible_types Hlook.
-   *)
+  
 
  Lemma map_snd_pair_comp {T A : Type} (s : seq T) (t : A) :  [seq (snd \o (pair t)) i | i <- s] = s.
  Proof.
@@ -137,34 +127,26 @@ Section QueryConformance.
      have_same_type schema (ListType rty) (ListType rty') := have_same_type schema rty rty';
      have_same_type _ _ _ := false
    }.
-
- Definition aux_queries_size (queries : seq (Name * @Query Name Vals)) :=
-   queries_size [seq q.2 | q <- queries].
-
-
- Definition unline query : seq Query :=
-   if query is InlineFragment t φ then φ else [:: query].
-
-
  
- Equations have_same_response_shape schema
+ 
+ Equations have_compatible_response_shapes schema
            (q1 : @Query Name Vals) (pty1 : Name)
            (q2 : @Query Name Vals) (pty2 : Name) : bool by wf (query_size q1 + query_size q2) :=
    {
-     have_same_response_shape schema (InlineFragment t φ) pty1 q2 pty2 :=
-       all_In φ (fun q Hin => have_same_response_shape schema q t q2 pty2);
+     have_compatible_response_shapes schema (InlineFragment t φ) pty1 q2 pty2 :=
+       all_In φ (fun q Hin => have_compatible_response_shapes schema q t q2 pty2);
      
-     have_same_response_shape schema q1 pty1 (InlineFragment t φ) pty2 :=
-       all_In φ (fun q Hin => have_same_response_shape schema q1 pty1 q t);
+     have_compatible_response_shapes schema q1 pty1 (InlineFragment t φ) pty2 :=
+       all_In φ (fun q Hin => have_compatible_response_shapes schema q1 pty1 q t);
      
-     have_same_response_shape schema q1 pty1 q2 pty2
+     have_compatible_response_shapes schema q1 pty1 q2 pty2
        with (qresponse_name q1 _) == (qresponse_name q2 _) :=
        {
        | true :=
          match lookup_field_type schema pty1 (qname q1 _), lookup_field_type schema pty2 (qname q2 _) with
          | Some rty1, Some rty2 =>
            have_same_type schema rty1 rty2 &&
-           all_In q1.(qsubquery) (fun q Hin1 => all_In  q2.(qsubquery) (fun q' Hin2 => have_same_response_shape schema q rty1 q' rty2)) 
+           all_In q1.(qsubquery) (fun q Hin1 => all_In  q2.(qsubquery) (fun q' Hin2 => have_compatible_response_shapes schema q rty1 q' rty2)) 
                                     
          | _, _ => false
          end;
@@ -202,8 +184,9 @@ Section QueryConformance.
        with lookup_field_type schema pty1 (qname q1 _), lookup_field_type schema pty2 (qname q2 _) :=
        {
        | Some rty1 | Some rty2 :=
-         (have_same_response_shape schema q1 pty1 q2 pty2 &&
-         (((pty1 == pty2) || ~~(is_object_type schema pty1 && is_object_type schema pty2)) ==>
+         (have_compatible_response_shapes schema q1 pty1 q2 pty2) &&
+         (((qresponse_name q1 _) == (qresponse_name q2 _)) ==>
+          (((pty1 == pty2) || ~~(is_object_type schema pty1 && is_object_type schema pty2)) ==>
           [&& (qname q1 _) == (qname q2 _),
            (qargs q1 _) == (qargs q2 _) &
            all_In q1.(qsubquery) (fun q Hin1 =>
@@ -687,9 +670,7 @@ Section QueryConformance.
  
 End QueryConformance.
 
-
-Arguments aux_queries_size [Name Vals].
-Arguments have_same_response_shape [Name Vals].
+Arguments have_compatible_response_shapes [Name Vals].
 Arguments is_field_merging_possible [Name Vals].
 Arguments is_fragment_spread_possible [Name Vals].
 Arguments query_conforms [Name Vals].
