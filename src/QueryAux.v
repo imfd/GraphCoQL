@@ -258,66 +258,14 @@ Section QueryAux.
      by ssromega.
    Qed.
 
-   (*
-   Definition have_same_shape (r1 r2 : @ResponseObject Name Vals) : bool :=
-     match r1, r2 with
-     | Null _, Null _
-     | SingleResult _ _, SingleResult _ _
-     | ListResult _ _, ListResult _ _
-     | NestedResult _ _, NestedResult _ _
-     | NestedListResult _ _, NestedListResult _ _ => true
-     | _, _ => false
-     end.
-   
-   Definition have_compatible_shapes (r1 r2 : @ResponseObject Name Vals) : bool :=
-     (r1.(rname) == r2.(rname)) ==> have_same_shape r1 r2.
-
-
-   Lemma have_compatible_shapesP (r1 r2 : @ResponseObject Name Vals) :
-     reflect (r1.(rname) != r2.(rname) \/ have_same_shape r1 r2)
-             (have_compatible_shapes r1 r2).
-   Proof.
-     apply: (iffP idP).
-     - by rewrite /have_compatible_shapes; rewrite implybE => /orP.
-     - by rewrite /have_compatible_shapes => H; rewrite implybE; apply/orP.
-   Qed.
-   *)
-   (*
-   Equations have_valid_response_shape (r1 r2 : @ResponseObject Name Vals) : bool by wf (response_size r1):=
-     {
-       have_valid_response_shape (Null l) (Null l) := true;
-       have_valid_response_shape (SingleResult l v) (SingleResult l' v') := (l == l') ==> (v == v');
-       have_valid_response_shape (ListResult l vs) (ListResult l' vs') := (l == l') ==> (vs == vs');
-       have_valid_response_shape (NestedResult l ρ) (NestedResult l' σ) :=
-         (l == l') ==>
-         all_In ρ (fun r1 Hin1 => all_In σ (fun r2 Hin2 => have_valid_response_shape r1 r2));     
-
-       have_valid_response_shape (NestedListResult l ρs) (NestedListResult l' σs) :=
-         (l == l') ==>
-         ((size ρs == size σs) &&
-           all_In (zip ρs σs) (fun rs Hin => all_In rs.1 (fun r1 Hin1 => all_In rs.2 (fun r2 Hin2 => have_valid_response_shape r1 r2))));
-
-       have_valid_response_shape r1 r2 := true
-     }.
-   Next Obligation.
-     by simp response_size; move: (in_responses_leq Hin1) => Hleq; ssromega.
-   Qed.
-   Next Obligation.
-     simp response_size.
-     move: (in_zip Hin) => {Hin} [Hin _].
-     move: (in_responses_leq Hin1) => Hleq.
-     move: (in_responses'_leq Hin) => Hleq'.
-     by ssromega.
-   Qed.
-     
-*)
+  
      
    
-     
-   Equations(noind) wf_response response : bool :=
+
+   Equations wf_response response : bool :=
      {
        wf_response (NestedResult _ ρ) := wf_responses ρ;
-       wf_response (NestedListResult _ ρs) := all (fun ρ => wf_responses ρ) ρs;
+       wf_response (NestedListResult _ ρs) := wf_responses' ρs;
        wf_response _ := true
      }
    where
@@ -325,8 +273,14 @@ Section QueryAux.
      {
        wf_responses [::] := true;
        wf_responses (hd :: tl) := [&& wf_response hd,
-                                  map_all have_compatible_shapes (hd :: tl) &
+                                  all (have_compatible_shapes hd) tl &
                                   wf_responses tl]
+     }
+   where
+   wf_responses' (responses : seq (seq (@ResponseObject Name Vals))) : bool :=
+     {
+       wf_responses' [::] := true;
+       wf_responses' (hd :: tl) := wf_responses hd && wf_responses' tl
      }.
    
 
@@ -343,13 +297,7 @@ Section QueryAux.
      all: do ?[by intros; simp have_compatible_shapes => /=; apply/eqP => Hcontr; rewrite Hcontr in Hneq].
      all: do ?[by move=> σ Hneq; simp have_compatible_shapes => /=; case: eqP => //= Hcontr; rewrite Hcontr in Hneq].
    Qed.
-     
- 
-   Lemma wf_responses_map_all s :
-     wf_responses s -> map_all have_compatible_shapes s.
-   Proof.
-     by elim: s => //= hd tl IH /and3P [_].
-   Qed.
+   
    
    Lemma is_non_redundant_wf response :
      is_non_redundant__ρ response ->
@@ -367,10 +315,7 @@ Section QueryAux.
 
      - move=> hd IHhd tl IHtl /and3P [Hall Hnr Hnrs].
        apply/and3P; split; [by apply: IHhd | | by apply: IHtl].
-       simpl.
-       apply/andP; split.
        by apply: all_valid_when_no_eq.
-       by apply: wf_responses_map_all; apply: IHtl.
      - move=> hd IHhd tl IHtl /= /andP [Hnrs Hall].
        by apply/andP; split; [apply: IHhd | apply: IHtl].
    Qed.
@@ -382,11 +327,47 @@ Section QueryAux.
      elim: responses => //= hd tl IH /and3P [Hall Hnr Hnrs].
      apply/and3P; split=> //; last by apply: IH.
        by apply: is_non_redundant_wf.
-       apply/andP; split; last first.
-       by apply: wf_responses_map_all; apply: IH.
        by apply: all_valid_when_no_eq.  
-   Qed.   
-     
+   Qed.
+
+   (*
+   Lemma map_all_compatible_shapes_cat_neq rs1 rs2 :
+     all (fun r1 => all (fun r2 => r2.(rname) != r1.(rname)) rs2) rs1 ->
+     map_all have_compatible_shapes (rs1 ++ rs2) = (map_all have_compatible_shapes rs1) && (map_all have_compatible_shapes rs2).
+   Proof.
+     elim: rs1 rs2 => //= hd tl IH rs2 /andP [Hmap Hall].
+     by rewrite all_cat (all_valid_when_no_eq Hmap) andbT IH // andbA.
+   Qed.
+
+   Lemma wf_responses_ble rs :
+     wf_responses rs = map_all have_compatible_shapes rs && wf_responses rs.
+   Proof.
+     elim: rs => //= hd tl IH.
+     rewrite [wf_response hd && _]andbCA.
+       by rewrite [(all _ tl && _) && _ in RHS]andbA; rewrite andbb.
+   Qed.
+    *)
+   Lemma wf_responses_cat rs1 rs2 :
+     wf_responses (rs1 ++ rs2) -> wf_responses rs1 /\ wf_responses rs2.
+   Proof.
+     elim: rs1 rs2 => //= hd tl IH rs2.
+     rewrite all_cat => /and3P [Hwf /andP [Hhd Hall] Hwfs].
+     split=> //; last by case: (IH rs2 Hwfs).
+     apply/and3P; split=> //; by case: (IH rs2 Hwfs).
+   Qed.
+   
+   Lemma wf_responses_cat_neq rs1 rs2 :
+     all (fun r1 => all (fun r2 => r2.(rname) != r1.(rname)) rs2) rs1 ->
+     wf_responses (rs1 ++ rs2) = wf_responses rs1 && wf_responses rs2.
+   Proof.
+     elim: rs1 rs2 => //= hd tl IH rs2 /andP [Hneq Hall].
+     move: (IH rs2 Hall) => ->.
+     rewrite all_cat.
+     rewrite [all _ rs2]all_valid_when_no_eq // andbT.
+     rewrite -andbA.
+     by rewrite -[_ && wf_responses rs2 in RHS]andbA.
+   Qed.
+   
 End QueryAux.
 
 
@@ -396,4 +377,6 @@ Arguments is_field [Name Vals].
 Arguments is_inline_fragment [Name Vals].
 Arguments have_compatible_shapes [Name Vals].
 Arguments wf_response [Name Vals].
+Arguments wf_responses [Name Vals].
+Arguments wf_responses' [Name Vals].
 
