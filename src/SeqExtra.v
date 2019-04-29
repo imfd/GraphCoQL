@@ -141,10 +141,13 @@ Section All.
     Qed.
     Next Obligation.
         by apply: mem_tail.
-    Defined.
+    Qed.
 
-
-    
+    Lemma all_In_eq_all {A : eqType} (s : seq A) (f : A -> bool) :
+      all_In s (fun x _ => f x) = all f s.
+    Proof.
+      by elim: s => //= hd tl IH; simp all_In; rewrite IH.
+    Qed.
     
 
 End All.
