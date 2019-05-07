@@ -248,6 +248,22 @@ Section QuerySemantic.
         by rewrite Heq; apply: H.
       Qed.
 
+      Lemma βᶿ_all_neq l ρ rs :
+        all (fun r => r.(rname) != l) rs ->
+        βᶿ l ρ rs = ρ.
+      Proof.
+        funelim (βᶿ l ρ rs) => //= /andP [Hneq Hall]; do ? by apply: H.
+        by move/negbTE in Hneq; rewrite eq_sym Hneq in Heq.
+      Qed.
+
+      Lemma βᶿ_preserves_non_redundancy l ρ rs :
+        are_non_redundant__ρ ρ ->
+        are_non_redundant__ρ (βᶿ l ρ rs).
+      Proof.
+        funelim (βᶿ l ρ rs) => //=.
+      Abort.
+        
+      
       Equations β__Laux :  seq (seq (@ResponseObject Name Vals)) ->  seq (seq (@ResponseObject Name Vals)) ->  seq (seq (@ResponseObject Name Vals)) :=
         {
           β__Laux [::] _ := [::];
@@ -258,9 +274,9 @@ Section QuerySemantic.
       Lemma β__Laux_responses_size_leq ρs σs :
         responses_size' (β__Laux ρs σs) <= responses_size' ρs + responses_size' σs.
       Proof.
-        funelim (β__Laux ρs σs) => //; do ?ssromega.
-        rewrite !responses_size'_equation_2.
-        rewrite responses_size_app; ssromega.
+        apply_funelim (β__Laux ρs σs) => //; do ?[by intros; ssromega].
+        intros; rewrite !responses_size'_equation_2.
+        by rewrite responses_size_app; ssromega.
       Qed.
         
       Equations β__L : Name ->  seq (seq (@ResponseObject Name Vals)) -> seq (@ResponseObject Name Vals) -> seq (seq (@ResponseObject Name Vals)) :=
@@ -285,6 +301,14 @@ Section QuerySemantic.
         - move: (H ρ Hin) => Hleq.
           by move: (β__Laux_responses_size_leq l l3) => Hleq2; ssromega.
       Qed.
+
+      Lemma β__L_all_neq l ρs rs :
+        all (fun r => r.(rname) != l) rs ->
+        β__L l ρs rs = ρs.
+      Proof.
+        funelim (β__L l ρs rs) => //= /andP [Hneq Hall]; do ? by apply: H.
+        by move/negbTE in Hneq; rewrite eq_sym Hneq in Heq.
+      Qed.
       
       Lemma β__Laux_fold ρs σs :
         β__Laux ρs σs = (foldr (fun r acc => match acc, r with
@@ -307,12 +331,12 @@ Section QuerySemantic.
       Qed.
 
       Obligation Tactic := intros; simp response_size; do ? ssromega.
-      Equations? β  (rs : seq (@ResponseObject Name Vals)) : seq (@ResponseObject Name Vals) by wf (responses_size rs) :=
+      Equations? β__ρ  (rs : seq (@ResponseObject Name Vals)) : seq (@ResponseObject Name Vals) by wf (responses_size rs) :=
         {
-          β [::] := [::];
-          β (NestedResult l ρ :: rs) := (NestedResult l (β (βᶿ l ρ rs))) :: β rs;
-          β (NestedListResult l ρs :: rs) := (NestedListResult l (map_in (β__L l ρs rs) (fun ρ Hin => β ρ))) :: β rs;
-          β (r :: rs) := r :: β rs
+          β__ρ [::] := [::];
+          β__ρ (NestedResult l ρ :: rs) := (NestedResult l (β__ρ (βᶿ l ρ rs))) :: β__ρ rs;
+          β__ρ (NestedListResult l ρs :: rs) := (NestedListResult l (map_in (β__L l ρs rs) (fun ρ Hin => β__ρ ρ))) :: β__ρ rs;
+          β__ρ (r :: rs) := r :: β__ρ rs
         }.
         by move: (βᶿ_responses_size_leq l ρ rs) => Hleq; ssromega.
         by move: (β__L_responses_size_leq ρ l ρs rs Hin) => Hleq; ssromega.
@@ -333,51 +357,7 @@ Section QuerySemantic.
          to the remaining list.
         **)
       
-      Equations β_filter (filter : Name) (responses : seq (@ResponseObject Name Vals)) : seq (@ResponseObject Name Vals) :=
-        {
-          β_filter _ [::] := [::];
-          
-          β_filter filter ((NestedResult l χ) :: tl)
-            with l == filter :=
-            {
-            | true := χ ++ (β_filter filter tl);
-            | _ := (β_filter filter tl)
-            };
-          
-          β_filter filter (_ :: tl) := β_filter filter tl
-            
-        }.
-      
-      
-      (** Auxiliary lemmas **)
-      
-      Lemma β_responses_size_reduced (flt : Name) (lst : seq ResponseObject)  :
-        responses_size (β_filter flt lst) <= responses_size lst.
-      Proof.
-        funelim (β_filter flt lst) => //=; do ?ssromega.
-        rewrite responses_size_app.
-        by simp response_size; ssromega.
-      Qed.
-
-      Lemma β_filter_nil l rs :
-        all (fun r => r.(rname) != l) rs ->
-        β_filter l rs = [::].
-      Proof.
-        funelim (β_filter l rs) => //= /andP [Hneq Hall].
-        all: do ? by apply: H.
-        by rewrite Heq in Hneq.
-      Qed.
-
-      Lemma β_filter_cat flt s1 s2 :
-        β_filter flt (s1 ++ s2) = β_filter flt s1 ++ β_filter flt s2.
-      Proof.
-        elim: s1=> //= hd tl IH.
-        case: hd => //= l ρ;
-                     simp β_filter.
-        case: eqP => //=.
-          by rewrite -catA -IH.
-       Qed.
-
+     
     End Beta.
 
     Section Gamma.
@@ -391,120 +371,32 @@ Section QuerySemantic.
          where matching responses would return an ϵ result (empty string) but here 
          these are deleted.
        **)
-      
 
-      Definition γ_filter (flt : Name) (responses : seq (@ResponseObject Name Vals)) : seq (@ResponseObject Name Vals) :=
-        [seq r <- responses | r.(rname) != flt].
-      
+      Equations γ__ρ : @ResponseObject Name Vals -> @ResponseObject Name Vals :=
+        {
+          γ__ρ (NestedResult l ρ) := NestedResult l (γ__ρs ρ);
+          γ__ρ (NestedListResult l ρs) := NestedListResult l (γ__ρs' ρs);
+          γ__ρ ρ := ρ
+        }
+      where
+      γ__ρs : seq (@ResponseObject Name Vals) -> seq (@ResponseObject Name Vals) :=
+        {
+          γ__ρs [::] := [::];
+          γ__ρs (ρ1 :: ρs) := γ__ρ ρ1 :: [seq ρ <- (γ__ρs ρs) | ρ.(rname) != ρ1.(rname)]
+        }
+      where
+      γ__ρs' : seq (seq (@ResponseObject Name Vals)) -> seq (seq (@ResponseObject Name Vals)) :=
+        {
+          γ__ρs' [::] := [::];
+          γ__ρs' (ρs1 :: ρs) := γ__ρs ρs1 :: γ__ρs' ρs
+        }.
 
-
-
-      (** Auxiliary Lemmas **)
-
-      Lemma γ_filter_all flt rs :
-        all (fun r => r.(rname) != flt) (γ_filter flt rs).
-      Proof.
-          by apply/allP=> x; rewrite mem_filter => /andP [H].
-      Qed.
-      
-      Lemma γ_responses_size_reduced (flt : Name) (lst : seq ResponseObject)  :
-        responses_size (γ_filter flt lst) <= responses_size lst.
-      Proof.
-        rewrite /γ_filter.
-        elim: lst=> //= hd tl IH.
-        by case: ifP => //= H; ssromega.
-      Qed.
-
-      
-      Lemma responses_size_γ_leq flt s n :
-        responses_size s < n ->
-        responses_size (γ_filter flt s) <= n.
-      Proof.
-          by move: (γ_responses_size_reduced flt s) => Hleq Hlt; ssromega.
-      Qed.
-
-      Lemma γ_filter_same_with_no_eq flt rs :
-        all (fun r => r.(rname) != flt) rs ->
-        γ_filter flt rs = rs.
-      Proof.
-        elim: rs => //= hd tl IH /andP [Hhd Htl].
-        by rewrite Hhd IH.
-      Qed.
-
-      
-      Lemma γ_filter_neq_preserves_list flt s :
-        all (fun r => r.(rname) != flt) s ->
-        γ_filter flt s = s.
+      Lemma all_neq_filter_eq l (s : seq (@ResponseObject Name Vals)) :
+        all (fun r => r.(rname) != l) s ->
+        [seq r <- s | r.(rname) != l] = s.
       Proof.
         elim: s => //= hd tl IH /andP [-> Hall].
-          by rewrite IH.
-      Qed.
-
-      Lemma γ_filter_same_hasN flt s :
-        γ_filter flt s = s ->
-        forall r, r \in s -> r.(rname) != flt.
-      Proof.
-        move=> <-.
-          by move=> r; rewrite /γ_filter mem_filter => /andP [H].
-      Qed.
-  
-      Lemma γ_filter_cat flt s1 s2 :
-        γ_filter flt (s1 ++ s2) = γ_filter flt s1 ++ γ_filter flt s2.
-      Proof.
-        by rewrite /γ_filter filter_cat. 
-      Qed.
-
-      Lemma γ_filter_swap flt1 flt2 s :
-        γ_filter flt1 (γ_filter flt2 s) = γ_filter flt2 (γ_filter flt1 s).
-      Proof.
-        elim: s => //= hd tl IH.
-        case: ifP => Hpeq /=;
-        case: ifP => Hpeq2 /=.
-        
-        all: do ?[by rewrite Hpeq IH].
-        all: do ?[by rewrite IH].
-      Qed.
-
-      Lemma γ_filter_preserves_non_redundancy flt responses :
-        are_non_redundant__ρ responses ->
-        are_non_redundant__ρ (γ_filter flt responses).
-      Proof.
-        elim: responses => //= hd tl IH /and3P [Hall Hnr Hnrs].
-        case: eqP => //= Heq.
-          by apply: IH.
-        apply/and3P; split=> //.
-        move/allP: Hall => Hall.
-        apply/allP => x; rewrite mem_filter => /andP [_ Hin].
-          by apply: Hall.
-          by apply: IH.
-      Qed.
-
-
-      Lemma γ_size_le flt s :
-        size (γ_filter flt s) <= size s.
-      Proof.
-        elim: s => //= hd tl IH.
-        case: ifP => //= _.
-          by ssromega.
-      Qed.
-
-      
-      Lemma γ_size_lt flt s n :
-        size s < n.+1 ->
-        size (γ_filter flt s) <= n.
-      Proof.
-          by move=> Hlt; move: (γ_size_le flt s) => Hleq; ssromega.
-      Qed.
-
-      Lemma γ_filter_preserves_wf flt s :
-        wf_responses s ->
-        wf_responses (γ_filter flt s).
-      Proof.
-        elim: s => //= hd tl IH /and3P [Hwf Hall Hwfs].
-        case: ifP => //= /eqP Heq.
-        apply/and3P; split=> //=; do ? by apply: IH.
-          by apply: filter_preserves_pred.
-            by apply: IH.  
+        by rewrite IH.
       Qed.
       
     End Gamma.
@@ -521,135 +413,30 @@ Section QuerySemantic.
   Qed.
 
 
-  (** Collect 
 
+  Definition collect := γ__ρs \o β__ρ.
 
-
-   **)
-  Equations collect (responses : seq (@ResponseObject Name Vals)) : seq (@ResponseObject Name Vals)
-    by wf (responses_size responses) lt :=
-      collect [::] := [::];
-      collect ((NestedResult l σ) :: tl) :=
-                       (NestedResult l (collect (σ ++ (β_filter l tl))))   
-                         :: (collect (γ_filter l tl));
-                         
-      collect ((NestedListResult l rs) :: tl) :=
-                         (NestedListResult l
-                           (indexed_map rs             
-                              (fun i r (H : In r rs) =>
-                                 (collect (r ++ (indexed_β_filter l tl i))))))
-                           :: (collect (γ_filter l tl));
-                               
-      collect (cons hd tl) := hd :: (collect (γ_filter hd.(rname) tl)).
-  Next Obligation.
-    by move: (γ_responses_size_reduced s tl) => *; simp response_size; ssromega.
-  Qed.
-  Next Obligation.
-      by move: (γ_responses_size_reduced s0 tl) => *; simp response_size; ssromega.
-  Qed.
-  Next Obligation.
-    by move: (γ_responses_size_reduced s2 tl) => *; simp response_size; ssromega.
-  Qed.
-  Next Obligation.
-    rewrite responses_size_app. move: (β_responses_size_reduced l tl) => *.
-    have: responses_size σ < response_size (NestedResult l σ).
-      by rewrite response_size_equation_4; ssromega.
-        by move=> *; apply: sum_lt.
-  Qed.    
-  Next Obligation.
-      by move: (γ_responses_size_reduced l tl) => *; simp response_size;  ssromega.
-  Qed.
-  Next Obligation.
-    rewrite responses_size_app -/(responses_size' rs).
-    move: (in_responses_size r rs H) => Hleq.
-    move: (indexed_β_size_reduced l tl i) => Hleq'; simp response_size.
-      by ssromega.
-  Qed.
-  Next Obligation.
-      by move: (γ_responses_size_reduced l tl) => *; simp response_size; ssromega.
-  Qed.
-
-  
-  Lemma indexed_map_In_eq l :
-    forall ρ n tl χ,
-      all (fun r => ~~partial_response_eq (NestedListResult l χ) r) tl ->
-      indexed_map_In ρ
-      (fun (i : nat) (r : seq ResponseObject) (_ : In r ρ) => collect (r ++ indexed_β_filter l tl i)) n =
-      indexed_map_In ρ (fun (_ : nat) (r : seq ResponseObject) (_ : In r ρ) => collect r) n.
-  Proof.
-    elim=> // hd tl IH n tl0 Hneq; simp indexed_map_In.
-    Admitted.
-  
-  
-  Lemma indexed_map_nlr l ρs:
-    (NestedListResult l
-       (indexed_map ρs
-          (fun i r _ => collect (r ++ indexed_β_filter l [::] i)))) =
-    (NestedListResult l
-       (indexed_map ρs
-          (fun i r _ => collect r))).
-  Proof.
-    congr NestedListResult.
-    rewrite /indexed_map.
-    elim: ρs => //= hd tl IH.
-    simp indexed_map_In => /=.
-    simp indexed_β_filter; rewrite cats0.
-  Admitted.
-
-  
-  Lemma indexed_map_In_β_nil :
-    forall ρs l s i,
-    all (fun r => r.(rname) != l) s ->
-    indexed_map_In ρs
-                (fun i r _ => collect (r ++ indexed_β_filter l s i)) i =
-    indexed_map_In ρs
-                   (fun i r _ => collect r) i.
-  Proof.
-    elim => //= hd tl IH l s i Hall; simp indexed_map_In.
-    by rewrite indexed_β_nil // cats0 IH.
-  Qed.
-  
- 
-  Lemma indexed_map_β_nil l ρs :
-    indexed_map ρs
-                (fun i r _ => collect (r ++ indexed_β_filter l [::] i)) =
-    indexed_map ρs
-                (fun i r _ => collect r).
-  Proof.
-    rewrite /indexed_map.
-    by apply: indexed_map_In_β_nil.
-  Qed.
-
-  Lemma indexed_map_eq_forall_i s2 l lst n :
-    (forall s1 s2, responses_size s1 <= n -> collect (collect s1 ++ s2) = collect (s1 ++ s2)) ->
-    forall i,
-      indexed_map [seq collect r | r <- s2] (fun i r _ => collect (r ++ indexed_β_filter l lst i)) =
-      indexed_map s2 (fun i r _ => collect (r ++ indexed_β_filter l lst i)) ->
-      indexed_map_In [seq collect r | r <- s2] (fun i r _ => collect (r ++ indexed_β_filter l lst i)) i =
-      indexed_map_In s2 (fun i r _ => collect (r ++ indexed_β_filter l lst i)) i.
-  Proof.
-    move=> Hcollect.
-    elim: s2 => //= hd tl IH i.
-    rewrite /indexed_map; simp indexed_map_In.
-  Admitted.
-  
-  Lemma map_collect_eq flt s1 s2 i :
-    has (partial_response_eq flt) s2 = false ->
-    all (are_non_redundant__ρ (Vals:=Vals)) s1 ->
-    (forall r : seq ResponseObject,
-        In r s1 ->
-        are_non_redundant__ρ (r ++ indexed_β_filter flt.(rname) s2 i) ->
-        collect (r ++ indexed_β_filter flt.(rname) s2 i) = r ++ indexed_β_filter flt.(rname) s2 i) ->
-    [seq collect x | x <- s1] = s1.
-  Proof.
-    move=> Hhas.
-  Admitted.
- 
   
   Lemma collect_non_redundant_eq ρ :
     are_non_redundant__ρ ρ ->
     collect ρ = ρ.
   Proof.
+    rewrite /collect /=.
+    apply_funelim (β__ρ ρ) => // [l | l v | l vs | l σ | l σs] ρs.
+    all: do ?[move=> IH /= /and3P [Hall Hnr Hnrs];
+                by rewrite IH //= all_neq_filter_eq; simp γ__ρ].
+    - move=> IH1 IH2 /= /and3P [Hall Hnr Hnrs].
+      simp γ__ρ.
+      rewrite βᶿ_all_neq // in IH1 *.
+      by rewrite all_neq_filter_eq IH2 ?IH1.
+    - move=> IH1 IH2 /= /and3P [Hall Hnr Hnrs].
+      rewrite map_in_eq.
+      simp γ__ρ.
+      rewrite IH2 // all_neq_filter_eq //.
+      rewrite β__L_all_neq // in IH1 *.
+      
+    elim: ρ => //= r rs IH /and3P [Hall Hnr Hnrs].
+    rewrite /collect /=.
     
     apply_funelim (collect ρ) => //= [l | l v | l vs | l χ | l ρs] tl IH.
     all: do ?[move/and3P => [Hall Hnr Hnrs]].
