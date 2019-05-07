@@ -156,13 +156,19 @@ End All.
 Section Map.
   Variables (A B : eqType).
   
-  Equations? map_In (l : seq A) (f : forall (x : A), x \in l -> B) : seq B :=
+  Equations? map_in (l : seq A) (f : forall (x : A), x \in l -> B) : seq B :=
     {
-      map_In nil _ := nil;
-      map_In (cons x xs) f := cons (f x _) (map_In xs (fun x H => f x _))
+      map_in nil _ := nil;
+      map_in (cons x xs) f := cons (f x _) (map_in xs (fun x H => f x _))
     }.
     by apply: mem_head.
       by apply: mem_tail.
+  Qed.
+
+  Lemma map_in_eq (s : seq A) (f : A -> B) :
+    map_in s (fun x _ => f x) = map f s.
+  Proof.
+    by elim: s => //= hd tl IH; simp map_in; rewrite IH.
   Qed.
   
 End Map.
@@ -213,5 +219,5 @@ Notation "s1 :&: s2" := (seqI s1 s2) : seq_scope.
 
 Arguments seqI [A].
 
-Arguments map_In [A B].
+Arguments map_in [A B].
   

@@ -27,17 +27,6 @@ Section ListIn.
      (l : list A) (f : forall (x : A), In x l -> B) : list B :=
     map_In nil _ := nil;
     map_In (cons x xs) f := cons (f x _) (map_In xs (fun x H => f x _)).
-
-  Equations? map_in {A B : eqType}
-            (l : seq A) (f : forall (x : A), x \in l -> B) : seq B :=
-    {                                                            
-      map_in nil _ := nil;
-      map_in (cons x xs) f := cons (f x _) (map_in xs (fun x H => f x _))
-    }.
-    by apply: mem_head.
-    by apply: mem_tail.
-  Qed.
-
     
 End ListIn.
 
