@@ -31,7 +31,8 @@ Section QuerySemantic.
   
   
   Ltac case_response r := case: r => [l | l v | l vs | l ρ | l ρs].
-    
+  Ltac apply_andP := apply/andP; split=> //.
+  
   Section Aux.    
     Variables (T1 T2 : eqType).
     
@@ -263,7 +264,13 @@ Section QuerySemantic.
         funelim (βᶿ l ρ rs) => //=.
       Abort.
         
-      
+      Lemma βᶿ_responses_size_leq l ρ rs :
+        responses_size (βᶿ l ρ rs) <= responses_size ρ + responses_size rs.
+      Proof.
+        funelim (βᶿ l ρ rs) => //=; simp response_size; do ? ssromega.
+        by move: H; rewrite responses_size_app => H; ssromega.
+      Qed.
+
       Equations β__Laux :  seq (seq (@ResponseObject Name Vals)) ->  seq (seq (@ResponseObject Name Vals)) ->  seq (seq (@ResponseObject Name Vals)) :=
         {
           β__Laux [::] _ := [::];
@@ -323,13 +330,10 @@ Section QuerySemantic.
       Abort.
       
         
-      Lemma βᶿ_responses_size_leq l ρ rs :
-        responses_size (βᶿ l ρ rs) <= responses_size ρ + responses_size rs.
-      Proof.
-        funelim (βᶿ l ρ rs) => //=; simp response_size; do ? ssromega.
-        move: H; rewrite responses_size_app => H; ssromega.
-      Qed.
+   
+     
 
+      
       Obligation Tactic := intros; simp response_size; do ? ssromega.
       Equations? β__ρ  (rs : seq (@ResponseObject Name Vals)) : seq (@ResponseObject Name Vals) by wf (responses_size rs) :=
         {
@@ -398,7 +402,34 @@ Section QuerySemantic.
         elim: s => //= hd tl IH /andP [-> Hall].
         by rewrite IH.
       Qed.
+
       
+      Lemma filter_by_name_preserves_non_redundancy l (s : seq (@ResponseObject Name Vals)) :
+        are_non_redundant__ρ s ->
+        are_non_redundant__ρ [seq r <- s | r.(rname) != l].
+      Proof.
+        elim: s => //= hd tl IH /and3P [Hall Hnr Hnrs].
+        case: eqP => //= Heq; [by apply: IH|].
+        apply/and3P; split=> //.
+        by apply: filter_preserves_pred.
+        by apply: IH.
+      Qed.
+
+      Lemma in_γ__ρs' x (s : seq (seq (@ResponseObject Name Vals))) :
+        x \in γ__ρs' s ->
+              exists y, x = γ__ρs y.
+      Proof.
+        elim: s => // hd tl IH.
+        by rewrite γ__ρs'_equation_2 inE => /orP [/eqP -> |]; [exists hd | apply: IH].
+      Qed.
+
+      Lemma γ__ρs'_map (s : seq (seq (@ResponseObject Name Vals))) :
+        γ__ρs' s = [seq (γ__ρs x) | x <- s].
+      Proof.
+          by elim: s.
+      Qed.
+
+        
     End Gamma.
     
   End Filters.
@@ -434,29 +465,15 @@ Section QuerySemantic.
       simp γ__ρ.
       rewrite IH2 // all_neq_filter_eq //.
       rewrite β__L_all_neq // in IH1 *.
-      
-    elim: ρ => //= r rs IH /and3P [Hall Hnr Hnrs].
-    rewrite /collect /=.
-    
-    apply_funelim (collect ρ) => //= [l | l v | l vs | l χ | l ρs] tl IH.
-    all: do ?[move/and3P => [Hall Hnr Hnrs]].
-    all: do ?congr cons.
-    all: do ?[by rewrite IH; [apply: γ_filter_neq_preserves_list | apply: γ_filter_preserves_non_redundancy]].
-    
-    - move=> IH' /and3P [Hall Hnr Hnrs].
-      rewrite IH ?β_filter_nil // ?cats0.
-      by congr cons; rewrite IH'; [apply: γ_filter_neq_preserves_list | apply: γ_filter_preserves_non_redundancy].
-        by simp is_non_redundant__ρ; case=> [Hnr Hnrs].
+      simp is_non_redundant__ρ in Hnr.
+      move/allP in Hnr.
 
-    - move=> IH' /and3P [Hall Hnr Hnrs].
-      congr cons; last first.
-      * by rewrite IH'; [apply: γ_filter_neq_preserves_list | apply: γ_filter_preserves_non_redundancy].
-      * congr NestedListResult.
-        rewrite /indexed_map => /=.
-        rewrite indexed_map_In_β_nil //.
-        rewrite -/(indexed_map ρs _) indexed_map_eq_map.
-  Admitted.
-
+      have H: forall s, (forall σ, σ \in s -> γ__ρs (β__ρ σ) = σ) -> γ__ρs' [seq β__ρ r | r <- s] = s.
+      elim=> // hd tl IH Heq; rewrite map_cons γ__ρs'_equation_2.
+      by rewrite (Heq hd (mem_head hd tl)) IH //; move=> σ Hin; apply: Heq; apply: mem_tail.
+      rewrite H => // σ Hin.
+      by apply: IH1 => //; apply: Hnr.
+  Qed.
   
   Lemma collect_preserves_non_redundancy ρs :
     are_non_redundant__ρ ρs ->
@@ -465,14 +482,14 @@ Section QuerySemantic.
       by move=> Hnr; rewrite collect_non_redundant_eq.
   Qed.
     
-
+(*
   Lemma collect_all_not_eq flt ρ :
     all (fun r => r.(rname) != flt) ρ ->
     collect (γ_filter flt ρ) = collect ρ.
   Proof.
     by move=> Hall; rewrite γ_filter_neq_preserves_list //.
   Qed.
-
+*)
 
 
                   
@@ -480,34 +497,39 @@ Section QuerySemantic.
     all (fun r => r.(rname) != flt) ρ ->
     all (fun r => r.(rname) != flt) (collect ρ).
   Proof.
-    funelim (collect ρ) => //= /andP [Hneq Hall]; apply/andP; split=> //.
-    
-    all: do ?[by apply: H; move/allP: Hall => Hall; apply/allP => x; rewrite mem_filter => /andP [_ Hin]; apply: Hall].
-    
-    all: do ?[by apply: H0; move/allP: Hall => Hall; apply/allP => x; rewrite mem_filter => /andP [_ Hin]; apply: Hall].
+    rewrite /collect /=.
+    funelim (β__ρ ρ) => //= /andP [Hneq Hall]; apply/andP; split=> //.
+    all: do ?[by apply: filter_preserves_pred; apply: H].
+    all: do ?[by apply: filter_preserves_pred; apply: H0].
   Qed.
   
-  Lemma in_collect_γ r flt ρ :
-    r \in collect (γ_filter flt ρ) ->
-          r.(rname) != flt.
-  Proof.
-  Admitted.
+ 
   
   Lemma collect_are_non_redundant ρs :
     are_non_redundant__ρ (collect ρs).
   Proof.
-    apply_funelim (collect ρs) => //= [l | l v | l vs | l ρ | l χ] tl IH.
+    rewrite /collect /=.
+    apply_funelim (β__ρ ρs) => //= [l | l v | l vs | l ρ | l χ] tl IH.
+    all: do ?[apply/and3P; split=> //=; simp γ__ρ;
+                                  [ by apply/allP=> x; rewrite mem_filter => /andP [Hneq _]
+                                  | by apply: filter_by_name_preserves_non_redundancy]].
 
-    all: do ?[apply/and3P; split=> //=; by apply: collect_preserves_all_not_eq; apply: γ_filter_all].
+    - move=> Hnr.
+      apply/and3P; split=> //; simp γ__ρ;
+                            [ by apply/allP=> x; rewrite mem_filter => /andP [Hneq _]
+                            | by apply: filter_by_name_preserves_non_redundancy].
 
-    - move=> IHtl; apply/and3P; split=> //=.
-      by apply: collect_preserves_all_not_eq; apply: γ_filter_all.
-
-    - move=> Hnr; apply/and3P; split=> //=.
-      * by apply: collect_preserves_all_not_eq; apply: γ_filter_all.
-      * simp is_non_redundant__ρ.
-  Admitted.
-    
+    - move=> Hnr.
+      apply/and3P; split=> //; simp γ__ρ;
+                            [ by apply/allP=> x; rewrite mem_filter => /andP [Hneq _]
+                            |
+                            | by apply: filter_by_name_preserves_non_redundancy].
+      simp is_non_redundant__ρ.
+      rewrite map_in_eq.
+      apply/allP=> x.
+      rewrite γ__ρs'_map -map_comp.
+      by move/mapP => [y Hin ->] /=; apply: IH.
+  Qed.
     
   Hint Resolve collect_are_non_redundant.
   Lemma collect_collect_same (r : seq (@ResponseObject Name Vals)) :
@@ -528,37 +550,19 @@ Section QuerySemantic.
     all (have_compatible_shapes r) rs ->
     all (have_compatible_shapes r) (collect rs).
   Proof.
-    apply_funelim (collect rs) => //= [l | l v | l vs | l ρ | l ρs] tl IH.
-
-    all: do ?[by move/andP=> [Hcomp Hall]; apply/andP; split=> //; apply: IH; apply: filter_preserves_pred].
-
-
-    move=> IHtl /andP [Hcomp Hall].
-    apply/andP; split; last by apply: IHtl; apply: filter_preserves_pred.
-    case: r Hcomp Hall IH IHtl => [l' | l' v' | l' vs' | l' χ | l' χ]; simp have_compatible_shapes.
-    case: eqP => //=; rewrite ?all_In_eq_all.
+    rewrite /collect /=.
+    funelim (β__ρ rs) => //= /andP [Hcomp Hall]; simp γ__ρ.
+    all: do ?[by apply_andP; apply: filter_preserves_pred; apply: H].
+    apply_andP; last by apply: filter_preserves_pred; apply: H0.
+    case: r Hcomp Hall => [l' | l' v' | l' vs' | l' σ | l' σs]; simp have_compatible_shapes.
+    case: eqP => //= ->; rewrite 2!all_In_eq_all.
+    move=> /allP Hcomp /allP Hall.
+    apply/allP=> r Hin. rewrite all_In_eq_all.
+    move: (Hcomp r Hin); rewrite all_In_eq_all => Hcomp2.
+    apply: H.
+    
     Admitted.
-   (* move: Hcomp; simp have_compatible_shapes; rewrite all_In_eq_all.
-    case: eqP => //= Heq Hcomp; last by apply: H0; apply: filter_preserves_pred.
-    apply/andP; split; last by apply: H0; apply: filter_preserves_pred.
-    rewrite all_In_eq_all.
-    apply/allP => x Hin; rewrite all_In_eq_all.
-    move: 
-    
-
-    
-    
-    simp have_compatible_shapes. rewrite all_In_eq_all.
-    case: eqP => //= Heq.
-    apply/andP; split=> //.
-    apply/allP=> x Hin. rewrite all_In_eq_all.
-    move: x Hin; apply/allP.
-
-    apply/andP; split=> //.
-    
-    
-    all: do ?[by apply/andP; split=> //; apply: H0; apply: filter_preserves_pred].
-    *)
+  
 
     
   Implicit Type schema : @wfSchema Name Vals.
@@ -834,7 +838,7 @@ Section QuerySemantic.
     by case: eqP.
   Qed.
 
-  
+  (*
   Lemma γ_collect_γ :
     forall n flt s,
       size s <= n ->
@@ -893,7 +897,8 @@ Section QuerySemantic.
     simp indexed_map_In.
     congr cons.
     apply: IH.
-  Qed.
+  Qed.*)
+
          
   Lemma collect_collect_2_cat :
     forall n s1 s2,
