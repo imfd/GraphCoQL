@@ -14,20 +14,12 @@ Require Import treeordtype.
 Require Import Schema.
 Require Import SchemaAux.
 
-
+Require Import SeqExtra.
 Require Import Ssromega.
 
 Delimit Scope query_scope with QUERY.
 Open Scope query_scope.
 
-
-Section Forallt.
-    Inductive Forallt {A : Type} (P : A -> Type) : list A -> Type :=
-      Forallt_nil : Forallt P nil
-    | Forallt_cons : forall (x : A) (l : list A),
-        P x -> Forallt P l -> Forallt P (x :: l).
-
-End Forallt.
 
 Section ListIn.
   
@@ -36,6 +28,17 @@ Section ListIn.
     map_In nil _ := nil;
     map_In (cons x xs) f := cons (f x _) (map_In xs (fun x H => f x _)).
 
+  Equations? map_in {A B : eqType}
+            (l : seq A) (f : forall (x : A), x \in l -> B) : seq B :=
+    {                                                            
+      map_in nil _ := nil;
+      map_in (cons x xs) f := cons (f x _) (map_in xs (fun x H => f x _))
+    }.
+    by apply: mem_head.
+    by apply: mem_tail.
+  Qed.
+
+    
 End ListIn.
 
 Section Query.

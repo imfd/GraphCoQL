@@ -33,13 +33,16 @@ Section QuerySemantic.
   Ltac case_response r := case: r => [l | l v | l vs | l ρ | l ρs].
     
   Section Aux.    
-    Variables (T1 T2 : Type).
+    Variables (T1 T2 : eqType).
     
-    Equations indexed_map_In s (f : forall (i : nat) (x : T1), In x s -> T2) (index : nat) : seq T2 :=
+    Equations? indexed_map_In (s : seq T1) (f : forall (i : nat) (x : T1), x \in s -> T2) (index : nat) : seq T2 :=
       { 
         indexed_map_In [::] _ _ := [::];
         indexed_map_In (hd :: tl) f i := (f i hd _) :: (indexed_map_In tl (fun i x H => f i x _) i.+1)
       }.
+      by apply: mem_head.
+        by apply: mem_tail.
+    Qed.
       
     (**
        indexed_map : (s : seq T1) -> (nat -> x : T1 -> x ∈ s -> T2) -> seq T2
@@ -50,7 +53,7 @@ Section QuerySemantic.
        applied belongs to the list. This is mainly to be able to prove some
        obligations afterwards.
      **)
-    Definition indexed_map (s : list T1) (f : forall (i : nat) (x : T1), In x s -> T2)  : list T2 :=
+    Definition indexed_map (s : list T1) (f : forall (i : nat) (x : T1), x \in s -> T2)  : list T2 :=
         indexed_map_In s f 0
     .
     
@@ -216,7 +219,108 @@ Section QuerySemantic.
 
     Section Beta.
      
-     
+
+      Equations βᶿ : Name -> seq (@ResponseObject Name Vals) -> seq (@ResponseObject Name Vals) -> seq (@ResponseObject Name Vals)
+      :=
+        {
+          βᶿ _ ρ [::] := ρ;
+          βᶿ l ρ (NestedResult l' σ :: rs)
+            with l == l' :=
+            {
+                  | true := βᶿ l (ρ ++ σ) rs;
+                  | _ := βᶿ l ρ rs
+            };
+          βᶿ l ρ (r :: rs) := βᶿ l ρ rs
+        }.
+
+
+      Lemma βᶿ_foldl l ρ rs :
+        βᶿ l ρ rs = foldl (fun acc r => match r with
+                                     | NestedResult l' σ =>
+                                       if l == l' then
+                                         acc ++ σ
+                                       else
+                                         acc
+                                     | _ => acc
+                                     end) ρ rs.
+      Proof.
+        funelim (βᶿ l ρ rs) => //=;
+        by rewrite Heq; apply: H.
+      Qed.
+
+      Equations β__Laux :  seq (seq (@ResponseObject Name Vals)) ->  seq (seq (@ResponseObject Name Vals)) ->  seq (seq (@ResponseObject Name Vals)) :=
+        {
+          β__Laux [::] _ := [::];
+          β__Laux ρs [::] := ρs;
+          β__Laux (ρ1 :: ρs) (σ1 :: σs) := (ρ1 ++ σ1) :: (β__Laux ρs σs)
+        }.
+
+      Lemma β__Laux_responses_size_leq ρs σs :
+        responses_size' (β__Laux ρs σs) <= responses_size' ρs + responses_size' σs.
+      Proof.
+        funelim (β__Laux ρs σs) => //; do ?ssromega.
+        rewrite !responses_size'_equation_2.
+        rewrite responses_size_app; ssromega.
+      Qed.
+        
+      Equations β__L : Name ->  seq (seq (@ResponseObject Name Vals)) -> seq (@ResponseObject Name Vals) -> seq (seq (@ResponseObject Name Vals)) :=
+        {
+          β__L _ ρs [::] := ρs;
+          β__L l ρs (NestedListResult l' σs :: rs)
+            with l == l' :=
+            {
+            | true := β__L l (β__Laux ρs σs) rs;
+            | _ := β__L l ρs rs
+            };
+          β__L l ρs (r :: rs) := β__L l ρs rs
+        }.      
+
+      Lemma β__L_responses_size_leq ρ l ρs rs :
+        ρ \in β__L l ρs rs ->
+              responses_size ρ <= responses_size' ρs + responses_size rs.
+      Proof.
+        funelim (β__L l ρs rs) => //= Hin; simp response_size.
+        - by move: (in_responses'_leq Hin) => Hleq; ssromega.
+        - all: do ?[by move: (H ρ Hin) => Hleq; ssromega].
+        - move: (H ρ Hin) => Hleq.
+          by move: (β__Laux_responses_size_leq l l3) => Hleq2; ssromega.
+      Qed.
+      
+      Lemma β__Laux_fold ρs σs :
+        β__Laux ρs σs = (foldr (fun r acc => match acc, r with
+                                        | ([::], acc), _ => ([::], r :: acc)
+                                        | (σ1 :: σs, acc), r => (σs, (r ++ σ1) :: acc)
+                                        end) (σs, [::]) ρs).2.
+      Proof.
+        move: {2}(size _) (leqnn (size ρs)) => n.
+        elim: n ρs σs => //= [| n IH] ρs σs.
+          by rewrite leqn0 => /eqP-/size0nil ->.
+        - case: ρs => //= ρ1 ρs Hlt.
+      Abort.
+      
+        
+      Lemma βᶿ_responses_size_leq l ρ rs :
+        responses_size (βᶿ l ρ rs) <= responses_size ρ + responses_size rs.
+      Proof.
+        funelim (βᶿ l ρ rs) => //=; simp response_size; do ? ssromega.
+        move: H; rewrite responses_size_app => H; ssromega.
+      Qed.
+
+      Obligation Tactic := intros; simp response_size; do ? ssromega.
+      Equations? β  (rs : seq (@ResponseObject Name Vals)) : seq (@ResponseObject Name Vals) by wf (responses_size rs) :=
+        {
+          β [::] := [::];
+          β (NestedResult l ρ :: rs) := (NestedResult l (β (βᶿ l ρ rs))) :: β rs;
+          β (NestedListResult l ρs :: rs) := (NestedListResult l (map_in (β__L l ρs rs) (fun ρ Hin => β ρ))) :: β rs;
+          β (r :: rs) := r :: β rs
+        }.
+        by move: (βᶿ_responses_size_leq l ρ rs) => Hleq; ssromega.
+        by move: (β__L_responses_size_leq ρ l ρs rs Hin) => Hleq; ssromega.
+      Qed.
+        
+
+      
+      
 
        (**
          β_filter : ResponseObject -> seq ResponseObject -> seq ResponseObject

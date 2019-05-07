@@ -71,7 +71,7 @@ Section SeqExtra.
     move: H.
   Abort.
   
-
+  
   Lemma singleton (x y : A) : x = y -> [:: x] = [:: y]. Proof. by move=> ->. Qed.    
 
 
@@ -100,6 +100,7 @@ Section SeqExtra.
       by rewrite in_cons => Hin; apply/orP; right.
   Qed.
 
+      
   Lemma filter_preserves_map_all (p : A -> A -> bool) (pred : A -> bool) (s : seq A) :
     map_all p s ->
     map_all p [seq x <- s | pred x].
@@ -152,6 +153,21 @@ Section All.
 
 End All.
 
+Section Map.
+  Variables (A B : eqType).
+  
+  Equations? map_In (l : seq A) (f : forall (x : A), x \in l -> B) : seq B :=
+    {
+      map_In nil _ := nil;
+      map_In (cons x xs) f := cons (f x _) (map_In xs (fun x H => f x _))
+    }.
+    by apply: mem_head.
+      by apply: mem_tail.
+  Qed.
+  
+End Map.
+
+
 Set Implicit Arguments.
  
 Section SeqI.
@@ -197,4 +213,5 @@ Notation "s1 :&: s2" := (seqI s1 s2) : seq_scope.
 
 Arguments seqI [A].
 
+Arguments map_In [A B].
   
