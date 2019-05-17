@@ -110,6 +110,7 @@ Section Eq.
       by rewrite [D && (C && _)]andbCA.
   Qed.
 
+
   
   Lemma normalize_preserves_eval :
     forall schema ty φ (g : @conformedGraph Name Vals schema) u,
@@ -141,141 +142,125 @@ Section Eq.
      
     - move=> ty f α Hscope g u Hin Hupty Gqc Hv.
       simp try_inline_query.
-      case: eqP => //= Hpty.
-      * by rewrite cats0; apply: eval_collect_same.
+      rewrite [eval]lock.
+      case: eqP => //= Hpty; rewrite -lock.
+      * by apply: eval_same_query_in_list.
       * by apply: inlined_query_eq_eval.
         
      
     - move=> ty l f α Hscope g u _ _ Hqc Hv.
       simp try_inline_query.
-      case: eqP => //= Hpty.
-      * by rewrite cats0; apply: eval_collect_same.
+      rewrite [eval]lock.
+      case: eqP => //= Hpty; rewrite -lock.
+      * by apply: eval_same_query_in_list.
       * by apply: inlined_query_eq_eval.
-
-    - move=> ty f fld α φ IH Hscope Hlook g u Hin Hpty Hqc Hv /=.
-      rewrite cats0.
-      simp eval => /=.
+    
+    - move=> ty f fld α φ IH Hscope Hlook g u Hin Hpty Hqc Hv.
+      rewrite -[RHS]eval_same_query_in_list //.
+      rewrite /eval.
       case Hlookty : lookup_field_type => [rty|]; last by simp collect.
       case: rty Hlookty => //= rty Hlookty.
       * case Hohead: ohead => [v|]; simp collect => //.
-        simp β_filter; rewrite cats0 IH //.
-        by rewrite -eval_queries_collect_same.
+        rewrite /eval_queries in IH.
+        rewrite IH //.
         admit.
         admit.
         by simp query_conforms in Hqc; rewrite Hlook /= in Hqc; case/and4P: Hqc.
           by simp has_valid_fragments in Hv; rewrite Hlook /= in Hv.
-      * simp collect. (* indexed map can be removed && can use map_normalize lemma from above *)
-        rewrite indexed_map_β_nil.
-        rewrite indexed_map_eq_map.
-        rewrite (map_normalize_eval_eq _ ty _ g _).
-        rewrite -map_comp.
-        rewrite /funcomp.
-        (* rewrite eval_queries_collect_same. *)
-        admit.
-        admit.
+      * admit.
         
-    - move=> ty f fld α φ IH Hscope Hlook g u Hin Hupty Hqc Hv /=.
+    - move=> ty f fld α φ IH Hscope Hlook g u Hin Hupty Hqc Hv.
+      rewrite [eval]lock /=.
       simp try_inline_query.
-      case: eqP => //= Hpty.
-      * rewrite cats0.
-        simp eval => /=.
+      case: eqP => //= Hpty; rewrite -lock.
+      * rewrite -eval_same_query_in_list //=.
         case Hlookty : lookup_field_type => [rty|]; last by simp collect.
         case: rty Hlookty => //= rty Hlookty.
         + case Hohead: ohead => [v|]; simp collect => //.
-          simp β_filter; rewrite cats0 IH //.
-            by rewrite -eval_queries_collect_same.
-            admit.
-            admit.
+          rewrite /eval_queries in IH; rewrite IH //.
+          admit.
+          admit.
             by simp query_conforms in Hqc; rewrite Hlook /= in Hqc; case/and4P: Hqc.
           by simp has_valid_fragments in Hv; rewrite Hlook /= in Hv.
-        + simp collect. (* indexed map can be removed *)
-          admit.
-
+        + admit.
        * admit.
 
-    - move=> ty f fld l α φ IH Hscope Hlook g u Hin Hpty Hqc Hv /=.
-      rewrite cats0.
-      simp eval => /=.
+    - move=> ty f fld l α φ IH Hscope Hlook g u Hin Hpty Hqc Hv.
+      rewrite -[RHS]eval_same_query_in_list //.
+      rewrite /eval.
       case Hlookty : lookup_field_type => [rty|]; last by simp collect.
       case: rty Hlookty => //= rty Hlookty.
       * case Hohead: ohead => [v|]; simp collect => //.
-        simp β_filter; rewrite cats0 IH //.
-        by rewrite -eval_queries_collect_same.
+        rewrite /eval_queries in IH.
+        rewrite IH //.
         admit.
         admit.
         by simp query_conforms in Hqc; rewrite Hlook /= in Hqc; case/and4P: Hqc.
           by simp has_valid_fragments in Hv; rewrite Hlook /= in Hv.
-      * simp collect. (* indexed map can be removed *)
-        admit.
+      * admit.
 
     - move=> ty f fld l α φ IH Hscope Hlook g u Hin Hupty Hqc Hv /=.
+     rewrite [eval]lock /=.
       simp try_inline_query.
-      case: eqP => //= Hpty.
-      * rewrite cats0.
-        simp eval => /=.
+      case: eqP => //= Hpty; rewrite -lock.
+      * rewrite -eval_same_query_in_list //=.
         case Hlookty : lookup_field_type => [rty|]; last by simp collect.
         case: rty Hlookty => //= rty Hlookty.
         + case Hohead: ohead => [v|]; simp collect => //.
-          simp β_filter; rewrite cats0 IH //.
-            by rewrite -eval_queries_collect_same.
-            admit.
-            admit.
+          rewrite /eval_queries in IH; rewrite IH //.
+          admit.
+          admit.
             by simp query_conforms in Hqc; rewrite Hlook /= in Hqc; case/and4P: Hqc.
           by simp has_valid_fragments in Hv; rewrite Hlook /= in Hv.
-        + simp collect. (* indexed map can be removed *)
-          admit.
+        + admit.
+          * admit.
 
-       * admit.
-
-         
+            
     - move=> t b ty φ IH Ht Hscope g u Hin.
       rewrite get_possible_types_objectE //= inE => Huty /and5P [_ _ _ Hqsc Hmerge].
       simp has_valid_fragments; rewrite Hscope /= => /andP [/eqP Hteq Hv].
       rewrite -Hteq in Huty.
-      simp eval; rewrite Huty /=.
+      rewrite Huty /=.
       apply: IH => //=.
         by rewrite get_possible_types_objectE //= inE -Hteq.
       by rewrite /queries_conform Hteq in Hqsc Hmerge *; apply/andP; split.
           
     - move=> t ty φ IH Ht Hscope g u Hin Hpty Hqc Hv.
+      rewrite [eval]lock /=.
       move: Hqc => /= /and5P [_ _ _ Hqsc Hmerge].
       move: Hv; simp has_valid_fragments; rewrite Hscope /= => /andP [_] Hv.  
- 
-      simp eval; case: eqP => Heq //=.
-      * rewrite cats0.
-        rewrite -IH //.
-          by apply: eval_queries_collect_same.
-          by rewrite get_possible_types_objectE //= inE Heq.
-          by rewrite /queries_conform; apply/andP; split.
-          by rewrite implementation_nil_for_object //= union_nil_for_object.
+      rewrite -lock -eval_same_query_in_list //=.
+      rewrite /eval_queries in IH; rewrite -IH //.
+      admit.
+        by rewrite /queries_conform; apply/andP; split => //.
             
-    - move=> t ty φ IH Ht Hscope g u Hin Hpty Hqc Hv; simp eval.
+    - move=> t ty φ IH Ht Hscope g u Hin Hpty Hqc Hv.
+      (*
+      rewrite -IH //= /eval_queries.
       case: eqP => //= Heq.
-      * move: (node_in_graph_has_object_type Hin) => Huty.
-        by rewrite Heq Ht in Huty.
-
       * move: (type_in_scope_N_obj_is_abstract _ _ _ _ _  Hqc Hscope).
         move: Hv; simp has_valid_fragments; rewrite Hscope /= => {Heq} /andP [/orP [/eqP Heq | Hcontr] Hv]; last first.
           by rewrite Hcontr in Ht.
         rewrite /is_abstract_type => /orP [Hintf | Hunion].
         rewrite get_possible_types_interfaceE // in Hpty IH.
         rewrite -Heq in Hpty IH *.
-        rewrite Hpty /=.
-        apply: IH => //.
-          by move: Hqc; simp query_conforms => /and5P [_ _ _ Hqsc Hmerge]; rewrite /queries_conform; apply/andP; split.
-
+        rewrite Hpty //=.
+        
         rewrite get_possible_types_unionE // in Hpty IH.
         rewrite -Heq in Hpty IH Hunion *.
 
-        rewrite implementation_nil_for_union //= Hpty /=.
-        apply: IH => //.
-          by move: Hqc; simp query_conforms => /and5P [_ _ _ Hqsc Hmerge]; rewrite /queries_conform; apply/andP; split.
-
+        rewrite implementation_nil_for_union //= Hpty //=.
+       *)
+      admit.
+         
     - move=> ty hd tl IHhd IHtl g u Hin Hpty.
-      rewrite /queries_conform. case/andP.
+      rewrite /queries_conform; case/andP.
       all_cons => [Hqc Hqsc] /=.
       all_cons => [Hmerge Hmerges].
       all_cons => [Hv Hvs].
+      rewrite {2}/eval_queries /=.
+      rewrite map_cat flatten_cat. 
+      rewrite IHhd // /eval_queries.
       rewrite IHhd // IHtl //; last first.
         by rewrite /queries_conform; apply/andP; split.
         rewrite eval_collect_cat //.

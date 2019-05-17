@@ -347,7 +347,7 @@ Section QueryAux.
        by rewrite [(all _ tl && _) && _ in RHS]andbA; rewrite andbb.
    Qed.
     *)
-   Lemma wf_responses_cat rs1 rs2 :
+   Lemma wf_responses_catb rs1 rs2 :
      wf_responses (rs1 ++ rs2) -> wf_responses rs1 /\ wf_responses rs2.
    Proof.
      elim: rs1 rs2 => //= hd tl IH rs2.
@@ -367,6 +367,28 @@ Section QueryAux.
      rewrite -andbA.
      by rewrite -[_ && wf_responses rs2 in RHS]andbA.
    Qed.
+
+   Lemma wf_responses_cat rs1 rs2 :
+    wf_responses (rs1 ++ rs2) = [&& wf_responses rs1,
+                                 wf_responses rs2 &
+                                 all (fun r1 => all (fun r2 => have_compatible_shapes r1 r2) rs2) rs1].
+  Proof.
+    elim: rs1 rs2 => //= [| hd tl IH] rs2.
+    - by rewrite andbT.
+    - rewrite all_cat.
+      rewrite IH.
+      set A := wf_response hd.
+      set B := all _ tl.
+      set C := all _ rs2.
+      set D := wf_responses tl.
+      set E := wf_responses rs2.
+      set F := all _ _.
+      rewrite -[(B && C) && _]andbA.
+      rewrite -[RHS]andbA.
+      rewrite -[(B && D) && _]andbA.
+      rewrite [E && (C && _)]andbCA.
+      by rewrite [D && (C && _)]andbCA.
+  Qed.
    
 End QueryAux.
 
