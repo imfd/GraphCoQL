@@ -39,50 +39,7 @@ Section QuerySemantic.
     Section Beta.
      
 
-      Equations βᶿ : Name -> seq (@ResponseObject Name Vals) -> seq (@ResponseObject Name Vals) -> seq (@ResponseObject Name Vals)
-      :=
-        {
-          βᶿ _ ρ [::] := ρ;
-          βᶿ l ρ (NestedResult l' σ :: rs)
-            with l == l' :=
-            {
-                  | true := βᶿ l (ρ ++ σ) rs;
-                  | _ := βᶿ l ρ rs
-            };
-          βᶿ l ρ (r :: rs) := βᶿ l ρ rs
-        }.
-
-
-      Lemma βᶿ_foldl l ρ rs :
-        βᶿ l ρ rs = foldl (fun acc r => match r with
-                                     | NestedResult l' σ =>
-                                       if l == l' then
-                                         acc ++ σ
-                                       else
-                                         acc
-                                     | _ => acc
-                                     end) ρ rs.
-      Proof.
-        funelim (βᶿ l ρ rs) => //=;
-        by rewrite Heq; apply: H.
-      Qed.
-
-      Lemma βᶿ_all_neq l ρ rs :
-        all (fun r => r.(rname) != l) rs ->
-        βᶿ l ρ rs = ρ.
-      Proof.
-        funelim (βᶿ l ρ rs) => //= /andP [Hneq Hall]; do ? by apply: H.
-        by move/negbTE in Hneq; rewrite eq_sym Hneq in Heq.
-      Qed.
-
-      
-        
-      Lemma βᶿ_responses_size_leq l ρ rs :
-        responses_size (βᶿ l ρ rs) <= responses_size ρ + responses_size rs.
-      Proof.
-        funelim (βᶿ l ρ rs) => //=; simp response_size; do ? ssromega.
-        by move: H; rewrite responses_size_app => H; ssromega.
-      Qed.
+    
 
       Equations β__Laux :  seq (seq (@ResponseObject Name Vals)) ->  seq (seq (@ResponseObject Name Vals)) ->  seq (seq (@ResponseObject Name Vals)) :=
         {
@@ -114,108 +71,8 @@ Section QuerySemantic.
           * move: (IH Hin) => Hleq.
             rewrite 2!responses_size'_equation_2; ssromega.
       Qed.
-        
-      Equations β__L : Name ->  seq (seq (@ResponseObject Name Vals)) -> seq (@ResponseObject Name Vals) -> seq (seq (@ResponseObject Name Vals)) :=
-        {
-          β__L _ ρs [::] := ρs;
-          β__L l ρs (NestedListResult l' σs :: rs)
-            with l == l' :=
-            {
-            | true := β__L l (β__Laux ρs σs) rs;
-            | _ := β__L l ρs rs
-            };
-          β__L l ρs (r :: rs) := β__L l ρs rs
-        }.      
-
-      Lemma β__L_foldl l rs :
-         β__L l [::] rs = foldl (fun acc r => match r with
-                         | NestedListResult l' σs =>
-                           if l == l' then
-                             β__Laux acc σs
-                           else
-                             acc
-                         | _ => acc
-                         end) [::] rs.
-      Proof.
-        apply_funelim (β__L l [::] rs) => //=.
-        intros.
-        by case: eqP => // /eqP-/negbTE Hcontr; rewrite Heq in Hcontr.
-        intros.
-        by case: eqP => // /eqP => Hcontr; rewrite Heq in Hcontr.
-      Qed.
-
-      Lemma β__L_responses_size_leq l rs :
-        responses_size' (β__L l [::] rs) <= responses_size rs.
-      Proof.
-        funelim (β__L l [::] rs) => //=; simp response_size; do ?ssromega.
-        simp β__Laux in H; simp β__Laux.
-        move: (H s l0 Logic.eq_refl) => Hleq. ssromega.
-      Qed.
-      
-      Lemma β__L_in_responses_size_leq ρ l ρs rs :
-        ρ \in β__L l ρs rs ->
-              responses_size ρ <= responses_size' ρs + responses_size rs.
-      Proof.
-        funelim (β__L l ρs rs) => //= Hin; simp response_size.
-        - by move: (in_responses'_leq Hin) => Hleq; ssromega.
-        - all: do ?[by move: (H ρ Hin) => Hleq; ssromega].
-        - move: (H ρ Hin) => Hleq.
-          by move: (β__Laux_responses_size_leq l l3) => Hleq2; ssromega.
-      Qed.
-
-      Lemma β__L_all_neq l ρs rs :
-        all (fun r => r.(rname) != l) rs ->
-        β__L l ρs rs = ρs.
-      Proof.
-        funelim (β__L l ρs rs) => //= /andP [Hneq Hall]; do ? by apply: H.
-        by move/negbTE in Hneq; rewrite eq_sym Hneq in Heq.
-      Qed.
-      
-      Lemma β__Laux_fold ρs σs :
-        β__Laux ρs σs = (foldr (fun r acc => match acc, r with
-                                        | ([::], acc), _ => ([::], r :: acc)
-                                        | (σ1 :: σs, acc), r => (σs, (r ++ σ1) :: acc)
-                                        end) (σs, [::]) ρs).2.
-      Proof.
-        move: {2}(size _) (leqnn (size ρs)) => n.
-        elim: n ρs σs => //= [| n IH] ρs σs.
-          by rewrite leqn0 => /eqP-/size0nil ->.
-        - case: ρs => //= ρ1 ρs Hlt.
-      Abort.
-
-      Equations? foldr_in {T R : eqType} (s : seq T) (f : forall x, x \in s -> R -> R) (z : R) : R :=
-        {
-          foldr_in [::] _ z := z;
-          foldr_in (hd :: tl) f z := f hd _ (foldr_in tl (fun x H z => f x _ z) z)
-        }.
-        by apply: mem_head.
-        
-        by apply: mem_tail.
-      Qed.
-
-      Equations? foldl_In {T R : eqType} (s : seq T) (f : R -> forall x, x \in s -> R) (z : R) : R :=
-        {
-          foldl_In [::] _ z := z;
-          foldl_In (hd :: tl) f z := foldl_In tl (fun z x H => f z x _) (f z hd _) 
-        }.
-        by apply: mem_tail.
-          by apply: mem_head.
-      Qed.
-
-      Lemma foldl_In_foldl {T R : eqType} (s : seq T) (f : R -> T -> R) (z : R) :
-        foldl_In s (fun z x _ => f z x) z = foldl f z s.
-      Proof.
-        by elim: s f z => //= hd tl IH f z; simp foldl_In.
-      Qed.
 
       
-      Lemma nil_responses_leq (s : seq (@ResponseObject Name Vals)) : @responses_size Name Vals [::] <= responses_size s.
-      Proof.
-          by elim: s.
-      Qed.
-
-
-   
       Definition θ l (rs : seq (@ResponseObject Name Vals)) :=
         foldr (fun r acc => match r with
                          | NestedResult l' σ =>
@@ -252,19 +109,35 @@ Section QuerySemantic.
         by rewrite -catA IH.
       Qed.
 
-      
-      Definition fold2 l rs :=
+
+      Definition γ l
+                 (acc : seq (seq (@ResponseObject Name Vals)))
+                 (rs : seq (@ResponseObject Name Vals)) : seq (seq (@ResponseObject Name Vals)) :=
+
         foldl (fun acc r => match r with
                          | NestedListResult l' σs =>
                            if l == l' then
-                             β__Laux acc σs
+                             β__Laux acc σs 
                            else
                              acc
                          | _ => acc
-                         end) [::] rs.
-
+                         end) acc rs.
                              
-      
+
+      Lemma in_γ_responses_size_leq (r : seq (@ResponseObject Name Vals)) l acc rs :
+        r \in γ l acc rs ->
+              responses_size r <= responses_size' acc + responses_size rs.
+      Proof.
+        elim: rs acc => //= [| hd tl IH] acc.
+        - move/in_responses'_leq => Hleq; ssromega.
+        - case: hd; intros; simp response_size; do ?[have Hleq := (IH acc H); ssromega].
+          move: H; case: eqP=> /= Heq Hin.
+          * have Hleq := (IH (β__Laux acc l0) Hin).
+            have Hleq2 := (β__Laux_responses_size_leq acc l0).
+            by ssromega.
+          * have Hleq := (IH acc Hin); ssromega.
+      Qed.
+            
       Obligation Tactic := intros; simp response_size; do ?ssromega.
       Equations? β (acc : seq (@ResponseObject Name Vals)) (rs1 : seq (@ResponseObject Name Vals))  : seq (@ResponseObject Name Vals)
             by wf (responses_size rs1) :=
@@ -282,7 +155,7 @@ Section QuerySemantic.
                 with has (fun r => r.(rname) == l) acc :=
                 {
                   | true := β acc rs1 ;
-                  | _ := β (rcons acc (NestedListResult l (map_in (β__Laux ρs (β__L l [::] rs1)) (fun ρ Hin => β [::] ρ)))) rs1 
+                  | _ := β (rcons acc (NestedListResult l (map_in (γ l ρs rs1) (fun ρ Hin => β [::] ρ)))) rs1 
                 };
               
               β acc (r :: rs1)
@@ -292,10 +165,9 @@ Section QuerySemantic.
                   | _ := β (rcons acc r) rs1
                 }
             }.
-      - move: (θ_responses_size_leq l rs1) => /= Hleq.
+      - have Hleq := (θ_responses_size_leq l rs1).
           by rewrite responses_size_app; ssromega.
-      - move: (β__Laux_in_responses_size_leq ρ ρs (β__L l [::] rs1) Hin) => Hleq1. 
-          by move: (β__L_responses_size_leq l rs1) => Hleq2; ssromega.      
+      - have Hleq := (in_γ_responses_size_leq ρ l ρs rs1 Hin); ssromega.    
       Qed.
 
       Definition collect (rs : seq ResponseObject) := β [::] rs.
@@ -671,22 +543,8 @@ Section QuerySemantic.
      - move=> /and3P [Hallnr Hnr Hnrs] /= /andP [Hdiff Halldiff].
        rewrite -cat_rcons.
        rewrite !map_in_eq in H0 *.
-       rewrite β__L_all_neq // in H H0 *.
-       rewrite H0 //.
-       
-       * rewrite β__Laux_nil_tail.  congr cat; congr rcons. congr NestedListResult.
-         apply/map_id_in => rs Hin.
-         rewrite H //.
-         by rewrite β__Laux_nil_tail.
-         by move: Hnr; simp is_non_redundant__ρ => /allP /(_ rs Hin).
-         by apply/allP.
-       * apply/allP=> r Hin.
-         rewrite all_rcons; apply_andP => //=.
-         by move/allP: Hallnr => /(_ r Hin); rewrite eq_sym.
-         by move/allP: Halldiff => /(_ r Hin).
-   Qed.
-
-
+   Admitted.
+   
    Definition filter__acc (acc rs : seq (@ResponseObject Name Vals)) := filter (fun r1 => all (fun r2 => r2.(rname) != r1.(rname)) acc) rs.
 
   Lemma filter_acc_cat acc rs1 rs2 :
@@ -832,6 +690,12 @@ Section QuerySemantic.
                  apply/allP=> r; rewrite mem_filter andbT => /andP [_ Hin];
                    by move/allP: Hall => /(_ r Hin)].
    Qed.
+
+   Lemma filter_acc_id acc rs :
+     filter__acc acc (filter__acc acc rs) = filter__acc acc rs.
+   Proof.
+       by rewrite /filter__acc filter_id.
+   Qed.
    
    Lemma β_nested_cat acc rs1 rs2 :
      β acc (β [::] rs1 ++ rs2) = β acc (rs1 ++ rs2).
@@ -840,99 +704,66 @@ Section QuerySemantic.
      elim: n rs1 rs2 acc => [| n IH] rs1 rs2 acc.
      - by rewrite leqn0 => /eqP-/responses_size0nil -> /=; simp β; rewrite cat0s.
      - case: rs1 => //= r1 rs1' Hleq.
-       case: r1 Hleq => [l | l v | l vs | l ρ | l ρs]; simp response_size => Hleq.
-       rewrite [RHS]β_equation_2. 
-       case Hhas: has => //=.
-       rewrite β_spread [RHS]β_spread.
-       rewrite 2!filter_acc_cat filter_acc_β_nil /=.
-       move/hasPn/allP/negbTE in Hhas; rewrite Hhas.
-       rewrite IH //. move: (filter_acc_responses_size_leq acc rs1') => Hfleq; ssromega.
-       
+       case: r1 Hleq => [l | l v | l vs | l ρ | l ρs]; simp response_size => Hleq;
+       rewrite β_spread [RHS]β_spread;
+       rewrite -cat_cons 2!filter_acc_cat filter_acc_β_nil /=;
+       set rs2' := filter__acc acc rs2;
+       case: ifP => //= Hall.
 
-       simp β; rewrite Hhas /=.
-       rewrite β_spread [RHS]β_spread.
-       congr cat.
-       rewrite 2!filter_acc_cat.
-       rewrite filter_acc_β_nil.
-       rewrite filter_acc_nested /=.
-       rewrite all_rcons /=.
-       move/negbT/hasPn/allP in Hhas.
-       rewrite Hhas /=.
-       case: eqP => //= _.
-       rewrite filter_acc_nil.
-       apply: IH.
-       move: (filter_acc_responses_size_leq (rcons acc (Null l)) rs1') => Hleq2; ssromega.
-
-       simp β => /=.
-       case Hhas: has => //=;
-       rewrite [X in β acc (X ++ _) = _]β_spread /=.
-       simp β; rewrite Hhas /=.
-       rewrite β_spread [RHS]β_spread.
-       congr cat.
-       rewrite 2!filter_acc_cat.
-       set C := filter__acc acc rs2.
-       rewrite filter_acc_β_nil.
-       rewrite filter_acc_nested /=.
-       move/hasPn/allP/negbTE in Hhas.
-       rewrite Hhas /= filter_acc_nil.
-       apply: IH.
-       move: (filter_acc_responses_size_leq acc rs1') => Hleq2; ssromega.
-
-       simp β; rewrite Hhas /=.
-       rewrite β_spread [RHS]β_spread.
-       congr cat.
-       rewrite 2!filter_acc_cat.
-       rewrite filter_acc_β_nil.
-       rewrite filter_acc_nested /=.
-       rewrite all_rcons /=.
-       move/negbT/hasPn/allP in Hhas.
-       rewrite Hhas /=.
-       case: eqP => //= _.
-       rewrite filter_acc_nil.
-       apply: IH.
-       move: (filter_acc_responses_size_leq (rcons acc (SingleResult l v)) rs1') => Hleq2; ssromega.
+       all: do ?[rewrite IH //; move: (filter_acc_responses_size_leq acc rs1') => Hfleq; ssromega].
+      
+       * simp β => /=; rewrite [β [:: Null l] _]β_spread [β [:: Null l] _ in RHS]β_spread /=.
+         simp β => /=; rewrite [β [:: Null l] _]β_spread /= 2!filter_acc_cat.
+         rewrite filter_acc_β_nil filter_acc_id -?filter_acc_rcons IH //=.
+         move: (filter_acc_responses_size_leq (rcons acc (Null l)) rs1') => Hfleq; ssromega.
+         
+       * simp β => /=; rewrite [β [:: SingleResult l v] _]β_spread [β [:: SingleResult l v] _ in RHS]β_spread /=.
+         simp β => /=; rewrite [β [:: SingleResult l v] _]β_spread /= 2!filter_acc_cat.
+         rewrite filter_acc_β_nil filter_acc_id -?filter_acc_rcons IH //=.
+         move: (filter_acc_responses_size_leq (rcons acc (SingleResult l v)) rs1') => Hfleq; ssromega.
 
        * admit.
 
-       * simp β => /=.
-         case Hhas: has => //=;
-         set r1' := NestedResult l _;
-         rewrite [X in β acc (X ++ _) = _]β_spread /=.
-         simp β; rewrite Hhas /=.
-         rewrite β_spread [RHS]β_spread.
-         congr cat.
-         rewrite 2!filter_acc_cat.
-         set C := filter__acc acc rs2.
-         rewrite filter_acc_β_nil.
-         rewrite filter_acc_nested /=.
-         move/hasPn/allP/negbTE in Hhas.
-         rewrite Hhas /= filter_acc_nil.
-         apply: IH.
-         move: (filter_acc_responses_size_leq acc rs1') => Hleq2; ssromega.
+       * simp β => /=; rewrite θ_cat catA; congr cat.
+         set ρ' := β [::] (ρ ++ _).
+         set σ := β [::] ((ρ ++ _) ++ _).
+         rewrite [β [:: NestedResult _ _] _]β_spread [β [:: NestedResult _ _] _ in RHS]β_spread /=.
+         simp β => /=; rewrite [β [:: NestedResult _ _] _]β_spread /= 2!filter_acc_cat.
+         rewrite filter_acc_β_nil filter_acc_id θ_cat θ_nil_if_all_neq ?cat0s.
+         have -> : β [::] (ρ' ++ θ l rs2') = σ.
+         apply: IH;          rewrite responses_size_app.
 
-       simp β; rewrite Hhas /=.
-       rewrite !θ_cat.
-       rewrite [θ l (β [::] (filter__acc _ rs1'))]θ_nil_if_all_neq // ?cat0s.
-       rewrite [ρ ++ θ l rs1' ++ _]catA.
-       rewrite [β [::] (β [::] (ρ ++ θ l rs1') ++ θ l rs2)]IH //.
-        rewrite β_spread [RHS]β_spread.
-       congr cat.
-       rewrite 2!filter_acc_cat.
-       rewrite filter_acc_β_nil.
-       rewrite filter_acc_nested /=.
-       rewrite all_rcons /=.
-       move/negbT/hasPn/allP in Hhas.
-       rewrite Hhas /=.
-       case: eqP => //= _.
-       rewrite filter_acc_nil.
-       apply: IH.
-       move: (filter_acc_responses_size_leq (rcons acc (NestedResult l (β [::] ((ρ ++ θ l rs1') ++ θ l rs2)))) rs1') => Hleq2; ssromega.
-       rewrite responses_size_app.
-       move: (θ_responses_size_leq l rs1') => Htleq; ssromega.
-       apply: β_preserves_all_neq.
-       rewrite /filter__acc /=.
-         by apply/allP=> r; rewrite mem_filter andbT eq_sym => /andP [H].
+          move: (θ_responses_size_leq l (filter__acc acc rs1')) => Htleq.
+          move: (filter_acc_responses_size_leq acc rs1') => Hfleq; ssromega.
+          set rs2'' := filter__acc _ rs2'.
+          rewrite IH //.
+          rewrite -filter_acc_rcons.
+          move: (filter_acc_responses_size_leq (rcons acc (NestedResult l σ)) rs1') => Hfleq; ssromega.
 
+          apply: β_preserves_all_neq.
+          rewrite /filter__acc /=.
+            by apply/allP=> r; rewrite mem_filter andbT eq_sym => /andP [H].
+
+       * congr cat.
+         set filter1 := filter__acc _ rs1'.
+         simp β => /=; rewrite ?map_in_eq.
+         set ρs' := [seq β [::] i | i <- _].
+         set σ := [seq β [::] i | i <- _].
+         set r1' := NestedListResult l _.
+         set r1'' := NestedListResult l _.
+         rewrite [β [:: r1'] _]β_spread [β [:: r1''] _]β_spread /=.
+         rewrite filter_acc_cat -?filter_acc_rcons.
+         simp β => /=; rewrite ?map_in_eq.
+         have -> : [seq β [::] i | i <- γ l ρs' (β [::] (filter__acc (rcons acc r1') rs1') ++ rs2')] = σ.
+         rewrite {}/r1'' {}/σ.
+         elim: rs2' => //.
+         
+         have Heq : γ l ρs' (β [::] ((filter__acc (rcons acc r1') rs1') ++ rs2')) = γ l ρs (filter1 ++ rs2').
+         rewrite {1}/γ.
+         rewrite foldl_cat.
+         
+         simp β.
+         
        
        
        
