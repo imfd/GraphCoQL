@@ -215,7 +215,7 @@ Section QuerySemantic.
   Variable (req_op : rel Result).
   Variable (resolve : @NamedType Name -> U -> Name -> {fmap Name -> Vals} -> Result).
   Variable (coerce : Result -> @Value Vals).
-  Variable (is_null : Result -> bool).
+  Variable (is_null : U -> bool).
 
   Lemma result_eq : Equality.axiom req_op. Admitted.
 
@@ -274,43 +274,6 @@ Section QuerySemantic.
     {
       execute_selection_set O__t initial_value queries := LRTree (map_in (collect O__t queries) (fun kq Hin => execute_each kq _ _ _) )
     
-       where execute (ftype : type) (qs : seq (@Query Name Vals))
-                     (Hne : qs != [::])
-                     (Hflds : forall q, q \in qs -> q.(is_field))
-                     (Hleq : queries_size qs <= queries_size queries) : ResponseNode :=
-               {
-                 execute _ [::] Hne _ _ := _;
-                 execute _ (InlineFragment _ _ :: qs) _ Hflds _ := _;
-
-                 execute ftype (q :: qs) Hne Hflds Hleq := complete_value ftype (resolve O__t initial_value (qname q _) (qargs q _))
-                where complete_value (ftype : type) (res : Result) : ResponseNode by wf (rsize res) :=
-                        {
-                          complete_value (ListType ty) (UNode res)
-                            with (UNode res).(is_null) :=
-                            {
-                            | true := Leaf Null;
-                            | _  := Array (URTree (map_in res (fun r Hin2 => complete_value ty r)))
-                            };
-
-                          complete_value (ListType ty) (ULeaf _) := Leaf Null; (* error *)
-
-                          complete_value (NT ty) (ULeaf res)
-                            with (ULeaf res).(is_null) :=
-                            {
-                            | true with is_scalar_type s ty :=
-                                {
-                                | true := Leaf (coerce (ULeaf res));
-                                | _ := Object (execute_selection_set ty res (merge_selection_sets (q :: qs)))
-                                };
-                            | _ := Leaf Null
-                            };
-
-                          complete_value (NT ty) _ := Leaf Null
-                        }
-              
-                                       
-              }
-                
        where execute_each (kq : Name * seq Query)
                           (Hne : kq.2 != [::])
                           (Hflds : forall q, q \in kq.2 -> q.(is_field))
@@ -322,19 +285,39 @@ Section QuerySemantic.
                 execute_each (k, (q :: qs)) Hne Hflds Hleq
                   with lookup_field_type s O__t (qname q _) :=
                   {
-                  | Some fty := (k, (execute fty (q :: qs) Hne Hflds Hleq));
-                  | _ := (k, Leaf Null)
+                  | Some ftype := (k, complete_value ftype (resolve O__t initial_value (qname q _) (qargs q _)))
+                                   
+                  where complete_value (ftype : type) (res : Result) : ResponseNode by wf (rsize res) :=
+                          {
+                            complete_value (ListType ty) (UNode res) := Array (URTree (map_in res (fun r Hin2 => complete_value ty r)));
+                                                                             
+                            complete_value (ListType ty) (ULeaf _) := Leaf Null; (* error *)
+
+                            complete_value (NT ty) (ULeaf res)
+                              with res.(is_null) :=
+                              {
+                              | true with is_scalar_type s ty :=
+                                  {
+                                  | true := Leaf (coerce (ULeaf res));
+                                  | _ := Object (execute_selection_set ty res (merge_selection_sets (q :: qs)))
+                                  };
+                              | _ := Leaf Null
+                              };
+
+                            complete_value (NT ty) _ := Leaf Null (* Error ? *)
+                          };
+                  
+                  | _ := (k, Leaf Null) (* Should not happen if queries are wf *)
                   }
+              
+                                       
               }
-     
-                
     }.
   Proof.
     all: do ?[have Hne : (q :: qs) != [::] by [];
               have Hleq' := (merged_selections_lt (q :: qs) Hne);
               rewrite /q /= in Hleq' *; ssromega].
     all: do ?[ have Hleq' := (in_result_rsize_leq r res Hin2); ssromega].
-    - by move/allP: Hflds => /=; simp is_field.
     - by move/allP: Hflds => /=; simp is_field.
     - have Hne := (all_N_nil_in_collect O__t queries).
         by move/allP: Hne => /(_ kq Hin).
@@ -344,11 +327,18 @@ Section QuerySemantic.
       exact: H.
     - by apply: (in_collect_leq O__t).
   Qed.
-
-
-
-
-
+  Next Obligation.
+    rewrite /execute_selection_set.
+    rewrite /execute_selection_set_unfold.
+    elim: queries => //= hd tl IH.
+    funelim (collect O__t queries) => //=.
+    rewrite -[X in _ = LRTree (map_in X _)]Heqcall.
+    
+  
+  Lemma eval_produces_non_redundant_responses O__T init qs :
+    is_non_redundant Labeled (execute_selection_set O__T init qs).
+  Proof.
+    apply (
 
 
 
