@@ -134,17 +134,46 @@ Section Eq.
                   u.(type) \in get_possible_types schema ty ->
                   queries_conform schema ty qs ->
                   all (has_valid_fragments schema ty) qs ->
-                  eval_queries schema g u qs = eval_queries schema g u nqs)) => schema //.
-    
+                  eval_queries schema g u qs = eval_queries schema g u nqs)) => schema //; last first.
 
-    all: do ?[by intros; apply: eval_same_query_in_list].
+    - move=> ty hd tl IHhd IHtl g u Hin Hpty.
+      rewrite /queries_conform; case/andP.
+      all_cons => [Hqc Hqsc] /=.
+      all_cons => [Hmerge Hmerges].
+      all_cons => [Hv Hvs].
+      rewrite /eval_queries /=.
+      rewrite map_cat.
+      rewrite IHhd //.
+      rewrite /eval_queries.
+      set rs1 := map _ (normalize _ _ hd).
+      case rs1 => //= [| hd1 tl1].
+      admit.
+      rewrite foldl_cat.
+      set rs1' := foldl _ hd1 tl1.
+      rewrite -/(collect (rs1' :: (map _ tl))) -/(collect (rs1' :: map _ (normalize__φ _ _ tl))).
+      rewrite /eval_queries in IHtl.
+      set rs2 := map _ tl.
+      set rs2' := map _ (normalize__φ _ _ tl).
+      rewrite rs2 in IHtl
+      move: (IHtl g u Hin Hpty _ Hvs).
+      rewrite IHhd // /eval_queries.
+      rewrite IHhd // IHtl //; last first.
+        by rewrite /queries_conform; apply/andP; split.
+        rewrite eval_collect_cat //.
+        rewrite wf_responses_catE.
+        apply/and3P; split; do ? by apply: eval_queries_response_are_wf.
+        rewrite -IHhd // -IHtl //; last by rewrite /queries_conform; apply/andP; split.
+        apply/allP => r Hevin.
+        apply/allP => r2 Hevin2.
+
+        all: do ?[by intros; apply: eval_same_query_in_list].
     all: do ?[by intros; simp query_conforms in H1; rewrite Heq /= in H1].
      
     - move=> ty f α Hscope g u Hin Hupty Gqc Hv.
       simp try_inline_query.
       rewrite [eval]lock.
       case: eqP => //= Hpty; rewrite -lock.
-      * by apply: eval_same_query_in_list.
+      * admit.
       * by apply: inlined_query_eq_eval.
         
      
@@ -152,7 +181,7 @@ Section Eq.
       simp try_inline_query.
       rewrite [eval]lock.
       case: eqP => //= Hpty; rewrite -lock.
-      * by apply: eval_same_query_in_list.
+      * admit. 
       * by apply: inlined_query_eq_eval.
     
     - move=> ty f fld α φ IH Hscope Hlook g u Hin Hpty Hqc Hv.

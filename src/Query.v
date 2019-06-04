@@ -20,18 +20,10 @@ Require Import Ssromega.
 Delimit Scope query_scope with QUERY.
 Open Scope query_scope.
 
-
-Section ListIn.
-  
-  Equations map_In {A B : Type}
-     (l : list A) (f : forall (x : A), In x l -> B) : list B :=
-    map_In nil _ := nil;
-    map_In (cons x xs) f := cons (f x _) (map_In xs (fun x H => f x _)).
-    
-End ListIn.
+Require Import Arith.
 
 Section Query.
-  
+
   Variables Name Vals : ordType.
 
   Unset Elimination Schemes.
@@ -42,15 +34,7 @@ Section Query.
   | NestedLabeledField : Name -> Name -> {fmap Name -> Vals} -> seq Query -> Query
   | InlineFragment : @NamedType Name -> seq Query -> Query.
 
-
-  Inductive ResponseObject : Type :=
-  | Null : Name -> ResponseObject
-  | SingleResult : Name -> Vals -> ResponseObject
-  | ListResult : Name -> seq Vals -> ResponseObject
-  | NestedResult : Name -> seq ResponseObject -> ResponseObject
-  | NestedListResult : Name -> seq (seq ResponseObject) -> ResponseObject.
-  
-  Set Elimination Schemes.
+ 
   
   Definition Query_rect (P : Query -> Type)
              (Pl : seq Query -> Type)
@@ -104,82 +88,7 @@ Section Query.
         | InlineFragment t ϕ => IH_IF t ϕ (F ϕ)
         end.
 
-  
-  Definition ResponseObject_rect (P : ResponseObject -> Type)
-             (Pl : seq ResponseObject -> Prop)
-             (Pl2 : seq (seq ResponseObject) -> Prop) 
-             (IH_Null : forall n, P (Null n))
-             (IH_SR : forall n v, P (SingleResult n v))
-             (IH_LR : forall n vals, P (ListResult n vals))
-             (IH_NR : forall n ρ, Pl ρ -> P (NestedResult n ρ))
-             (IH_NLR : forall n ρ, Pl2 ρ -> P (NestedListResult n ρ))
-             (IH_Nil : Pl [::])
-             (IH_Cons : forall r, P r -> forall rs, Pl rs -> Pl (r :: rs))
-             (IH_Nil2 : Pl2 [::])
-             (IH_Cons2 : forall rs, Pl rs -> forall rss, Pl2 rss -> Pl2 (rs :: rss))
 
-    :=
-      fix loop response : P response :=
-        let fix F0 (ρ : seq ResponseObject) : Pl ρ :=
-            match ρ with
-            | [::] => IH_Nil
-            | hd :: tl => IH_Cons hd (loop hd) tl (F0 tl)
-            end
-        in
-        let fix F1 (ρ : seq (seq ResponseObject)) : Pl2 ρ :=
-            match ρ as r with
-            | [::] => IH_Nil2
-            | hd :: tl => IH_Cons2 hd (F0 hd) tl (F1 tl)
-            end
-        in
-        match response with
-        | Null n => IH_Null n
-        | SingleResult n v => IH_SR n v
-        | ListResult n vals => IH_LR n vals
-        | NestedResult n ρ => IH_NR n ρ (F0 ρ)
-        | NestedListResult n ρ => IH_NLR n ρ (F1 ρ)                                                
-      end.
-
-  Definition ResponseObject_rec (P : ResponseObject -> Set) := @ResponseObject_rect P.
-
-  Definition ResponseObject_ind (P : ResponseObject -> Prop)
-             (Pl : seq ResponseObject -> Prop)
-             (Pl2 : seq (seq ResponseObject) -> Prop) 
-             (IH_Null : forall n, P (Null n))
-             (IH_SR : forall n v, P (SingleResult n v))
-             (IH_LR : forall n vals, P (ListResult n vals))
-             (IH_NR : forall n ρ, Pl ρ -> P (NestedResult n ρ))
-             (IH_NLR : forall n ρ, Pl2 ρ -> P (NestedListResult n ρ))
-             (IH_Nil : Pl [::])
-             (IH_Cons : forall r, P r -> forall rs, Pl rs -> Pl (r :: rs))
-             (IH_Nil2 : Pl2 [::])
-             (IH_Cons2 : forall rs, Pl rs -> forall rss, Pl2 rss -> Pl2 (rs :: rss))
-
-    :=
-      fix loop response : P response :=
-        let fix F0 (ρ : seq ResponseObject) : Pl ρ :=
-            match ρ with
-            | [::] => IH_Nil
-            | hd :: tl => IH_Cons hd (loop hd) tl (F0 tl)
-            end
-        in
-        let fix F1 (ρ : seq (seq ResponseObject)) : Pl2 ρ :=
-            match ρ as r with
-            | [::] => IH_Nil2
-            | hd :: tl => IH_Cons2 hd (F0 hd) tl (F1 tl)
-            end
-        in
-        match response with
-        | Null n => IH_Null n
-        | SingleResult n v => IH_SR n v
-        | ListResult n vals => IH_LR n vals
-        | NestedResult n ρ => IH_NR n ρ (F0 ρ)
-        | NestedListResult n ρ => IH_NLR n ρ (F1 ρ)
-      end.
-  
-  
-
-  
 
   Fixpoint tree_of_query query : GenTree.tree (option Name * Name * {fmap Name -> Vals}):=
     match query with
@@ -242,25 +151,51 @@ Section Query.
   Canonical query_choiceType := ChoiceType Query (PcanChoiceMixin tree_of_queryK).
   Canonical query_ordType := OrdType Query (PcanOrdMixin tree_of_queryK).
 
+
+   (** Boolean predicates to check what type the query is:
+      - Fields : Everything not an inline fragment
+      - Inline : An inline fragment 
+   **)
+  Equations is_field (query : Query) : bool :=
+    is_field (InlineFragment _ _) := false;
+    is_field _ := true.
+
+  Equations is_inline_fragment (query : Query) : bool :=
+    is_inline_fragment (InlineFragment _ _) := true;
+    is_inline_fragment _ := false.       
+
+  Definition is_labeled (query : Query) : bool :=
+    match query with
+    | LabeledField _ _ _
+    | NestedLabeledField _ _ _ _ => true
+    | _ => false
+    end.
+
+  Definition has_subqueries (query : Query) : bool :=
+    match query with
+    | SingleField _ _
+    | LabeledField _ _ _ => false
+    | _ => true
+    end.
   
   (** Extractors for queries **)
-  Equations qname query (pf : forall t φ, query <> InlineFragment t φ) :  Name :=
+  Equations qname query (Hfld : query.(is_field)) :  Name :=
     {
-      qname (InlineFragment t φ) pf with pf t φ _ := {};
       qname (SingleField f _) _ := f;
       qname (LabeledField _ f _) _ := f;
       qname (NestedField f _ _) _ := f;
-      qname (NestedLabeledField _ f _ _) _ := f
+      qname (NestedLabeledField _ f _ _) _ := f;
+      qname (InlineFragment _ _) Hfld := _
     }.
 
-  Definition qlabel query : option Name :=
-    match query with
-    | LabeledField label _ _
-    | NestedLabeledField label _ _ _ => Some label
-    | _ => None
-    end.
+  Equations qlabel query (Hlab : query.(is_labeled)) : Name :=
+    {
+      qlabel (LabeledField label _ _) _ := label;
+      qlabel (NestedLabeledField label _ _ _) _ := label;
+      qlabel _ Hlab := _
+    }.
   
-  Definition qsubquery query : seq Query :=
+  Definition qsubqueries query : seq Query :=
     match query with
     | NestedField _ _ ϕ
     | NestedLabeledField _ _ _ ϕ
@@ -268,148 +203,33 @@ Section Query.
     | _ => [::]
     end.
 
-  Equations qargs query (pf : forall t φ, query <> InlineFragment t φ) :  {fmap Name -> Vals} :=
+  Equations qsubqueries' (query : Query) (Hhas : query.(has_subqueries)) : seq Query :=
     {
-      qargs (InlineFragment t φ) pf with pf t φ _ := {};
+      qsubqueries' query Hhas := query.(qsubqueries)
+    }.
+ 
+  
+  Equations qargs query (Hfld : query.(is_field)) :  {fmap Name -> Vals} :=
+    {
       qargs (SingleField _ α) _ := α;
       qargs (LabeledField _ _ α) _ := α;
       qargs (NestedField _ α _) _ := α;
-      qargs (NestedLabeledField _ _ α _) _ := α
+      qargs (NestedLabeledField _ _ α _) _ := α;
+      qargs (InlineFragment _ _) Hfld := _
     }.
 
   
-  Equations qresponse_name query (pf : forall t φ, query <> InlineFragment t φ) :  Name :=
+  Equations qresponse_name query (Hfld : query.(is_field)) :  Name :=
     {
-      qresponse_name (InlineFragment t φ) pf with pf t φ _ := {};
       qresponse_name (SingleField f _) _ := f;
       qresponse_name (LabeledField l _ _) _ := l;
       qresponse_name (NestedField f _ _) _ := f;
-      qresponse_name (NestedLabeledField l _ _ _) _ := l
-    }.
-  
-  
-  (** Extractors for response objects **)
-  Definition rname response : Name :=
-    match response with
-    | Null name
-    | SingleResult name _
-    | ListResult name _
-    | NestedResult name _
-    | NestedListResult name _ => name
-    end.
-
-
-  
-
-  Fixpoint tree_of_response response : GenTree.tree (Name * option (Vals + seq Vals)) :=
-    match response with
-    | Null l => GenTree.Node 0 [:: GenTree.Leaf (l, None)]
-    | SingleResult l v => GenTree.Node 1 [:: GenTree.Leaf (l, Some (inl v))]
-    | ListResult l vs => GenTree.Node 2 [:: GenTree.Leaf (l, Some (inr vs))]
-    | NestedResult l ρ => GenTree.Node 3 (GenTree.Leaf (l, None) :: [seq tree_of_response r | r <- ρ])
-    | NestedListResult l ρs =>
-      GenTree.Node 4 (GenTree.Leaf (l, None) :: [seq GenTree.Node 5 [seq tree_of_response r | r <- ρ] | ρ <- ρs])
-    end.
-  
-  Fixpoint get_subresponses (responses : seq (option ResponseObject)) : seq ResponseObject :=
-    match responses with
-      | [::] => [::]
-      | ((Some r) :: tl) => r :: get_subresponses tl
-      | (None :: tl) => get_subresponses tl
-    end.
-
-  Definition get_subtree tree : seq (GenTree.tree (Name * option (Vals + seq Vals))) :=
-    match tree with
-    | GenTree.Node 5 st =>  st
-    | _ => [::]
-    end.
-
-
-  Equations(noind) response_tree_size (tree : GenTree.tree (Name * option (Vals + seq Vals))) : nat 
-    :=
-    {
-      response_tree_size (GenTree.Node 0 [:: GenTree.Leaf (l, None)]) := 3;
-      response_tree_size (GenTree.Node 1 [:: GenTree.Leaf (l, Some (inl v))]) := 3;
-      response_tree_size (GenTree.Node 2 [:: GenTree.Leaf (l, Some (inr vs))]) := 4 + size vs;
-      response_tree_size (GenTree.Node 3 (GenTree.Leaf (l, None) :: subtree)) := 4 + sumn [seq response_tree_size t | t <- subtree];
-      response_tree_size (GenTree.Node 4 (GenTree.Leaf (l, None) :: subtree)) :=
-          4 + 2 * size subtree + sumn [seq response_tree_size t | t <- subtree];
-      response_tree_size (GenTree.Node 5 subtree) := sumn [seq response_tree_size t | t <- subtree];
-      response_tree_size _ := 0
+      qresponse_name (NestedLabeledField l _ _ _) _ := l;
+      qresponse_name (InlineFragment _ _) Hfld := _
     }.
 
 
-  Lemma response_tree_size_lt x s :
-    In x s ->
-    response_tree_size x <= sumn [seq response_tree_size t | t <- s].
-  Proof.
-    elim: s x => //= hd tl IH x.
-    case=> [->| Hin].
-      by ssromega.
-    move: (IH x Hin) => Hlt.
-      by ssromega.
-  Qed.
-
-   Lemma get_subtree_size_lt s :
-     sumn [seq response_tree_size t | t <- get_subtree s] <= response_tree_size s.
-   Proof.
-     case: s => //.
-     do ?[case => //].
-   Qed.
- 
-  
-  Equations response_of_tree (tree : GenTree.tree (Name * option (Vals + seq Vals))) : option ResponseObject
-    by wf (response_tree_size tree) lt 
-    :=
-    {
-      response_of_tree (GenTree.Node 0 [:: GenTree.Leaf (l, None)]) := Some (Null l);
-      response_of_tree (GenTree.Node 1 [:: GenTree.Leaf (l, Some (inl v))]) := Some (SingleResult l v);
-      response_of_tree (GenTree.Node 2 [:: GenTree.Leaf (l, Some (inr vs))]) := Some (ListResult l vs);
-      response_of_tree (GenTree.Node 3 (GenTree.Leaf (l, None) :: subtree)) :=
-        Some (NestedResult l (get_subresponses (map_In subtree (fun t H => response_of_tree t))));
-
-
-      response_of_tree (GenTree.Node 4 (GenTree.Leaf (l, None) :: subtree)) :=
-        Some (NestedListResult l (map_In subtree (fun st H1 =>
-                                                    get_subresponses (map_In (get_subtree st) (fun t H2 => response_of_tree t)))));
-
-      response_of_tree _ := None
-
-    }.
-  Next Obligation.
-    simp response_tree_size.
-    move: (response_tree_size_lt t subtree H) => Hlt.
-      by ssromega.
-
-  Qed.
-  Next Obligation.
-    simp response_tree_size.
-    move: (response_tree_size_lt st subtree H1) => Hlt1.
-    move: (response_tree_size_lt t _ H2) => Hlt.
-    move: (get_subtree_size_lt st) => Hlt3.
-      by ssromega.
-  Qed.
-
-  Lemma tree_of_responseK : pcancel tree_of_response response_of_tree.
-  Proof.
-    move=> r.
-    elim r using ResponseObject_ind with
-        (Pl := fun rs =>
-                Forall (fun r => response_of_tree (tree_of_response r) = Some r) rs)
-        (Pl2 := fun rss =>
-                 Forall (fun rs => Forall (fun r => response_of_tree (tree_of_response r) = Some r) rs) rss) => //.
-
-    - move=> l ρ IH /=.
-      simp response_of_tree.
-      congr Some.
-  Admitted.
-
-  
-  Canonical response_eqType := EqType ResponseObject (PcanEqMixin tree_of_responseK).
-  Canonical response_choiceType := ChoiceType ResponseObject (PcanChoiceMixin tree_of_responseK).
-  Canonical response_ordType := OrdType ResponseObject (PcanOrdMixin tree_of_responseK).
-
-  
+    
 End Query.
 
 Arguments Query [Name Vals].
@@ -419,15 +239,14 @@ Arguments NestedField [Name Vals].
 Arguments NestedLabeledField [Name Vals].
 Arguments InlineFragment [Name Vals].
 
-Arguments ResponseObject [Name Vals].
-Arguments Null [Name Vals].
-Arguments SingleResult [Name Vals].
-Arguments ListResult [Name Vals].
-Arguments NestedResult [Name Vals].
-Arguments NestedListResult [Name Vals].
+
+Arguments is_field [Name Vals].
+Arguments is_inline_fragment [Name Vals].
+Arguments is_labeled [Name Vals].
+Arguments has_subqueries [Name Vals].
 
 Arguments qname [Name Vals].
 Arguments qargs [Name Vals].
-Arguments qsubquery [Name Vals].
+Arguments qsubqueries [Name Vals].
+Arguments qsubqueries' [Name Vals].
 Arguments qresponse_name [Name Vals].
-Arguments rname [Name Vals].

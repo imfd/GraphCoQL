@@ -18,8 +18,7 @@ Require Import QueryAux.
 
 Require Import Schema.
 Require Import Query.
-Require Import Graph.
-
+Require Import Response.
 
 Require Import Ssromega.
 
@@ -33,205 +32,329 @@ Section QuerySemantic.
   Ltac case_response r := case: r => [l | l v | l vs | l ρ | l ρs].
   Ltac apply_andP := apply/andP; split=> //.
   
-  
-  Section Filters.
 
-    Section Beta.
-     
+  Variable (s : @wfSchema Name Vals).
 
-    
+  Definition does_fragment_type_apply object_type fragment_type :=
+    if is_object_type s fragment_type then
+      object_type == fragment_type
+    else
+      if is_interface_type s fragment_type then
+        object_type \in implementation s fragment_type
+      else
+        if is_union_type s fragment_type then
+          object_type \in union_members s fragment_type
+        else
+          false .
 
-      Equations β__Laux :  seq (seq (@ResponseObject Name Vals)) ->  seq (seq (@ResponseObject Name Vals)) ->  seq (seq (@ResponseObject Name Vals)) :=
+  Equations? ble (label : Name) (object_type : @NamedType Name) (queries : seq (@Query Name Vals)) (p : Name -> Name -> bool) :
+    seq (@Query Name Vals) by wf (queries_size queries) :=
+    {
+      ble _ _ [::] _ := [::];
+
+      ble k O__t (InlineFragment t φ :: qs) p
+        with does_fragment_type_apply O__t t :=
         {
-          β__Laux [::] _ := [::];
-          β__Laux ρs [::] := ρs;
-          β__Laux (ρ1 :: ρs) (σ1 :: σs) := (ρ1 ++ σ1) :: (β__Laux ρs σs)
-        }.
+        | true := ble k O__t φ p ++ ble k O__t qs p;
+        | _ := ble k O__t qs p
+        };
+
+      ble k O__t (SingleField f α :: qs) p
+        with p f k :=
+        {
+        | true := SingleField f α :: ble k O__t qs p;
+        | _ := ble k O__t qs p
+        };
+      
+      ble k O__t (LabeledField l f α :: qs) p
+        with  p l k :=
+        {
+        | true := LabeledField l f α :: ble k O__t qs p;
+        | _ := ble k O__t qs p
+        };
 
       
-      Lemma β__Laux_responses_size_leq ρs σs :
-        responses_size' (β__Laux ρs σs) <= responses_size' ρs + responses_size' σs.
-      Proof.
-        apply_funelim (β__Laux ρs σs) => //; do ?[by intros; ssromega].
-        intros; rewrite !responses_size'_equation_2.
-        by rewrite responses_size_app; ssromega.
-      Qed.
+      ble k O__t (NestedField f α φ :: qs) p
+        with p f k :=
+        {
+        | true := NestedField f α φ :: ble k O__t qs p;
+        | _ := ble k O__t qs p
+        };
       
-      Lemma β__Laux_in_responses_size_leq ρ ρs rs :
-        ρ \in β__Laux ρs rs ->
-              responses_size ρ <= responses_size' ρs + responses_size' rs.
-      Proof.
-        apply_funelim (β__Laux ρs rs) => //; do ?[by intros; ssromega]; clear ρs rs.
-        - move=> hd tl IH; rewrite !responses_size'_equation_2 /=.
-          rewrite inE in IH; case/orP: IH => [/eqP -> | Hin]; [by ssromega|].
-          move: (in_responses'_leq Hin) => Hleq; ssromega.
-        - move=> hd tl hd' rs IH.
-          case/predU1P => [-> | Hin].
-          * rewrite responses_size_app 2!responses_size'_equation_2; ssromega.
-          * move: (IH Hin) => Hleq.
-            rewrite 2!responses_size'_equation_2; ssromega.
-      Qed.
+      ble k O__t (NestedLabeledField l f α φ :: qs) p
+        with p l k :=
+        {
+        | true := NestedLabeledField l f α φ  :: ble k O__t qs p;
+        | _ := ble k O__t qs p
+        }
+    }.
+  all: do ?simp query_size; ssromega.
+  Qed.
 
-      
-      Definition θ l (rs : seq (@ResponseObject Name Vals)) :=
-        foldr (fun r acc => match r with
-                         | NestedResult l' σ =>
-                           if l == l' then
-                             σ ++ acc
-                           else
-                             acc
-                         | _ => acc
-                         end) [::] rs.
-
-      Lemma θ_responses_size_leq l rs :
-        responses_size (θ l rs) <= responses_size rs.
-      Proof.
-        elim: rs => //= hd tl IH.
-        case: hd; intros; simp response_size; do ? ssromega.
-        case: eqP => //= Heq; last by ssromega.
-          by rewrite responses_size_app; ssromega.
-      Qed.
-
-      Lemma θ_nil_if_all_neq l rs :
-        all (fun r => r.(rname) != l) rs ->
-        θ l rs = [::].
-      Proof.
-        elim: rs => //= hd tl IH /andP [/negbTE Hneq Hall].
-        case: hd Hneq; intros; do ? by apply: IH.
-        by rewrite eq_sym Hneq; apply: IH.
-      Qed.
-
-      Lemma θ_cat l rs1 rs2 : θ l (rs1 ++ rs2) = θ l rs1 ++ θ l rs2.
-      Proof.
-        elim: rs1 rs2 => //= hd tl IH rs2.
-        case: hd; intros; do ? by apply: IH.
-        case: eqP => //= Heq.
-        by rewrite -catA IH.
-      Qed.
-
-
-      Definition γ l
-                 (acc : seq (seq (@ResponseObject Name Vals)))
-                 (rs : seq (@ResponseObject Name Vals)) : seq (seq (@ResponseObject Name Vals)) :=
-
-        foldl (fun acc r => match r with
-                         | NestedListResult l' σs =>
-                           if l == l' then
-                             β__Laux acc σs 
-                           else
-                             acc
-                         | _ => acc
-                         end) acc rs.
-                             
-
-      Lemma in_γ_responses_size_leq (r : seq (@ResponseObject Name Vals)) l acc rs :
-        r \in γ l acc rs ->
-              responses_size r <= responses_size' acc + responses_size rs.
-      Proof.
-        elim: rs acc => //= [| hd tl IH] acc.
-        - move/in_responses'_leq => Hleq; ssromega.
-        - case: hd; intros; simp response_size; do ?[have Hleq := (IH acc H); ssromega].
-          move: H; case: eqP=> /= Heq Hin.
-          * have Hleq := (IH (β__Laux acc l0) Hin).
-            have Hleq2 := (β__Laux_responses_size_leq acc l0).
-            by ssromega.
-          * have Hleq := (IH acc Hin); ssromega.
-      Qed.
-            
-      Obligation Tactic := intros; simp response_size; do ?ssromega.
-      Equations? β (acc : seq (@ResponseObject Name Vals)) (rs1 : seq (@ResponseObject Name Vals))  : seq (@ResponseObject Name Vals)
-            by wf (responses_size rs1) :=
-            {
-              β acc [::] := acc;
-              
-              β acc (NestedResult l ρ :: rs1) 
-                with has (fun r => r.(rname) == l) acc :=
-                {
-                  | true := β acc rs1 ;
-                  | _ := β (rcons acc (NestedResult l (β [::] (ρ ++ θ l rs1)))) rs1 
-                };
-              
-              β acc (NestedListResult l ρs :: rs1)
-                with has (fun r => r.(rname) == l) acc :=
-                {
-                  | true := β acc rs1 ;
-                  | _ := β (rcons acc (NestedListResult l (map_in (γ l ρs rs1) (fun ρ Hin => β [::] ρ)))) rs1 
-                };
-              
-              β acc (r :: rs1)
-                with has (fun r' => r'.(rname) == r.(rname)) acc :=
-                {
-                  | true := β acc rs1;
-                  | _ := β (rcons acc r) rs1
-                }
-            }.
-      - have Hleq := (θ_responses_size_leq l rs1).
-          by rewrite responses_size_app; ssromega.
-      - have Hleq := (in_γ_responses_size_leq ρ l ρs rs1 Hin); ssromega.    
-      Qed.
-
-      Definition collect (rs : seq ResponseObject) := β [::] rs.
-
-
-     
-      
-
-       (**
-         β_filter : ResponseObject -> seq ResponseObject -> seq ResponseObject
-         Traverses the list of response objects and extracts the nested result from an object,
-         whenever it matches the filter response given as argument.
-         
-         This differs slightly from the definition given in Jorge and Olaf [WWW'18],
-         where responses not matching would return an ϵ result (empty string). Here, 
-         an empty list is returned (using β) but it gets deleted when it concatenates
-         to the remaining list.
-        **)
-      
-     
-    End Beta.
-
-    Section Gamma.
-
-  
-
-        
-    End Gamma.
-    
-  End Filters.
-
-
-  Lemma in_responses_size (r : seq (@ResponseObject Name Vals)) rs : In r rs -> responses_size r <= responses_size' rs.
+  Lemma ble_leq_size l O__t qs p :
+    queries_size (ble l O__t qs p) <= queries_size qs.
   Proof.
-    elim: rs => [//| r' rs' IH] Hin /=; rewrite -/(responses_size _).
-    move: (in_inv Hin) => [-> | Htl] //.
-      by ssromega.
-      by move: (IH Htl) => Hleq; ssromega.
+    funelim (ble _ _ qs _) => //=; simp query_size; rewrite ?queries_size_app; ssromega.
+  Qed.
+  
+  
+  Definition find_queries_with_label (label : Name) (object_type : @NamedType Name) (queries : seq (@Query Name Vals)) :=
+    ble label object_type queries (fun f label => f == label).
+
+
+  Lemma found_queries_are_fields k O__t qs :
+    all (fun q => q.(is_field)) (find_queries_with_label k O__t qs).
+  Proof.
+    rewrite /find_queries_with_label.
+    funelim (ble k O__t qs (fun f label => f == label)) => //=.
+    rewrite all_cat; apply_andP.
+  Qed.
+
+  Lemma found_queries_are_fieldsP k O__t qs :
+    forall q, q \in (find_queries_with_label k O__t qs) -> q.(is_field).
+  Proof.
+      by apply/allP; apply: found_queries_are_fields.
   Qed.
 
 
-
-  Lemma β_non_redundant_eq acc rs :
-    are_non_redundant__ρ rs ->
-    all (fun r1 => ~~ (has (fun r2 => r2.(rname) == r1.(rname)) acc)) rs ->
-    β acc rs = acc ++ rs.
+  Lemma all_same_label label O__t qs :
+    all (fun q => match q with
+               | InlineFragment _ _ => true
+               | SingleField f _
+               | NestedField f _ _ => f == label 
+               | LabeledField l _ _
+               | NestedLabeledField l _ _ _ => l == label
+               end) (find_queries_with_label label O__t qs).
   Proof.
-    funelim (β acc rs) => //=; first by rewrite cats0.
-    all: do [move=> /and3P [Hallnr Hnr Hnrs] /andP [Hnhas Hallnh]].
-    all: do ? by rewrite Heq in Hnhas.
+    rewrite /find_queries_with_label.
+    funelim (ble label O__t qs _) => //=; rewrite ?Heq ?andTb //.
+    rewrite all_cat; apply_andP.
+  Qed.
 
-    all: do ?[rewrite -cat_rcons; apply: H => //; apply/allP=> r Hin; rewrite has_rcons;
-              move/allP: Hallnh => /(_ r Hin) /negbTE -> /=; rewrite orbF;
-                by move/allP: Hallnr => /(_ r Hin); rewrite eq_sym].
+  Lemma found_queries_leq_size l O__t qs :
+    queries_size (find_queries_with_label l O__t qs) <= queries_size qs.
+  Proof.
+      by rewrite /find_queries_with_label; apply: ble_leq_size.
+  Qed.
 
+  Hint Resolve found_queries_leq_size.
+  
+  Definition filter_queries_with_label (label : Name) (object_type : @NamedType Name) (queries : seq (@Query Name Vals)) :=
+    ble label object_type queries (fun f label => f != label).
+  
+
+  
+  Lemma filter_queries_with_label_leq_size l O__t qs :
+    queries_size (filter_queries_with_label l O__t qs) <= queries_size qs.
+  Proof.
+    rewrite /filter_queries_with_label.
+      by apply: ble_leq_size.
+  Qed.
+  
+     
+  Equations? collect (object_type : @NamedType Name) (queries : seq (@Query Name Vals)) : seq (Name * seq (@Query Name Vals)) by wf (queries_size queries) :=
+    {
+      collect _ [::] := [::];
+      collect O__t (InlineFragment t φ :: qs)
+        with does_fragment_type_apply O__t t :=
+        {
+        | true := collect O__t (φ ++ qs);
+        | _ := collect O__t qs
+        };
+
+      collect O__t (SingleField f α :: qs) := (f, SingleField f α :: find_queries_with_label f O__t qs) :: collect O__t (filter_queries_with_label f O__t qs);
+
+       collect O__t (LabeledField l f α :: qs) := (l, LabeledField l f α :: find_queries_with_label l O__t qs) :: collect O__t (filter_queries_with_label l O__t qs);
+
+       collect O__t (NestedField f α φ :: qs) := (f, NestedField f α φ :: find_queries_with_label f O__t qs) :: collect O__t (filter_queries_with_label f O__t qs);
+
+       collect O__t (NestedLabeledField l f α φ :: qs) := (l, NestedLabeledField l f α φ :: find_queries_with_label l O__t qs) :: collect O__t (filter_queries_with_label l O__t qs)
+       
+    }.
+  Proof.
+    all: do [simp query_size].
+    all: do ? [by have Hleq := filter_queries_with_label_leq_size f O__t qs; ssromega].
+    all: do ? [by have Hleq := filter_queries_with_label_leq_size l O__t qs; ssromega].
+    - by rewrite queries_size_app; ssromega.
+    - ssromega.
+  Qed.
+
+  Lemma all_fields_in_collect O__t qs :
+    all (fun (kqs : Name * seq Query) =>
+           let (_, qs) := kqs in
+           all (fun q => q.(is_field)) qs) (collect O__t qs).
+  Proof.
+    funelim (collect _ qs) => //=; simp is_field; rewrite andTb; apply_andP; apply: found_queries_are_fields.
+  Qed.
+
+  Lemma all_N_nil_in_collect O__t qs :
+    all (fun (kqs : Name * seq Query) => kqs.2 != [::]) (collect O__t qs).
+  Proof.
+      by funelim (collect _ qs).
+  Qed.
+
+
+  Lemma in_collect_leq O__t kq qs :
+    kq \in collect O__t qs ->
+           queries_size kq.2 <= queries_size qs.
+  Proof.
+    funelim (collect O__t qs) => //=.
+    case/predU1P => [-> | Hin] /=; have Hleq := (found_queries_leq_size s0 object_type l).
+    ssromega.
+    have Hleq' := (H kq Hin); simp query_size.
   Admitted.
 
-  Lemma β_non_redundant_nil_eq rs :
-    are_non_redundant__ρ rs ->
-    β [::] rs = rs.
+  Variables (U : Type).
+
+  Inductive Result : Type :=
+  | ULeaf : U -> Result
+  | UNode : list Result -> Result.
+  Derive NoConfusion for Result.
+  Derive Subterm for Result.
+  
+  Variable (req_op : rel Result).
+  Variable (resolve : @NamedType Name -> U -> Name -> {fmap Name -> Vals} -> Result).
+  Variable (coerce : Result -> @Value Vals).
+  Variable (is_null : Result -> bool).
+
+  Lemma result_eq : Equality.axiom req_op. Admitted.
+
+  Canonical result_eqType := EqType Result (EqMixin result_eq).
+  
+  Definition is_collection result := if result is UNode _ then true else false.
+
+  Equations collection (result : Result) (Hnode : is_collection result) : seq Result :=
+    {
+      collection (UNode rs) Hnode := rs
+    }.
+  
+
+  Section list_size.
+    Context {A : Type} (f : A -> nat).
+    Equations list_size (l : list A) : nat :=
+      {
+        list_size nil := 0;
+        list_size (cons x xs) := S (f x + list_size xs)
+      }.
+  End list_size.
+
+  Fixpoint rsize (r : Result) :=
+    match r with
+    | ULeaf a => 0
+    | UNode l => S (list_size rsize l)
+    end.
+
+  Lemma in_result_rsize_leq r res :
+    r \in res ->
+    rsize r < (list_size rsize res).
   Proof.
-      by move=> H; apply: β_non_redundant_eq => //; apply/allP.
+    funelim (list_size rsize res) => //=.
+    case/predU1P => [-> | Hin]; [| have Hleq := (H r Hin)]; ssromega.
+  Qed.
+    
+  Equations merge_selection_sets : seq (@Query Name Vals) -> seq (@Query Name Vals) :=
+    {
+      merge_selection_sets [::] := [::];
+      merge_selection_sets (q :: qs) := q.(qsubqueries) ++ merge_selection_sets qs
+    }.
+      
+  Lemma merged_selections_lt qs :
+    qs != [::] ->
+    queries_size (merge_selection_sets qs) < queries_size qs.
+  Proof.
+    funelim (merge_selection_sets qs) => //=.
+    case: q; intros => //=; simp query_size; rewrite ?queries_size_app;
+    case: l H => //= hd tl /(_ is_true_true) H; ssromega.
   Qed.
 
+ 
+  
+  Equations? execute_selection_set (O__t : @NamedType Name) (initial_value : U) (queries : seq (@Query Name Vals)) :
+    @GraphQLResponse Name Vals Labeled by wf (queries_size queries) :=
+    {
+      execute_selection_set O__t initial_value queries := LRTree (map_in (collect O__t queries) (fun kq Hin => execute_each kq _ _ _) )
+    
+       where execute (ftype : type) (qs : seq (@Query Name Vals))
+                     (Hne : qs != [::])
+                     (Hflds : forall q, q \in qs -> q.(is_field))
+                     (Hleq : queries_size qs <= queries_size queries) : ResponseNode :=
+               {
+                 execute _ [::] Hne _ _ := _;
+                 execute _ (InlineFragment _ _ :: qs) _ Hflds _ := _;
+
+                 execute ftype (q :: qs) Hne Hflds Hleq := complete_value ftype (resolve O__t initial_value (qname q _) (qargs q _))
+                where complete_value (ftype : type) (res : Result) : ResponseNode by wf (rsize res) :=
+                        {
+                          complete_value (ListType ty) (UNode res)
+                            with (UNode res).(is_null) :=
+                            {
+                            | true := Leaf Null;
+                            | _  := Array (URTree (map_in res (fun r Hin2 => complete_value ty r)))
+                            };
+
+                          complete_value (ListType ty) (ULeaf _) := Leaf Null; (* error *)
+
+                          complete_value (NT ty) (ULeaf res)
+                            with (ULeaf res).(is_null) :=
+                            {
+                            | true with is_scalar_type s ty :=
+                                {
+                                | true := Leaf (coerce (ULeaf res));
+                                | _ := Object (execute_selection_set ty res (merge_selection_sets (q :: qs)))
+                                };
+                            | _ := Leaf Null
+                            };
+
+                          complete_value (NT ty) _ := Leaf Null
+                        }
+              
+                                       
+              }
+                
+       where execute_each (kq : Name * seq Query)
+                          (Hne : kq.2 != [::])
+                          (Hflds : forall q, q \in kq.2 -> q.(is_field))
+                          (Hleq : queries_size kq.2 <= queries_size queries) : (Name * ResponseNode) :=
+              {
+                execute_each (k, [::]) Hne _ _ := _;
+                execute_each (k, (InlineFragment _ _ :: qs)) _ Hflds _ := _;
+
+                execute_each (k, (q :: qs)) Hne Hflds Hleq
+                  with lookup_field_type s O__t (qname q _) :=
+                  {
+                  | Some fty := (k, (execute fty (q :: qs) Hne Hflds Hleq));
+                  | _ := (k, Leaf Null)
+                  }
+              }
+     
+                
+    }.
+  Proof.
+    all: do ?[have Hne : (q :: qs) != [::] by [];
+              have Hleq' := (merged_selections_lt (q :: qs) Hne);
+              rewrite /q /= in Hleq' *; ssromega].
+    all: do ?[ have Hleq' := (in_result_rsize_leq r res Hin2); ssromega].
+    - by move/allP: Hflds => /=; simp is_field.
+    - by move/allP: Hflds => /=; simp is_field.
+    - have Hne := (all_N_nil_in_collect O__t queries).
+        by move/allP: Hne => /(_ kq Hin).
+    - have Hflds := (all_fields_in_collect O__t queries).
+      move/allP: Hflds => /(_ kq Hin) /=.
+      case: kq Hin H => k qs' /= Hin Hqin /allP H.
+      exact: H.
+    - by apply: (in_collect_leq O__t).
+  Qed.
+
+
+
+
+
+
+
+
+
+
+  
   Lemma are_non_redundant_cat (rs1 rs2 : seq (@ResponseObject Name Vals)) :
     are_non_redundant__ρ (rs1 ++ rs2) = [&& are_non_redundant__ρ rs1,
                                        are_non_redundant__ρ rs2 &
@@ -258,7 +381,7 @@ Section QuerySemantic.
   
 
     
-  
+  (*
   Lemma collect_non_redundant_eq ρ :
     are_non_redundant__ρ ρ ->
     collect ρ = ρ.
@@ -272,7 +395,7 @@ Section QuerySemantic.
   Proof.
       by move=> Hnr; rewrite collect_non_redundant_eq.
   Qed.
-    
+  *)  
 (*
   Lemma collect_all_not_eq flt ρ :
     all (fun r => r.(rname) != flt) ρ ->
@@ -398,11 +521,11 @@ Section QuerySemantic.
         let target_nodes := neighbours_with_field graph u (Field name args) in
         match lookup_field_type schema u.(type) name with
         | Some (ListType _) =>
-          [:: NestedListResult name [seq collect (flatten [seq eval schema graph v q | q <- ϕ]) | v <- target_nodes]]
+          [:: NestedListResult name [seq collect ( [seq eval schema graph v q | q <- ϕ]) | v <- target_nodes]]
             
         | Some (NT _) =>
           match ohead target_nodes with
-          | Some v => [:: NestedResult name (collect (flatten [seq eval schema graph v q | q <- ϕ]))]
+          | Some v => [:: NestedResult name (collect ( [seq eval schema graph v q | q <- ϕ]))]
           | _ =>  [:: Null name]
           end
         | _ => [:: Null name]         (* If the field ∉ fields(u) then it's null, right? *)
@@ -412,11 +535,11 @@ Section QuerySemantic.
        let target_nodes := neighbours_with_field graph u (Field name args) in
         match lookup_field_type schema u.(type) name with
         | Some (ListType _) =>
-          [:: NestedListResult label [seq collect (flatten [seq eval schema graph v q | q <- ϕ]) | v <- target_nodes]]
+          [:: NestedListResult label [seq collect ( [seq eval schema graph v q | q <- ϕ]) | v <- target_nodes]]
             
         | Some (NT _) =>
           match ohead target_nodes with
-          | Some v => [:: NestedResult label (collect (flatten [seq eval schema graph v q | q <- ϕ]))]
+          | Some v => [:: NestedResult label (collect ( [seq eval schema graph v q | q <- ϕ]))]
           | _ =>  [:: Null label]
           end
         | _ => [:: Null label]         (* If the field ∉ fields(u) then it's null, right? *)
@@ -424,17 +547,17 @@ Section QuerySemantic.
       
      | (InlineFragment t ϕ) => 
         if u.(type) == t then 
-          collect (flatten [seq eval schema graph u q | q <- ϕ])
+          collect ( [seq eval schema graph u q | q <- ϕ])
         else if u.(type) \in implementation schema t then
-          collect (flatten [seq eval schema graph u q | q <- ϕ])
+          collect ( [seq eval schema graph u q | q <- ϕ])
         else if u.(type) \in union_members schema t then
-          collect (flatten [seq eval schema graph u q | q <- ϕ])
+          collect ( [seq eval schema graph u q | q <- ϕ])
         else
           [::]
                
     end.
 
-  Definition eval_queries schema g u queries := collect (flatten [seq eval schema g u q | q <- queries]).
+  Definition eval_queries schema g u queries := collect ([seq eval schema g u q | q <- queries]).
 
   
   Lemma eval_sf schema g u f α :
@@ -502,11 +625,12 @@ Section QuerySemantic.
     responses_size (eval_queries schema g u (qs1 ++ qs2)) <= responses_size (eval_queries schema g u qs1) + responses_size (eval_queries schema g u qs2).
   Admitted.
 
+   (*
    Lemma eval_queries_collect_same schema graph u qs :
     eval_queries schema graph u qs = collect (eval_queries schema graph u qs).
    Proof.
    Admitted.
-
+    *)
    Lemma β__Laux_nil_tail rs :
      β__Laux rs [::] = rs.
    Proof.
@@ -696,7 +820,8 @@ Section QuerySemantic.
    Proof.
        by rewrite /filter__acc filter_id.
    Qed.
-   
+
+   (*
    Lemma β_nested_cat acc rs1 rs2 :
      β acc (β [::] rs1 ++ rs2) = β acc (rs1 ++ rs2).
    Proof.
@@ -764,7 +889,7 @@ Section QuerySemantic.
          
          simp β.
          
-       
+       *)
        
        
         
@@ -871,9 +996,7 @@ Section QuerySemantic.
     - by rewrite /eval_queries /= /collect; simp β.
     - move=> hd IH tl IHtl v.
       rewrite /eval_queries /=.
-      by apply: collect_are_non_redundant.
-  Qed.
-
+  Admitted.
   
   Lemma eval_queries_are_non_redundant schema g u φ :
     are_non_redundant__ρ (eval_queries schema g u φ).
@@ -969,7 +1092,7 @@ Section QuerySemantic.
     
     all: do ?[rewrite implybF].
 
-    admit.
+    admit. 
     move: Hshape; simp have_compatible_response_shapes; simp qresponse_name.
     rewrite Hfeq /= Hlook1 Hlook2.
     (* Missing info on query conformance *)
@@ -984,7 +1107,8 @@ Section QuerySemantic.
     - move/andP=> [Hmerge Hall].
   Abort.
     *)
-   
+
+  (*
   Lemma eval_collect_same :
     forall schema graph u query,
       eval schema graph u query = collect (eval schema graph u query).
@@ -997,6 +1121,7 @@ Section QuerySemantic.
   Lemma eval_same_query_in_list schema graph u query :
     eval schema graph u query = eval_queries schema graph u [:: query].
   Proof.
+    rewrite /eval_queries /=
     rewrite /eval_queries /= cats0.
       by apply: eval_collect_same.
   Qed.
@@ -1009,6 +1134,7 @@ Section QuerySemantic.
     by case: eqP.
   Qed.
 
+*)
     
   (*
   Lemma collect_collect_2_cat :

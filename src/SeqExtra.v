@@ -8,6 +8,7 @@ Unset Printing Implicit Defensive.
 
 From Equations Require Import Equations.
 
+Require Import Arith.
 
 Section SeqExtra.
 
@@ -154,7 +155,7 @@ Section All.
 End All.
 
 Section Map.
-  Variables (A B : eqType).
+  Variables (A : eqType) (B : Type).
   
   Equations? map_in (l : seq A) (f : forall (x : A), x \in l -> B) : seq B :=
     {
@@ -213,6 +214,28 @@ Section SeqI.
   Qed.
     
 End SeqI.
+
+Section Max.
+  Variable (A B : Type).
+
+  Fixpoint seq_max (s : seq nat) := foldr max 0 s.
+
+  Fixpoint seq_fmax (f : A -> nat) (s : seq A) : nat :=
+    match s with
+    | [::] => 0
+    | x :: xs => max (f x) (seq_fmax f xs)
+    end.
+
+  Lemma seq_fmax_cat (f : A -> nat) (s1 s2 : seq A) :
+    seq_fmax f (s1 ++ s2) = max (seq_fmax f s1) (seq_fmax f s2).
+  Proof.
+    elim: s1 => //= x s1 IH.
+    by rewrite -Nat.max_assoc /= IH.
+  Qed.
+
+  
+End Max.
+  
 
 Notation "s1 :&: s2" := (seqI s1 s2) : seq_scope.
 

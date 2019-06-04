@@ -146,7 +146,7 @@ Section QueryConformance.
          match lookup_field_type schema pty1 (qname q1 _), lookup_field_type schema pty2 (qname q2 _) with
          | Some rty1, Some rty2 =>
            have_same_type schema rty1 rty2 &&
-           all_In q1.(qsubquery) (fun q Hin1 => all_In  q2.(qsubquery) (fun q' Hin2 => have_compatible_response_shapes schema q rty1 q' rty2)) 
+           all_In q1.(qsubqueries) (fun q Hin1 => all_In  q2.(qsubqueries) (fun q' Hin2 => have_compatible_response_shapes schema q rty1 q' rty2)) 
                                     
          | _, _ => false
          end;
@@ -189,8 +189,8 @@ Section QueryConformance.
           (((pty1 == pty2) || ~~(is_object_type schema pty1 && is_object_type schema pty2)) ==>
           [&& (qname q1 _) == (qname q2 _),
            (qargs q1 _) == (qargs q2 _) &
-           all_In q1.(qsubquery) (fun q Hin1 =>
-                                    all_In q2.(qsubquery) (fun q' Hin2 =>
+           all_In q1.(qsubqueries) (fun q Hin1 =>
+                                    all_In q2.(qsubqueries) (fun q' Hin2 =>
                                                              is_field_merging_possible schema q rty1 q' rty2))]));
         | _ | _ := false 
         }

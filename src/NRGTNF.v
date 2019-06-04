@@ -28,7 +28,7 @@ Section NRGTNF.
   Implicit Type queries : seq (@Query Name Vals).
   Implicit Type query : @Query Name Vals.
   Notation is_field := (@is_field Name Vals).
-  Notation is_inline_fragment := (@QueryAux.is_inline_fragment Name Vals).
+  Notation is_inline_fragment := (@Query.is_inline_fragment Name Vals).
 
   
   
@@ -114,13 +114,12 @@ Section NRGTNF.
          }
      }.
 
-   Lemma field_subqueries_are_grounded schema ty q fld (H : forall t φ, q <> InlineFragment t φ) :
+   Lemma field_subqueries_are_grounded schema ty q fld (H : q.(is_field)) :
      lookup_field_in_type schema ty (qname q H) = Some fld ->
      is_grounded_2 schema ty q ->
-     are_grounded_2 schema fld.(return_type) q.(qsubquery).
+     are_grounded_2 schema fld.(return_type) q.(qsubqueries).
    Proof.
-     case: q H => //= [f α φ | l f α φ | t φ] H Hlook; simp is_grounded_2; rewrite ?Hlook //.
-       by move: (H t φ).
+     case: q H => //= [f α φ | l f α φ ] H Hlook; simp is_grounded_2; rewrite ?Hlook //.
    Qed.
      
 
@@ -353,13 +352,13 @@ Section NRGTNF.
       
       are_non_redundant (hd :: tl) :=
         [&& all (fun q => ~~has_same_response_name_or_guard (qresponse_name hd _) q) tl,
-         are_non_redundant hd.(qsubquery) &
+         are_non_redundant hd.(qsubqueries) &
          are_non_redundant tl]
     }.
   Solve All Obligations with intros; simp query_size; ssromega.
 
   Definition is_non_redundant query :=
-    are_non_redundant query.(qsubquery).
+    are_non_redundant query.(qsubqueries).
 
 
 

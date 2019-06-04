@@ -24,6 +24,8 @@
 ./src/ValidFragments.v
 ./src/QueryRewrite.v
 
+./src/Response.v
+
 ./src/QuerySemantic.v
 ./src/QueryEq.v
 ./src/Example.v

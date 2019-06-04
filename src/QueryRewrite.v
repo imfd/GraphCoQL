@@ -33,8 +33,8 @@ Section QueryRewrite.
   Implicit Type schema : @wfSchema Name Vals.
   Implicit Type query : @Query Name Vals.
 
-  Notation is_field := (@QueryAux.is_field Name Vals).
-  Notation is_inline_fragment := (@QueryAux.is_inline_fragment Name Vals).
+  Notation is_field := (@Query.is_field Name Vals).
+  Notation is_inline_fragment := (@Query.is_inline_fragment Name Vals).
 
 
   
@@ -694,7 +694,7 @@ Section QueryRewrite.
          β__φ flt (q :: tl)
            with has_same_response_name_or_guard flt q :=
            {
-           | true := q.(qsubquery) ++ β__φ flt tl;
+           | true := q.(qsubqueries) ++ β__φ flt tl;
            | _ := β__φ flt tl
            }
        }.
