@@ -20,6 +20,8 @@ Require Import Schema.
 Require Import Query.
 Require Import Response.
 
+Require Import Graph.
+
 Require Import Ssromega.
 
 Require Import SeqExtra.
@@ -32,8 +34,7 @@ Section QuerySemantic.
   Ltac case_response r := case: r => [l | l v | l vs | l ρ | l ρs].
   Ltac apply_andP := apply/andP; split=> //.
   
-
-  Variable (s : @wfSchema Name Vals).
+  Variable s : @wfSchema Name Vals.
 
   Definition does_fragment_type_apply object_type fragment_type :=
     if is_object_type s fragment_type then
@@ -204,53 +205,7 @@ Section QuerySemantic.
     have Hleq' := (H kq Hin); simp query_size.
   Admitted.
 
-  Variables (U : Type).
-
-  Inductive Result : Type :=
-  | ULeaf : U -> Result
-  | UNode : list Result -> Result.
-  Derive NoConfusion for Result.
-  Derive Subterm for Result.
-  
-  Variable (req_op : rel Result).
-  Variable (resolve : @NamedType Name -> U -> Name -> {fmap Name -> Vals} -> Result).
-  Variable (coerce : Result -> @Value Vals).
-  Variable (is_null : U -> bool).
-
-  Lemma result_eq : Equality.axiom req_op. Admitted.
-
-  Canonical result_eqType := EqType Result (EqMixin result_eq).
-  
-  Definition is_collection result := if result is UNode _ then true else false.
-
-  Equations collection (result : Result) (Hnode : is_collection result) : seq Result :=
-    {
-      collection (UNode rs) Hnode := rs
-    }.
-  
-
-  Section list_size.
-    Context {A : Type} (f : A -> nat).
-    Equations list_size (l : list A) : nat :=
-      {
-        list_size nil := 0;
-        list_size (cons x xs) := S (f x + list_size xs)
-      }.
-  End list_size.
-
-  Fixpoint rsize (r : Result) :=
-    match r with
-    | ULeaf a => 0
-    | UNode l => S (list_size rsize l)
-    end.
-
-  Lemma in_result_rsize_leq r res :
-    r \in res ->
-    rsize r < (list_size rsize res).
-  Proof.
-    funelim (list_size rsize res) => //=.
-    case/predU1P => [-> | Hin]; [| have Hleq := (H r Hin)]; ssromega.
-  Qed.
+ 
     
   Equations merge_selection_sets : seq (@Query Name Vals) -> seq (@Query Name Vals) :=
     {
@@ -267,52 +222,139 @@ Section QuerySemantic.
     case: l H => //= hd tl /(_ is_true_true) H; ssromega.
   Qed.
 
+  Lemma merged_selections_leq qs :
+    queries_size (merge_selection_sets qs) <= queries_size qs.
+  Proof.
+    funelim (merge_selection_sets qs) => //=.
+    case: q; intros => //=; simp query_size; rewrite ?queries_size_app;
+     ssromega.
+  Qed.
+
  
   
-  Equations? execute_selection_set (O__t : @NamedType Name) (initial_value : U) (queries : seq (@Query Name Vals)) :
-    @GraphQLResponse Name Vals Labeled by wf (queries_size queries) :=
+  Variable g : @graphQLGraph Name Vals.
+  Implicit Type u : @node Name Vals.
+  Implicit Type query : @Query Name Vals.
+
+  Transparent query_size.
+  
+  Equations? execute_selection_set u (queries : seq (@Query Name Vals)) :
+    seq (Name * ResponseNode) by wf (queries_size queries) :=
     {
-      execute_selection_set O__t initial_value queries := LRTree (map_in (collect O__t queries) (fun kq Hin => execute_each kq _ _ _) )
-    
-       where execute_each (kq : Name * seq Query)
-                          (Hne : kq.2 != [::])
-                          (Hflds : forall q, q \in kq.2 -> q.(is_field))
-                          (Hleq : queries_size kq.2 <= queries_size queries) : (Name * ResponseNode) :=
-              {
-                execute_each (k, [::]) Hne _ _ := _;
-                execute_each (k, (InlineFragment _ _ :: qs)) _ Hflds _ := _;
+      execute_selection_set _ [::] := [::];
+      
+      execute_selection_set u (InlineFragment t φ :: qs)
+        with does_fragment_type_apply u.(type) t :=
+        {
+        | true := execute_selection_set u (φ ++ qs);
+        | _ := execute_selection_set u qs
+        };
 
-                execute_each (k, (q :: qs)) Hne Hflds Hleq
-                  with lookup_field_type s O__t (qname q _) :=
-                  {
-                  | Some ftype := (k, complete_value ftype (resolve O__t initial_value (qname q _) (qargs q _)))
-                                   
-                  where complete_value (ftype : type) (res : Result) : ResponseNode by wf (rsize res) :=
-                          {
-                            complete_value (ListType ty) (UNode res) := Array (URTree (map_in res (fun r Hin2 => complete_value ty r)));
-                                                                             
-                            complete_value (ListType ty) (ULeaf _) := Leaf Null; (* error *)
+      execute_selection_set u (SingleField f α :: qs)
+        with u.(fields) (Field f α) :=
+        {
+        | Some (inl value) => (f, Leaf (SingleValue value)) :: execute_selection_set u (filter_queries_with_label u.(type) f qs);
+        | Some (inr values) => (f, Array (map (Leaf \o SingleValue) values)) :: execute_selection_set u (filter_queries_with_label u.(type) f qs);
+        | None => (f, Leaf Null) :: execute_selection_set u (filter_queries_with_label u.(type) f qs)
+        };
+      
+      execute_selection_set u (LabeledField l f α :: qs)
+        with u.(fields) (Field f α) :=
+        {
+        | Some (inl value) => (l, Leaf (SingleValue value)) :: execute_selection_set u (filter_queries_with_label u.(type) l qs);
+        | Some (inr values) => (l, Array (map (Leaf \o SingleValue) values)) :: execute_selection_set u (filter_queries_with_label u.(type) l qs);
+        | None => (l, Leaf Null) :: execute_selection_set u (filter_queries_with_label u.(type) l qs)
+        };
 
-                            complete_value (NT ty) (ULeaf res)
-                              with res.(is_null) :=
-                              {
-                              | true with is_scalar_type s ty :=
-                                  {
-                                  | true := Leaf (coerce (ULeaf res));
-                                  | _ := Object (execute_selection_set ty res (merge_selection_sets (q :: qs)))
-                                  };
-                              | _ := Leaf Null
-                              };
+      
+      execute_selection_set u (NestedField f α φ :: qs)
+        with lookup_field_type s u.(type) f :=
+        {
+        | Some (ListType ty) => (f, Array [seq Object (execute_selection_set v (φ ++ merge_selection_sets (find_queries_with_label v.(type) f qs))) | v <- neighbours_with_field g u (Field f α)]) :: execute_selection_set u (filter_queries_with_label u.(type) f qs);
+        
+        | Some (NT ty)
+            with ohead (neighbours_with_field g u (Field f α)) :=
+            {
+            | Some v => (f, Object (execute_selection_set v (φ ++ merge_selection_sets (find_queries_with_label v.(type) f qs)))) :: execute_selection_set u (filter_queries_with_label u.(type) f qs);
+            
+            | _ =>  (f, Leaf Null) :: execute_selection_set u (filter_queries_with_label u.(type) f qs)
+            };
 
-                            complete_value (NT ty) _ := Leaf Null (* Error ? *)
-                          };
-                  
-                  | _ := (k, Leaf Null) (* Should not happen if queries are wf *)
-                  }
-              
-                                       
-              }
+        | None => (f, Leaf Null) :: execute_selection_set u (filter_queries_with_label u.(type) f qs)
+        };
+
+
+      execute_selection_set u (NestedLabeledField l f α φ :: qs) := [:: (l, Leaf Null)]
     }.
+  all: do ?[by have Hleq := (filter_queries_with_label_leq_size u.(type) f qs); ssromega].
+  all: do ?[by have Hleq := (filter_queries_with_label_leq_size u.(type) l qs); ssromega].
+
+  all: do ?[by rewrite -/(queries_size φ) queries_size_app;
+            have Hleq1 := (found_queries_leq_size v.(type) f qs);
+            have Hleq2 := (merged_selections_leq (find_queries_with_label v.(type) f qs)); ssromega].
+
+  all: do [by rewrite -/(queries_size φ) ?queries_size_app; ssromega].
+  Qed.
+
+
+  Lemma 
+  
+   Fixpoint eval schema graph u query : seq ResponseObject :=
+    match query with
+    | (SingleField name args) =>
+      match u.(fields) (Field name args) with
+        | Some (inl value) =>  [:: SingleResult name value]
+        | Some (inr values) => [:: ListResult name values]
+        | _ => [:: Null name]
+      end
+        
+     | (LabeledField label name args) => 
+         match u.(fields) (Field name args) with
+         | Some (inl value) =>  [:: SingleResult label value]
+         | Some (inr values) => [:: ListResult label values]
+         | _ => [:: Null label]
+         end
+      
+     | (NestedField name args ϕ) =>
+        let target_nodes := neighbours_with_field graph u (Field name args) in
+        match lookup_field_type schema u.(type) name with
+        | Some (ListType _) =>
+          [:: NestedListResult name [seq collect ( [seq eval schema graph v q | q <- ϕ]) | v <- target_nodes]]
+            
+        | Some (NT _) =>
+          match ohead target_nodes with
+          | Some v => [:: NestedResult name (collect ( [seq eval schema graph v q | q <- ϕ]))]
+          | _ =>  [:: Null name]
+          end
+        | _ => [:: Null name]         (* If the field ∉ fields(u) then it's null, right? *)
+        end
+                                  
+     | (NestedLabeledField label name args ϕ) =>
+       let target_nodes := neighbours_with_field graph u (Field name args) in
+        match lookup_field_type schema u.(type) name with
+        | Some (ListType _) =>
+          [:: NestedListResult label [seq collect ( [seq eval schema graph v q | q <- ϕ]) | v <- target_nodes]]
+            
+        | Some (NT _) =>
+          match ohead target_nodes with
+          | Some v => [:: NestedResult label (collect ( [seq eval schema graph v q | q <- ϕ]))]
+          | _ =>  [:: Null label]
+          end
+        | _ => [:: Null label]         (* If the field ∉ fields(u) then it's null, right? *)
+        end
+      
+     | (InlineFragment t ϕ) => 
+        if u.(type) == t then 
+          collect ( [seq eval schema graph u q | q <- ϕ])
+        else if u.(type) \in implementation schema t then
+          collect ( [seq eval schema graph u q | q <- ϕ])
+        else if u.(type) \in union_members schema t then
+          collect ( [seq eval schema graph u q | q <- ϕ])
+        else
+          [::]
+               
+    end.
+   
   Proof.
     all: do ?[have Hne : (q :: qs) != [::] by [];
               have Hleq' := (merged_selections_lt (q :: qs) Hne);
