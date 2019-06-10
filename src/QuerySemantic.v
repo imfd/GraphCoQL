@@ -33,6 +33,7 @@ Section QuerySemantic.
   
   Ltac case_response r := case: r => [l | l v | l vs | l ρ | l ρs].
   Ltac apply_andP := apply/andP; split=> //.
+  Ltac apply_and3P := apply/and3P; split=> //.
   
   Variable s : @wfSchema Name Vals.
 
@@ -140,72 +141,30 @@ Section QuerySemantic.
 
   Hint Resolve found_queries_leq_size.
   
-  Definition filter_queries_with_label (label : Name) (object_type : @NamedType Name) (queries : seq (@Query Name Vals)) :=
-    ble label object_type queries (fun f label => f != label).
-  
-
-  
-  Lemma filter_queries_with_label_leq_size l O__t qs :
-    queries_size (filter_queries_with_label l O__t qs) <= queries_size qs.
-  Proof.
-    rewrite /filter_queries_with_label.
-      by apply: ble_leq_size.
-  Qed.
-  
-     
-  Equations? collect (object_type : @NamedType Name) (queries : seq (@Query Name Vals)) : seq (Name * seq (@Query Name Vals)) by wf (queries_size queries) :=
+   Equations? filter_queries_with_label (label : Name) (queries : seq (@Query Name Vals)) :
+    seq (@Query Name Vals) by wf (queries_size queries) :=
     {
-      collect _ [::] := [::];
-      collect O__t (InlineFragment t φ :: qs)
-        with does_fragment_type_apply O__t t :=
+      filter_queries_with_label _ [::] := [::];
+
+      filter_queries_with_label l (InlineFragment t φ :: qs) := InlineFragment t (filter_queries_with_label l φ) :: filter_queries_with_label l qs;
+
+      filter_queries_with_label l (q :: qs)
+        with (qresponse_name q _) != l :=
         {
-        | true := collect O__t (φ ++ qs);
-        | _ := collect O__t qs
-        };
+        | true := q :: filter_queries_with_label l qs;
+        | _ := filter_queries_with_label l qs
+        }     
 
-      collect O__t (SingleField f α :: qs) := (f, SingleField f α :: find_queries_with_label f O__t qs) :: collect O__t (filter_queries_with_label f O__t qs);
-
-       collect O__t (LabeledField l f α :: qs) := (l, LabeledField l f α :: find_queries_with_label l O__t qs) :: collect O__t (filter_queries_with_label l O__t qs);
-
-       collect O__t (NestedField f α φ :: qs) := (f, NestedField f α φ :: find_queries_with_label f O__t qs) :: collect O__t (filter_queries_with_label f O__t qs);
-
-       collect O__t (NestedLabeledField l f α φ :: qs) := (l, NestedLabeledField l f α φ :: find_queries_with_label l O__t qs) :: collect O__t (filter_queries_with_label l O__t qs)
-       
     }.
-  Proof.
-    all: do [simp query_size].
-    all: do ? [by have Hleq := filter_queries_with_label_leq_size f O__t qs; ssromega].
-    all: do ? [by have Hleq := filter_queries_with_label_leq_size l O__t qs; ssromega].
-    - by rewrite queries_size_app; ssromega.
-    - ssromega.
+  all: do ?[simp query_size; ssromega].
   Qed.
 
-  Lemma all_fields_in_collect O__t qs :
-    all (fun (kqs : Name * seq Query) =>
-           let (_, qs) := kqs in
-           all (fun q => q.(is_field)) qs) (collect O__t qs).
+  Lemma filter_queries_with_label_leq_size l qs :
+    queries_size (filter_queries_with_label l qs) <= queries_size qs.
   Proof.
-    funelim (collect _ qs) => //=; simp is_field; rewrite andTb; apply_andP; apply: found_queries_are_fields.
+    funelim (filter_queries_with_label l qs) => //=; do ?[simp query_size; ssromega]. 
   Qed.
-
-  Lemma all_N_nil_in_collect O__t qs :
-    all (fun (kqs : Name * seq Query) => kqs.2 != [::]) (collect O__t qs).
-  Proof.
-      by funelim (collect _ qs).
-  Qed.
-
-
-  Lemma in_collect_leq O__t kq qs :
-    kq \in collect O__t qs ->
-           queries_size kq.2 <= queries_size qs.
-  Proof.
-    funelim (collect O__t qs) => //=.
-    case/predU1P => [-> | Hin] /=; have Hleq := (found_queries_leq_size s0 object_type l).
-    ssromega.
-    have Hleq' := (H kq Hin); simp query_size.
-  Admitted.
-
- 
+  
     
   Equations merge_selection_sets : seq (@Query Name Vals) -> seq (@Query Name Vals) :=
     {
@@ -253,51 +212,174 @@ Section QuerySemantic.
       execute_selection_set u (SingleField f α :: qs)
         with u.(fields) (Field f α) :=
         {
-        | Some (inl value) => (f, Leaf (SingleValue value)) :: execute_selection_set u (filter_queries_with_label u.(type) f qs);
-        | Some (inr values) => (f, Array (map (Leaf \o SingleValue) values)) :: execute_selection_set u (filter_queries_with_label u.(type) f qs);
-        | None => (f, Leaf Null) :: execute_selection_set u (filter_queries_with_label u.(type) f qs)
+        | Some (inl value) => (f, Leaf (SingleValue value)) :: execute_selection_set u (filter_queries_with_label f qs);
+        | Some (inr values) => (f, Array (map (Leaf \o SingleValue) values)) :: execute_selection_set u (filter_queries_with_label f qs);
+        | None => (f, Leaf Null) :: execute_selection_set u (filter_queries_with_label f qs)
         };
       
       execute_selection_set u (LabeledField l f α :: qs)
         with u.(fields) (Field f α) :=
         {
-        | Some (inl value) => (l, Leaf (SingleValue value)) :: execute_selection_set u (filter_queries_with_label u.(type) l qs);
-        | Some (inr values) => (l, Array (map (Leaf \o SingleValue) values)) :: execute_selection_set u (filter_queries_with_label u.(type) l qs);
-        | None => (l, Leaf Null) :: execute_selection_set u (filter_queries_with_label u.(type) l qs)
+        | Some (inl value) => (l, Leaf (SingleValue value)) :: execute_selection_set u (filter_queries_with_label l qs);
+        | Some (inr values) => (l, Array (map (Leaf \o SingleValue) values)) :: execute_selection_set u (filter_queries_with_label l qs);
+        | None => (l, Leaf Null) :: execute_selection_set u (filter_queries_with_label l qs)
         };
 
       
       execute_selection_set u (NestedField f α φ :: qs)
         with lookup_field_type s u.(type) f :=
         {
-        | Some (ListType ty) => (f, Array [seq Object (execute_selection_set v (φ ++ merge_selection_sets (find_queries_with_label v.(type) f qs))) | v <- neighbours_with_field g u (Field f α)]) :: execute_selection_set u (filter_queries_with_label u.(type) f qs);
+        | Some (ListType ty) => (f, Array [seq Object (execute_selection_set v (φ ++ merge_selection_sets (find_queries_with_label v.(type) f qs))) | v <- neighbours_with_field g u (Field f α)]) :: execute_selection_set u (filter_queries_with_label f qs);
         
         | Some (NT ty)
             with ohead (neighbours_with_field g u (Field f α)) :=
             {
-            | Some v => (f, Object (execute_selection_set v (φ ++ merge_selection_sets (find_queries_with_label v.(type) f qs)))) :: execute_selection_set u (filter_queries_with_label u.(type) f qs);
+            | Some v => (f, Object (execute_selection_set v (φ ++ merge_selection_sets (find_queries_with_label v.(type) f qs)))) :: execute_selection_set u (filter_queries_with_label f qs);
             
-            | _ =>  (f, Leaf Null) :: execute_selection_set u (filter_queries_with_label u.(type) f qs)
+            | _ =>  (f, Leaf Null) :: execute_selection_set u (filter_queries_with_label f qs)
             };
 
-        | None => (f, Leaf Null) :: execute_selection_set u (filter_queries_with_label u.(type) f qs)
+        | None => (f, Leaf Null) :: execute_selection_set u (filter_queries_with_label f qs)
         };
 
+       execute_selection_set u (NestedLabeledField l f α φ :: qs)
+        with lookup_field_type s u.(type) f :=
+        {
+        | Some (ListType ty) => (l, Array [seq Object (execute_selection_set v (φ ++ merge_selection_sets (find_queries_with_label v.(type) l qs))) | v <- neighbours_with_field g u (Field f α)]) :: execute_selection_set u (filter_queries_with_label l qs);
+        
+        | Some (NT ty)
+            with ohead (neighbours_with_field g u (Field f α)) :=
+            {
+            | Some v => (l, Object (execute_selection_set v (φ ++ merge_selection_sets (find_queries_with_label v.(type) l qs)))) :: execute_selection_set u (filter_queries_with_label l qs);
+            
+            | _ =>  (l, Leaf Null) :: execute_selection_set u (filter_queries_with_label l qs)
+            };
 
-      execute_selection_set u (NestedLabeledField l f α φ :: qs) := [:: (l, Leaf Null)]
+        | None => (l, Leaf Null) :: execute_selection_set u (filter_queries_with_label l qs)
+        }
+
     }.
-  all: do ?[by have Hleq := (filter_queries_with_label_leq_size u.(type) f qs); ssromega].
-  all: do ?[by have Hleq := (filter_queries_with_label_leq_size u.(type) l qs); ssromega].
+  all: do ?[by have Hleq := (filter_queries_with_label_leq_size f qs); ssromega].
+  all: do ?[by have Hleq := (filter_queries_with_label_leq_size l qs); ssromega].
 
   all: do ?[by rewrite -/(queries_size φ) queries_size_app;
             have Hleq1 := (found_queries_leq_size v.(type) f qs);
             have Hleq2 := (merged_selections_leq (find_queries_with_label v.(type) f qs)); ssromega].
 
-  all: do [by rewrite -/(queries_size φ) ?queries_size_app; ssromega].
+  all: do ?[by rewrite -/(queries_size φ) queries_size_app;
+            have Hleq1 := (found_queries_leq_size v.(type) l qs);
+            have Hleq2 := (merged_selections_leq (find_queries_with_label v.(type) l qs)); ssromega].
+
+
+  all: do ? [by rewrite -/(queries_size φ) ?queries_size_app; ssromega].
   Qed.
 
+  Equations has_response_name : Name -> @Query Name Vals -> bool :=
+    {
+      has_response_name l (InlineFragment _ φ) := has (has_response_name l) φ;
 
-  Lemma 
+      has_response_name l q := (qresponse_name q _) == l
+    }.
+
+  Lemma filtered_queries_hasN_response_name l qs :
+    all (fun q => ~~has_response_name l q) (filter_queries_with_label l qs).
+  Proof.
+    funelim (filter_queries_with_label l qs) => //=; simp has_response_name => /=; do ? apply_andP.
+    by apply/hasPn/allP.
+  Qed.
+
+  Lemma filter_queries_preserves_non_existent l qs l' :
+    all (fun q => ~~has_response_name l q) qs ->
+    all (fun q => ~~has_response_name l q) (filter_queries_with_label l' qs).
+  Proof.
+    funelim (filter_queries_with_label l' qs) => //= /andP [Hp Hall]; simp has_response_name; apply_andP.
+    - apply/hasPn/allP. apply: H. simp has_response_name in Hp. move/hasPn/allP in Hp. done.
+    all: do ? by apply: H0.
+    all: do ? by apply: H.
+  Qed.
+  
+  Transparent qresponse_name.
+  
+  Lemma exec_preserves_non_existent_label u qs l :
+    all (fun q => ~~has_response_name l q) qs ->
+    all (fun kq => kq.1 != l) (execute_selection_set u qs).
+  Proof.
+    funelim (execute_selection_set u qs) => //=; simp has_response_name => /= /andP [Hne Hall]; do ? apply_andP.
+
+    all: do ?[by apply: H; apply: filter_queries_preserves_non_existent].
+    all: do ?[by apply: H0; apply: filter_queries_preserves_non_existent].
+
+    by apply: H; rewrite all_cat; apply_andP; apply/allP/hasPn.
+    by apply: H.
+  Qed.
+
+  
+  Lemma exec_responses_are_non_redundant u qs :
+    are_non_redundant (execute_selection_set u qs).
+  Proof.
+    apply_funelim (execute_selection_set u qs) => //=; clear u qs => u.
+    - move=> f α v qs IH Hv; simp is_non_redundant; rewrite andTb; apply_andP.
+      apply: exec_preserves_non_existent_label.
+      apply: filtered_queries_hasN_response_name.
+    - move=> f α vs qs IH Hv; simp is_non_redundant; apply_and3P.
+      * by rewrite all_map; apply/allP.
+      * apply: exec_preserves_non_existent_label.
+        apply: filtered_queries_hasN_response_name.
+
+    - move=> f α qs IH Hnull; simp is_non_redundant; rewrite andTb; apply_andP.
+      apply: exec_preserves_non_existent_label.
+      apply: filtered_queries_hasN_response_name.
+      
+    - move=> l f α v qs IH Hv; simp is_non_redundant; rewrite andTb; apply_andP.
+      apply: exec_preserves_non_existent_label.
+      apply: filtered_queries_hasN_response_name.
+    - move=> l f α vs qs IH Hv; simp is_non_redundant; apply_and3P.
+      * by rewrite all_map; apply/allP.
+      * apply: exec_preserves_non_existent_label.
+        apply: filtered_queries_hasN_response_name.
+
+    - move=> l f α qs IH Hnull; simp is_non_redundant; rewrite andTb; apply_andP.
+      apply: exec_preserves_non_existent_label.
+      apply: filtered_queries_hasN_response_name.
+
+    - move=> f ftype α φ qs IH IHqs Hlook; simp is_non_redundant; apply_and3P.
+      * rewrite all_map; apply/allP => v Hin /=; simp is_non_redundant.
+      * apply: exec_preserves_non_existent_label.
+        apply: filtered_queries_hasN_response_name.
+
+    - move=> f α φ qs IH Hlook; simp is_non_redundant; rewrite andTb; apply_andP.
+      apply: exec_preserves_non_existent_label.
+      apply: filtered_queries_hasN_response_name.
+
+    - move=> f α v ty φ qs IH IHqs Hv Hlook; simp is_non_redundant; apply_and3P.
+      apply: exec_preserves_non_existent_label.
+      apply: filtered_queries_hasN_response_name.
+
+    - move=> f α ty φ qs IHqs Hv Hlook; simp is_non_redundant; apply_and3P.
+      apply: exec_preserves_non_existent_label.
+      apply: filtered_queries_hasN_response_name.
+
+    - move=> l ftype f α φ qs IH IHqs Hlook; simp is_non_redundant; apply_and3P.
+      * rewrite all_map; apply/allP => v Hin /=; simp is_non_redundant.
+      * apply: exec_preserves_non_existent_label.
+        apply: filtered_queries_hasN_response_name.
+
+    - move=> l f α φ qs IH Hlook; simp is_non_redundant; rewrite andTb; apply_andP.
+      apply: exec_preserves_non_existent_label.
+      apply: filtered_queries_hasN_response_name.
+
+    - move=> f α v ty l φ qs IH IHqs Hv Hlook; simp is_non_redundant; apply_and3P.
+      apply: exec_preserves_non_existent_label.
+      apply: filtered_queries_hasN_response_name.
+
+    - move=> f α ty l φ qs IHqs Hv Hlook; simp is_non_redundant; apply_and3P.
+      apply: exec_preserves_non_existent_label.
+      apply: filtered_queries_hasN_response_name.
+  Qed.
+
+  
+
+      
   
    Fixpoint eval schema graph u query : seq ResponseObject :=
     match query with
