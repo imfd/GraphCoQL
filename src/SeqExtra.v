@@ -235,7 +235,17 @@ Section Max.
 
   
 End Max.
+
+
+Section list_size.
+  Context {A : Type} (f : A -> nat).
+  Equations list_size (l : list A) : nat :=
+  list_size nil := 0;
+  list_size (cons x xs) := S (f x + list_size xs).
+
   
+End list_size.
+
 
 Notation "s1 :&: s2" := (seqI s1 s2) : seq_scope.
 

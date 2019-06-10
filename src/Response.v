@@ -25,27 +25,20 @@ End Label.
 
 Section Response.
 
-  Context {A B : Type}.
+  Context {A B : eqType}.
   
   Unset Elimination Schemes.
-  
-  Inductive ResponseTree : L -> Type :=
-  | LRTree : seq (B * ResponseNode) -> ResponseTree Labeled
-  | URTree : seq ResponseNode  -> ResponseTree Unlabeled
 
-  with ResponseNode : Type :=
+  Inductive ResponseNode : Type :=
   | Leaf : A -> ResponseNode
-  | Object : ResponseTree Labeled -> ResponseNode
-  | Array : ResponseTree Unlabeled -> ResponseNode.
-
-  Derive Signature for ResponseTree.
-  Derive NoConfusion for ResponseTree.
+  | Object : seq (B * ResponseNode) -> ResponseNode
+  | Array : seq ResponseNode -> ResponseNode.
 
   
   Set Elimination Schemes.
 
 
-  
+  (*
   Definition ResponseTree_rect (P : forall l : L, ResponseTree l -> Type)
              (Pn : ResponseNode -> Type)
              (Pll : seq (B * ResponseNode) -> Type)
@@ -128,7 +121,7 @@ Section Response.
       | LRTree rns => IH_LRTree rns (Fll rns)
       | URTree rns => IH_URTree rns (Ful rns)
       end.
-
+   *)
 
   Definition is_leaf (rnode : ResponseNode) : bool :=
       if rnode is Leaf _ then true else false.
@@ -139,6 +132,38 @@ Section Response.
   Definition is_array (rnode : ResponseNode) : bool :=
     if rnode is Array _ then true else false.
 
+
+  Equations rsize (response : ResponseNode) : nat :=
+    {
+      rsize (Leaf _) := 1;
+      rsize (Object rt) := (lrsize rt).+1;
+      rsize (Array rt) := (list_size rsize rt).+1
+    }
+  where lrsize (r : seq (B * ResponseNode)) : nat :=
+          {
+            lrsize [::] := 0;
+            lrsize (hd :: tl) := rsize hd.2 + lrsize tl
+          }.
+  
+
+  Equations is_non_redundant (response : ResponseNode) : bool :=
+          {
+            is_non_redundant (Leaf _) := true;
+
+            is_non_redundant (Object rt) := are_non_redundant rt;
+
+            is_non_redundant (Array rt) := all is_non_redundant rt
+          }
+  where are_non_redundant (responses : seq (B * ResponseNode)) : bool  :=
+    {
+      are_non_redundant [::] := true;
+
+      are_non_redundant ((k, q) :: qs) := [&& is_non_redundant q,
+                                          all (fun kq => kq.1 != k) qs &
+                                          are_non_redundant qs]
+    }.
+  
+  (*
   Fixpoint is_scalar {labeled} (rtree : ResponseTree labeled) : bool :=
     match rtree with
     | LRTree rns => all (fun r => r.2.(is_scalar_node)) rns
@@ -151,6 +176,7 @@ Section Response.
          | Array rt => is_scalar rt
          end.
 
+  
   Definition response_labels {labeled} (rtree : ResponseTree labeled) : seq B :=
     match rtree with
     | LRTree rns => [seq rn.1 | rn <- rns]
@@ -174,7 +200,9 @@ Section Response.
          | Object rt => (rtree_height rt).+1
          | Array rt => (rtree_height rt).+1
          end.
+   *)
 
+  
   (*
   Equations rtree_depth {labeled} (rtree : ResponseTree labeled) : nat :=
     {
@@ -312,10 +340,21 @@ Section GraphQLResponse.
   | Null : Value
   | SingleValue : Vals -> Value.
 
-  Definition GraphQLResponse := @ResponseTree Value Name.
+   Definition option_of_value value := if value is SingleValue v then Some v else None.
+  Definition value_of_option opt := if opt is Some v then SingleValue v else Null.
 
-  Section RawResponse.
+  Lemma option_of_valueK : cancel option_of_value value_of_option.
+  Proof.
+      by case.
+  Qed.
 
+  Canonical value_eqType := EqType Value (CanEqMixin option_of_valueK).
+  
+  Definition GraphQLResponse := seq (Name * (@ResponseNode value_eqType Name)).
+
+End GraphQLResponse.
+
+    (*
       
     Fixpoint all_scalar_or_object {labeled} (response : GraphQLResponse labeled) : bool :=
       match response with
@@ -346,7 +385,7 @@ Section GraphQLResponse.
     End RawResponse.
 
 End GraphQLResponse.
-
+*)
 
 (*
 Section ListIn.
