@@ -411,22 +411,26 @@ Section QuerySemantic.
       execute_selection_set2 u (q :: qs)
         with lookup_field_type s u.(type) (qname q _) :=
         {
-        | Some ftype := ((qresponse_name q _), complete_value (resolve_field_value u (qname q _) (qargs q _)))
+        | Some (ListType ty) := ((qresponse_name q _), complete_value (resolve_field_value u (qname q _) (qargs q _)))
                          :: execute_selection_set2 u (filter_queries_with_label (qresponse_name q _) qs)
 
            where complete_value (result : option ((Vals + seq Vals) + (@node Name Vals) + seq (@node Name Vals))) : ResponseNode :=
                    {
                      complete_value None := Leaf Null;
 
-                     complete_value (Some (inr vs))
-                       with ftype :=
-                       {
-                       | ListType ty := Array
-                                         [seq Object
-                                              (execute_selection_set v (q.(qsubqueries) ++ merge_selection_sets (find_queries_with_label v.(type) (qresponse_name q _) qs))) |
-                                          v <- vs];
-                       | _ := Leaf Null (* Error *)
-                       };
+                     complete_value (Some (inr vs)) := Array
+                                                        [seq Object
+                                                             (execute_selection_set v (q.(qsubqueries) ++ merge_selection_sets (find_queries_with_label v.(type) (qresponse_name q _) qs))) | v <- vs];
+
+                     complete_value _ := Leaf Null
+                   };
+
+        | Some (NT ty) := ((qresponse_name q _), complete_value (resolve_field_value u (qname q _) (qargs q _)))
+                         :: execute_selection_set2 u (filter_queries_with_label (qresponse_name q _) qs)
+
+           where complete_value (result : option ((Vals + seq Vals) + (@node Name Vals) + seq (@node Name Vals))) : ResponseNode :=
+                   {
+                     complete_value None := Leaf Null;
 
                      complete_value (Some (inl (inl value)))
                        with value :=
@@ -435,12 +439,28 @@ Section QuerySemantic.
                        | inr vs := Array (map (Leaf \o SingleValue) vs)
                        };
 
-                     complete_value (Some (inl (inr v))) := Object (execute_selection_set v (q.(qsubqueries) ++ merge_selection_sets (find_queries_with_label v.(type) (qresponse_name q _) qs)))
+                     complete_value (Some (inl (inr v))) := Object (execute_selection_set v (q.(qsubqueries) ++ merge_selection_sets (find_queries_with_label v.(type) (qresponse_name q _) qs)));
+
+                     complete_value _ := Leaf Null
                    };
 
         | _ := ((qresponse_name q _), Leaf Null) :: execute_selection_set2 u (filter_queries_with_label (qresponse_name q _) qs)
         }
     }.
+  Proof.
+    all: do ?[by have Hleq := (filter_queries_with_label_leq_size unknown3 qs); ssromega].
+    all: do ?[by have Hleq := (filter_queries_with_label_leq_size unknown5 qs); ssromega].
+    all: do ?[by have Hleq := (filter_queries_with_label_leq_size unknown2 qs); ssromega].
+    all: do ?[by have Hleq := (filter_queries_with_label_leq_size unknown8 qs); ssromega].
+    
+    - by have Hleq := (filter_queries_with_label_leq_size unknown1 qs); ssromega.
+    - by have Hleq := (filter_queries_with_label_leq_size unknown7 qs); ssromega.
+    - by have Hleq := (filter_queries_with_label_leq_size unknown11 qs); ssromega.
+  Qed.
+  
+  
+  
+  
 
         
 End QuerySemantic.
