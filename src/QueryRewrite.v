@@ -33,6 +33,9 @@ Section QueryRewrite.
   Implicit Type schema : @wfSchema Name Vals.
   Implicit Type query : @Query Name Vals.
 
+
+  Variable s : @wfSchema Name Vals.
+  
   Notation is_field := (@Query.is_field Name Vals).
   Notation is_inline_fragment := (@Query.is_inline_fragment Name Vals).
 
@@ -48,7 +51,6 @@ Section QueryRewrite.
   Ltac all_cons := rewrite {1}/all -/(all _ _) => /andP; case.
   Ltac query_conforms := simp query_conforms; try move/and5P; try apply/and5P.
 
-  Open Scope fset.
 
   Equations try_inline_query query (possible_types : seq (@NamedType Name)) : seq (@Query Name Vals) :=
     {
@@ -199,14 +201,6 @@ Section QueryRewrite.
       by apply IH.
   Qed.
 
-  Lemma imfset_inline_are_inlines qs sbq :
-    all is_inline_fragment ((fun q => InlineFragment q sbq) @: qs).
-  Proof.
-    elim/fset_ind: qs => //=.
-    - by rewrite imfset0.
-    - move=> x tl Hnin IH.
-      by rewrite imfsetU all_fsetU imfset1; apply_andP.
-  Qed.
 
   
   Lemma normalize__φ_in_abstract_scope_are_any :
@@ -219,7 +213,7 @@ Section QueryRewrite.
   Admitted.
   (*
     apply (normalize_elim
-             (fun schema ty q nq =>
+             (fun schem la ty q nq =>
                 query_conforms schema ty q ->
                 has_valid_fragments schema ty q ->
                 is_abstract_type schema ty ->
@@ -295,11 +289,7 @@ Section QueryRewrite.
       
   
       
-  Lemma fset1UNfset0 {A : ordType} (x : A) (xs : {fset A}) :
-    x |: xs != fset0.
-  Proof.
-    by rewrite /fsetU /= fset_N_fset0. 
-  Qed.
+ 
 
   Lemma normalize_is_grounded :
     forall schema ty query,
@@ -685,218 +675,136 @@ Section QueryRewrite.
 
 
    
-   Section Beta.
  
-     Equations β__φ (flt : Name) (queries : seq (@Query Name Vals)) : seq (@Query Name Vals) :=
-       {
-         β__φ _ [::] := [::];
-         
-         β__φ flt (q :: tl)
-           with has_same_response_name_or_guard flt q :=
-           {
-           | true := q.(qsubqueries) ++ β__φ flt tl;
-           | _ := β__φ flt tl
-           }
-       }.
-
-     Lemma β__φ_size_reduced flt queries :
-       queries_size (β__φ flt queries) <= queries_size queries.
-     Proof.
-       funelim (β__φ flt queries) => //=.
-       move: (subqueries_lt_query q) => Hlt. 
-         by rewrite queries_size_app; ssromega.
-           by case: q Heq; intros; ssromega.
-     Qed.
-
-
-
-  
-     Lemma cat2s {T : Type} (x y : T) (s : seq T) :
-       [:: x] ++ (y :: s) = [:: x, y & s].
-     Proof. by case: s. Qed.
-
-     Lemma β__φ_cons q x qs : 
-       β__φ q (x :: qs) = (β__φ q [:: x]) ++ (β__φ q qs).
-     Proof.
-         by funelim (β__φ q (x :: qs)) => //=; simp β__φ; rewrite Heq /=; simp β__φ; rewrite ?cats0 ?cat0s.
-     Qed.
-  
+  Equations filter_fragments_with_guard : @NamedType Name -> seq (@Query Name Vals) -> seq (@Query Name Vals) :=
+    {
+      filter_fragments_with_guard _ [::] := [::];
       
-     Lemma β__φ_cat q qs qs' :
-       β__φ q (qs ++ qs') = (β__φ q qs) ++ (β__φ q qs').
-     Proof.
-       elim: qs qs' => // hd tl IH qs'.    
-       rewrite cat_cons.
-       rewrite β__φ_cons [β__φ q (hd :: tl)]β__φ_cons.
-         by rewrite (IH qs') catA.
-     Qed.
+      filter_fragments_with_guard t (InlineFragment t' φ :: qs)
+        with t' == t :=
+        {
+        | true := filter_fragments_with_guard t qs;
+        | _ := InlineFragment t' φ :: filter_fragments_with_guard t qs
+        };
 
-     Lemma β__φ_has_none_nil flt queries :
-       all (fun q => ~~has_same_response_name_or_guard flt q) queries ->
-       β__φ flt queries = [::].
-     Proof.
-       elim: queries => //= hd tl IH /andP [/negbTE Hneq Hall].
-       rewrite β__φ_cons. 
-       rewrite (IH Hall) cats0.
-       by simp β__φ; rewrite Hneq /=.
-     Qed.
+      filter_fragments_with_guard t (_ :: qs) := filter_fragments_with_guard t qs
+    }.
 
+  Lemma filter_fragments_leq_size t qs :
+    queries_size (filter_fragments_with_guard t qs) <= queries_size qs.
+  Proof.
+    funelim (filter_fragments_with_guard t qs) => //=; simp query_size; ssromega.
+  Qed.
 
+  Equations find_fragments_with_guard : @NamedType Name -> seq (@Query Name Vals) -> seq (@Query Name Vals) :=
+    {
+      find_fragments_with_guard _ [::] := [::];
+      
+      find_fragments_with_guard t (InlineFragment t' φ :: qs)
+        with t' == t :=
+        {
+        | true := (InlineFragment t' φ :: find_fragments_with_guard t qs);
+        | _ := find_fragments_with_guard t qs
+        };
 
-     Lemma β__φ_preserves_conformance schema flt qs :
-       forall ty,
-         all (query_conforms schema ty) qs ->
-         exists ty', all (query_conforms schema ty') (β__φ flt qs).
-     Proof.
-       funelim (β__φ flt qs) => //= ty /andP [Hqc Hqsc].
-       all: do [move: (H _ _ Hqsc) => [ty' Hqsc']];
-         exists ty' => //.
-       rewrite all_cat; apply_andP.
-     Abort.
+      find_fragments_with_guard t (q :: qs) := find_fragments_with_guard t qs
+    }.
 
-     Lemma β__φ_preserves_grounded schema ty flt qs :
-       are_grounded_2 schema ty qs ->
-       are_grounded_2 schema ty (β__φ flt qs).
-     Proof.
-       funelim (β__φ flt qs) => //=; case Hscope: is_object_type => //=.
-       move/and3P=> [Hty Hg Hgs].
-       rewrite -are_grounded_2_cat; split=> //.
-       case: q Hg Heq Hty => //=.
-     Abort.
-
-       
-     
-   End Beta.
-
-
-  Section Gamma.
-    
-    Definition γ__φ (flt : Name) (queries : seq (@Query Name Vals)) :=
-      [seq q <- queries | ~~(has_same_response_name_or_guard flt q)].
-
-
-    Lemma γ__φ_queries_size_reduced flt queries :
-      queries_size (γ__φ flt queries) <= queries_size queries.
-    Proof.
-      elim: queries => //= hd tl IH.
-      by case: ifP => //= Heq; ssromega.
-    Qed.
-    
-    Lemma γ__φ_all_neq flt queries :
-      all (fun q => ~~has_same_response_name_or_guard flt q) (γ__φ flt queries).
-    Proof.
-      apply/allP => q.
-      rewrite /γ__φ mem_filter => /andP [H _].
-        by move: H; rewrite /negb; case: ifP.
-    Qed.
-
-    Lemma γ__φ_N_has flt queries :
-      forall q, q \in (γ__φ flt queries) ->
-                 has_same_response_name_or_guard flt q = false.
-
-    Proof.
-      move=> q.
-      rewrite /γ__φ mem_filter => /andP [H _].
-        by move: H; rewrite /negb; case: ifP.
-    Qed.
-
-    
-    Lemma γ__φ_no_repetition_eq flt qs :
-      all (fun q => ~~has_same_response_name_or_guard flt q) qs ->
-      γ__φ flt qs = qs.
-    Proof.
-      elim: qs => //= hd tl IH /andP [Hneq Hall].
-      case: ifP => Hf.
-      by rewrite (IH Hall).
-      by rewrite Hneq in Hf.
-    Qed.
-
+  Lemma found_fragments_leq_size t queries :
+    queries_size (find_fragments_with_guard t queries) <= queries_size queries.
+  Proof.
+    funelim (find_fragments_with_guard t queries) => //=; simp query_size; ssromega.
+  Qed.
   
-    Lemma γ__φ_preserves_non_redundancy flt queries :
-      are_non_redundant queries ->
-      are_non_redundant (γ__φ flt queries).
-    Proof.
-      elim: queries => // hd tl IH.
-      case: hd => //= [f α | l f α | f α φ | l f α φ | t φ]; simp are_non_redundant; simp qresponse_name => /and3P [Hall Hnr Hnrs].
-      all: do ?[case: ifP => //= Heq].
-      all: do ?[by apply: IH].
-
-      all: do ?[simp are_non_redundant; apply_and3P].
-      all: do ?[move/allP: Hall => Hall;
-                apply/allP => q; rewrite mem_filter => /andP [_ Hin];
-                apply: (Hall q Hin)].
-    Qed.
-
-    Lemma γ__φ_preserves_grounded schema ty flt qs :
-      are_grounded_2 schema ty qs ->
-      are_grounded_2 schema ty (γ__φ flt qs).
-    Proof.
-      elim: qs => //= hd tl IH;
-      case: ifP => //= _;
-      case Hobj : is_object_type => //=.
-      all: do ?[case: eqP => //= /eqP Heq].
-      all: do ?[move=> /and3P [Hty Hg Hgs]].
-      all: do ?[apply_and3P].
-      all: do ?[by apply: IH].
-    Qed.
-    
-  End Gamma.
-
-    
   Obligation Tactic := intros; simp query_size; do ? ssromega; rewrite ?queries_size_app.  
-  Equations remove_redundancies (queries : seq (@Query Name Vals)) : seq (@Query Name Vals)
-    by wf (queries_size queries) lt :=
+  Equations remove_redundancies (type_in_scope : @NamedType Name) (queries : seq (@Query Name Vals)) :
+    seq (@Query Name Vals) by wf (queries_size queries) lt :=
     {
-      remove_redundancies [::] := [::];
+      remove_redundancies _ [::] := [::];
       
-      remove_redundancies ((SingleField f α) :: queries) :=
-        (SingleField f α) :: remove_redundancies (γ__φ f queries);
+      remove_redundancies ty ((SingleField f α) :: queries) :=
+        (SingleField f α) :: remove_redundancies ty (filter_queries_with_label f queries);
       
-      remove_redundancies ((LabeledField l f α) :: queries) :=
-        (LabeledField l f α) :: remove_redundancies (γ__φ l queries);
+      remove_redundancies ty ((LabeledField l f α) :: queries) :=
+        (LabeledField l f α) :: remove_redundancies ty (filter_queries_with_label l queries);
 
-      remove_redundancies ((NestedField f α φ) :: queries) :=
-        (NestedField f α (remove_redundancies (φ ++ (β__φ f queries)))) :: remove_redundancies (γ__φ f queries);
+      remove_redundancies ty ((NestedField f α φ) :: queries)
+        with lookup_field_in_type s ty f :=
+        {
+        | Some fld :=
+          NestedField f α (remove_redundancies fld.(return_type)
+                                               (φ ++ (merge_selection_sets (find_queries_with_label s ty f queries))))
+                      :: remove_redundancies fld.(return_type) (filter_queries_with_label f queries);
+        
+        | _ := NestedField f α φ :: remove_redundancies ty (filter_queries_with_label f queries)
+        };
 
-      remove_redundancies ((NestedLabeledField l f α φ) :: queries) :=
-        (NestedLabeledField l f α (remove_redundancies (φ ++ (β__φ l queries)))) :: remove_redundancies (γ__φ l queries);
 
-      remove_redundancies ((InlineFragment t φ) :: queries) :=
-        (InlineFragment t (remove_redundancies (φ ++ (β__φ t queries)))) :: remove_redundancies (γ__φ t queries)
+      remove_redundancies ty ((NestedLabeledField l f α φ) :: queries)
+        with lookup_field_in_type s ty f :=
+        {
+        | Some fld :=
+          NestedLabeledField l f α (remove_redundancies fld.(return_type)
+                                                        (φ ++ (merge_selection_sets (find_queries_with_label s ty l queries))))
+                             :: remove_redundancies fld.(return_type) (filter_queries_with_label l queries);
+        | _ := NestedLabeledField l f α φ :: remove_redundancies ty (filter_queries_with_label l queries)
+        };
+
+
+      remove_redundancies ty ((InlineFragment t φ) :: queries) :=
+        InlineFragment t (remove_redundancies t (φ ++ (merge_selection_sets (find_fragments_with_guard t queries))))
+                       :: remove_redundancies ty (filter_fragments_with_guard t queries)
       
     }.
-  Solve Obligations with intros; simp query_size; move: (γ__φ_queries_size_reduced f queries) => Hlt; ssromega.
-  Solve Obligations with intros; simp query_size; move: (γ__φ_queries_size_reduced l queries) => Hlt; ssromega.
+  Solve Obligations with intros; simp query_size; move: (filter_queries_with_label_leq_size f queries) => Hlt; ssromega.
+  Solve Obligations with intros; simp query_size; move: (filter_queries_with_label_leq_size l queries) => Hlt; ssromega.
   
   Next Obligation.
-    by move: (β__φ_size_reduced f queries) => Hlt; ssromega.
-  Qed.
-  Next Obligation.
-     by move: (β__φ_size_reduced l queries) => Hlt; ssromega.
-  Qed.
-  Next Obligation.
-    by move: (β__φ_size_reduced t queries) => Hlt; ssromega.
-  Qed.
-  Next Obligation.
-    move: (γ__φ_queries_size_reduced t queries) => Hlt; ssromega.
+    have Hleq1 := (found_queries_leq_size s ty f queries).
+    have Hleq2 := (merged_selections_leq (find_queries_with_label s ty f queries)).
+    by ssromega.
   Qed.
   
-  Equations remove_redundancies__φ query : @Query Name Vals  :=
+  Next Obligation.
+    have Hleq1 := (found_queries_leq_size s ty l queries).
+    have Hleq2 := (merged_selections_leq (find_queries_with_label s ty l queries)).
+    by ssromega.
+  Qed.
+  Next Obligation.
+    have Hleq1 := (found_fragments_leq_size t queries).
+    have Hleq2 := (merged_selections_leq (find_fragments_with_guard t queries)).
+    by ssromega.
+  Qed.
+  Next Obligation.
+    have Hleq := (filter_fragments_leq_size t queries); ssromega.
+  Qed.
+
+  
+  Equations remove_redundancies__φ (type_in_scope : @NamedType Name) query : @Query Name Vals  :=
     {
-      remove_redundancies__φ (SingleField f α) := (SingleField f α);
+      remove_redundancies__φ _ (SingleField f α) := (SingleField f α);
       
-      remove_redundancies__φ (LabeledField l f α)  :=   (LabeledField l f α);
+      remove_redundancies__φ _ (LabeledField l f α)  :=   (LabeledField l f α);
 
-      remove_redundancies__φ (NestedField f α φ) := (NestedField f α (remove_redundancies φ)) ;
+      remove_redundancies__φ ty (NestedField f α φ)
+        with lookup_field_in_type s ty f :=
+        {
+        | Some fld := (NestedField f α (remove_redundancies fld.(return_type) φ));
+        | _ := NestedField f α φ (* Should not happen *)
+        };
 
-      remove_redundancies__φ (NestedLabeledField l f α φ) :=
-        (NestedLabeledField l f α (remove_redundancies φ)) ;
-
-      remove_redundancies__φ (InlineFragment t φ) :=
-        (InlineFragment t (remove_redundancies φ)) 
+      remove_redundancies__φ ty (NestedLabeledField l f α φ) 
+        with lookup_field_in_type s ty f :=
+        {
+        | Some fld := (NestedLabeledField l f α (remove_redundancies fld.(return_type) φ));
+        | _ := NestedLabeledField l f α φ (* Should not happen *)
+        };
+      
+      remove_redundancies__φ ty (InlineFragment t φ) :=
+        (InlineFragment t (remove_redundancies t φ)) 
     }.
 
-
+  (*
   Lemma remove_redundancies_preserves_all_neq flt queries :
     all (fun q => ~~has_same_response_name_or_guard flt q) queries ->
     all (fun q => ~~has_same_response_name_or_guard flt q) (remove_redundancies queries).
@@ -1257,7 +1165,7 @@ Section QueryRewrite.
     all (has_valid_fragments schema ty) (remove_redundancies queries).
   Admitted.
  
-        
+        *)
     
     
       
@@ -1268,11 +1176,6 @@ Arguments normalize [Name Vals].
 Arguments normalize_elim [Name Vals].
 Arguments normalize__φ [Name Vals].
 
-Arguments γ__φ [Name Vals].
-Arguments β__φ [Name Vals].
 
 Arguments remove_redundancies [Name Vals].
 Arguments remove_redundancies__φ [Name Vals].
-Arguments normalize_preserves_conformance [Name Vals].
-
-Arguments normalize_in_normal_form [Name Vals].

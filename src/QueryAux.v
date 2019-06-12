@@ -4,7 +4,11 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 From Equations Require Import Equations.
-From extructures Require Import ord fmap.
+From extructures Require Import ord fmap fset.
+
+Require Import Schema.
+Require Import SchemaAux.
+Require Import SchemaWellFormedness.
 
 Require Import Query.
 
@@ -17,7 +21,8 @@ Require Import Arith.
 Section QueryAux.
 
   Ltac case_response r := case: r => [l | l v | l vs | l ρ | l ρs].
-    
+  Ltac apply_andP := apply/andP; split => //.
+  
   Variables Name Vals : ordType.
 
   Implicit Type queries : seq (@Query Name Vals).
@@ -91,7 +96,178 @@ Section QueryAux.
     end.
 
 
+  Variable s : @wfSchema Name Vals.
+
+  
+  (**
+     Checks whether the type guard in a fragment is valid wrt the
+     actual type of the data (Object type).
+
+    https://graphql.github.io/graphql-spec/June2018/#DoesFragmentTypeApply() 
+   **)
+  Definition does_fragment_type_apply object_type fragment_type :=
+    if is_object_type s fragment_type then
+      object_type == fragment_type
+    else
+      if is_interface_type s fragment_type then
+        object_type \in implementation s fragment_type
+      else
+        if is_union_type s fragment_type then
+          object_type \in union_members s fragment_type
+        else
+          false.
+
+ 
+
+   Equations? ble (label : Name) (object_type : @NamedType Name) (queries : seq (@Query Name Vals)) (p : Name -> Name -> bool) :
+    seq (@Query Name Vals) by wf (queries_size queries) :=
+    {
+      ble _ _ [::] _ := [::];
+
+      ble k O__t (InlineFragment t φ :: qs) p
+        with does_fragment_type_apply O__t t :=
+        {
+        | true := ble k O__t φ p ++ ble k O__t qs p;
+        | _ := ble k O__t qs p
+        };
+
+      ble k O__t (SingleField f α :: qs) p
+        with p f k :=
+        {
+        | true := SingleField f α :: ble k O__t qs p;
+        | _ := ble k O__t qs p
+        };
+      
+      ble k O__t (LabeledField l f α :: qs) p
+        with  p l k :=
+        {
+        | true := LabeledField l f α :: ble k O__t qs p;
+        | _ := ble k O__t qs p
+        };
+
+      
+      ble k O__t (NestedField f α φ :: qs) p
+        with p f k :=
+        {
+        | true := NestedField f α φ :: ble k O__t qs p;
+        | _ := ble k O__t qs p
+        };
+      
+      ble k O__t (NestedLabeledField l f α φ :: qs) p
+        with p l k :=
+        {
+        | true := NestedLabeledField l f α φ  :: ble k O__t qs p;
+        | _ := ble k O__t qs p
+        }
+    }.
+  all: do ?simp query_size; ssromega.
+  Qed.
+
+  Lemma ble_leq_size l O__t qs p :
+    queries_size (ble l O__t qs p) <= queries_size qs.
+  Proof.
+    funelim (ble _ _ qs _) => //=; simp query_size; rewrite ?queries_size_app; ssromega.
+  Qed.
+  
+  
+  Definition find_queries_with_label (label : Name) (object_type : @NamedType Name) (queries : seq (@Query Name Vals)) :=
+    ble label object_type queries (fun f label => f == label).
+
+
+  Lemma found_queries_are_fields k O__t qs :
+    all (fun q => q.(is_field)) (find_queries_with_label k O__t qs).
+  Proof.
+    rewrite /find_queries_with_label.
+    funelim (ble k O__t qs (fun f label => f == label)) => //=.
+    rewrite all_cat; apply_andP.
+  Qed.
+
+  
+
+  Lemma found_queries_are_fieldsP k O__t qs :
+    forall q, q \in (find_queries_with_label k O__t qs) -> q.(is_field).
+  Proof.
+      by apply/allP; apply: found_queries_are_fields.
+  Qed.
+
+
+  Lemma all_same_label label O__t qs :
+    all (fun q => match q with
+               | InlineFragment _ _ => true
+               | SingleField f _
+               | NestedField f _ _ => f == label 
+               | LabeledField l _ _
+               | NestedLabeledField l _ _ _ => l == label
+               end) (find_queries_with_label label O__t qs).
+  Proof.
+    rewrite /find_queries_with_label.
+    funelim (ble label O__t qs _) => //=; rewrite ?Heq ?andTb //.
+    rewrite all_cat; apply_andP.
+  Qed.
+
+  Lemma found_queries_leq_size l O__t qs :
+    queries_size (find_queries_with_label l O__t qs) <= queries_size qs.
+  Proof.
+      by rewrite /find_queries_with_label; apply: ble_leq_size.
+  Qed.
+
+  Hint Resolve found_queries_leq_size.
+  
+   Equations? filter_queries_with_label (label : Name) (queries : seq (@Query Name Vals)) :
+    seq (@Query Name Vals) by wf (queries_size queries) :=
+    {
+      filter_queries_with_label _ [::] := [::];
+
+      filter_queries_with_label l (InlineFragment t φ :: qs) := InlineFragment t (filter_queries_with_label l φ) :: filter_queries_with_label l qs;
+
+      filter_queries_with_label l (q :: qs)
+        with (qresponse_name q _) != l :=
+        {
+        | true := q :: filter_queries_with_label l qs;
+        | _ := filter_queries_with_label l qs
+        }     
+
+    }.
+  all: do ?[simp query_size; ssromega].
+  Qed.
+
+  Lemma filter_queries_with_label_leq_size l qs :
+    queries_size (filter_queries_with_label l qs) <= queries_size qs.
+  Proof.
+    funelim (filter_queries_with_label l qs) => //=; do ?[simp query_size; ssromega]. 
+  Qed.
+  
+    
+  Equations merge_selection_sets : seq (@Query Name Vals) -> seq (@Query Name Vals) :=
+    {
+      merge_selection_sets [::] := [::];
+      merge_selection_sets (q :: qs) := q.(qsubqueries) ++ merge_selection_sets qs
+    }.
+
+
+  
+  Lemma merged_selections_lt qs :
+    qs != [::] ->
+    queries_size (merge_selection_sets qs) < queries_size qs.
+  Proof.
+    funelim (merge_selection_sets qs) => //=.
+    case: q; intros => //=; simp query_size; rewrite ?queries_size_app;
+    case: l H => //= hd tl /(_ is_true_true) H; ssromega.
+  Qed.
+
+  Lemma merged_selections_leq qs :
+    queries_size (merge_selection_sets qs) <= queries_size qs.
+  Proof.
+    funelim (merge_selection_sets qs) => //=.
+    case: q; intros => //=; simp query_size; rewrite ?queries_size_app;
+     ssromega.
+  Qed.
+
+ 
                                       
 
    
 End QueryAux.
+
+
+Arguments filter_queries_with_label [Name Vals].

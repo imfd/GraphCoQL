@@ -321,42 +321,29 @@ Section NRGTNF.
   Qed.
 
 
-   Equations has_same_response_name_or_guard (rname : Name) query : bool :=
-    {
-      has_same_response_name_or_guard rname (InlineFragment t _) := t == rname;
-      has_same_response_name_or_guard rname q := (qresponse_name q _) == rname
-    }.
-
-   
-  Equations have_same_response_name_or_guard (q1 q2 : @Query Name Vals) : bool :=
-    {
-      have_same_response_name_or_guard (InlineFragment t _) q :=
-        has_same_response_name_or_guard t q;
-      have_same_response_name_or_guard q1 q2 :=
-        has_same_response_name_or_guard (qresponse_name q1 _) q2
-    }.
-
- 
-
   
-  Equations are_non_redundant (queries : seq (@Query Name Vals)) : bool
+  Equations are_similar (q1 q2 : @Query Name Vals) : bool :=
+    {
+      are_similar (InlineFragment t _) (InlineFragment t' _) := t == t';
+      are_similar (InlineFragment _ _) _ := false;
+      are_similar _ (InlineFragment _ _) := false;
+      are_similar q1 q2 := (qresponse_name q1 _) == (qresponse_name q2 _)
+    }.
+   
+  Equations? are_non_redundant (queries : seq (@Query Name Vals)) : bool
     by wf (queries_size queries) :=
     {
       are_non_redundant [::] := true;
-
-      are_non_redundant ((InlineFragment t φ) :: tl) :=
-        [&&  all (fun q => ~~has_same_response_name_or_guard t q) tl,
-         are_non_redundant φ &
-         are_non_redundant tl];           
-        
       
       are_non_redundant (hd :: tl) :=
-        [&& all (fun q => ~~has_same_response_name_or_guard (qresponse_name hd _) q) tl,
+        [&& all (fun q => ~~are_similar q hd) tl,
          are_non_redundant hd.(qsubqueries) &
          are_non_redundant tl]
-    }.
-  Solve All Obligations with intros; simp query_size; ssromega.
-
+    }.                 
+  Proof.
+    all: do [case: hd are_non_redundant; intros; simp query_size; ssromega].
+  Qed.
+  
   Definition is_non_redundant query :=
     are_non_redundant query.(qsubqueries).
 
@@ -386,9 +373,8 @@ Arguments are_in_normal_form [Name Vals].
 Arguments is_grounded_2 [Name Vals].
 Arguments are_grounded_2 [Name Vals].
 Arguments are_non_redundant [Name Vals].
-Arguments has_same_response_name_or_guard [Name Vals].
-Arguments have_same_response_name_or_guard [Name Vals].
 Arguments is_non_redundant  [Name Vals].
 Arguments are_grounded_in_object_scope_are_fields [Name Vals].
 Arguments are_grounded_2_in_normal_form [Name Vals].
 Arguments are_grounded_in_abstract_scope_are_any [Name Vals].
+Arguments are_similar [Name Vals].
