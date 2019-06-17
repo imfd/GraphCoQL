@@ -47,7 +47,6 @@ Section QueryRewrite.
   
   Ltac apply_andP := apply/andP; split=> //.
   Ltac apply_and3P := apply/and3P; split=> //.
-  Ltac are_in_normal_form := rewrite /are_in_normal_form => /andP; case.
   Ltac all_cons := rewrite {1}/all -/(all _ _) => /andP; case.
   Ltac query_conforms := simp query_conforms; try move/and5P; try apply/and5P.
 
@@ -60,619 +59,190 @@ Section QueryRewrite.
         | _ := [:: q]
         }
     }.
-      
-  Equations normalize schema : @NamedType Name -> @Query Name Vals -> seq (@Query Name Vals) :=
+
+  Equations? ground (type_in_scope : @NamedType Name) (queries : seq (@Query Name Vals)) :
+    seq (@Query Name Vals) by wf (queries_size queries) :=
     {
-      normalize _ type_in_scope (SingleField f α)
-        with is_object_type schema type_in_scope :=
+      ground _ [::] := [::];
+
+      ground ty (SingleField f α :: qs)
+        with is_object_type s ty :=
         {
-        | true := [:: SingleField f α];
-        | _ := try_inline_query (SingleField f α) (get_possible_types schema type_in_scope)
+        | true := SingleField f α :: ground ty qs;
+        | _ := try_inline_query (SingleField f α) (get_possible_types s ty) ++ ground ty qs
         };
 
-       normalize schema  type_in_scope (LabeledField l f α)
-        with is_object_type schema type_in_scope :=
-        {
-        | true := [:: LabeledField l f α];
-        | _ := try_inline_query (LabeledField l f α) (get_possible_types schema type_in_scope)
-        };
       
-                                                                                    
-       normalize schema  type_in_scope (NestedField f α φ)
-         with lookup_field_in_type schema type_in_scope f :=
-         {
-          | Some fld
-              with is_object_type schema type_in_scope :=
-              {
-              | true := [:: NestedField f α (normalize__φ schema fld.(return_type) φ)];
-              | _ := let normalized_head := normalize__φ schema fld.(return_type) φ in
-                    try_inline_query (NestedField f α normalized_head) (get_possible_types schema type_in_scope)
+      ground ty (LabeledField l f α :: qs)
+        with is_object_type s ty :=
+        {
+        | true := LabeledField l f α :: ground ty qs;
+        | _ := try_inline_query (LabeledField l f α) (get_possible_types s ty) ++ ground ty qs
+        };
+
+      ground ty (NestedField f α φ :: qs)
+        with lookup_field_in_type s ty f :=
+        {
+        | Some fld
+            with is_object_type s ty :=
+            {
+            | true := NestedField f α (ground fld.(return_type) φ) :: ground ty qs;
+            | _ := try_inline_query (NestedField f α (ground fld.(return_type) φ)) (get_possible_types s ty) ++ ground ty qs
+            };
+        | _ => ground ty qs
+        };
+
+      ground ty (NestedLabeledField l f α φ :: qs)
+        with lookup_field_in_type s ty f :=
+        {
+        | Some fld
+            with is_object_type s ty :=
+            {
+            | true := NestedLabeledField l f α (ground fld.(return_type) φ) :: ground ty qs;
+              | _ := try_inline_query (NestedLabeledField l f α (ground fld.(return_type) φ)) (get_possible_types s ty) ++ ground ty qs
               };
-          | _ => [::]
+          | _ => ground ty qs
          };
         
 
-
-      normalize schema  type_in_scope (NestedLabeledField l f α φ)
-       with lookup_field_in_type schema type_in_scope f :=
+       ground ty (InlineFragment t φ :: qs)
+        with is_object_type s ty :=
          {
-          | Some fld
-              with is_object_type schema type_in_scope :=
-              {
-              | true := [:: NestedLabeledField l f α (normalize__φ schema fld.(return_type) φ)];
-              | _ := let normalized_head := normalize__φ schema fld.(return_type) φ in
-                    try_inline_query (NestedLabeledField l f α normalized_head) (get_possible_types schema type_in_scope)
-            };
-          | _ => [::]
-         };
-              
-              
-      normalize schema  type_in_scope (InlineFragment t φ)
-        with is_object_type schema type_in_scope, is_object_type schema t :=
-        {
-        | true | _ := (normalize__φ schema type_in_scope φ);
-        | false | true := [:: InlineFragment t (normalize__φ schema t φ)];
-        | false | false := (normalize__φ schema type_in_scope φ)     
-        }
-    }
-  where
-   normalize__φ schema (type_in_scope : @NamedType Name) (queries : seq (@Query Name Vals))  : seq (@Query Name Vals) :=
-    {
-      normalize__φ _ _ [::] := [::];
-      normalize__φ schema type_in_scope (query :: queries) :=
-        (normalize schema type_in_scope query) ++ (normalize__φ schema  type_in_scope queries)
+           
+         | true with does_fragment_type_apply s ty t :=
+             {
+             | true := (ground ty φ) ++ ground ty qs;
+             | _ := ground ty qs
+             };
+         
+         | _ with is_object_type s t :=
+             {
+             | true with does_fragment_type_apply s t ty :=
+                 {
+                 | true := InlineFragment t (ground t φ) :: ground ty qs;
+                 | _ := ground ty qs
+                 };
+             | _ := [seq InlineFragment sty (ground sty φ) | sty <- (get_possible_types s ty :&: get_possible_types s t)%SEQ]
+                     ++ ground ty qs   
+             }
+         }
+
       
     }.
-
-
-  Lemma normalize__φ_cat schema type_in_scope qs qs' :
-    normalize__φ schema type_in_scope qs ++ normalize__φ schema type_in_scope qs' =
-    normalize__φ schema type_in_scope (qs ++ qs').
   Proof.
-    elim: qs qs' => // hd tl IH qs'.
-    by rewrite cat_cons ! normalize__φ_equation_2 -catA (IH qs').
+    all: do [by simp query_size; ssromega].
   Qed.
 
- 
-
- 
-  Lemma normalize_in_object_scope_are_fields :
-    forall schema type_in_scope query,
-    query_conforms schema type_in_scope query ->
-    has_valid_fragments schema type_in_scope query ->
-    is_object_type schema type_in_scope ->
-    all is_field (normalize schema type_in_scope query).
+  Lemma get_possible_types_N_nil_are_Ot ty :
+    get_possible_types s ty != [::] ->
+    all (is_object_type s) (get_possible_types s ty).
   Proof.
-    apply (normalize_elim
-             (fun s type_in_scope query nq =>
-                 query_conforms s type_in_scope query ->
-                 has_valid_fragments s type_in_scope query ->
-                 is_object_type s type_in_scope ->
-                 all is_field (normalize s type_in_scope query))
-             (fun schema ty qs nqs =>
-                all (query_conforms schema ty) qs ->
-                all (has_valid_fragments schema ty) qs ->
-                is_object_type schema ty ->
-                all is_field (normalize__φ schema ty qs))) => //;
-      move=> schema ty.
-   
-    all: do ?[intros; simp normalize; rewrite H1 /=; simp is_field].
-    - move=> f α φ Hlook.
-      by simp normalize; rewrite Hlook /=.
-    - move=> f rty α φ IH Hobj Hlook Hqc Hv _.
-        by simp normalize; rewrite Hlook /= Hobj.
-    - by move=> f rty α φ H Hcontr _ _ _ Hobj; rewrite Hcontr in Hobj.
-    - move=> l f α φ Hlook.
-      by simp normalize; rewrite Hlook.
-    - move=> l rty f α φ IH Hobj Hlook Hqc Hv _.
-        by simp normalize; rewrite Hlook /= Hobj.
-    - by move=> l rty f α φ H Hcontr _ _ _ Hobj; rewrite Hcontr in Hobj.
-
-    - move=> b t φ IH Hobj Hinobj Hqc Hval _.
-      simp normalize; rewrite Hobj /= Hinobj /=.
-      move: Hqc; query_conforms; move=> [_ _ _ Hqsc _].
-      move: Hval; simp has_valid_fragments; rewrite Hinobj /=; move/andP=> [/eqP Heq Hvs].
-      by rewrite Heq in Hqsc; apply: IH.
-    - by move=> t φ _ _ Hcontr _ _ Hobj; rewrite Hcontr in Hobj.
-    - by move=> t φ _ _ Hcontr _ _ Hobj; rewrite Hcontr in Hobj.
-            
-    - move=> hd tl IH IH'.
-      rewrite {1}/all -/(all _ _) => /andP [Hqc Hqsc].
-      rewrite {1}/all -/(all _ _) => /andP [Hv Hvs] Hobj.
-      rewrite normalize__φ_equation_2 all_cat; apply/andP.
-        by split; [apply: IH | apply: IH'].
-  Qed.
-  
- 
-    
-  Lemma normalize__φ_in_object_scope_are_fields :
-    forall schema ty qs,
-      all (query_conforms schema ty) qs ->
-      all (has_valid_fragments schema ty) qs ->
-      is_object_type schema ty ->
-      all is_field (normalize__φ schema ty qs).
-  Proof.
-    move=> schema ty.
-    elim=> // hd tl IH.
-    rewrite {1}/all -/(all _ _) => /andP [Hqc Hqsc].
-    rewrite {1}/all -/(all _ _) => /andP [Hv Hvs] Hobj.
-    rewrite normalize__φ_equation_2 all_cat; apply/andP; split.
-    by apply: normalize_in_object_scope_are_fields.
-      by apply IH.
+    funelim (get_possible_types s ty) => //= _.
+    - by simp is_object_type; rewrite Heq.
+    - apply/allP=> x; apply: in_implementation_is_object.
+    - apply/allP=> x.
+      have <- : union_members s ty = f0 by rewrite /union_members Heq. 
+      by apply: in_union_is_object.
   Qed.
 
-
-  
-  Lemma normalize__φ_in_abstract_scope_are_any :
-    forall schema ty qs,
-      all (query_conforms schema ty) qs ->
-      all (has_valid_fragments schema ty) qs ->
-      is_abstract_type schema ty ->
-      (all is_field (normalize__φ schema ty qs)) \/ all is_inline_fragment (normalize__φ schema ty qs).
+  Lemma inlined_fields_are_grounded2 ty q pty :
+    is_object_type s ty = false ->
+    (get_possible_types s ty == [::]) = false ->
+    all (is_object_type s) pty ->
+    q.(is_field) ->
+    (forall t, is_grounded2 s t q) ->
+    are_grounded2 s ty [seq InlineFragment t [:: q] | t <- pty].
   Proof.
-  Admitted.
-  (*
-    apply (normalize_elim
-             (fun schem la ty q nq =>
-                query_conforms schema ty q ->
-                has_valid_fragments schema ty q ->
-                is_abstract_type schema ty ->
-                all is_inline_fragment (normalize schema ty q))
-             (fun schema ty qs nqs =>
-                 all (query_conforms schema ty) qs ->
-                 all (has_valid_fragments schema ty) qs ->
-                 is_abstract_type schema ty ->
-                 all is_inline_fragment (normalize__φ schema ty qs)));
-      move=> schema ty.
-      all: do ?[by intros; move: (abstract_type_N_obj H1) => Hcontr; rewrite Hcontr in Heq].
-      all: do ?[by intros; rewrite /query_conforms in H; case Hlook : lookup_field_in_type in H; rewrite Hlook in Heq].
-      all: do ?[by intros; simp normalize; rewrite Heq /=; apply: imfset_inline_are_inlines].
-      all: do ?[by intros; move: (abstract_type_N_obj H2) => Hcontr; rewrite Heq in Hcontr].
-      all: do ?[by intros; simp normalize; rewrite Heq0 /= Heq /=; apply: imfset_inline_are_inlines].
-      intros; simp normalize; rewrite Heq /=.
-      simp try_inline_query.
-      case: eqP => //=.
-    - by intros; move: (abstract_type_N_obj H2) => Hcontr; rewrite Hcontr in Heq0.
-    - by intros; simp normalize; rewrite Heq Heq0 /=.
-    - intros; simp normalize; rewrite Heq Heq0 /=.
-      move: H0; query_conforms.
-      move=> [_ _ _ Hqc].
-      move: H1; simp has_valid_fragments; rewrite Heq0 /= => /andP [/orP [/eqP Heq' | Hcontr] Hv]; last first.
-      by rewrite Hcontr in Heq.
-      by apply: H; rewrite -Heq' in H2 * => //.
-      
-    - move=> hd tl IH IH'.
-      rewrite {1}/all -/(all _ _) => /andP [Hqc Hqsc].
-      rewrite {1}/all -/(all _ _) => /andP [Hv Hvs] Hobj.
-      by rewrite normalize__φ_equation_2 all_cat; apply/andP; split; [apply: IH | apply: IH'].
-    
-  Qed. *)
-
-  
-   Lemma normalize_in_abstract_scope_are_any :
-    forall schema ty q,
-      query_conforms schema ty q ->
-      has_valid_fragments schema ty q ->
-      is_abstract_type schema ty ->
-      all is_field (normalize schema ty q) \/ all is_inline_fragment (normalize schema ty q).
-   Proof.
-   Admitted.
-     (*
-    move=> schema ty; case; intros; simp normalize.
-    all: do ?[by move: (abstract_type_N_obj H1) => -> /=; apply: imfset_inline_are_inlines].
-    all: do ?[by case: lookup_field_in_type => [fld|] //=;
-              move: (abstract_type_N_obj H1) => -> /=; apply: imfset_inline_are_inlines].
-           
-    move: H0; simp has_valid_fragments.
-    move: (abstract_type_N_obj H1) => Hnobj.
-    rewrite Hnobj /= => /andP [/orP [/eqP Heq | Hobj] Hv].
-    move: H; query_conforms.
-    move=> [_ _ _ Hqsc].
-    rewrite Heq Hnobj in Hqsc Hv *.
-      by apply: normalize__φ_in_abstract_scope_are_inlines.
-        by rewrite Hobj /=; apply/andP.
+    move=> Hscope Hptys Hobjs Hfield Hg.
+    elim: pty Hobjs => //= hd tl IH /andP [Hobj Hobjs].
+    rewrite are_grounded2_clause_2_equation_1 Hscope Hptys /=; apply_and3P; last by apply: IH.
+    simp is_grounded2; apply_andP.
+    rewrite Hobj; case: eqP => //=; first by have := (get_possible_types_objectE Hobj) => -> /=.
+    intros; apply_and3P.
   Qed.
-   *)
 
   
-  Lemma map_inline_are_grounded_in_interface schema ty sbq :
-    is_interface_type schema ty ->
-    all is_field sbq ->
-    all (is_grounded_2 schema ty) sbq -> 
-    all (is_grounded_2 schema ty) [seq InlineFragment t sbq | t <- (get_possible_types schema ty)].
+  Lemma ground_are_grounded2 ty qs :
+    are_grounded2 s ty (ground ty qs).
   Proof.
-    move=> Hintf Hflds Hg.
-    move: (@in_possible_types_is_object Name Vals schema ty).
-    elim: get_possible_types => //= hd tl IH Hin.
-    apply_andP.
-  Admitted.
-      
-  
-      
- 
-
-  Lemma normalize_is_grounded :
-    forall schema ty query,
-      query_conforms schema ty query ->
-      has_valid_fragments schema ty query ->
-      are_grounded_2 schema ty (normalize schema ty query).
-  Proof.
-    apply (normalize_elim
-             (fun schema type_in_scope query qn =>
-                query_conforms schema type_in_scope query ->
-                has_valid_fragments schema type_in_scope query ->
-                are_grounded_2 schema type_in_scope qn)
-             (fun schema type_in_scope queries qsn =>
-                all (query_conforms schema type_in_scope) queries ->
-                all (has_valid_fragments schema type_in_scope) queries ->
-                are_grounded_2 schema type_in_scope qsn))
-    => // schema.
-    
-    all: do?[by intros => /=; rewrite Heq /=; apply/and3P; split].
-
-    - intros => /=; rewrite are_grounded_2E Heq /=; apply_andP.
-
-      (* elim/fset_ind: (get_possible_types schema s) => //= hd tl Hnin IH.
-      orL; apply_andP.
-        by apply: fset1UNfset0.
-        simp try_inline_query; rewrite fset1UNfset0 /=.
-        by apply: imfset_inline_are_inlines.
-      move: (@in_possible_types_is_object Name Vals schema s).
-      rewrite get_possible_types_interfaceE //. *)
-      Admitted.
-      (*
-      elim/fset_ind: (implementation schema s); [by rewrite imfset0|].
-      move=> x tl Hnin IH Hin.
-      rewrite imfsetU all_fsetU; apply_andP.
-      rewrite imfset1 /=; apply_andP; simp is_grounded_2; apply_andP.
-        by have/Hin: x \in x |: tl by rewrite in_fsetU1; orL.
-          by apply: IH => t Htlin; apply: Hin; rewrite in_fsetU1; orR.
-    have/scope_is_obj_or_abstract_for_field : is_field (SingleField s0 f) by [].
-      by move/(_ schema s H) => [Hcontr |//]; rewrite Heq in Hcontr.
-
-    - intros => /=; rewrite are_grounded_2E Heq /=; apply_andP.
-    apply: imfset_inline_are_inlines.
-    move: (@in_possible_types_is_object Name Vals schema s).
-    rewrite get_possible_types_interfaceE //.
-    elim/fset_ind: (implementation schema s); [by rewrite imfset0|].
-    move=> x tl Hnin IH Hin.
-    rewrite imfsetU all_fsetU; apply_andP.
-    rewrite imfset1 /=; apply_andP; simp is_grounded_2; apply_andP.
-      by have/Hin: x \in x |: tl by rewrite in_fsetU1; orL.
-      by apply: IH => t Htlin; apply: Hin; rewrite in_fsetU1; orR.
-    have/scope_is_obj_or_abstract_for_field : is_field (LabeledField s1 s2 f0) by [].
-      by move/(_ schema s H) => [Hcontr |//]; rewrite Heq in Hcontr.
-
-
-     
-  
-    all: do?[intros => /=; rewrite Heq /=; apply/and3P; split=> //;
-             simp is_grounded_2; rewrite Heq0 /=;
-             move: H0; rewrite /query_conforms Heq0 => /and4P [_ _ _ Hqsc];
-             move: H1; simp has_valid_fragments; rewrite Heq0 /= => Hv;
-                                                                     by apply: H].
-     - intros => /=; rewrite are_grounded_2E Heq /=; apply_andP.
-    apply: imfset_inline_are_inlines.
-    move: (@in_possible_types_is_object Name Vals schema s).
-    rewrite get_possible_types_interfaceE //.
-    elim/fset_ind: (implementation schema s); [by rewrite imfset0|].
-    move=> x tl Hnin IH Hin.
-    rewrite imfsetU all_fsetU; apply_andP.
-    rewrite imfset1 /=; apply_andP; simp is_grounded_2; apply_andP.
-      by have/Hin: x \in x |: tl by rewrite in_fsetU1; orL.
-      apply_andP; rewrite all_seq1; simp is_grounded_2.
-
-  Admitted. *)
-  (*rewrite Heq /=.
-      by apply: IH => t Htlin; apply: Hin; rewrite in_fsetU1; orR.
-    have/scope_is_obj_or_abstract_for_field : is_field (LabeledField s1 s2 f0) by [].
-      by move/(_ schema s H) => [Hcontr |//]; rewrite Heq in Hcontr.
-
-      
-
-    - intros => /=
-    - move=> t b ty φ IH Ht Hscope Hqc Hv.
-      move: Hqc; rewrite /query_conforms => /and4P [_ _ _ Hqsc].
-      move: Hv; simp has_valid_fragments; rewrite Hscope /= => /andP [/eqP Htyeq Hv].
-      rewrite Htyeq in Hqsc.
-        by apply: IH.
-
-    -  move=> t ty φ IH Ht Hscope Hqc Hv /=.
-       rewrite Hscope /=; apply/and3P; split=> //.
-       simp is_grounded_2.
-       apply_andP.
-       move: Hqc; query_conforms.
-       move=> [_ _ _ Hqsc].
-       move: Hv; simp has_valid_fragments; rewrite Hscope /= => /andP [/orP [/eqP Hcontr | _] Hv].
-         by rewrite Hcontr in Ht; rewrite Ht in Hscope.
-       move: (IH Hqsc Hv); rewrite are_grounded_2E => /andP [/orP [/andP [_ Hf] | /andP [Hcontr _]] Hg].
-       apply_andP.
-         by rewrite Ht in Hcontr.
-
-    - move=> t ty φ IH Ht Hscope.
-      query_conforms; move=> [_ _ _ Hqsc].
-      simp has_valid_fragments; rewrite Hscope /= => /andP [/orP [/eqP Heq | Hcontr] Hv].
-        by rewrite Heq in Hv Hqsc; apply: IH.
-        by rewrite Ht in Hcontr.
-
-    - move=> ty hd tl IH IH'.
-      all_cons => [Hqc Hqsc].
-      all_cons => [Hv Hvs].
-      by rewrite -are_grounded_2_cat; split; [apply: IH | apply: IH'].
-  Qed.
-  *)
-
-  Lemma normalize__φ_are_grounded schema ty qs :
-    all (query_conforms schema ty) qs ->
-    all (has_valid_fragments schema ty) qs ->
-    are_grounded_2 schema ty (normalize__φ schema ty qs).
-  Proof.
-    elim: qs => //= hd tl IH /andP [Hqc Hqsc] /andP [Hv Hvs].
-    rewrite -are_grounded_2_cat.
-    split.
-      by apply: normalize_is_grounded.
-    by apply: IH.
-  Qed.
-  
-  Lemma normalize_in_normal_form :
-    forall schema type_in_scope query,
-      query_conforms schema type_in_scope query ->
-      has_valid_fragments schema type_in_scope query ->
-      are_in_normal_form schema (normalize schema type_in_scope query).
-  Proof.
-    apply (normalize_elim
-             (fun schema type_in_scope query qn =>
-                query_conforms schema type_in_scope query ->
-                has_valid_fragments schema type_in_scope query ->
-                are_in_normal_form schema (normalize schema type_in_scope query))
-             (fun schema type_in_scope queries qsn =>
-                all (query_conforms schema type_in_scope) queries ->
-                all (has_valid_fragments schema type_in_scope) queries ->
-                are_in_normal_form schema (normalize__φ schema type_in_scope queries))) => //;
-    move=> schema; [ move=> ty f α Hobj Hqc Hv
-                  | move=> ty f α Hobj Hqc Hv
-                  | move=> ty l f α Hobj Hqc Hv
-                  | move=> ty l f α Hobj Hqc Hv
-                  | move=> ty f α φ Hlook
-                  | move=> ty f fld α φ IH Hobj Hlook Hqc Hv
-                  | move=> ty f fld α φ IH Hobj Hlook Hqc Hv
-                  | move=> ty l f α φ Hlook
-                  | move=> ty l f fld α φ IH Hobj Hlook Hqc Hv
-                  | move=> ty l f fld α φ IH Hobj Hlook Hqc Hv
-                  | move=> t b ty φ IH Hobj Hinobj Hqc Hv
-                  | move=> t ty φ IH Hinty Hobj Hqc Hv
-                  | move=> t ty φ IH Hinty Hscope Hqc Hv
-                  | move=> ty q qs IH IH'
-                  ];
-          rewrite ?/are_in_normal_form;
-          simp normalize.
-    Admitted.
-    (*
-    - by rewrite Hobj; apply/andP; split.
-    - rewrite Hobj /=.
-      apply/andP; split => //.
-      *  apply/orP; right. apply/allP=> x /mapP [t Hin ->] /=.
-           by simp is_inline_fragment.
-      *  apply/allP => x /mapP [t Hpty ->].
-         simp is_in_normal_form.
-         apply/and3P; split => //=.
-         move: (type_in_scope_N_scalar_enum Hqc) => [Hcontr | Hintf | Hunion].
-      + by rewrite Hobj in Hcontr.
-      + rewrite (get_possible_types_interfaceE Hintf) in Hpty.
-        by apply: (in_implementation_is_object Hpty).
-      + rewrite (get_possible_types_unionE Hunion) in Hpty.
-          by apply: (in_union_is_object Hpty).
-
-    - by rewrite Hobj; apply/andP; split.
-
-    - rewrite Hobj /=.
-      apply/andP; split => //.
-      *  apply/orP; right. apply/allP=> x /mapP [t Hin ->] /=.
-           by simp is_inline_fragment.
-      *  apply/allP => x /mapP [t Hpty ->].
-         simp is_in_normal_form.
-         apply/and3P; split => //=.
-         move: (type_in_scope_N_scalar_enum Hqc) => [Hcontr | Hintf | Hunion].
-      + by rewrite Hobj in Hcontr.
-      + rewrite (get_possible_types_interfaceE Hintf) in Hpty.
-        by apply: (in_implementation_is_object Hpty).
-      + rewrite (get_possible_types_unionE Hunion) in Hpty.
-          by apply: (in_union_is_object Hpty).
-
-    - by rewrite Hlook.
-    - move: Hv; simp has_valid_fragments; rewrite Hlook /= Hobj /= => Hvals.
-      apply/and3P; split => //.
-      simp is_in_normal_form.
-      rewrite -/(are_in_normal_form _ _).
-      apply: IH => //.
-      by move: Hqc; rewrite {1}/query_conforms Hlook => /and4P [_ _ _ H].
-
-    - move: Hv; simp has_valid_fragments; rewrite Hlook /= Hobj /= => Hvals.
-      apply/andP; split => //.
-      * apply/orP; right.
-          by apply/allP => x /mapP [t Hin ->].
-      * apply/allP=> x /mapP [t Hin ->]; simp is_in_normal_form.
-        move: (type_in_scope_N_scalar_enum Hqc) => [Hcontr | Hintf | Hunion].
-        + by rewrite Hobj in Hcontr.
-        + rewrite (get_possible_types_interfaceE Hintf) in Hin.
-          apply/and3P; split=> //.
-            by apply: (in_implementation_is_object Hin).
-            rewrite all_seq1; simp is_in_normal_form.
-            rewrite -/(are_in_normal_form _ _).
-            apply: IH => //.
-              by move: Hqc; rewrite {1}/query_conforms Hlook => /and4P [_ _ _ H].
-
-        + rewrite (get_possible_types_unionE Hunion) in Hin.     
-          move/in_union_is_object: Hin => Hobj'.
-          apply/and3P; split=> //.
-          rewrite all_seq1; simp is_in_normal_form.
-            rewrite -/(are_in_normal_form _ _).
-            apply: IH => //.
-              by move: Hqc; rewrite {1}/query_conforms Hlook => /and4P [_ _ _ H].
-
-    - by rewrite Hlook.
-    - move: Hv; simp has_valid_fragments; rewrite Hlook /= Hobj /= => Hvals.
-      apply/and3P; split => //.
-      simp is_in_normal_form.
-      rewrite -/(are_in_normal_form _ _).
-      apply: IH => //.
-      by move: Hqc; rewrite {1}/query_conforms Hlook => /and4P [_ _ _ H].
-
-    - move: Hv; simp has_valid_fragments; rewrite Hlook /= Hobj /= => Hvals.
-      apply/andP; split => //.
-      * apply/orP; right.
-          by apply/allP => x /mapP [t Hin ->].
-      * apply/allP=> x /mapP [t Hin ->]; simp is_in_normal_form.
-        move: (type_in_scope_N_scalar_enum Hqc) => [Hcontr | Hintf | Hunion].
-        + by rewrite Hobj in Hcontr.
-        + rewrite (get_possible_types_interfaceE Hintf) in Hin.
-          apply/and3P; split=> //.
-            by apply: (in_implementation_is_object Hin).
-            rewrite all_seq1; simp is_in_normal_form.
-            rewrite -/(are_in_normal_form _ _).
-            apply: IH => //.
-              by move: Hqc; rewrite {1}/query_conforms Hlook => /and4P [_ _ _ H].
-
-        + rewrite (get_possible_types_unionE Hunion) in Hin.     
-          move/in_union_is_object: Hin => Hobj'.
-          apply/and3P; split=> //.
-          rewrite all_seq1; simp is_in_normal_form.
-            rewrite -/(are_in_normal_form _ _).
-            apply: IH => //.
-              by move: Hqc; rewrite {1}/query_conforms Hlook => /and4P [_ _ _ H].
-    - rewrite Hobj Hinobj /=.
-      rewrite -/(are_in_normal_form _ _).
-      move: Hv. simp has_valid_fragments; rewrite Hinobj /= => /andP [/eqP Heq Hvs]. 
-      apply: IH => //.
-      rewrite Heq in Hqc.
-      move: Hqc; query_conforms.
-      by move=> [_ _ _ Hqsc].        
-    - rewrite Hobj Hinty /=.
-      apply/andP; split => //.
-      apply/andP; split=> //.
-      simp is_in_normal_form.
-      move: Hqc; query_conforms.
-      move=> [_ _ _ Hqsc].
-      move: Hv; simp has_valid_fragments; rewrite Hobj /= => /andP [_ Hvs].
-      apply/and3P; split=> //.
-        by apply: normalize__φ_in_object_scope_are_fields.
-      by move: (IH Hqsc Hvs); rewrite /are_in_normal_form => /andP [_ H].
-
-    - rewrite Hscope Hinty /=.
-      move: Hqc; query_conforms.
-      move=> [_ _ _ Hqsc].
-      move: Hv; simp has_valid_fragments; rewrite Hscope /= => /andP [/orP [/eqP Heq | Hcontr] Hv].     
-      rewrite -/(are_in_normal_form _ _); apply: IH; rewrite Heq in Hqsc Hv => //.
-      by rewrite Hcontr in Hinty.
-        
-
-    - rewrite {1}/all -/(all _ _) => /andP [Hqc Hqsc].
-      rewrite {1}/all -/(all _ _) => /andP [Hv Hvs].
-      
-      move: (IH Hqc Hv) => Hnf {IH}.
-      move: (IH' Hqsc Hvs) => Hnfs {IH'}.
-      rewrite ! all_cat;  apply/andP; split; first last.
-        by apply/andP; split; [move: Hnf | move: Hnfs]; rewrite /are_in_normal_form => /andP [_ H].
+    funelim (ground ty qs) => //=.
+    - case Hscope : is_object_type => //=; rewrite are_grounded2_clause_2_equation_1; case: eqP => //=.
+        by have := (get_possible_types_objectE Hscope) => -> /=.
+        by rewrite Heq in Hscope.
+        simp try_inline_query; case: eqP => /= [| /eqP-/negbTE] Hpty.
+        rewrite Heq are_grounded2_clause_2_equation_1 Hpty /=; apply_and3P.
+        rewrite are_grounded2_cat; apply_andP.
+        admit.
+        (*
+        apply: inlined_fields_are_grounded2 => //=; apply: get_possible_types_N_nil_are_Ot => //.
+        by move/negbT in Hpty.
+         *)
+    - case Hscope : is_object_type => //=; rewrite are_grounded2_clause_2_equation_1; case: eqP => //=.
+        by have := (get_possible_types_objectE Hscope) => -> /=.
+        by rewrite Heq in Hscope.
+        simp try_inline_query; case: eqP => /= [| /eqP-/negbTE] Hpty.
+        rewrite Heq are_grounded2_clause_2_equation_1 Hpty /=; apply_and3P.
+        rewrite are_grounded2_cat; apply_andP.
+        admit.
+        (*
+        apply: inlined_fields_are_grounded2 => //=; apply: get_possible_types_N_nil_are_Ot => //.
+        by move/negbT in Hpty.
+         *)
+          
+    - case Hscope : is_object_type => //=; rewrite are_grounded2_clause_2_equation_1; case: eqP => //=.
+        by have := (get_possible_types_objectE Hscope) => -> /=.
+        by move=> Hpty; apply_and3P; simp is_grounded2; rewrite Heq0 /=.
+        by rewrite Heq in Hscope.
+        by rewrite Heq in Hscope.
+        simp try_inline_query; case: eqP => /= [| /eqP-/negbTE] Hpty.
+        rewrite Heq are_grounded2_clause_2_equation_1 Hpty /=; apply_and3P.
+        by simp is_grounded2; rewrite Heq0.
+        rewrite are_grounded2_cat; apply_andP.
+       admit.
+        (*
+        apply: inlined_fields_are_grounded2 => //=; apply: get_possible_types_N_nil_are_Ot => //.
+        by move/negbT in Hpty.
+         *)
        
-      case: q Hqc Hv Hnf => [f α | l f α | f α φ | l f α φ | t φ] Hqc Hv Hnf.
-      * simp normalize; case Hobj : is_object_type => //=; apply/orP.
-        + left.
-          apply/andP=> //; split => //.
-            by apply: normalize__φ_in_object_scope_are_fields.
-        + right.
-          apply/andP; split=> //.
-            by apply/allP=> x /mapP [t H ->].
-          move: (type_in_scope_N_obj_is_abstract Hqc Hobj) => Habs.
-          by apply: normalize__φ_in_abstract_scope_are_inlines.
-      * simp normalize; case Hobj : is_object_type => //=; apply/orP.
-        + left.
-          apply/andP=> //; split => //.
-            by apply: normalize__φ_in_object_scope_are_fields.
-        + right.
-          apply/andP; split=> //.
-            by apply/allP=> x /mapP [t H ->].
-          move: (type_in_scope_N_obj_is_abstract Hqc Hobj) => Habs.
-          by apply: normalize__φ_in_abstract_scope_are_inlines.
-      * simp normalize; case Hlook: lookup_field_in_type => [fld|] //=.
-          case Hobj : is_object_type => //=; apply/orP.
-        + left.
-          apply/andP=> //; split => //.
-            by apply: normalize__φ_in_object_scope_are_fields.
-        + right.
-          apply/andP; split=> //.
-            by apply/allP=> x /mapP [t H ->].
-          move: (type_in_scope_N_obj_is_abstract Hqc Hobj) => Habs.
-          by apply: normalize__φ_in_abstract_scope_are_inlines.
-          move/nf_conformsP: Hqc => [fld Hcontr _].
-          by rewrite Hcontr in Hlook.
+    - case Hscope : is_object_type => //=; rewrite are_grounded2_clause_2_equation_1; case: eqP => //=.
+        by have := (get_possible_types_objectE Hscope) => -> /=.
+        by move=> Hpty; apply_and3P; simp is_grounded2; rewrite Heq0 /=.
+        by rewrite Heq in Hscope.
+        by rewrite Heq in Hscope.
+        simp try_inline_query; case: eqP => //= Hpty.
+        rewrite Heq are_grounded2_clause_2_equation_1 Hpty /=; apply_and3P.
+        by simp is_grounded2; rewrite Heq0.
+        rewrite are_grounded2_cat; apply_andP.
+        admit.
 
-      * simp normalize; case Hlook: lookup_field_in_type => [fld|] //=.
-          case Hobj : is_object_type => //=; apply/orP.
-        + left.
-          apply/andP=> //; split => //.
-            by apply: normalize__φ_in_object_scope_are_fields.
-        + right.
-          apply/andP; split=> //.
-            by apply/allP=> x /mapP [t H ->].
-          move: (type_in_scope_N_obj_is_abstract Hqc Hobj) => Habs.
-          by apply: normalize__φ_in_abstract_scope_are_inlines.
-          move/nf_conformsP: Hqc => [fld Hcontr _].
-          by rewrite Hcontr in Hlook.
+    - by rewrite are_grounded2_cat; apply_andP.
 
-      * simp normalize; case Hscope : (is_object_type _ ty) => //=.  
-        +  orL; apply/andP; split.
-           move: Hqc; query_conforms.
-           move=> [_ _ _ Hqsc'].
-           move: Hv; simp has_valid_fragments. rewrite Hscope /= => /andP [/eqP Heq Hvs'].
-           rewrite Heq in Hqsc' Hvs' *.
-           by apply: normalize__φ_in_object_scope_are_fields.
-           by apply: normalize__φ_in_object_scope_are_fields.
-        + case Ht : is_object_type.
-          orR; apply/andP; split.
-            by rewrite all_seq1.
-          move: (type_in_scope_N_obj_is_abstract Hqc Hscope) => Habs.
-            by apply: normalize__φ_in_abstract_scope_are_inlines.
+    - rewrite are_grounded2_cat; apply_andP.
+      admit.
 
-            
-          move: (type_in_scope_N_obj_is_abstract Hqc Hscope) => Habs.
-          move: (normalize__φ_in_abstract_scope_are_inlines _ _ _ Hqsc Hvs Habs) => Hinlines {Hqsc Hvs}.
-          move: Hqc; query_conforms.
-          move=> [_ _ _ Hqsc].
-          move: Hv; simp has_valid_fragments; rewrite Hscope /= => /andP [/orP [/eqP Heq | Hcontr] Hv].
-          rewrite -Heq in Habs Hinlines.
-          move: (normalize__φ_in_abstract_scope_are_inlines _ _ _ Hqsc Hv Habs) => Hinlines'.
-          by orR; apply/andP; split; rewrite -Heq.
-          by rewrite Hcontr in Ht.
+    - rewrite are_grounded2_clause_2_equation_1 Heq1; case: eqP => //= Hpty.
+      admit. (* Contradiction *)
+      apply_and3P; simp is_grounded2; apply_andP.
+  Admitted.
+      
+        
+  Lemma ground_cat ty qs1 qs2 :
+    ground ty (qs1 ++ qs2) = ground ty qs1 ++ ground ty qs2.
+  Proof.
+    elim: qs1 => //=; case; intros; simp ground; do ? [case lookup_field_in_type => //=; case; intros]; case is_object_type => //=.
+    all: do ? by rewrite -?catA H //=.
+
+    by case: does_fragment_type_apply => //=; rewrite -catA H.
+    case is_object_type => //=; last by rewrite -catA H.
+    by case: does_fragment_type_apply => //=; rewrite H.
+    Qed.
+      
+  Lemma ground_are_grounded ty qs :
+    are_grounded s (ground ty qs).
+  Proof.
+      by apply: are_grounded2_are_grounded; apply: ground_are_grounded2.
   Qed.
-
-    *)
-
-  Lemma normalize__φ_in_normal_form schema type_in_scope queries :
-     all (query_conforms schema type_in_scope) queries ->
-     all (has_valid_fragments schema type_in_scope) queries ->
-     are_in_normal_form schema (normalize__φ schema type_in_scope queries).
-   Proof.
-     
-    elim: queries type_in_scope => // hd tl IH ty.
-    rewrite {1}/all -/(all _ _) => /andP [Hqc Hqsc].
-    rewrite {1}/all -/(all _ _) => /andP [Hv Hvs].
-    rewrite normalize__φ_equation_2.
-    move: (normalize_in_normal_form _ _ _ Hqc Hv).
-    move: (IH ty Hqsc Hvs).
-    rewrite /are_in_normal_form ! all_cat => /andP [Htys Hnfs] /andP [Hty Hnf].
-    apply/andP; split; last first.
-      by apply/andP; split.
-      case Hobj: (is_object_type schema ty).
-      move: (normalize_in_object_scope_are_fields _ _ _ Hqc Hv Hobj) => Hfld.
-      move: (normalize__φ_in_object_scope_are_fields _ _ _ Hqsc Hvs Hobj) => Hflds.
-      by orL; apply/andP.
-      move: (type_in_scope_N_obj_is_abstract _ _ _ _ _ Hqc Hobj) => Habs.
-      move: (normalize_in_abstract_scope_are_any _ _ _ Hqc Hv Habs) => Hinline.
-      move: (normalize__φ_in_abstract_scope_are_any _ _ _ Hqsc Hvs Habs) => Hinlines.
-      (* Change lemmas to use info on get possible types *)
-
-   Admitted.
-
+ 
 
    
  
@@ -696,6 +266,54 @@ Section QueryRewrite.
     funelim (filter_fragments_with_guard t qs) => //=; simp query_size; ssromega.
   Qed.
 
+  Equations find_fields_with_response_name : Name -> seq (@Query Name Vals) -> seq (@Query Name Vals) :=
+    {
+       find_fields_with_response_name _ [::] := [::];
+
+       find_fields_with_response_name k (InlineFragment t φ :: qs) := find_fields_with_response_name k qs;
+
+      find_fields_with_response_name k (SingleField f α :: qs)
+        with f == k :=
+        {
+        | true := SingleField f α :: find_fields_with_response_name k qs;
+        | _ := find_fields_with_response_name k qs
+        };
+      
+      find_fields_with_response_name k (LabeledField l f α :: qs)
+        with l == k :=
+        {
+        | true := LabeledField l f α :: find_fields_with_response_name k qs;
+        | _ := find_fields_with_response_name k qs
+        };
+
+      
+      find_fields_with_response_name k (NestedField f α φ :: qs)
+        with f == k :=
+        {
+        | true := NestedField f α φ :: find_fields_with_response_name k qs;
+        | _ := find_fields_with_response_name k qs
+        };
+      
+      find_fields_with_response_name k (NestedLabeledField l f α φ :: qs)
+        with l == k :=
+        {
+        | true := NestedLabeledField l f α φ  :: find_fields_with_response_name k qs;
+        | _ := find_fields_with_response_name k qs
+        }
+    }.
+
+  Lemma all_found_fields_are_fields k qs :
+    all is_field (find_fields_with_response_name k qs).
+  Proof.
+      by funelim (find_fields_with_response_name k qs).
+  Qed.
+
+  Lemma found_fields_leq_size k qs :
+    queries_size (find_fields_with_response_name k qs) <= queries_size qs.
+  Proof.
+      by funelim (find_fields_with_response_name k qs) => //=; simp query_size; ssromega.
+  Qed.
+  
   Equations find_fragments_with_guard : @NamedType Name -> seq (@Query Name Vals) -> seq (@Query Name Vals) :=
     {
       find_fragments_with_guard _ [::] := [::];
@@ -717,57 +335,44 @@ Section QueryRewrite.
   Qed.
   
   Obligation Tactic := intros; simp query_size; do ? ssromega; rewrite ?queries_size_app.  
-  Equations remove_redundancies (type_in_scope : @NamedType Name) (queries : seq (@Query Name Vals)) :
+  Equations remove_redundancies (queries : seq (@Query Name Vals)) :
     seq (@Query Name Vals) by wf (queries_size queries) lt :=
     {
-      remove_redundancies _ [::] := [::];
+      remove_redundancies [::] := [::];
       
-      remove_redundancies ty ((SingleField f α) :: queries) :=
-        (SingleField f α) :: remove_redundancies ty (filter_queries_with_label f queries);
+      remove_redundancies (SingleField f α :: queries) :=
+        (SingleField f α) :: remove_redundancies (filter_queries_with_label f queries);
       
-      remove_redundancies ty ((LabeledField l f α) :: queries) :=
-        (LabeledField l f α) :: remove_redundancies ty (filter_queries_with_label l queries);
+      remove_redundancies (LabeledField l f α :: queries) :=
+        (LabeledField l f α) :: remove_redundancies (filter_queries_with_label l queries);
 
-      remove_redundancies ty ((NestedField f α φ) :: queries)
-        with lookup_field_in_type s ty f :=
-        {
-        | Some fld :=
-          NestedField f α (remove_redundancies fld.(return_type)
-                                               (φ ++ (merge_selection_sets (find_queries_with_label s ty f queries))))
-                      :: remove_redundancies fld.(return_type) (filter_queries_with_label f queries);
-        
-        | _ := NestedField f α φ :: remove_redundancies ty (filter_queries_with_label f queries)
-        };
+      remove_redundancies (NestedField f α φ :: queries) :=
+        NestedField f α (remove_redundancies (φ ++ (merge_selection_sets (find_fields_with_response_name f queries))))
+                    :: remove_redundancies (filter_queries_with_label f queries);
 
 
-      remove_redundancies ty ((NestedLabeledField l f α φ) :: queries)
-        with lookup_field_in_type s ty f :=
-        {
-        | Some fld :=
-          NestedLabeledField l f α (remove_redundancies fld.(return_type)
-                                                        (φ ++ (merge_selection_sets (find_queries_with_label s ty l queries))))
-                             :: remove_redundancies fld.(return_type) (filter_queries_with_label l queries);
-        | _ := NestedLabeledField l f α φ :: remove_redundancies ty (filter_queries_with_label l queries)
-        };
+      remove_redundancies (NestedLabeledField l f α φ :: queries) :=
+        NestedLabeledField l f α (remove_redundancies (φ ++ (merge_selection_sets (find_fields_with_response_name l queries))))
+                           :: remove_redundancies (filter_queries_with_label l queries);
 
 
-      remove_redundancies ty ((InlineFragment t φ) :: queries) :=
-        InlineFragment t (remove_redundancies t (φ ++ (merge_selection_sets (find_fragments_with_guard t queries))))
-                       :: remove_redundancies ty (filter_fragments_with_guard t queries)
+      remove_redundancies ((InlineFragment t φ) :: queries) :=
+        InlineFragment t (remove_redundancies (φ ++ (merge_selection_sets (find_fragments_with_guard t queries))))
+                       :: remove_redundancies (filter_fragments_with_guard t queries)
       
     }.
   Solve Obligations with intros; simp query_size; move: (filter_queries_with_label_leq_size f queries) => Hlt; ssromega.
   Solve Obligations with intros; simp query_size; move: (filter_queries_with_label_leq_size l queries) => Hlt; ssromega.
   
   Next Obligation.
-    have Hleq1 := (found_queries_leq_size s ty f queries).
-    have Hleq2 := (merged_selections_leq (find_queries_with_label s ty f queries)).
+    have Hleq1 := (found_fields_leq_size f queries).
+    have Hleq2 := (merged_selections_leq (find_fields_with_response_name f queries)).
     by ssromega.
   Qed.
   
   Next Obligation.
-    have Hleq1 := (found_queries_leq_size s ty l queries).
-    have Hleq2 := (merged_selections_leq (find_queries_with_label s ty l queries)).
+    have Hleq1 := (found_fields_leq_size l queries).
+    have Hleq2 := (merged_selections_leq (find_fields_with_response_name l queries)).
     by ssromega.
   Qed.
   Next Obligation.
@@ -779,56 +384,129 @@ Section QueryRewrite.
     have Hleq := (filter_fragments_leq_size t queries); ssromega.
   Qed.
 
+
+  Lemma filter_fields_preserves_not_similar q k (qs : seq (@Query Name Vals)) :
+    all (fun q' => ~~ are_similar q' q) qs ->
+    all (fun q' => ~~ are_similar q' q) (filter_queries_with_label k qs).
+  Proof.
+    funelim (filter_queries_with_label _ qs) => //= /andP [Hsim Hall]; simp are_similar; apply_andP.
+    all: do ? by apply: H.
+    by apply: H0.
+  Qed.
+
+  Transparent qresponse_name.
+  Lemma all_not_similar_to_query_after_filter_fields q qs (Hfield : q.(is_field)) :
+    all (fun q' => ~~ are_similar q' q) (filter_queries_with_label (qresponse_name q Hfield) qs).
+  Proof.
+    funelim (filter_queries_with_label _ qs) => //=; apply_andP; simp are_similar.
+    case: q Hfield H H0 => //=.
+    all: do ? by case: q Hfield H Heq => /=; intros; simp are_similar => /=.
+  Qed.
+
   
-  Equations remove_redundancies__φ (type_in_scope : @NamedType Name) query : @Query Name Vals  :=
-    {
-      remove_redundancies__φ _ (SingleField f α) := (SingleField f α);
-      
-      remove_redundancies__φ _ (LabeledField l f α)  :=   (LabeledField l f α);
+  Lemma filter_fragments_preserves_not_similar q t (qs : seq (@Query Name Vals)) :
+    all (fun q' => ~~ are_similar q' q) qs ->
+    all (fun q' => ~~ are_similar q' q) (filter_fragments_with_guard t qs).
+  Proof.
+    by funelim (filter_fragments_with_guard _ qs) => //= /andP [Hsim Hall]; simp are_similar; apply_andP; apply: H.
+  Qed.
 
-      remove_redundancies__φ ty (NestedField f α φ)
-        with lookup_field_in_type s ty f :=
-        {
-        | Some fld := (NestedField f α (remove_redundancies fld.(return_type) φ));
-        | _ := NestedField f α φ (* Should not happen *)
-        };
-
-      remove_redundancies__φ ty (NestedLabeledField l f α φ) 
-        with lookup_field_in_type s ty f :=
-        {
-        | Some fld := (NestedLabeledField l f α (remove_redundancies fld.(return_type) φ));
-        | _ := NestedLabeledField l f α φ (* Should not happen *)
-        };
-      
-      remove_redundancies__φ ty (InlineFragment t φ) :=
-        (InlineFragment t (remove_redundancies t φ)) 
-    }.
+  Lemma all_not_similar_to_fragment_after_filter qs :
+    forall t φ,
+    all (fun q' => ~~ are_similar q' (InlineFragment t φ)) (filter_fragments_with_guard t qs).
+  Proof.
+    move=> t φ.
+    funelim (filter_fragments_with_guard _ qs) => //=; apply_andP; simp are_similar.
+    by apply/negbT.
+  Qed.
 
   (*
-  Lemma remove_redundancies_preserves_all_neq flt queries :
-    all (fun q => ~~has_same_response_name_or_guard flt q) queries ->
-    all (fun q => ~~has_same_response_name_or_guard flt q) (remove_redundancies queries).
+  Lemma filter_fields_preserves_not_similar qs q (Hfield : q.(is_field)) :
+    all (fun q' => ~~ are_similar q' q) qs ->
+    all (fun q' => ~~ are_similar q' q) (filter_queries_with_label (qresponse_name q Hfield) qs).
   Proof.
-    funelim (remove_redundancies queries) => //= /andP [Hneq Hall]; apply_andP.
-     
-    all: do ?[by apply: H; move/allP: Hall => Hall;
-              apply/allP => x; rewrite mem_filter => /andP [_ Hin]; apply: Hall].
-    all: do ?[by apply: H0; move/allP: Hall => Hall;
-              apply/allP => x; rewrite mem_filter => /andP [_ Hin]; apply: Hall].
+    funelim (filter_queries_with_label _ qs) => //= /andP [Hsim Hall]; simp are_similar; apply_andP.
+    all: do ? by apply: H.
+    by apply: H0.
+  Qed. 
+  
+   *)
+  
+  Lemma remove_redundancies_preserves_not_similar_queries qs q :
+    all (fun q' => ~~are_similar q' q) qs ->
+    all (fun q' => ~~are_similar q' q) (remove_redundancies qs).
+  Proof.
+    funelim (remove_redundancies qs) => //= /andP [Hnsim Hall]; apply_andP;
+    do ? apply: H => //; do ? apply: H0 => //; do ? by apply: filter_fields_preserves_not_similar.
 
-  Qed.
+    by apply: filter_fragments_preserves_not_similar.
+  Qed.      
     
- 
 
     
   Lemma remove_redundancies_is_non_redundant queries :
     are_non_redundant (remove_redundancies queries).
   Proof.
-    funelim (remove_redundancies queries) => //=;
-    simp are_non_redundant; simp qresponse_name; apply_and3P;
-    apply: remove_redundancies_preserves_all_neq; apply: γ__φ_all_neq.
+    funelim (remove_redundancies queries) => //=; simp are_non_redundant; apply_and3P.
+    all: do ?[apply: remove_redundancies_preserves_not_similar_queries => //;
+                by apply: all_not_similar_to_query_after_filter_fields].
+
+    apply: remove_redundancies_preserves_not_similar_queries.
+    by apply: all_not_similar_to_fragment_after_filter.
   Qed.
 
+  Lemma filter_fields_preserves_grounded2 ty k qs :
+    are_grounded2 s ty qs ->
+    are_grounded2 s ty (filter_queries_with_label k qs).
+  Proof.
+    funelim (filter_queries_with_label k qs) => //=; rewrite !are_grounded2_clause_2_equation_1;
+                                                 case Hscope : is_object_type;
+                                                 case: eqP => //= Hpty;
+                                                               case/and3P; intros; do ? apply_and3P; do ? by apply: H.
+    - by move: p0; simp is_grounded2; case/andP; intros; apply_andP; apply: H.
+    - by apply: H0.
+  Qed.
+    
+  Lemma remove_redundancies_preserves_grounded2 ty qs :
+    are_grounded2 s ty qs ->
+    are_grounded2 s ty (remove_redundancies qs).
+  Proof.
+    funelim (remove_redundancies qs) => //=; case Hscope : is_object_type => /=;
+    rewrite !are_grounded2_clause_2_equation_1; case: eqP => //= Hpty.
+    all: do ? by case/and3P; intros; apply_and3P; apply: H; apply: filter_fields_preserves_grounded2.
+    - case/and3P; intros; apply_and3P; move: p0; simp is_grounded2.
+      case lookup_field_in_type => //; case => /=; intros.
+      apply: H.
+      rewrite are_grounded2_cat; apply_andP.
+      admit.
+  Admitted.
+
+  Lemma remove_redundancies_in_grounding_are_grounded2 ty qs :
+    are_grounded2 s ty (remove_redundancies (ground ty qs)).
+  Proof.
+    apply: remove_redundancies_preserves_grounded2.
+      by apply: ground_are_grounded2.
+  Qed.
+
+  Lemma remove_redundancies_in_grounding_are_grounded ty qs :
+    are_grounded s (remove_redundancies (ground ty qs)).
+  Proof.
+    apply: are_grounded2_are_grounded.
+    by apply: remove_redundancies_in_grounding_are_grounded2.
+  Qed.
+
+  Definition normalize type_in_scope queries : seq Query := (remove_redundancies \o (ground type_in_scope)) queries.
+
+  Lemma normalized_queries_are_in_normal_form ty qs :
+    are_grounded s (normalize ty qs) /\ are_non_redundant (normalize ty qs).
+  Proof.
+    split; rewrite /normalize /=.
+    - by apply: remove_redundancies_in_grounding_are_grounded.
+    - by apply: remove_redundancies_is_non_redundant.
+  Qed.
+
+
+(*
   Lemma remove_redundancies_preserves_all_fields queries :
     all is_field queries ->
     all is_field (remove_redundancies queries).
@@ -1172,10 +850,7 @@ Section QueryRewrite.
 End QueryRewrite.
 
 
-Arguments normalize [Name Vals].
-Arguments normalize_elim [Name Vals].
-Arguments normalize__φ [Name Vals].
+Arguments ground [Name Vals].
 
 
 Arguments remove_redundancies [Name Vals].
-Arguments remove_redundancies__φ [Name Vals].

@@ -218,7 +218,8 @@ Section QueryAux.
     {
       filter_queries_with_label _ [::] := [::];
 
-      filter_queries_with_label l (InlineFragment t φ :: qs) := InlineFragment t (filter_queries_with_label l φ) :: filter_queries_with_label l qs;
+      filter_queries_with_label l (InlineFragment t φ :: qs) :=
+        InlineFragment t (filter_queries_with_label l φ) :: filter_queries_with_label l qs;
 
       filter_queries_with_label l (q :: qs)
         with (qresponse_name q _) != l :=
@@ -236,6 +237,7 @@ Section QueryAux.
   Proof.
     funelim (filter_queries_with_label l qs) => //=; do ?[simp query_size; ssromega]. 
   Qed.
+
   
     
   Equations merge_selection_sets : seq (@Query Name Vals) -> seq (@Query Name Vals) :=
