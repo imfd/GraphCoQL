@@ -119,69 +119,62 @@ Section QueryAux.
 
  
 
-   Equations? ble (label : Name) (object_type : @NamedType Name) (queries : seq (@Query Name Vals)) (p : Name -> Name -> bool) :
+   Equations? find_queries_with_label (label : Name) (object_type : @NamedType Name) (queries : seq (@Query Name Vals)) :
     seq (@Query Name Vals) by wf (queries_size queries) :=
     {
-      ble _ _ [::] _ := [::];
+      find_queries_with_label _ _ [::] := [::];
 
-      ble k O__t (InlineFragment t φ :: qs) p
+      find_queries_with_label k O__t (InlineFragment t φ :: qs)
         with does_fragment_type_apply O__t t :=
         {
-        | true := ble k O__t φ p ++ ble k O__t qs p;
-        | _ := ble k O__t qs p
+        | true := find_queries_with_label k O__t φ ++ find_queries_with_label k O__t qs;
+        | _ := find_queries_with_label k O__t qs
         };
 
-      ble k O__t (SingleField f α :: qs) p
-        with p f k :=
+      find_queries_with_label k O__t (SingleField f α :: qs)
+        with f == k :=
         {
-        | true := SingleField f α :: ble k O__t qs p;
-        | _ := ble k O__t qs p
+        | true := SingleField f α :: find_queries_with_label k O__t qs;
+        | _ := find_queries_with_label k O__t qs
         };
       
-      ble k O__t (LabeledField l f α :: qs) p
-        with  p l k :=
+      find_queries_with_label k O__t (LabeledField l f α :: qs)
+        with l == k :=
         {
-        | true := LabeledField l f α :: ble k O__t qs p;
-        | _ := ble k O__t qs p
+        | true := LabeledField l f α :: find_queries_with_label k O__t qs;
+        | _ := find_queries_with_label k O__t qs
         };
 
       
-      ble k O__t (NestedField f α φ :: qs) p
-        with p f k :=
+      find_queries_with_label k O__t (NestedField f α φ :: qs)
+        with f == k :=
         {
-        | true := NestedField f α φ :: ble k O__t qs p;
-        | _ := ble k O__t qs p
+        | true := NestedField f α φ :: find_queries_with_label k O__t qs;
+        | _ := find_queries_with_label k O__t qs
         };
       
-      ble k O__t (NestedLabeledField l f α φ :: qs) p
-        with p l k :=
+      find_queries_with_label k O__t (NestedLabeledField l f α φ :: qs)
+        with l == k :=
         {
-        | true := NestedLabeledField l f α φ  :: ble k O__t qs p;
-        | _ := ble k O__t qs p
+        | true := NestedLabeledField l f α φ  :: find_queries_with_label k O__t qs;
+        | _ := find_queries_with_label k O__t qs
         }
     }.
   all: do ?simp query_size; ssromega.
   Qed.
 
-  Lemma ble_leq_size l O__t qs p :
-    queries_size (ble l O__t qs p) <= queries_size qs.
+  Lemma found_queries_leq_size l O__t qs :
+    queries_size (find_queries_with_label l O__t qs) <= queries_size qs.
   Proof.
-    funelim (ble _ _ qs _) => //=; simp query_size; rewrite ?queries_size_app; ssromega.
+    funelim (find_queries_with_label _ _ qs) => //=; simp query_size; rewrite ?queries_size_app; ssromega.
   Qed.
-  
-  
-  Definition find_queries_with_label (label : Name) (object_type : @NamedType Name) (queries : seq (@Query Name Vals)) :=
-    ble label object_type queries (fun f label => f == label).
-
 
   Lemma found_queries_are_fields k O__t qs :
     all (fun q => q.(is_field)) (find_queries_with_label k O__t qs).
   Proof.
-    rewrite /find_queries_with_label.
-    funelim (ble k O__t qs (fun f label => f == label)) => //=.
+    funelim (find_queries_with_label k O__t qs) => //=.
     rewrite all_cat; apply_andP.
   Qed.
-
   
 
   Lemma found_queries_are_fieldsP k O__t qs :
@@ -200,20 +193,22 @@ Section QueryAux.
                | NestedLabeledField l _ _ _ => l == label
                end) (find_queries_with_label label O__t qs).
   Proof.
-    rewrite /find_queries_with_label.
-    funelim (ble label O__t qs _) => //=; rewrite ?Heq ?andTb //.
+    funelim (find_queries_with_label label O__t qs) => //=; rewrite ?Heq ?andTb //.
     rewrite all_cat; apply_andP.
   Qed.
 
-  Lemma found_queries_leq_size l O__t qs :
-    queries_size (find_queries_with_label l O__t qs) <= queries_size qs.
+  Lemma all_in_same_label label O__t qs :
+    forall q (Hfield : q.(is_field)), q \in find_queries_with_label label O__t qs ->
+                                       (qresponse_name q Hfield) = label.
   Proof.
-      by rewrite /find_queries_with_label; apply: ble_leq_size.
+    move=> q Hfield Hin.
+      by have /allP-/(_ q Hin) := (all_same_label label O__t qs);
+                                   case: q Hfield Hin => //=; intros; simp qresponse_name; apply/eqP.
   Qed.
-
+    
   Hint Resolve found_queries_leq_size.
   
-   Equations? filter_queries_with_label (label : Name) (queries : seq (@Query Name Vals)) :
+  Equations? filter_queries_with_label (label : Name) (queries : seq (@Query Name Vals)) :
     seq (@Query Name Vals) by wf (queries_size queries) :=
     {
       filter_queries_with_label _ [::] := [::];
@@ -238,8 +233,22 @@ Section QueryAux.
     funelim (filter_queries_with_label l qs) => //=; do ?[simp query_size; ssromega]. 
   Qed.
 
-  
+  Transparent qresponse_name.
+  Lemma filter_fields_spec l φ :
+    all (fun q => q.(is_field)) φ ->
+    filter_queries_with_label l φ = [seq q <- φ | match q with
+                                                 | SingleField f _
+                                                 | NestedField f _ _ => f != l
+                                                 | LabeledField l' _ _
+                                                 | NestedLabeledField l' _ _ _ => l' != l
+                                                 | _ => false
+                                                 end ].
+  Proof.
+      by funelim (filter_queries_with_label l φ) => //= /andP [Hf Hflds]; rewrite Heq H.
+  Qed.
     
+
+                                    
   Equations merge_selection_sets : seq (@Query Name Vals) -> seq (@Query Name Vals) :=
     {
       merge_selection_sets [::] := [::];
@@ -265,11 +274,39 @@ Section QueryAux.
      ssromega.
   Qed.
 
- 
-                                      
 
-   
+  
+ Lemma queries_size_0_nil (qs : seq (@Query Name Vals)) : queries_size qs == 0 -> qs = [::].
+  Proof.
+    by elim: qs => //=; case=> [f α | l f α | f α φ | l f α φ | t φ] qs IH /=; rewrite addn_eq0.
+  Qed.
+  
+
+    Lemma filter_queries_with_label_cat l (qs1 qs2 : seq (@Query Name Vals)) :
+    filter_queries_with_label l (qs1 ++ qs2) = filter_queries_with_label l qs1 ++ filter_queries_with_label l qs2.
+  Proof.
+    elim: qs1  => //= hd tl IH.
+    case: hd => //=; intros; simp filter_queries_with_label; do ?[by case: eqP => //= Heq; rewrite IH].
+    by rewrite IH.
+  Qed.
+  
+  Lemma find_queries_with_label_cat l ty (qs1 qs2 : seq (@Query Name Vals)):
+    find_queries_with_label l ty (qs1 ++ qs2) = find_queries_with_label l ty qs1 ++ find_queries_with_label l ty qs2.
+  Admitted.
+
+  Lemma filter_swap f1 f2 (φ : seq (@Query Name Vals)) :
+    filter_queries_with_label f1 (filter_queries_with_label f2 φ) =
+    filter_queries_with_label f2 (filter_queries_with_label f1 φ).
+  Admitted.
+
+    Lemma filter_filter_absorb k (qs : seq (@Query Name Vals)) :
+    filter_queries_with_label k (filter_queries_with_label k qs) = filter_queries_with_label k qs.
+  Admitted.
+
+
+    
 End QueryAux.
 
 
 Arguments filter_queries_with_label [Name Vals].
+Arguments find_queries_with_label [Name Vals].

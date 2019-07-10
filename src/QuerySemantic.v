@@ -36,7 +36,6 @@ Section QuerySemantic.
   Variables N Name Vals : ordType.
   
   
-  Ltac case_response r := case: r => [l | l v | l vs | l ρ | l ρs].
   Ltac apply_andP := apply/andP; split=> //.
   Ltac apply_and3P := apply/and3P; split=> //.
   
@@ -49,10 +48,7 @@ Section QuerySemantic.
 
   Transparent qresponse_name.
 
-  Lemma queries_size_0_nil (qs : seq (@Query Name Vals)) : queries_size qs == 0 -> qs = [::].
-  Proof.
-    by elim: qs => //=; case=> [f α | l f α | f α φ | l f α φ | t φ] qs IH /=; rewrite addn_eq0.
-  Qed.
+ 
 
  
   Reserved Notation "⟦ φ ⟧ˢ 'in' u" (at level 40).
@@ -157,111 +153,7 @@ Section QuerySemantic.
   Qed.
 
    
-  Lemma filter_queries_with_label_cat l (qs1 qs2 : seq (@Query Name Vals)) :
-    filter_queries_with_label l (qs1 ++ qs2) = filter_queries_with_label l qs1 ++ filter_queries_with_label l qs2.
-  Proof.
-    elim: qs1  => //= hd tl IH.
-    case: hd => //=; intros; simp filter_queries_with_label; do ?[by case: eqP => //= Heq; rewrite IH].
-    by rewrite IH.
-  Qed.
-  
-  Lemma find_queries_with_label_cat l ty (qs1 qs2 : seq (@Query Name Vals)):
-    find_queries_with_label s l ty (qs1 ++ qs2) = find_queries_with_label s l ty qs1 ++ find_queries_with_label s l ty qs2.
-  Admitted.
 
-
-
-  
-
-  (* Equations? Equiv (ty : Name) (φ φ' : seq (@Query Name Vals)) : bool by wf (queries_size φ) := *)
-  (*   { *)
-  (*     Equiv ty [::] [::] := true; *)
-
-  (*     Equiv ty (SingleField f α :: φ) (SingleField f' α' :: φ') := *)
-  (*       [&& f == f', *)
-  (*        α == α' & *)
-  (*        Equiv ty (filter_queries_with_label f φ) (filter_queries_with_label f φ')]; *)
-
-  (*     Equiv ty (NestedField f α β :: φ) (NestedField f' α' χ :: φ') *)
-  (*       with f == f', α == α' := *)
-  (*       { *)
-  (*       | true | true *)
-  (*                  with lookup_field_in_type s ty f := *)
-  (*                  { *)
-  (*                  | Some fld := let collected := find_queries_with_label s f ty φ in *)
-  (*                               let collected' := find_queries_with_label s f ty φ' in *)
-  (*                               all_eq ty (β ++ merge_selection_sets collected) (χ ++ merge_selection_sets collected') && (Equiv ty (filter_queries_with_label f φ) (filter_queries_with_label f φ')); *)
-  (*                  | _ := Equiv ty φ φ' *)
-  (*                  }; *)
-  (*       | _ | _ := false *)
-  (*       }; *)
-
-  (*     Equiv _ _ _ := false *)
-  (*   } *)
-  (* where all_eq (ty : Name) (φ φ' : seq (@Query Name Vals)) : bool := *)
-  (*         { *)
-  (*           all_eq ty φ φ' := all (fun t => Equiv t φ φ') (get_possible_types s ty) *)
-  (*         }. *)
-  
-  (* where "ty '⊢' φ '~' φ'" := (Equiv ty φ φ'). *)
-  (* Proof. *)
-  (*   all: do [simp query_size]. *)
-  (*   have Hleq := (filter_queries_with_label_leq_size f φ); ssromega. *)
-  (*   rewrite queries_size_app. *)
-  (*   have Hleq1 := (found_queries_leq_size s f ty φ). *)
-  (*   have Hleq := (merged_selections_leq collected). *)
-  (*   rewrite /collected in Hleq *; ssromega. *)
-  (*   have Hleq := (filter_queries_with_label_leq_size f φ); ssromega. *)
-  (*   ssromega. *)
-  (* Qed. *)
-  
-  
-
-  (* Equations? Equiv (ty : Name) (φ φ' : seq (@Query Name Vals)) : bool by wf (queries_size φ) := *)
-  (*   { *)
-  (*     ty ⊢ [::] ≡ [::] := true; *)
-
-  (*     ty ⊢ SingleField f α :: φ ≡ SingleField f' α' :: φ' := [&& f == f', *)
-  (*                                                            α == α' & *)
-  (*                                                            ty ⊢ filter_queries_with_label f φ ≡ filter_queries_with_label f φ']; *)
-
-  (*     ty ⊢ NestedField f α β :: φ ≡ NestedField f' α' χ :: φ' *)
-  (*       with f == f', α == α' := *)
-  (*       { *)
-  (*       | true | true *)
-  (*           with lookup_field_in_type s ty f := *)
-  (*           { *)
-  (*           | Some fld := *)
-  (*                        all_eq (get_possible_types s ty) && *)
-  (*                               (ty ⊢ filter_queries_with_label f φ ≡ filter_queries_with_label f φ') *)
-  (*                        where all_eq (tys : seq Name) : bool := *)
-  (*                                { *)
-  (*                                  all_eq [::] := true; *)
-  (*                                  all_eq (t :: tys) := t ⊢ (β ++ merge_selection_sets (find_queries_with_label s f ty φ)) ≡ *)
-  (*                                                        (χ ++ merge_selection_sets (find_queries_with_label s f ty φ')) *)
-  (*                                }; *)
-  (*                  | _ := ty ⊢ φ ≡ φ' *)
-  (*                  }; *)
-  (*       | _ | _ := false *)
-  (*       }; *)
-
-  (*     ty ⊢ InlineFragment t β :: φ ≡ φ' *)
-  (*       with is_fragment_spread_possible s t ty := *)
-  (*       { *)
-  (*       | true :=  *)
-  (*     _ ⊢ _ ≡ _ := false *)
-  (*   } *)
- 
-  (* where "ty '⊢' φ '≡' φ'" := (Equiv ty φ φ'). *)
-  (* Proof. *)
-  (*   all: do [simp query_size]. *)
-  (*   have Hleq := (filter_queries_with_label_leq_size f φ); ssromega. *)
-  (*   rewrite queries_size_app. *)
-  (*   have Hleq1 := (found_queries_leq_size s f ty φ). *)
-  (*   have Hleq := (merged_selections_leq (find_queries_with_label s f ty φ)); ssromega. *)
-  (*   have Hleq := (filter_queries_with_label_leq_size f φ); ssromega. *)
-  (*   ssromega. *)
-  (* Qed. *)
 
 
   Lemma merge_selection_sets_cat (qs1 qs2 : seq (@Query Name Vals)) :
@@ -294,22 +186,22 @@ Section QuerySemantic.
       ty ⊢ NestedField f α β :: φ ≡ NestedField f α χ :: φ' 
 
   | EIF11 : forall t β φ φ',
-      does_fragment_type_apply s t ty ->
+      does_fragment_type_apply s ty t ->
       ty ⊢ β ++ φ ≡ φ'  ->
       ty ⊢ InlineFragment t β :: φ ≡ φ' 
 
   | EIF12 : forall t β φ φ',
-      does_fragment_type_apply s t ty ->
+      does_fragment_type_apply s ty t ->
       ty ⊢ φ' ≡ β ++ φ  ->
       ty ⊢ φ' ≡ InlineFragment t β :: φ 
          
   | EIF21 : forall t β φ φ',
-      does_fragment_type_apply s t ty = false ->
+      does_fragment_type_apply s ty t = false ->
       ty ⊢ φ ≡ φ'  ->
       ty ⊢ InlineFragment t β :: φ ≡ φ' 
 
   | EIF22 : forall t β φ φ',
-      does_fragment_type_apply s t ty = false ->
+      does_fragment_type_apply s ty t = false ->
       ty ⊢ φ' ≡ φ  ->
       ty ⊢ φ' ≡  InlineFragment t β :: φ 
 
@@ -345,18 +237,20 @@ Section QuerySemantic.
     case: φ; first by intros; constructor.
     case=> //= [f α | | f α β | | t β] φ; simp query_size => Hleq.
     - by constructor; apply: IH; have Hfleq := (filter_queries_with_label_leq_size f φ); ssromega.
-    - admit.
+    - admit. (* Label *)
     - case Hlook : (lookup_field_in_type s ty f) => [fld|] //=; [apply: ENF1 | apply: ENF2 => //].
       * exact: Hlook.
       * move=> t Hin.
         apply: IH => /=.
         rewrite queries_size_app.
-        admit.
-        admit.
+        admit. (* leq size *)
+        apply: IH.
+        admit. (* leq size *)
       * apply: IH; ssromega.
 
-    - admit.
-    - case Hspread : (does_fragment_type_apply s t ty) => //=; [apply: EIF11 => //= | apply: EIF21 => //=].
+    - admit. (* Labeled *)
+
+    - case Hspread : (does_fragment_type_apply s ty t) => //=; [apply: EIF11 => //= | apply: EIF21 => //=].
       * apply: equiv_sym.
         apply: EIF11 => //=.
         apply: IH => //=.
@@ -406,22 +300,35 @@ Section QuerySemantic.
     - by intros; apply: EIF22.
   Qed.
 
-  Lemma filter_swap f1 f2 (φ : seq (@Query Name Vals)) :
-    filter_queries_with_label f1 (filter_queries_with_label f2 φ) =
-    filter_queries_with_label f2 (filter_queries_with_label f1 φ).
-  Admitted.
+
 
    Lemma filter_ground_swap k ty qs :
     filter_queries_with_label k (ground s ty qs) = ground s ty (filter_queries_with_label k qs).
   Admitted.
-  
+
+   Lemma filter_remove_swap k (qs : seq (@Query Name Vals)) :
+    filter_queries_with_label k (remove_redundancies qs) = remove_redundancies (filter_queries_with_label k qs).
+  Admitted.
+
+
+
+  Lemma find_queries_or_fields_is_same_if_all_fields ty label qs :
+    all (fun q => q.(is_field)) qs ->
+    find_queries_with_label s label ty qs = find_fields_with_response_name Name Vals label qs.
+  Proof.
+    elim: qs => //= q qs IH /andP [Hfield Hfields].
+    case: q Hfield => //= [f α | l f α | f α φ | l f α φ] _.
+
+    all: do ?[by simp find_queries_with_label; simp find_fields_with_response_name;
+              case: eqP => //= _; [congr cons |]; apply: IH].
+  Qed.
   
   Lemma filter_preserves_equiv ty f φ φ' :
     ty ⊢ φ ≡ φ' ->
     ty ⊢ filter_queries_with_label f φ ≡ filter_queries_with_label f φ'.
   Proof.
     move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
-    elim: n ty φ φ' => //= [| n IH] ty φ φ'.
+    elim: n ty f φ φ' => //= [| n IH] ty f φ φ'.
     - rewrite leqn0 => /queries_size_0_nil ->.
       admit.
 
@@ -432,8 +339,10 @@ Section QuerySemantic.
     - move=> Heq; inversion Heq.
       * simp filter_queries_with_label; case: eqP => //= Hfeq.
         by rewrite -Hfeq.
-        constructor. rewrite filter_swap [X in _ ⊢ _ ≡ X]filter_swap.
-        apply: IH => //=.
+        constructor.
+        rewrite filter_swap //.
+        rewrite [X in ty ⊢ filter_queries_with_label f _ ≡ X]filter_swap //.
+        apply IH => //=.
         admit.
       * simp filter_queries_with_label; case: eqP => //= Hfeq.
         apply: EIF12 => //=.
@@ -455,7 +364,7 @@ Section QuerySemantic.
     - intros; constructor.
       by apply: filter_preserves_equiv; apply: IH.
 
-    - admit.
+    - admit. (* Labeled *)
 
     - intros; case Hlook : (lookup_field_in_type s ty f) => [fld|] /=.
       * apply: ENF1 => //=; first exact: Hlook.
@@ -470,9 +379,9 @@ Section QuerySemantic.
 
       * apply: ENF2 => //=; apply: IH => //=; ssromega.
 
-    - admit.
+    - admit. (* Labeled *)
 
-    - intros; case Hfapplies : (does_fragment_type_apply s t ty).
+    - intros; case Hfapplies : (does_fragment_type_apply s ty t).
       * apply: EIF11 => //=.
         apply: EIF12 => //=; rewrite 2!catA.
         apply: IH => //=.
@@ -497,19 +406,101 @@ Section QuerySemantic.
     exact: Heq11.
     exact: Heq22.
   Qed.
-      
 
+
+   Lemma empty_frag_equiv_nil ty tys (φ : seq (@Query Name Vals)) :
+    ty ⊢ [seq InlineFragment t [::] | t <- tys] ≡ [::].
+   Proof.
+     elim: tys => //= t tys IH.
+     case Hfapplies : (does_fragment_type_apply s ty t) => /=; [by apply: EIF11 | by apply: EIF21].
+   Qed.
+
+   Lemma filter_frag (qs : seq (@NamedType Name)) f α :
+     @filter_queries_with_label Name Vals f [seq InlineFragment t0 [:: SingleField f α] | t0 <- qs] =
+     [seq InlineFragment t0 [::] | t0 <- qs].
+   Proof.
+     elim: qs => //= q qs IHqs; simp filter_queries_with_label => /=; case: eqP => //= _; simp filter_queries_with_label.
+          by rewrite IHqs.
+   Qed.
+
+
+  Lemma find_ground_swap ty f φ :
+    is_object_type s ty ->
+    find_queries_with_label s f ty (ground s ty φ) =
+    ground s ty (find_queries_with_label s f ty φ).
+  Proof.
+    move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
+    elim: n ty φ => //= [| n IH] ty φ.
+    - by rewrite leqn0 => /queries_size_0_nil ->.
+    - case: φ => //=; case=> [f' α | l f' α | f' α β | l f' α β | t β] φ; simp query_size => Hleq Hscope. 
+
+    - simp ground; rewrite Hscope; simp find_queries_with_label; case: eqP => //= Heq; last by apply: IH.
+      by simp ground; rewrite Hscope /= IH.
+    - simp ground; rewrite Hscope; simp find_queries_with_label; case: eqP => //= Heq; last by apply: IH.
+      by simp ground; rewrite Hscope /= IH.
+
+    - simp ground; case Hlook : lookup_field_in_type => [fld|] //=.
+      * rewrite Hscope /=; simp find_queries_with_label; case: eqP => //= Heq; last by apply: IH => //=; ssromega.
+          by simp ground; rewrite Hlook /= Hscope /= IH //; ssromega.
+      * simp find_queries_with_label; case: eqP => //= Heq; last by apply: IH => //=; ssromega.
+        by simp ground; rewrite Hlook /=; apply: IH => //=; ssromega.
+
+    - simp ground; case Hlook : lookup_field_in_type => [fld|] //=.
+      * rewrite Hscope /=; simp find_queries_with_label; case: eqP => //= Heq; last by apply: IH => //=; ssromega.
+          by simp ground; rewrite Hlook /= Hscope /= IH //; ssromega.
+      * simp find_queries_with_label; case: eqP => //= Heq; last by apply: IH => //=; ssromega.
+        by simp ground; rewrite Hlook /=; apply: IH => //=; ssromega.
+
+    - simp ground; rewrite Hscope /=.
+      case Hfapplies: does_fragment_type_apply => //=.
+      * simp find_queries_with_label; rewrite Hfapplies /=.
+        rewrite ground_cat find_queries_with_label_cat.
+        by rewrite !IH //; ssromega.
+      * simp find_queries_with_label; rewrite Hfapplies /=; apply: IH => //=; ssromega.
+  Qed.
+
+  
+  Lemma find_equiv ty f φ1 φ2 :
+    ty ⊢ φ1 ≡ φ2 ->
+    ty ⊢ find_queries_with_label s f ty φ1 ≡ find_queries_with_label s f ty φ2.
+  Admitted.
     
-        
-  Lemma ground_cat ty (φ1 φ2 : seq (@Query Name Vals)) :
-    ground s ty (φ1 ++ φ2) = ground s ty φ1 ++ ground s ty φ2.
+  Lemma merge_ground_swap ty fld φ :
+    is_object_type s ty ->
+    all (fun q => match q with
+               | SingleField f _
+               | LabeledField _ f _
+               | NestedField f _ _
+               | NestedLabeledField _ f _ _ => lookup_field_in_type s ty f == Some fld
+               | _ => false
+               end) φ ->
+    merge_selection_sets (ground s ty φ) = ground s fld.(return_type) (merge_selection_sets φ).
+  Proof.
+    move=> Hscope.
+    elim: φ fld => //=; case=> [f α | l f α | f α β | l f α β | t β] φ IH fld /andP; last by case.
+    
   Admitted.
   
+  Lemma merge_ble ty φ1 φ2 :
+    ty ⊢ φ1 ≡ φ2 ->
+    all (fun q => q.(is_field)) φ1 ->
+    all (fun q => q.(is_field)) φ2 ->
+    ty ⊢ merge_selection_sets φ1 ≡ merge_selection_sets φ2.
+  Proof.
+    elim => //=.
+
+    - intros; simp merge_selection_sets => /=.
+      admit.
+    - intros.
+      simp merge_selection_sets => /=.
+  Admitted.
+    
+    
   Lemma ground_equiv1 ty φ1 φ2 :
     forall t, t \in get_possible_types s ty ->
                t ⊢ φ1 ≡ φ2  ->
                t ⊢ ground s ty φ1 ≡ φ2.
-  Proof.
+  Proof. 
     move: {2}(queries_size _) (leqnn (queries_size φ1)) => n.
     elim: n ty φ1 φ2 => //= [| n IH] ty φ1 φ2.
     - rewrite leqn0 => /queries_size_0_nil -> t Hin; simp ground.
@@ -517,105 +508,287 @@ Section QuerySemantic.
     - move=> Hleq t Hin Heq.
       move: Hleq; inversion Heq => //=; simp query_size => Hleq; simp ground.
 
+    (* f[α] : _ ≡ f[α] *)
     - case Hscope : is_object_type => //=.
+      (* ty ∈ Ot *)
       * constructor.
         rewrite filter_ground_swap.
         apply: IH => //=.
-        admit. (* Size ≤ n *)
+        by have Hfleq := (filter_queries_with_label_leq_size f φ); ssromega.
 
-      * simp try_inline_query; case: eqP => //= Hpty.
-          by rewrite Hpty in_nil in Hin.
-          admit. (* Inlining *)
-
-    - case Hlook : lookup_field_in_type => [fld'|] /=.
-      case Hscope : is_object_type => /=.
-      apply: ENF1 => //=.
-      * exact: H.
-      * intros.
-        have Httyeq : t = ty.
-          by rewrite (get_possible_types_objectE Hscope) /= mem_seq1 in Hin; apply/eqP.
-        rewrite Httyeq in IH H H0 Hlook *.
-        have Htrans : t0 ⊢ ground s fld'.(return_type) β ++ merge_selection_sets (find_queries_with_label s f ty (ground s ty φ)) ≡
-                                                       β ++ merge_selection_sets (find_queries_with_label s f ty φ).
-        apply: equiv_cat.
-        apply: IH => //=; [by ssromega | by rewrite Hlook in H; case: H => ->].
-        admit.
-
-
+          
+      (* ty ∈ At *)
+      * have : forall tys,
+          t \in tys ->
+                t ⊢ [seq InlineFragment t' [:: SingleField f α] | t' <- tys] ++ ground s ty φ ≡ SingleField f α :: φ'.
+        elim=> //= t' tys IHtys.
+        rewrite inE => /orP [/eqP Hteq | Htin].
+        rewrite -Hteq.
+        apply: EIF11 => //=.
+        admit. (* fragment applies to itself *)
+        constructor.
+        rewrite filter_queries_with_label_cat.
+        rewrite filter_frag filter_ground_swap.
         apply: equiv_trans.
-        exact: Htrans.
-        apply: H0 => //=.
-        rewrite filter_ground_swap; apply: IH => //=.
-        admit. (* Size ≤ n *)
+        apply: equiv_cat_hd.
+        exact: empty_frag_equiv_nil.
+        rewrite cat0s.
+        apply: IH => //=.
+          by have Hfleq := (filter_queries_with_label_leq_size f φ); ssromega.
+        case Hfapplies : (does_fragment_type_apply s t t').
+        apply: EIF11 => //=.    
+        constructor; rewrite filter_queries_with_label_cat filter_ground_swap filter_frag.
+        apply: equiv_trans.
+          by apply: equiv_cat_hd; apply: empty_frag_equiv_nil.
+        rewrite cat0s; apply: IH => //=; by have Hfleq := (filter_queries_with_label_leq_size f φ); ssromega.
 
-      simp try_inline_query; case: eqP => //= Hpty.
-      admit. (* same as before *)
+        by apply: EIF21 => //=; apply: IHtys.
+        
+        by move/(_ (get_possible_types s ty) Hin).
+          
+          
+    (* Case ENF1 : f[α] { β_1 ... β_k } : _ ≡ f[α] { χ_1 ... χ_m } : _ *)
+    - case Hlook : lookup_field_in_type => [fld'|] /=.
 
-      admit. (* Inlining *)
+      * case Hscope : is_object_type => /=.
+        (* ty ∈ Ot *)
+        + apply: ENF1 => //=; first exact: H.
+          move=> t' Hinrty.
+          have Httyeq : t = ty by rewrite (get_possible_types_objectE Hscope) /= mem_seq1 in Hin; apply/eqP.
+          rewrite Httyeq in IH H H0 Hlook *.
+          have Htrans : t' ⊢ ground s fld'.(return_type) β ++ merge_selection_sets (find_queries_with_label s f ty (ground s ty φ)) ≡
+                                                       β ++ merge_selection_sets (find_queries_with_label s f ty φ).
+          apply: equiv_cat.
+          by apply: IH => //=; [ ssromega | rewrite Hlook in H; case: H => ->].
+          
+          
+          admit. (* subqueries are equivalent *)
 
-    - apply: equiv_sym. (* lookup = null case *)
-      admit.
+          apply: equiv_trans; first exact: Htrans.
+          by apply: H0.
+          rewrite filter_ground_swap; apply: IH => //=.
+            by have Hfleq := (filter_queries_with_label_leq_size f φ); ssromega.
 
+        + have Htrans :
+            forall ptys,
+              t ⊢ [seq InlineFragment t0 [:: NestedField f α (ground s (return_type fld') β)] | t0 <- ptys] ++ ground s ty φ
+                ≡
+                InlineFragment t [:: NestedField f α β] :: φ.
+          admit.
+          apply: equiv_trans.
+          apply: Htrans.
+          apply: EIF11 => //=.
+          admit.
+          apply: ENF1; first exact: H.
+          exact: H0.
+          exact: H1.
+                    
+
+      (* lookup = Null *) 
+      * admit.
+
+
+    (* Case ENF2 : f[α] { β_1 ... β_k } : _ ≡ f[α] { χ_1 ... χ_m } : _ *)
     - case Hlook : lookup_field_in_type => [fld |] //=.
       case Hscope : is_object_type => /=.
-      * have Httyeq : t = ty.
-          by rewrite (get_possible_types_objectE Hscope) /= mem_seq1 in Hin; apply/eqP.
+      (* ty ∈ Ot *)
+      * have Httyeq : t = ty by rewrite (get_possible_types_objectE Hscope) /= mem_seq1 in Hin; apply/eqP.
           by rewrite Httyeq Hlook in H.
 
+      (* ty ∈ At *)
       * (* Contradiction : field is found in ty but not in implementation *)
         admit.
 
       * admit. (* lookup = null *)
 
 
+    (* Case EIF11 *)
     - case Hscope : is_object_type => //=.
-      * have Httyeq : t = ty.
-          by rewrite (get_possible_types_objectE Hscope) /= mem_seq1 in Hin; apply/eqP.
-
-        have Httyeq2 : t0 = ty.
-          by rewrite /does_fragment_type_apply Httyeq Hscope in H; apply/eqP.
-        rewrite Httyeq Httyeq2 in H H0 Hin *.
-        rewrite H /=.
-        rewrite -ground_cat.
-        apply: IH => //=.
-        rewrite queries_size_app; ssromega.
+      (* ty ∈ Ot *)
+      * have Httyeq : t = ty by rewrite (get_possible_types_objectE Hscope) /= mem_seq1 in Hin; apply/eqP.
+        rewrite -Httyeq H /= -ground_cat.
+        apply: IH => //=; first by rewrite queries_size_app; ssromega.
+        by rewrite {2}Httyeq.
+        
+      (* ty ∈ At *)
       * case Ht : is_object_type => /=.
-        case Hfapplies : does_fragment_type_apply => /=.
-        apply: EIF11 => //=.
+        (* t' ∈ Ot *)
         have Hteq : t0 = t by admit. (* Both are the same object *)
         rewrite Hteq.
+        have Hfapplies : does_fragment_type_apply s t ty by admit. (* t <: ty *)
+        rewrite Hfapplies /=.
+        apply: EIF11 => //=.
+        admit. (* t <: t *)
         apply: equiv_trans.
         apply: equiv_cat.
         apply: IH => //=; [by ssromega|].
-        admit. (* object is subtype of object *)
-        by apply: IH => //=; ssromega.
+        admit. (* t <: t *)
+          by apply: IH => //=; ssromega.
+          exact: H0.
+
+      (* t' ∈ At *)
+      + apply: equiv_trans.
+        apply: (equiv_cat t _ (ground s t β)).
+        have /(_ (get_possible_types s ty :&: get_possible_types s t0)%SEQ) :
+          forall ptys, uniq ptys ->
+                  t \in ptys ->
+                        t ⊢ [seq InlineFragment sty (ground s sty β) | sty <- ptys] ≡ ground s t β.
+        elim=> //= pty ptys IHptys /andP [Hnin Huniq].
+        rewrite inE => /orP [/eqP Hteq | Htin].
+        rewrite -Hteq.
+        apply: EIF11.
+        admit. (* t <: t *)
+        rewrite -[X in _ ⊢ _ ≡ X]cats0.
+        apply: equiv_cat_tail.
+        admit. (* all t' ≠ t -> frags evaluate to nothing *)
+        have Hfapplies : (does_fragment_type_apply s t pty) = false by admit.
+        by apply: EIF21 => //=; apply: IHptys.
+        admit. (* uniqueness of intersection + t ∈ both subtypes *)
+        
+        apply: IH => //=; ssromega.
+        apply: equiv_trans.
+        apply: equiv_cat_hd; apply: IH => //=; [by ssromega| admit].
         exact: H0.
 
-        admit. (* Contradiction : t0 = t, pero no es subtipo de ty *)
-
-
-      * admit.
-
+        
+    (* Case EIF12 *)
     - apply: EIF12 => //=.
       apply: IH => //=.
       admit. (* Fail : Probably need to do induction over the sum of both lists' sizes ? *)
 
+    (* Case : EIF21 *)
     - case Hscope: is_object_type => /=.
-      * have -> /= : does_fragment_type_apply s ty t0 = false.
-        admit.
-          by apply: IH => //=; ssromega.
-      * case Ht : is_object_type => /=.
-        case Hfapplies : does_fragment_type_apply => /=.
-        apply: EIF21 => //=.
-        apply: IH => //=; ssromega.
-        apply: IH => //=; ssromega.
+      (* ty ∈ Ot *)
+      * have Hteq : t = ty by admit. (* Same object *)
+        rewrite -Hteq H /=.
+        apply: IH => //=; first by ssromega.
+        admit. (* t <: t *)
 
-      * admit.
+      (* ty ∈ At *)
+      * case Ht : is_object_type => //=.
+        + case Hfapplies : does_fragment_type_apply => /=; last by apply: IH => //=; ssromega.
+          by apply: EIF21 => //=; apply: IH => //=; ssromega.
+        + apply: equiv_trans.
+          apply: (equiv_cat_hd t _ [::]).
+          admit. (* t ∈ subtypes of t but not ∉ subtypes of t0 -> not in the intersection *)
+          by rewrite cat0s; apply: IH => //=; ssromega.
         
     - apply: EIF22 => //=.
       apply: IH => //=.
+      admit. (* Fail *)
+
+  Admitted.
+
+  Lemma filter_frag_queries_swap t f (φ : seq (@Query Name Vals)) :
+    filter_queries_with_label f (filter_fragments_with_guard t φ) =
+    filter_fragments_with_guard t (filter_queries_with_label f φ).
+  Proof.
+  Admitted.
+    
+  Lemma filter_invalid_frag_is_equiv ty t φ :
+    does_fragment_type_apply s t ty ->
+    ty ⊢ filter_fragments_with_guard t φ ≡ φ.
+  Proof.
+    move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
+    elim: n ty φ => //= [| n IH] ty φ.
+    - by rewrite leqn0 => /queries_size_0_nil ->; simp filter_fragments_with_guard; constructor.
+    - case: φ => //=; case=> [f α | | f α β | | t' β] φ; simp query_size => /= Hleq; simp filter_fragments_with_guard.
+
+    - constructor.
+      rewrite filter_frag_queries_swap; apply: IH => //=.
+      by have Hfleq := (filter_queries_with_label_leq_size f φ); ssromega.
+
+    - admit.
+
+    - move=> Happlies; case Hlook : (lookup_field_in_type s ty f) => [fld|] /=.
+
+      * apply: ENF1; first exact: Hlook.
+        move=> t' Hin.
+  Abort.
         
+        
+  Lemma remove_red_equiv ty φ :
+    are_grounded2 s ty φ ->
+    forall t, t \in get_possible_types s ty ->
+               t ⊢ remove_redundancies φ ≡ φ.
+  Proof.
+    move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
+    elim: n ty φ => //= [| n IH] ty φ; first by rewrite leqn0 => /queries_size_0_nil ->; simp remove_redundancies; constructor.
+
+    case: φ => //; case=> [f α | | f α β | | t' β] φ; simp query_size => Hleq Hg t Hin.
+
+    - simp remove_redundancies; case Hlook : (lookup_field_in_type s ty f) => [fld|] /=.
+      * constructor.
+        rewrite filter_remove_swap filter_filter_absorb //.
+        apply: (IH ty) => //=.
+        by have Hfleq := (filter_queries_with_label_leq_size f φ); ssromega.
+        apply: filter_preserves_grounded2.
+          by have Hgs := (are_grounded2_consE Name Vals s ty _ φ Hg).
+          
+      * apply: ESF.
+        rewrite filter_remove_swap filter_filter_absorb //.
+        apply: (IH ty) => //=.
+          by have Hfleq := (filter_queries_with_label_leq_size f φ); ssromega.
+        apply: filter_preserves_grounded2.
+          by have Hgs := (are_grounded2_consE Name Vals s ty _ φ Hg).
+          
+        
+    - admit. (* Labeled *)
+
+    - simp remove_redundancies; case Hlook : (lookup_field_in_type s t f) => [fld|] /=.
       
+      * apply: ENF1 => //=; first exact: Hlook.
+        + move=> t' Htin.
+          rewrite -filter_remove_swap.
+          have -> : find_queries_with_label s f t (filter_queries_with_label f (remove_redundancies φ)) = [::] by admit.
+          simp merge_selection_sets => /=.
+          rewrite cats0.
+          have -> : find_fields_with_response_name Name Vals f φ = find_queries_with_label s f t φ by admit.
+          (* If queries are grounded with field then ty ∈ Ot, which means all in φ are fields *)
+          apply: (IH fld.(return_type)) => //=.
+          admit. (* Size ≤ n *)
+
+          admit. (* Subqueries are grounded *)
+          
+        + rewrite filter_remove_swap filter_filter_absorb //.
+          apply: (IH ty) => //=.
+            by have Hfleq := (filter_queries_with_label_leq_size f φ); ssromega.
+          apply: filter_preserves_grounded2.
+            by have Hgs := (are_grounded2_consE Name Vals s ty _ φ Hg).
+            
+      * admit. (* Contradiction if field in subtype but not supertype *)  
+
+    - admit. (* Labeled *)
+      
+    - case Hfapplies : (does_fragment_type_apply s t t'); simp remove_redundancies.
+
+      * apply: EIF11 => //=.
+        apply: EIF12 => //=.
+        have Hteq : t' = t by admit. (* t', t ∈ Ot ∧ frag applies → both are the same *)
+        rewrite Hteq.
+        apply: equiv_trans.
+        apply: (equiv_cat t _ _ _ [::]).
+        apply: (IH ty) => //=.
+        admit. (* leq size *)
+        admit. (* grounded *)
+
+        admit. (* all are inlines, but none matches t -> none is evaluated *)
+
+        rewrite cats0.
+        apply: equiv_cat_tail.
+        admit. (* Similar to before, only those fragments with guard = t are evaluated *)
+
+
+      * apply: EIF21 => //=.
+        apply: EIF22 => //=.
+        apply: equiv_trans.
+        apply: (IH ty) => //=.
+        admit. (* leq size *)
+        admit. (* grounding is preserved *)
+        admit. (* Filtering fragments that don't apply is the same *)
+  Admitted.
+        
+        
   Theorem ground_equiv ty φ :
     forall t, t \in get_possible_types s ty ->
                t ⊢ ground s ty φ ≡ φ.
@@ -623,9 +796,68 @@ Section QuerySemantic.
       by intros; apply: ground_equiv1.
   Qed.
 
+
+  Theorem equiv_eval ty φ1 φ2 :
+    forall t, t \in get_possible_types s ty ->
+               t ⊢ φ1 ≡ φ2 ->
+               forall u, u.(type) = t ->
+                    ⟦ φ1 ⟧ˢ in u = ⟦ φ2 ⟧ˢ in u.
+  Proof.
+    move=> t Hin.
+    elim=> //=.
+    
+    - intros; simp execute_selection_set.
+      case Hlook: lookup_field_in_type => //= [fld |].
+
+      * by case (u.(fields) _) => [[v | vs] |] //=; congr cons; apply: H0.
+
+      * admit. (* lookup null *)
+
+    - intros; simp execute_selection_set.
+      rewrite H4 H /=.
+      case fld.(return_type) => /= rty.
+      * case Hoh: ohead => [v |] /=; congr cons; last by apply: H3.
+        rewrite H4.
+        rewrite (H1 v.(type)) //=.
+        admit. (* neighbour's type <: fld's return type *)
+        by apply: H3.
+
+      * congr cons; last by apply: H3.
+        congr pair; congr Array; apply/eq_in_map=> v Hvin; congr Object.
+        rewrite H4 (H1 v.(type)) //=.
+        admit. (* neighbour's type <: fld's return type *)
+
+    all: do ?[ intros; simp execute_selection_set;
+                 by rewrite H2 H /=; apply: H1].
+
+  Admitted.
+
+
+
+  Theorem normalize_preserves_semantics ty u φ :
+    u.(type) \in get_possible_types s ty ->
+                 ⟦ normalize s ty φ ⟧ˢ in u = ⟦ φ ⟧ˢ in u.
+  Proof.
+    move=> Hin.
+    rewrite /normalize.
+    have Hrem : ⟦ remove_redundancies (ground s ty φ) ⟧ˢ in u = ⟦ ground s ty φ ⟧ˢ in u.
+    apply: equiv_eval => //=.
+    exact: Hin.
+    apply: remove_red_equiv => //=.
+    apply: ground_are_grounded2 => //=.
+    exact: Hin.
+    have Hg : ⟦ ground s ty φ ⟧ˢ in u = ⟦ φ ⟧ˢ in u.
+    apply: equiv_eval => //=.
+    exact: Hin.
+    apply: ground_equiv.
+    exact: Hin.
+    by rewrite Hrem Hg.
+  Qed.
+
+      
   Theorem equiv_eval ty u φ φ' :
     ty ⊢ φ ~ φ'  ->
-                   ⟦ φ ⟧ˢ in u = ⟦ φ' ⟧ˢ in u.
+    ⟦ φ ⟧ˢ in u = ⟦ φ' ⟧ˢ in u.
   Proof.
     move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
     elim: n ty u φ φ' => //= [| n IH] ty u φ φ'.
@@ -674,13 +906,7 @@ Section QuerySemantic.
       apply: (IH ty) => //=; ssromega.
   Admitted.
 
-  Lemma empty_frag_equiv_nil ty u t (φ : seq (@Query Name Vals)) :
-    ty ⊢ [:: InlineFragment t [::]] ~ [::] in u.
-  Proof.
-    case Hfappl: (does_fragment_type_apply s u.(type) t) => /=.
-    apply: EIF1 => //=; constructor.
-    apply: EIF2 => //=; constructor.
-  Qed.
+ 
 
   Lemma empty_frags_equiv_nil ty u pty :
     ty ⊢ [seq InlineFragment t [::] | t <- pty] ~ [::] in u.
@@ -1175,25 +1401,9 @@ Section QuerySemantic.
   Qed.
   
  
-  Lemma filter_remove_swap k (qs : seq (@Query Name Vals)) :
-    filter_queries_with_label k (remove_redundancies qs) = remove_redundancies (filter_queries_with_label k qs).
-  Admitted.
 
-  Lemma filter_filter_absorb k (qs : seq (@Query Name Vals)) :
-    filter_queries_with_label k (filter_queries_with_label k qs) = filter_queries_with_label k qs.
-  Admitted.
 
-   Lemma find_queries_or_fields_is_same_if_all_fields ty label qs :
-    all (fun q => q.(is_field)) qs ->
-    find_queries_with_label s label ty qs = find_fields_with_response_name Name Vals label qs.
-  Proof.
-    rewrite /find_queries_with_label.
-    elim: qs => //= q qs IH /andP [Hfield Hfields].
-    case: q Hfield => //= [f α | l f α | f α φ | l f α φ] _.
-
-    all: do ?[by simp ble; simp find_fields_with_response_name;
-              case: eqP => //= _; [congr cons |]; apply: IH].
-  Qed.
+ 
 
   Lemma filtering_invalid_fragments_preserves_semantics t u qs :
     are_grounded_inlines s qs -> 

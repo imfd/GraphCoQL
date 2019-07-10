@@ -69,14 +69,14 @@ Section QueryRewrite.
         with is_object_type s ty :=
         {
         | true := SingleField f α :: ground ty qs;
-        | _ := try_inline_query (SingleField f α) (get_possible_types s ty) ++ ground ty qs
+        | _ := [seq InlineFragment t [:: SingleField f α] | t <- (get_possible_types s ty)] ++ ground ty qs
         };
       
       ground ty (LabeledField l f α :: qs)
         with is_object_type s ty :=
         {
         | true := LabeledField l f α :: ground ty qs;
-        | _ := try_inline_query (LabeledField l f α) (get_possible_types s ty) ++ ground ty qs
+        | _ := [seq InlineFragment t [:: LabeledField l f α] | t <- (get_possible_types s ty)] ++ ground ty qs
         };
 
       ground ty (NestedField f α φ :: qs)
@@ -86,7 +86,7 @@ Section QueryRewrite.
             with is_object_type s ty :=
             {
             | true := NestedField f α (ground fld.(return_type) φ) :: ground ty qs;
-            | _ := try_inline_query (NestedField f α (ground fld.(return_type) φ)) (get_possible_types s ty) ++ ground ty qs
+            | _ := [seq InlineFragment t [:: NestedField f α (ground fld.(return_type) φ)] | t <- (get_possible_types s ty)] ++ ground ty qs
             };
         | _ => ground ty qs
         };
@@ -98,7 +98,7 @@ Section QueryRewrite.
             with is_object_type s ty :=
             {
             | true := NestedLabeledField l f α (ground fld.(return_type) φ) :: ground ty qs;
-              | _ := try_inline_query (NestedLabeledField l f α (ground fld.(return_type) φ)) (get_possible_types s ty) ++ ground ty qs
+              | _ := [seq InlineFragment t [:: NestedLabeledField l f α (ground fld.(return_type) φ)] | t <- (get_possible_types s ty)] ++ ground ty qs
               };
           | _ => ground ty qs
          };
@@ -156,74 +156,49 @@ Section QueryRewrite.
   Proof.
     move=> Hscope Hptys Hobjs Hfield Hg.
     elim: pty Hobjs => //= hd tl IH /andP [Hobj Hobjs].
-    rewrite are_grounded2_clause_2_equation_1 Hscope Hptys /=; apply_and3P; last by apply: IH.
-    simp is_grounded2; apply_andP.
-    rewrite Hobj; case: eqP => //=; first by have := (get_possible_types_objectE Hobj) => -> /=.
-    intros; apply_and3P.
-  Qed.
+    Admitted.
 
   
   Lemma ground_are_grounded2 ty qs :
     are_grounded2 s ty (ground ty qs).
   Proof.
     funelim (ground ty qs) => //=.
-    - case Hscope : is_object_type => //=; rewrite are_grounded2_clause_2_equation_1; case: eqP => //=.
-        by have := (get_possible_types_objectE Hscope) => -> /=.
-        by rewrite Heq in Hscope.
-        simp try_inline_query; case: eqP => /= [| /eqP-/negbTE] Hpty.
-        rewrite Heq are_grounded2_clause_2_equation_1 Hpty /=; apply_and3P.
-        rewrite are_grounded2_cat; apply_andP.
+    - case Hscope : is_object_type => //=.
+      * by rewrite Heq in Hscope.
+
+      * rewrite are_grounded2_cat; apply_andP.
         admit.
-        (*
-        apply: inlined_fields_are_grounded2 => //=; apply: get_possible_types_N_nil_are_Ot => //.
-        by move/negbT in Hpty.
-         *)
-    - case Hscope : is_object_type => //=; rewrite are_grounded2_clause_2_equation_1; case: eqP => //=.
-        by have := (get_possible_types_objectE Hscope) => -> /=.
-        by rewrite Heq in Hscope.
-        simp try_inline_query; case: eqP => /= [| /eqP-/negbTE] Hpty.
-        rewrite Heq are_grounded2_clause_2_equation_1 Hpty /=; apply_and3P.
-        rewrite are_grounded2_cat; apply_andP.
+
+    - case Hscope : is_object_type => //=.
+      * by rewrite Heq in Hscope.
+
+      * rewrite are_grounded2_cat; apply_andP.
         admit.
-        (*
-        apply: inlined_fields_are_grounded2 => //=; apply: get_possible_types_N_nil_are_Ot => //.
-        by move/negbT in Hpty.
-         *)
-          
-    - case Hscope : is_object_type => //=; rewrite are_grounded2_clause_2_equation_1; case: eqP => //=.
-        by have := (get_possible_types_objectE Hscope) => -> /=.
-        by move=> Hpty; apply_and3P; simp is_grounded2; rewrite Heq0 /=.
-        by rewrite Heq in Hscope.
-        by rewrite Heq in Hscope.
-        simp try_inline_query; case: eqP => /= [| /eqP-/negbTE] Hpty.
-        rewrite Heq are_grounded2_clause_2_equation_1 Hpty /=; apply_and3P.
-        by simp is_grounded2; rewrite Heq0.
-        rewrite are_grounded2_cat; apply_andP.
-       admit.
-        (*
-        apply: inlined_fields_are_grounded2 => //=; apply: get_possible_types_N_nil_are_Ot => //.
-        by move/negbT in Hpty.
-         *)
-       
-    - case Hscope : is_object_type => //=; rewrite are_grounded2_clause_2_equation_1; case: eqP => //=.
-        by have := (get_possible_types_objectE Hscope) => -> /=.
-        by move=> Hpty; apply_and3P; simp is_grounded2; rewrite Heq0 /=.
-        by rewrite Heq in Hscope.
-        by rewrite Heq in Hscope.
-        simp try_inline_query; case: eqP => //= Hpty.
-        rewrite Heq are_grounded2_clause_2_equation_1 Hpty /=; apply_and3P.
-        by simp is_grounded2; rewrite Heq0.
-        rewrite are_grounded2_cat; apply_andP.
+
+
+    - case Hscope : is_object_type => //=; apply_and3P.
+
+      * by simp is_grounded2; rewrite Heq0 /=.
+      * by rewrite Heq in Hscope.
+      * by simp is_grounded2; rewrite Heq0 /=.
+      * rewrite are_grounded2_cat; apply_andP.
         admit.
+        
+    - case Hscope : is_object_type => //=; apply_and3P.
+
+      * by simp is_grounded2; rewrite Heq0 /=.
+      * by rewrite Heq in Hscope.
+      * by simp is_grounded2; rewrite Heq0 /=.
+      * rewrite are_grounded2_cat; apply_andP.
+        admit.
+
 
     - by rewrite are_grounded2_cat; apply_andP.
 
     - rewrite are_grounded2_cat; apply_andP.
       admit.
 
-    - rewrite are_grounded2_clause_2_equation_1 Heq1; case: eqP => //= Hpty.
-      admit. (* Contradiction *)
-      apply_and3P; simp is_grounded2; apply_andP.
+    - by rewrite Heq1 /=; apply_and3P; simp is_grounded2; apply_andP.
   Admitted.
       
         
@@ -243,9 +218,19 @@ Section QueryRewrite.
   Proof.
       by apply: are_grounded2_are_grounded; apply: ground_are_grounded2.
   Qed.
- 
 
-   
+  Lemma filter_preserves_grounded2 ty f qs :
+    are_grounded2 s ty qs ->
+    are_grounded2 s ty (filter_queries_with_label f qs).
+  Proof.
+    funelim (filter_queries_with_label f qs) => //=; case Hscope: is_object_type => //=.
+    
+    - simp is_grounded2 => /and3P [_ /andP [Hobj Hg] Hgs]; apply_and3P.
+      * by apply_andP; apply: H.
+      * by apply: H0.
+
+        all: do [by case/and3P => *; do ? apply_and3P; apply: H].
+  Qed.  
  
   Equations filter_fragments_with_guard : @NamedType Name -> seq (@Query Name Vals) -> seq (@Query Name Vals) :=
     {
@@ -460,31 +445,17 @@ Section QueryRewrite.
     by apply: all_not_similar_to_fragment_after_filter.
   Qed.
 
-  Lemma filter_fields_preserves_grounded2 ty k qs :
-    are_grounded2 s ty qs ->
-    are_grounded2 s ty (filter_queries_with_label k qs).
-  Proof.
-    funelim (filter_queries_with_label k qs) => //=; rewrite !are_grounded2_clause_2_equation_1;
-                                                 case Hscope : is_object_type;
-                                                 case: eqP => //= Hpty;
-                                                               case/and3P; intros; do ? apply_and3P; do ? by apply: H.
-    - by move: p0; simp is_grounded2; case/andP; intros; apply_andP; apply: H.
-    - by apply: H0.
-  Qed.
+
     
   Lemma remove_redundancies_preserves_grounded2 ty qs :
     are_grounded2 s ty qs ->
     are_grounded2 s ty (remove_redundancies qs).
   Proof.
-    funelim (remove_redundancies qs) => //=; case Hscope : is_object_type => /=;
-    rewrite !are_grounded2_clause_2_equation_1; case: eqP => //= Hpty.
-    all: do ? by case/and3P; intros; apply_and3P; apply: H; apply: filter_fields_preserves_grounded2.
-    - case/and3P; intros; apply_and3P; move: p0; simp is_grounded2.
-      case lookup_field_in_type => //; case => /=; intros.
-      apply: H.
-      rewrite are_grounded2_cat; apply_andP.
-      admit.
-  Admitted.
+    funelim (remove_redundancies qs) => //=; case Hscope : is_object_type => /=.
+
+    all: do ? [case/and3P=> *; apply_and3P; do ? [by apply: H; apply: filter_preserves_grounded2]].
+
+    Admitted.
 
   Lemma remove_redundancies_in_grounding_are_grounded2 ty qs :
     are_grounded2 s ty (remove_redundancies (ground ty qs)).

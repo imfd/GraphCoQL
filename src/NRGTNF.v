@@ -99,12 +99,10 @@ Section NRGTNF.
      {
        are_grounded2 _ [::] := true;
        are_grounded2 ty (hd :: tl)
-         with is_object_type s ty, get_possible_types s ty == fset0 :=
+         with is_object_type s ty :=
          {
-         | true | false := [&& is_field hd, is_grounded2 ty hd & are_grounded2 ty tl];
-         | false | true := [&& is_field hd, is_grounded2 ty hd & are_grounded2 ty tl];
-         | false | false := [&& is_inline_fragment hd, is_grounded2 ty hd & are_grounded2 ty tl];
-         | _ | _ := false
+         | true  := [&& is_field hd, is_grounded2 ty hd & are_grounded2 ty tl];
+         | _ := [&& is_inline_fragment hd, is_grounded2 ty hd & are_grounded2 ty tl]
          }
      }.
 
@@ -113,10 +111,18 @@ Section NRGTNF.
     are_grounded2 ty (qs1 ++ qs2) = are_grounded2 ty qs1 && are_grounded2 ty qs2 .
   Proof.
     elim: qs1 => //= q qs1 IH.
-    rewrite !are_grounded2_clause_2_equation_1.
-    case Hscope : is_object_type => //=; case: eqP => //= Hpty;
-    by rewrite IH -[RHS]andbA -[(_ && are_grounded2 ty qs1) && are_grounded2 ty qs2]andbA.
+    by case is_object_type => /=; rewrite IH //=;
+    rewrite -[RHS]andbA -[(_ && are_grounded2 ty qs1) && are_grounded2 ty qs2]andbA.
   Qed.
+
+  Lemma are_grounded2_consE ty q qs :
+    are_grounded2 ty (q :: qs) ->
+    are_grounded2 ty qs.
+  Proof.
+    by case: q => //= [f α | l f α | f α φ | l f α φ | t φ]; case: is_object_type => /=; case/and3P.
+  Qed.
+
+    
   
    (*
   
@@ -197,9 +203,8 @@ Section NRGTNF.
                  is_object_type s ty ->
                  b ->
                  all is_field qs)) => //.
-      - by move=> ty q qs _ _ _ Hneq Hcontr; rewrite Hneq in Hcontr.
-      - by move=> ty q qs _ IH _ Hscope _ /and3P [Hfld Hg Hgs] /=; apply_andP; apply: IH.
-      - by move=> ty q qs _ _ _ Hneq Hcontr; rewrite Hcontr in Hneq.
+      - by intros => /=; case/and3P: H2 => *; apply_andP; apply: H0.
+      - by intros; rewrite H1 in Heq.
    Qed.
 
 
@@ -215,13 +220,12 @@ Section NRGTNF.
                    b)
               (fun qs b =>
                  forall ty,
-                   (is_object_type s ty \/ get_possible_types s ty == fset0) ->
+                   is_object_type s ty ->
                    are_grounded2 ty qs ->
                    b)
               (fun qs b =>
                  forall ty,
                    is_object_type s ty = false ->
-                   (get_possible_types s ty == fset0) = false ->
                    are_grounded2 ty qs ->
                    b)
               (fun qs b =>
@@ -234,32 +238,16 @@ Section NRGTNF.
        case lookup_field_in_type => //=; case; intros; apply: IH; exact: H.
      - move=> l f α φ IH ty; simp is_grounded2.
        case lookup_field_in_type => //=; case; intros; apply: IH; exact: H.
-     - by move=> t φ IH ty; simp is_grounded2 => /andP [Ht Hg]; apply_andP; apply: (IH t) => //; left.
+     - by move=> t φ IH ty; simp is_grounded2 => /andP [Ht Hg]; apply_andP; apply: (IH t) => //.
 
-     - move=> q qs IHq IHqs ty Hcond /=.
-       case Hobj : is_object_type => //=; rewrite are_grounded2_clause_2_equation_1.
-       case: eqP => //= _; case/and3P=> *; apply_and3P; [apply: (IHq ty) | apply: (IHqs ty)] => //.
-       case: eqP => //= /eqP Hpty; case/and3P => *; apply_and3P; do ? apply: (IHq ty) => //; do ? apply: (IHqs ty) => //.
-       by rewrite Hobj in Hcond; move/negbTE in Hpty; rewrite Hpty in Hcond; case: Hcond.
-       
-     -  move=> q qs IHq IHqs ty Hobj Hne; rewrite Hobj.
-        rewrite are_grounded2_clause_2_equation_1 Hne /=; case/and3P=> *.
-        apply_and3P; [apply: (IHq ty) | apply: (IHqs ty)] => //.
+     - by move=> q qs IHq IHqs ty Hcond /=; rewrite Hcond /= => /and3P [Hf Hg Hgs]; apply_and3P; [ apply: (IHq ty) | apply: (IHqs ty)].
+     -  by move=> q qs IHq IHqs ty Hscope; rewrite Hscope /=; case/and3P=> *; apply_and3P; [apply: (IHq ty) | apply: (IHqs ty)].
         
      - move=> q qs IHq IHflds IHinls ty.
-       rewrite are_grounded2_clause_2_equation_1.
-       case Hobj : is_object_type; case: eqP => //= Hpty /and3P [Hfld Hg Hgs];
-       apply_andP; do ? by apply: (IHq ty).
-
-       case: ifP => Hif. by apply: (IHflds ty) => //; left.
-         by rewrite Hif in Hfld.
-       case: ifP => Hif. by apply: (IHflds ty) => //; right; apply/eqP.
-         by rewrite Hif in Hfld.
-       case: ifP => Hif.
-       have Hcontr : forall q, is_field q -> is_inline_fragment q = false by case.
-         by rewrite (Hcontr q Hif) in Hfld.
-         apply: (IHinls ty) => //=.
-           by apply/negbTE/eqP.
+       case Hscope : is_object_type => //= /and3P [Htype Hg Hgs].
+       * by rewrite Htype; apply_andP; [apply: (IHq ty) | apply: (IHflds ty)].
+       * have : forall q, q.(is_inline_fragment) -> q.(is_field) = false by case.
+         by move/(_ q Htype) ->; apply_andP; [apply : (IHq ty) | apply: (IHinls ty)].
    Qed.
 
    
