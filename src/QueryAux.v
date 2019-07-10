@@ -96,6 +96,24 @@ Section QueryAux.
     end.
 
 
+  
+ Equations are_equivalent (q1 q2 : @Query Name Vals) : bool :=
+   {
+     are_equivalent (SingleField f α) (SingleField f' α') :=  (f == f') && (α == α');
+     are_equivalent (SingleField f α) (LabeledField _ f' α') :=  (f == f') && (α == α');
+     
+     are_equivalent (LabeledField _ f α) (SingleField f' α') :=  (f == f') && (α == α');
+     are_equivalent (LabeledField _ f α) (LabeledField _ f' α') :=  (f == f') && (α == α');
+
+     are_equivalent (NestedField f α _) (NestedField f' α' _) :=  (f == f') && (α == α');
+     are_equivalent (NestedField f α _) (NestedLabeledField _ f' α' _) :=  (f == f') && (α == α');
+
+     are_equivalent (NestedLabeledField _ f α _) (NestedField f' α' _) :=  (f == f') && (α == α');
+     are_equivalent (NestedLabeledField _ f α _) (NestedLabeledField _ f' α' _) :=  (f == f') && (α == α');
+
+     are_equivalent _ _ := false
+   }.
+ 
   Variable s : @wfSchema Name Vals.
 
   
@@ -255,7 +273,13 @@ Section QueryAux.
       merge_selection_sets (q :: qs) := q.(qsubqueries) ++ merge_selection_sets qs
     }.
 
-
+  Transparent merge_selection_sets qsubqueries.
+  
+  Lemma merge_selection_sets_cat (qs1 qs2 : seq (@Query Name Vals)) :
+    merge_selection_sets (qs1 ++ qs2) = merge_selection_sets qs1 ++ merge_selection_sets qs2.
+  Proof.
+      by elim: qs1 qs2 => //=; case; intros; simp merge_selection_sets => /=; rewrite H catA.
+  Qed.
   
   Lemma merged_selections_lt qs :
     qs != [::] ->
@@ -304,9 +328,59 @@ Section QueryAux.
   Admitted.
 
 
+     Equations find_fields_with_response_name : Name -> seq (@Query Name Vals) -> seq (@Query Name Vals) :=
+    {
+       find_fields_with_response_name _ [::] := [::];
+
+       find_fields_with_response_name k (InlineFragment t φ :: qs) := find_fields_with_response_name k qs;
+
+      find_fields_with_response_name k (SingleField f α :: qs)
+        with f == k :=
+        {
+        | true := SingleField f α :: find_fields_with_response_name k qs;
+        | _ := find_fields_with_response_name k qs
+        };
+      
+      find_fields_with_response_name k (LabeledField l f α :: qs)
+        with l == k :=
+        {
+        | true := LabeledField l f α :: find_fields_with_response_name k qs;
+        | _ := find_fields_with_response_name k qs
+        };
+
+      
+      find_fields_with_response_name k (NestedField f α φ :: qs)
+        with f == k :=
+        {
+        | true := NestedField f α φ :: find_fields_with_response_name k qs;
+        | _ := find_fields_with_response_name k qs
+        };
+      
+      find_fields_with_response_name k (NestedLabeledField l f α φ :: qs)
+        with l == k :=
+        {
+        | true := NestedLabeledField l f α φ  :: find_fields_with_response_name k qs;
+        | _ := find_fields_with_response_name k qs
+        }
+    }.
+
+  Lemma all_found_fields_are_fields k qs :
+    all (fun q => q.(is_field)) (find_fields_with_response_name k qs).
+  Proof.
+      by funelim (find_fields_with_response_name k qs).
+  Qed.
+
+  Lemma found_fields_leq_size k qs :
+    queries_size (find_fields_with_response_name k qs) <= queries_size qs.
+  Proof.
+      by funelim (find_fields_with_response_name k qs) => //=; simp query_size; ssromega.
+  Qed.
+
     
 End QueryAux.
 
 
+Arguments are_equivalent [Name Vals].
 Arguments filter_queries_with_label [Name Vals].
 Arguments find_queries_with_label [Name Vals].
+Arguments find_fields_with_response_name [Name Vals].

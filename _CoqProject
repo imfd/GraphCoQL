@@ -21,7 +21,6 @@
 ./src/QueryConformance.v
 
 ./src/NRGTNF.v
-./src/ValidFragments.v
 ./src/QueryRewrite.v
 
 ./src/Response.v

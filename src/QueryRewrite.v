@@ -15,13 +15,8 @@ Require Import Query.
 Require Import QueryAux.
 Require Import QueryConformance.
 
-Require Import Graph.
-Require Import GraphAux.
-Require Import GraphConformance.
 
 Require Import NRGTNF.
-
-Require Import ValidFragments.
 
 Require Import Ssromega.
 
@@ -252,53 +247,7 @@ Section QueryRewrite.
     funelim (filter_fragments_with_guard t qs) => //=; simp query_size; ssromega.
   Qed.
 
-  Equations find_fields_with_response_name : Name -> seq (@Query Name Vals) -> seq (@Query Name Vals) :=
-    {
-       find_fields_with_response_name _ [::] := [::];
-
-       find_fields_with_response_name k (InlineFragment t φ :: qs) := find_fields_with_response_name k qs;
-
-      find_fields_with_response_name k (SingleField f α :: qs)
-        with f == k :=
-        {
-        | true := SingleField f α :: find_fields_with_response_name k qs;
-        | _ := find_fields_with_response_name k qs
-        };
-      
-      find_fields_with_response_name k (LabeledField l f α :: qs)
-        with l == k :=
-        {
-        | true := LabeledField l f α :: find_fields_with_response_name k qs;
-        | _ := find_fields_with_response_name k qs
-        };
-
-      
-      find_fields_with_response_name k (NestedField f α φ :: qs)
-        with f == k :=
-        {
-        | true := NestedField f α φ :: find_fields_with_response_name k qs;
-        | _ := find_fields_with_response_name k qs
-        };
-      
-      find_fields_with_response_name k (NestedLabeledField l f α φ :: qs)
-        with l == k :=
-        {
-        | true := NestedLabeledField l f α φ  :: find_fields_with_response_name k qs;
-        | _ := find_fields_with_response_name k qs
-        }
-    }.
-
-  Lemma all_found_fields_are_fields k qs :
-    all is_field (find_fields_with_response_name k qs).
-  Proof.
-      by funelim (find_fields_with_response_name k qs).
-  Qed.
-
-  Lemma found_fields_leq_size k qs :
-    queries_size (find_fields_with_response_name k qs) <= queries_size qs.
-  Proof.
-      by funelim (find_fields_with_response_name k qs) => //=; simp query_size; ssromega.
-  Qed.
+ 
   
   Equations find_fragments_with_guard : @NamedType Name -> seq (@Query Name Vals) -> seq (@Query Name Vals) :=
     {

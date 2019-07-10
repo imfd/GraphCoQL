@@ -27,6 +27,7 @@ Section QueryConformance.
 
   Notation is_inline_fragment := (@is_inline_fragment Name Vals).
 
+  Variable s : @wfSchema Name Vals.
  
   
   Lemma fset1I_eq {A : ordType} (a b : A) :
@@ -111,105 +112,220 @@ Section QueryConformance.
 
   
 
- Lemma map_snd_pair_comp {T A : Type} (s : seq T) (t : A) :  [seq (snd \o (pair t)) i | i <- s] = s.
- Proof.
-     by elim: s => // hd tl' IH /=; rewrite IH.
- Qed.
  
- Equations have_same_type schema : @type Name -> @type Name -> bool :=
+ Equations are_compatible_types schema : @type Name -> @type Name -> bool :=
    {
-     have_same_type schema (NT rty) (NT rty')
+     are_compatible_types schema (NT rty) (NT rty')
        with (is_scalar_type schema rty || is_enum_type schema rty) :=
        {
        | true := rty == rty';
        | _ := is_composite_type schema rty'
        };
-     have_same_type schema (ListType rty) (ListType rty') := have_same_type schema rty rty';
-     have_same_type _ _ _ := false
+     are_compatible_types schema (ListType rty) (ListType rty') := are_compatible_types schema rty rty';
+     are_compatible_types _ _ _ := false
    }.
- 
- 
- Equations have_compatible_response_shapes schema
-           (q1 : @Query Name Vals) (pty1 : Name)
-           (q2 : @Query Name Vals) (pty2 : Name) : bool by wf (query_size q1 + query_size q2) :=
-   {
-     have_compatible_response_shapes schema (InlineFragment t φ) pty1 q2 pty2 :=
-       all_In φ (fun q Hin => have_compatible_response_shapes schema q t q2 pty2);
-     
-     have_compatible_response_shapes schema q1 pty1 (InlineFragment t φ) pty2 :=
-       all_In φ (fun q Hin => have_compatible_response_shapes schema q1 pty1 q t);
-     
-     have_compatible_response_shapes schema q1 pty1 q2 pty2
-       with (qresponse_name q1 _) == (qresponse_name q2 _) :=
-       {
-       | true :=
-         match lookup_field_type schema pty1 (qname q1 _), lookup_field_type schema pty2 (qname q2 _) with
-         | Some rty1, Some rty2 =>
-           have_same_type schema rty1 rty2 &&
-           all_In q1.(qsubqueries) (fun q Hin1 => all_In  q2.(qsubqueries) (fun q' Hin2 => have_compatible_response_shapes schema q rty1 q' rty2)) 
-                                    
-         | _, _ => false
-         end;
 
-       | _ := true
+ Equations has_compatible_type (ty : Name) (rty : @type Name) query : bool :=
+   {
+     has_compatible_type ty rty (SingleField f _)
+       with lookup_field_in_type s ty f :=
+       {
+       | Some fld := are_compatible_types s fld.(return_type) rty;
+       | _ := false
+       };
+     has_compatible_type ty rty (LabeledField _ f _)
+       with lookup_field_in_type s ty f :=
+       {
+       | Some fld := are_compatible_types s fld.(return_type) rty;
+       | _ := false
+       };
+     
+     has_compatible_type ty rty (NestedField f _ _)
+       with lookup_field_in_type s ty f :=
+       {
+       | Some fld := are_compatible_types s fld.(return_type) rty;
+       | _ := false
+       };
+     
+     has_compatible_type ty rty (NestedLabeledField _ f _ _)
+       with lookup_field_in_type s ty f :=
+       {
+       | Some fld := are_compatible_types s fld.(return_type) rty;
+       | _ := false
+       };
+
+     has_compatible_type _ _ (InlineFragment _ _) := false
+   }.
+
+ (* Equations can't generate the graph *)
+ Equations(noind) have_compatible_response_shapes (ty : Name) queries : bool by wf (queries_size queries) :=
+   {
+     have_compatible_response_shapes _ [::] := true ;
+
+     have_compatible_response_shapes ty (SingleField f _ :: qs)
+       with lookup_field_in_type s ty f :=
+       {
+       | Some fld := all (has_compatible_type ty fld.(return_type)) (find_fields_with_response_name f qs)
+                        && have_compatible_response_shapes ty (filter_queries_with_label f qs);
+       | _ := false
+       };
+
+     have_compatible_response_shapes ty (LabeledField l f _ :: qs)
+       with lookup_field_in_type s ty f :=
+       {
+       | Some fld := all (has_compatible_type ty fld.(return_type)) (find_fields_with_response_name l qs)
+                         && have_compatible_response_shapes ty (filter_queries_with_label l qs);
+       | _ := false
+       };
+
+      have_compatible_response_shapes ty (NestedField f _ β :: qs)
+       with lookup_field_in_type s ty f :=
+       {
+       | Some fld := let similar_queries := find_fields_with_response_name f qs in
+                    [&& all (has_compatible_type ty fld.(return_type)) similar_queries,
+                     have_compatible_response_shapes fld.(return_type) (β ++ merge_selection_sets similar_queries) &
+                     have_compatible_response_shapes ty (filter_queries_with_label f qs)];
+                     
+                        
+       | _ := false
+       };
+      
+      have_compatible_response_shapes ty (NestedLabeledField l f _ β :: qs)
+       with lookup_field_in_type s ty f :=
+       {
+       | Some fld := let similar_queries := find_fields_with_response_name l qs in
+                    [&& all (has_compatible_type ty fld.(return_type)) similar_queries,
+                     have_compatible_response_shapes fld.(return_type) (β ++ merge_selection_sets similar_queries) &
+                     have_compatible_response_shapes ty (filter_queries_with_label f qs)];
+                     
+                        
+       | _ := false
+       };
+
+      
+     have_compatible_response_shapes _ _ := false 
+   }.
+ Solve Obligations with intros; simp query_size; have Hleq := (filter_queries_with_label_leq_size f qs); ssromega.
+ Solve Obligations with intros; simp query_size; have Hleq := (filter_queries_with_label_leq_size l qs); ssromega.
+ Next Obligation.
+   simp query_size; rewrite queries_size_app.
+   have Hleq1 := (found_fields_leq_size f qs).
+   have Hleq2 := (merged_selections_leq (find_fields_with_response_name f qs)); ssromega.
+ Qed.
+ Next Obligation.
+   simp query_size; rewrite queries_size_app.
+   have Hleq1 := (found_fields_leq_size l qs).
+   have Hleq2 := (merged_selections_leq (find_fields_with_response_name l qs)); ssromega.
+ Qed.
+
+ 
+
+ (* Equations can't generate the graph *)
+ Equations(noind) is_field_merging_possible (ty : Name) queries : bool by wf (queries_size queries)  :=
+   {
+     is_field_merging_possible _ [::] := true;
+
+     is_field_merging_possible ty (SingleField f α :: qs)
+       with is_object_type s ty :=
+       {
+       | true := all (are_equivalent (SingleField f α)) (find_queries_with_label s f ty qs) &&
+                    is_field_merging_possible ty (filter_queries_with_label f qs);
+       
+       | _ := all (are_equivalent (SingleField f α)) (find_fields_with_response_name f qs) &&
+                 is_field_merging_possible ty (filter_queries_with_label f qs)
+       };
+
+     is_field_merging_possible ty (LabeledField l f α :: qs)
+       with is_object_type s ty :=
+       {
+       | true := all (are_equivalent (LabeledField l f α)) (find_queries_with_label s l ty qs) &&
+                    is_field_merging_possible ty (filter_queries_with_label l qs);
+       
+       | _ := all (are_equivalent (LabeledField l f α)) (find_fields_with_response_name l qs) &&
+                 is_field_merging_possible ty (filter_queries_with_label l qs)
+       };
+     
+     is_field_merging_possible ty (NestedField f α β :: qs)
+       with lookup_field_in_type s ty f :=
+       {
+       | Some fld 
+           with is_object_type s ty :=
+           {
+           | true := let similar_queries := find_queries_with_label s f ty qs in
+                    [&& all (are_equivalent (NestedField f α β)) similar_queries,
+                     is_field_merging_possible fld.(return_type) (β ++ merge_selection_sets similar_queries) &
+                     is_field_merging_possible ty (filter_queries_with_label f qs)];
+           
+       
+           | _ := let similar_queries := find_fields_with_response_name f qs in
+                 [&& all (are_equivalent (NestedField f α β)) similar_queries,
+                  is_field_merging_possible fld.(return_type) (β ++ merge_selection_sets similar_queries) &
+                  is_field_merging_possible ty (filter_queries_with_label f qs)]
+           };
+       
+       | _ := false 
+       };
+
+     is_field_merging_possible ty (NestedLabeledField l f α β :: qs)
+       with lookup_field_in_type s ty f :=
+       {
+       | Some fld 
+           with is_object_type s ty :=
+           {
+           | true := let similar_queries := find_queries_with_label s l ty qs in
+                    [&& all (are_equivalent (NestedLabeledField l f α β)) similar_queries,
+                     is_field_merging_possible fld.(return_type) (β ++ merge_selection_sets similar_queries) &
+                     is_field_merging_possible ty (filter_queries_with_label l qs)];
+           
+       
+           | _ := let similar_queries := find_fields_with_response_name l qs in
+                 [&& all (are_equivalent (NestedLabeledField l f α β)) similar_queries,
+                  is_field_merging_possible fld.(return_type) (β ++ merge_selection_sets similar_queries) &
+                  is_field_merging_possible ty (filter_queries_with_label l qs)]
+           };
+       
+       | _ := false 
+       };
+
+     is_field_merging_possible ty (InlineFragment t β :: qs)
+       with is_fragment_spread_possible s t ty :=
+       {
+       | true with is_object_type s ty :=
+           {
+           | true := is_field_merging_possible ty (β ++ qs);
+           | _ := is_field_merging_possible t (β ++ qs) &&
+                                           is_field_merging_possible ty qs
+           };
+       
+       | _ := is_field_merging_possible ty qs
        }
    }.
- Solve Obligations with intros; simp query_size; move: (in_queries_lt Hin) => Hlt; ssromega.
- Next Obligation.
-   intros; simp query_size; move: (in_queries_lt Hin1) (in_queries_lt Hin2) => Hlt1 Hlt2; ssromega.
- Qed.
- Next Obligation.
-   intros; simp query_size; move: (in_queries_lt Hin1) (in_queries_lt Hin2) => Hlt1 Hlt2; ssromega.
- Qed.
- Next Obligation.
-   intros; simp query_size; move: (in_queries_lt Hin1) (in_queries_lt Hin2) => Hlt1 Hlt2; ssromega.
- Qed.
- Next Obligation.
-   intros; simp query_size; move: (in_queries_lt Hin1) (in_queries_lt Hin2) => Hlt1 Hlt2; ssromega.
- Qed.
-    
  
+ Solve Obligations with intros; simp query_size; rewrite ?queries_size_app; do ? ssromega.
+ Solve Obligations with intros; simp query_size; have Hleq := (filter_queries_with_label_leq_size f qs); ssromega.
+ Solve Obligations with intros; simp query_size; have Hleq := (filter_queries_with_label_leq_size l qs); ssromega.
 
- Equations is_field_merging_possible schema
-           (q1 : @Query Name Vals) (pty1 : Name)
-           (q2 : @Query Name Vals) (pty2 : Name) : bool by wf (query_size q1 + query_size q2) :=
-   {
-     is_field_merging_possible schema (InlineFragment t φ) _ q2 pty2 :=
-       all_In φ (fun q Hin => is_field_merging_possible schema q t q2 pty2);
-     
-     is_field_merging_possible schema q1 pty1 (InlineFragment t φ) _ :=
-       all_In φ (fun q Hin => is_field_merging_possible schema q1 pty1 q t);
-
-     is_field_merging_possible schema q1 pty1 q2 pty2
-       with lookup_field_type schema pty1 (qname q1 _), lookup_field_type schema pty2 (qname q2 _) :=
-       {
-       | Some rty1 | Some rty2 :=
-         (have_compatible_response_shapes schema q1 pty1 q2 pty2) &&
-         (((qresponse_name q1 _) == (qresponse_name q2 _)) ==>
-          (((pty1 == pty2) || ~~(is_object_type schema pty1 && is_object_type schema pty2)) ==>
-          [&& (qname q1 _) == (qname q2 _),
-           (qargs q1 _) == (qargs q2 _) &
-           all_In q1.(qsubqueries) (fun q Hin1 =>
-                                    all_In q2.(qsubqueries) (fun q' Hin2 =>
-                                                             is_field_merging_possible schema q rty1 q' rty2))]));
-        | _ | _ := false 
-        }
-      
-
-   }.
- Solve Obligations with intros; simp query_size; move: (in_queries_lt Hin) => Hlt; ssromega.
  Next Obligation.
-   intros; simp query_size; move: (in_queries_lt Hin1) (in_queries_lt Hin2) => Hlt1 Hlt2; ssromega.
+   simp query_size; rewrite queries_size_app.
+   have Hleq1 := (found_queries_leq_size s f ty qs).
+   have Hleq2 := (merged_selections_leq (find_queries_with_label s f ty qs)); ssromega.
  Qed.
  Next Obligation.
-   intros; simp query_size; move: (in_queries_lt Hin1) (in_queries_lt Hin2) => Hlt1 Hlt2; ssromega.
+   simp query_size; rewrite queries_size_app.
+   have Hleq1 := (found_fields_leq_size f qs).
+   have Hleq2 := (merged_selections_leq (find_fields_with_response_name f qs)); ssromega.
  Qed.
  Next Obligation.
-   intros; simp query_size; move: (in_queries_lt Hin1) (in_queries_lt Hin2) => Hlt1 Hlt2; ssromega.
+   simp query_size; rewrite queries_size_app.
+   have Hleq1 := (found_queries_leq_size s l ty qs).
+   have Hleq2 := (merged_selections_leq (find_queries_with_label s l ty qs)); ssromega.
  Qed.
   Next Obligation.
-   intros; simp query_size; move: (in_queries_lt Hin1) (in_queries_lt Hin2) => Hlt1 Hlt2; ssromega.
+   simp query_size; rewrite queries_size_app.
+   have Hleq1 := (found_fields_leq_size l qs).
+   have Hleq2 := (merged_selections_leq (find_fields_with_response_name l qs)); ssromega.
  Qed.
+
 
 
   
@@ -220,8 +336,6 @@ Section QueryConformance.
       based on the schema and the current type in context.
 
    **)
-
- 
   
   Equations query_conforms schema (ty : Name) query : bool :=
     {
@@ -272,8 +386,9 @@ Section QueryConformance.
   where
   queries_conform schema (ty : Name) queries : bool :=
     {
-      queries_conform schema ty queries :=  all (query_conforms schema ty) queries &&
-                                           map_all (fun q1 q2 => is_field_merging_possible schema q1 ty q2 ty) queries
+      queries_conform schema ty queries :=  [&& all (query_conforms schema ty) queries,
+                                            have_compatible_response_shapes ty queries &
+                                            is_field_merging_possible ty queries]
     }.
 
   
@@ -663,8 +778,10 @@ Section QueryConformance.
     
     rewrite /fields /lookup_field_in_type Hilook.
   Admitted.
-    
 
+  Transparent qresponse_name.
+
+  
   
   
  
