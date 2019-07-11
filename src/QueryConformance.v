@@ -337,56 +337,56 @@ Section QueryConformance.
 
    **)
   
-  Equations query_conforms schema (ty : Name) query : bool :=
+  Equations query_conforms (ty : Name) query : bool :=
     {
-      query_conforms schema ty (SingleField fname α)
-        with lookup_field_in_type schema ty fname :=
+      query_conforms ty (SingleField fname α)
+        with lookup_field_in_type s ty fname :=
         {
-        | Some fld => (is_scalar_type schema fld.(return_type) ||
-                      is_enum_type schema fld.(return_type)) &&
-                      arguments_conform schema fld.(fargs) α;
+        | Some fld => (is_scalar_type s fld.(return_type) ||
+                      is_enum_type s fld.(return_type)) &&
+                      arguments_conform s fld.(fargs) α;
         | _ => false
         };
 
-      query_conforms schema ty (LabeledField _ fname α)
-        with lookup_field_in_type schema ty fname :=
+      query_conforms ty (LabeledField _ fname α)
+        with lookup_field_in_type s ty fname :=
         {
-        | Some fld => (is_scalar_type schema fld.(return_type) ||
-                      is_enum_type schema fld.(return_type)) &&
-                      arguments_conform schema fld.(fargs) α;
+        | Some fld => (is_scalar_type s fld.(return_type) ||
+                      is_enum_type s fld.(return_type)) &&
+                      arguments_conform s fld.(fargs) α;
         | _ => false
         };
 
-      query_conforms schema ty (NestedField fname α φ)
-        with lookup_field_in_type schema ty fname :=
+      query_conforms ty (NestedField fname α φ)
+        with lookup_field_in_type s ty fname :=
         {
-        | Some fld => [&& (is_object_type schema fld.(return_type) || is_abstract_type schema fld.(return_type)),
-                      arguments_conform schema fld.(fargs) α,
+        | Some fld => [&& (is_object_type s fld.(return_type) || is_abstract_type s fld.(return_type)),
+                      arguments_conform s fld.(fargs) α,
                       φ != [::] &
-                      queries_conform schema fld.(return_type) φ];
+                      queries_conform fld.(return_type) φ];
         | _ => false
         };
 
-      query_conforms schema ty (NestedLabeledField _ fname α φ)
-        with lookup_field_in_type schema ty fname :=
+      query_conforms ty (NestedLabeledField _ fname α φ)
+        with lookup_field_in_type s ty fname :=
         {
-        | Some fld => [&& (is_object_type schema fld.(return_type) || is_abstract_type schema fld.(return_type)),
-                      arguments_conform schema fld.(fargs) α,
+        | Some fld => [&& (is_object_type s fld.(return_type) || is_abstract_type s fld.(return_type)),
+                      arguments_conform s fld.(fargs) α,
                       φ != [::] &
-                      queries_conform schema fld.(return_type) φ];
+                      queries_conform fld.(return_type) φ];
         | _ => false
         };
 
-      query_conforms schema ty (InlineFragment t φ) :=
-        [&& [|| is_object_type schema t, is_interface_type schema t | is_union_type schema t], (* This might be a bit redundant *)
-         is_fragment_spread_possible schema ty t,
+      query_conforms ty (InlineFragment t φ) :=
+        [&& [|| is_object_type s t, is_interface_type s t | is_union_type s t], (* This might be a bit redundant *)
+         is_fragment_spread_possible s ty t,
          φ != [::] &
-         queries_conform schema t φ]
+         queries_conform t φ]
     }
   where
-  queries_conform schema (ty : Name) queries : bool :=
+  queries_conform (ty : Name) queries : bool :=
     {
-      queries_conform schema ty queries :=  [&& all (query_conforms schema ty) queries,
+      queries_conform ty queries :=  [&& all (query_conforms ty) queries,
                                             have_compatible_response_shapes ty queries &
                                             is_field_merging_possible ty queries]
     }.
@@ -401,13 +401,13 @@ Section QueryConformance.
   Proof. by move=> *; rewrite /queries_conform; apply/andP. Qed.
 *)
   
-  Lemma nf_conformsP schema type_in_scope f α φ :
-    reflect (exists2 fld, lookup_field_in_type schema type_in_scope f = Some fld &
-                          [&& (is_object_type schema fld.(return_type) || is_abstract_type schema fld.(return_type)),
-                           arguments_conform schema fld.(fargs) α,
+  Lemma nf_conformsP type_in_scope f α φ :
+    reflect (exists2 fld, lookup_field_in_type s type_in_scope f = Some fld &
+                          [&& (is_object_type s fld.(return_type) || is_abstract_type s fld.(return_type)),
+                           arguments_conform s fld.(fargs) α,
                            φ != [::] &
-                           queries_conform schema fld.(return_type) φ])
-            (query_conforms schema type_in_scope (NestedField f α φ)).
+                           queries_conform fld.(return_type) φ])
+            (query_conforms type_in_scope (NestedField f α φ)).
   Proof.
     apply: (iffP idP).
     - simp query_conforms.
@@ -417,13 +417,13 @@ Section QueryConformance.
       by simp query_conforms; rewrite Hlook. 
   Qed.
 
-  Lemma nlf_conformsP schema type_in_scope l f α φ :
-    reflect (exists2 fld, lookup_field_in_type schema type_in_scope f = Some fld &
-                          [&& (is_object_type schema fld.(return_type) || is_abstract_type schema fld.(return_type)),
-                           arguments_conform schema fld.(fargs) α,
+  Lemma nlf_conformsP type_in_scope l f α φ :
+    reflect (exists2 fld, lookup_field_in_type s type_in_scope f = Some fld &
+                          [&& (is_object_type s fld.(return_type) || is_abstract_type s fld.(return_type)),
+                           arguments_conform s fld.(fargs) α,
                            φ != [::] &
-                           queries_conform schema fld.(return_type) φ])
-            (query_conforms schema type_in_scope (NestedLabeledField l f α φ)).
+                           queries_conform fld.(return_type) φ])
+            (query_conforms type_in_scope (NestedLabeledField l f α φ)).
   Proof.
     apply: (iffP idP).
     - simp query_conforms.
@@ -452,15 +452,16 @@ Section QueryConformance.
 
   Ltac wfquery := case: schema=> sch Hhasty Hwf.
  
-  Lemma object_spreads_in_object_scope schema type_in_scope t ϕ :
-    is_object_type schema type_in_scope ->
-    is_object_type schema t ->
+  Lemma object_spreads_in_object_scope type_in_scope t ϕ :
+    is_object_type s type_in_scope ->
+    is_object_type s t ->
     ϕ != [::] ->
-    queries_conform schema t ϕ -> 
-    query_conforms schema type_in_scope (InlineFragment t ϕ) <->
+    queries_conform t ϕ -> 
+    query_conforms type_in_scope (InlineFragment t ϕ) <->
     t = type_in_scope.
   Proof.
-    wfquery.
+  Admitted.
+  (* wfquery.
     move=> Hobj'.
     pose H' := Hobj'.
     move/is_object_type_E: H' => [obj [intfs [flds H]]] Hobj Hne Hqsc.
@@ -484,12 +485,13 @@ Section QueryConformance.
       by rewrite Heq in Hall.
       by rewrite -Heq.
   Qed.
+*)
 
-  Lemma interface_spreads_in_object_scope schema type_in_scope t ϕ :
-    is_object_type schema type_in_scope ->
-    is_interface_type schema t ->
-    query_conforms schema type_in_scope (InlineFragment t ϕ) ->
-    type_in_scope \in implementation schema t.
+  Lemma interface_spreads_in_object_scope type_in_scope t ϕ :
+    is_object_type s type_in_scope ->
+    is_interface_type s t ->
+    query_conforms type_in_scope (InlineFragment t ϕ) ->
+    type_in_scope \in implementation s t.
   Proof.
     move/is_object_type_wfP=> [intfs [flds Hlook]].
     move/is_interface_type_wfP=> [iflds Hlook'].
@@ -498,14 +500,14 @@ Section QueryConformance.
     by rewrite -seq1IC; apply: seq1I_N_nil.
   Qed.
 
-  Lemma union_spreads_in_object_scope schema type_in_scope t ϕ :
-    is_object_type schema type_in_scope ->
-    is_union_type schema t ->
-    query_conforms schema type_in_scope (InlineFragment t ϕ) ->
-    type_in_scope \in union_members schema t.
+  Lemma union_spreads_in_object_scope type_in_scope t ϕ :
+    is_object_type s type_in_scope ->
+    is_union_type s t ->
+    query_conforms type_in_scope (InlineFragment t ϕ) ->
+    type_in_scope \in union_members s t.
   Proof.
-    funelim (is_object_type schema type_in_scope) => // _.
-    funelim (is_union_type schema t) => // _.
+    funelim (is_object_type s type_in_scope) => // _.
+    funelim (is_union_type s t) => // _.
     simp query_conforms.
     move/and4P=> [_ Hspread _ _].
     move: Hspread; rewrite /is_fragment_spread_possible; simp get_possible_types; rewrite Heq Heq0 /=.
@@ -513,19 +515,19 @@ Section QueryConformance.
     by rewrite -seq1IC; apply: seq1I_N_nil.
   Qed.
 
-  Lemma abstract_spreads_in_object_scope schema type_in_scope t ϕ :
-    is_object_type schema type_in_scope ->
+  Lemma abstract_spreads_in_object_scope type_in_scope t ϕ :
+    is_object_type s type_in_scope ->
     ϕ != [::] ->
-    queries_conform schema t ϕ ->
-    (is_interface_type schema t \/ is_union_type schema t) ->
-    reflect (type_in_scope \in implementation schema t \/ type_in_scope \in union_members schema t)
-            (query_conforms schema type_in_scope (InlineFragment t ϕ)).
+    queries_conform t ϕ ->
+    (is_interface_type s t \/ is_union_type s t) ->
+    reflect (type_in_scope \in implementation s t \/ type_in_scope \in union_members s t)
+            (query_conforms type_in_scope (InlineFragment t ϕ)).
   Proof.
     move=> Hobj Hne Hqsc Htype.
     apply: (iffP idP).
     - case: Htype => [Hint | Hunion].
-        by move/(interface_spreads_in_object_scope _ _ _ _ Hobj Hint); left.
-      by move/(union_spreads_in_object_scope _ _ _ _ Hobj Hunion); right.
+        by move/(interface_spreads_in_object_scope _ _ _ Hobj Hint); left.
+      by move/(union_spreads_in_object_scope _ _ _ Hobj Hunion); right.
     - move: Hqsc; rewrite /queries_conform => /andP [Hall Hmerge].
       move=> H.      
       simp query_conforms; apply/and5P; split=> //.
@@ -549,13 +551,13 @@ Section QueryConformance.
 
   
   
-  Lemma object_spreads_in_interface_scope schema type_in_scope t ϕ :
-    is_object_type schema t ->
-    is_interface_type schema type_in_scope ->
+  Lemma object_spreads_in_interface_scope type_in_scope t ϕ :
+    is_object_type s t ->
+    is_interface_type s type_in_scope ->
     ϕ != [::] ->
-    queries_conform schema t ϕ ->
-    reflect (t \in implementation schema type_in_scope)
-            (query_conforms schema type_in_scope (InlineFragment t ϕ)).
+    queries_conform t ϕ ->
+    reflect (t \in implementation s type_in_scope)
+            (query_conforms type_in_scope (InlineFragment t ϕ)).
   Proof.
     move=> Hobj Hintf Hne Hqsc.
     apply: (iffP idP).
@@ -577,35 +579,35 @@ Section QueryConformance.
   Qed.
 
 
-  Lemma scope_is_obj_or_abstract_for_field schema ty q :
+  Lemma scope_is_obj_or_abstract_for_field ty q :
     is_field q ->
-    query_conforms schema ty q ->
-    is_object_type schema ty \/ is_interface_type schema ty.
+    query_conforms ty q ->
+    is_object_type s ty \/ is_interface_type s ty.
   Proof.
     case: q => //= [f α | l f α | f α φ | l f α φ] _; simp query_conforms;
     case Hlook: lookup_field_in_type => [fld|] // _;
-    have H: lookup_field_in_type schema ty f by rewrite /isSome Hlook.
+    have H: lookup_field_in_type s ty f by rewrite /isSome Hlook.
 
     all: by apply: (lookup_field_in_type_is_obj_or_intf H).
   Qed.
   
-  Lemma nested_field_is_obj_or_abstract schema ty n α ϕ :
-    query_conforms schema ty (NestedField n α ϕ) ->
-    is_object_type schema ty \/ is_interface_type schema ty.
+  Lemma nested_field_is_obj_or_abstract ty n α ϕ :
+    query_conforms ty (NestedField n α ϕ) ->
+    is_object_type s ty \/ is_interface_type s ty.
   Proof.
     simp query_conforms.
     case Hlook: lookup_field_in_type => [fld|] // _.
-    have H: lookup_field_in_type schema ty n by rewrite /isSome Hlook.
+    have H: lookup_field_in_type s ty n by rewrite /isSome Hlook.
       by apply: (lookup_field_in_type_is_obj_or_intf H).
   Qed.
 
-  Lemma scope_is_obj_or_abstract_for_nlf schema ty l f α φ :
-    query_conforms schema ty (NestedLabeledField l f α φ) ->
-    is_object_type schema ty \/ is_interface_type schema ty.
+  Lemma scope_is_obj_or_abstract_for_nlf ty l f α φ :
+    query_conforms ty (NestedLabeledField l f α φ) ->
+    is_object_type s ty \/ is_interface_type s ty.
   Proof.
     simp query_conforms.
     case Hlook: lookup_field_in_type => [fld|] // _.
-    have H: lookup_field_in_type schema ty f by rewrite /isSome Hlook.
+    have H: lookup_field_in_type s ty f by rewrite /isSome Hlook.
       by apply: (lookup_field_in_type_is_obj_or_intf H).
   Qed.
   
@@ -619,21 +621,18 @@ Section QueryConformance.
             
     
   Lemma type_in_scope_N_scalar_enum :
-    forall schema type_in_scope ϕ,
-    query_conforms schema type_in_scope ϕ ->
-    [\/ is_object_type schema type_in_scope,
-     is_interface_type schema type_in_scope |
-     is_union_type schema type_in_scope].
+    forall type_in_scope ϕ,
+    query_conforms type_in_scope ϕ ->
+    [\/ is_object_type s type_in_scope,
+     is_interface_type s type_in_scope |
+     is_union_type s type_in_scope].
   Proof.
-    move=> schema ty.
+    move=> ty.
     case=> [f α |  l f α |  f α ϕ |  l f α ϕ |  t ϕ]; simp query_conforms.
     all: do ?[case Hlook: lookup_field_in_type => [fld|] //= _;
-              have H: lookup_field_in_type schema ty f by rewrite /isSome Hlook].
+              have H: lookup_field_in_type ty f by rewrite /isSome Hlook].
     all: do ?[by move: (lookup_field_in_type_is_obj_or_intf H) => [Hobj | Hint]; [constructor 1 | constructor 2]].
     
-    move/and4P=> [/or3P Hty Hspread Hne _] => //.
-    move: Hspread.
-    rewrite /is_fragment_spread_possible.
     (*
     case Hlook: lookup_type => [tdef|] //.
     by case: tdef Hlook => //=; do ?[rewrite fset0I //=];
@@ -645,54 +644,54 @@ Section QueryConformance.
   Qed.*)
   Admitted.
 
-  Lemma type_in_scope_N_scalar schema type_in_scope φ :
-    query_conforms schema type_in_scope φ ->
-    is_scalar_type schema type_in_scope = false.
+  Lemma type_in_scope_N_scalar type_in_scope φ :
+    query_conforms type_in_scope φ ->
+    is_scalar_type s type_in_scope = false.
   Admitted.
 
-  Lemma type_in_scope_N_enum schema type_in_scope φ :
-    query_conforms schema type_in_scope φ ->
-    is_enum_type schema type_in_scope = false.
+  Lemma type_in_scope_N_enum type_in_scope φ :
+    query_conforms type_in_scope φ ->
+    is_enum_type s type_in_scope = false.
   Admitted.
 
-  Lemma type_in_scope_N_obj_is_abstract schema type_in_scope φ :
-    query_conforms schema type_in_scope φ ->
-    is_object_type schema type_in_scope = false ->
-    is_abstract_type schema type_in_scope.
+  Lemma type_in_scope_N_obj_is_abstract type_in_scope φ :
+    query_conforms type_in_scope φ ->
+    is_object_type s type_in_scope = false ->
+    is_abstract_type s type_in_scope.
   Proof.
     by move/type_in_scope_N_scalar_enum => [-> | Hintf | Hunion ] _ //; rewrite /is_abstract_type; apply/orP; [left | right].
   Qed.
   
-  Lemma queries_conform_obj_int_union schema type_in_scope ϕ :
+  Lemma queries_conform_obj_int_union type_in_scope ϕ :
     ϕ != [::] ->
-    queries_conform schema type_in_scope ϕ ->
-    [\/ is_object_type schema type_in_scope,
-     is_interface_type schema type_in_scope |
-     is_union_type schema type_in_scope].
+    queries_conform type_in_scope ϕ ->
+    [\/ is_object_type s type_in_scope,
+     is_interface_type s type_in_scope |
+     is_union_type s type_in_scope].
   Proof.
     rewrite /queries_conform.
     case: ϕ => //= hd tl _.
     move/andP => [/andP [Hqc Hqsc] _].
-    apply (type_in_scope_N_scalar_enum _ _ _ Hqc).
+    apply (type_in_scope_N_scalar_enum _ _ Hqc).
   Qed.
 
  
 
  
   
-   Lemma nlf_conforms_lookup_some schema ty l n α ϕ :
-    query_conforms schema ty (NestedLabeledField l n α ϕ) ->
-    exists fld, lookup_field_in_type schema ty n = Some fld.
+   Lemma nlf_conforms_lookup_some ty l n α ϕ :
+    query_conforms ty (NestedLabeledField l n α ϕ) ->
+    exists fld, lookup_field_in_type s ty n = Some fld.
   Proof. simp query_conforms.
     case Hlook : lookup_field_in_type => [fld'|] //.
     by exists fld'.
   Qed.
 
-  Lemma queries_conform_int_impl schema ty ti qs :
-    ty \in implementation schema ti ->
+  Lemma queries_conform_int_impl ty ti qs :
+    ty \in implementation s ti ->
     all (@is_field Name Vals) qs ->
-    queries_conform schema ti qs ->       
-    queries_conform schema ty qs.
+    queries_conform ti qs ->       
+    queries_conform ty qs.
   Proof.
     move=> Himpl Hflds.
     rewrite /queries_conform.
@@ -702,15 +701,15 @@ Section QueryConformance.
     move=> x Hin.
     move: (Hqsc x Hin) => {Hin}.
     case: x => //; [move=> f α | move=> l f α | move=> f α ϕ | move=> l f α ϕ | move=> t ϕ];
-    simp query_conforms; do ? rewrite (field_in_interface_in_object schema f Himpl);
+    simp query_conforms; do ? rewrite (field_in_interface_in_object f Himpl);
      do ? case lookup_field_in_type => //.
     - Admitted. (* Invalid case - all fields *)
 
   (* Not valid 
-  Lemma inline_conforms_to_same_type schema t ϕ :
-    [\/ is_object_type schema t, is_interface_type schema t | is_union_type schema t] ->
-    queries_conform schema t ϕ ->
-    query_conforms schema t (InlineFragment t ϕ).
+  Lemma inline_conforms_to_same_type t ϕ :
+    [\/ is_object_type t, is_interface_type t | is_union_type t] ->
+    queries_conform t ϕ ->
+    query_conforms t (InlineFragment t ϕ).
   Proof.
     move=> Hty Hqsc /=; apply/and3P; split=> //.
     by apply/or3P.
@@ -721,44 +720,44 @@ Section QueryConformance.
 
   
 
-  Lemma inline_preserves_conformance schema type_in_scope ϕ :
-    query_conforms schema type_in_scope ϕ ->
-    query_conforms schema type_in_scope (InlineFragment type_in_scope [:: ϕ]).
+  Lemma inline_preserves_conformance type_in_scope ϕ :
+    query_conforms type_in_scope ϕ ->
+    query_conforms type_in_scope (InlineFragment type_in_scope [:: ϕ]).
   Proof.
     simp query_conforms => Hqc.
     apply/and5P; split=> //.
-    apply/or3P. apply: (type_in_scope_N_scalar_enum _ _ _ Hqc).
+    apply/or3P. apply: (type_in_scope_N_scalar_enum _ _ Hqc).
     rewrite /is_fragment_spread_possible; simp get_possible_types.
     
-    move: (type_in_scope_N_scalar_enum _ _ _ Hqc) => [Hobj | Hint | Hunion].
-    funelim (is_object_type schema type_in_scope) => //.
+    move: (type_in_scope_N_scalar_enum _ _ Hqc) => [Hobj | Hint | Hunion].
+    funelim (is_object_type s type_in_scope) => //.
     Admitted.
  
 
   
 
 
-  Lemma nested_conforms_list schema ty n α ϕ :
-    query_conforms schema ty (NestedField n α ϕ) -> ϕ != [::].
+  Lemma nested_conforms_list ty n α ϕ :
+    query_conforms ty (NestedField n α ϕ) -> ϕ != [::].
   Proof.
     simp query_conforms.
     case lookup_field_in_type => // f.
       by move/and4P=> [_ _ Hne _].
   Qed.
 
-   Lemma inline_subqueries_conform schema ty t ϕ :
-    query_conforms schema ty (InlineFragment t ϕ) ->
-    queries_conform schema t ϕ.
+   Lemma inline_subqueries_conform ty t ϕ :
+    query_conforms ty (InlineFragment t ϕ) ->
+    queries_conform t ϕ.
   Proof.
     simp query_conforms.
     move/and5P=> [_ _ Hne H Hmerge].
     by apply/andP. 
   Qed.
 
-  Lemma sf_conforms_in_interface_in_obj schema ti tyo f α :
-    tyo \in implementation schema ti ->
-            query_conforms schema ti (SingleField f α) ->
-            query_conforms schema tyo (SingleField f α).
+  Lemma sf_conforms_in_interface_in_obj ti tyo f α :
+    tyo \in implementation s ti ->
+            query_conforms ti (SingleField f α) ->
+            query_conforms tyo (SingleField f α).
   Proof.
     move=> Hin.
     simp query_conforms.
@@ -772,7 +771,7 @@ Section QueryConformance.
     apply/allP=> arg Hain.
     move: (Hα arg Hain) => {Hα Hain}.
     case: arg => n v.
-    have: lookup_field_in_type schema ti f = Some fld -> fld \in fields schema ti.
+    have: lookup_field_in_type s ti f = Some fld -> fld \in fields s ti.
     move: (has_implementation_is_interface Hin) => /is_interface_type_E.
     case=> [i [flds Hilook]].
     
