@@ -158,6 +158,10 @@ Section QueryConformance.
    }.
 
  (* Equations can't generate the graph *)
+ (* This approach considers two field selections invalid, even if one of them
+    will never be evaluated. For instance:
+      https://tinyurl.com/y39tojbq
+  *)
  Equations(noind) have_compatible_response_shapes (ty : Name) queries : bool by wf (queries_size queries) :=
    {
      have_compatible_response_shapes _ [::] := true ;
@@ -203,7 +207,8 @@ Section QueryConformance.
        };
 
       
-     have_compatible_response_shapes _ _ := false 
+      have_compatible_response_shapes ty (InlineFragment t β :: qs) := have_compatible_response_shapes ty (β ++ qs)
+                                                                                                      
    }.
  Solve Obligations with intros; simp query_size; have Hleq := (filter_queries_with_label_leq_size f qs); ssromega.
  Solve Obligations with intros; simp query_size; have Hleq := (filter_queries_with_label_leq_size l qs); ssromega.
@@ -217,7 +222,9 @@ Section QueryConformance.
    have Hleq1 := (found_fields_leq_size l qs).
    have Hleq2 := (merged_selections_leq (find_fields_with_response_name l qs)); ssromega.
  Qed.
-
+ Next Obligation.
+   by rewrite queries_size_app; simp query_size.
+ Qed.
  
 
  (* Equations can't generate the graph *)
@@ -780,7 +787,23 @@ Section QueryConformance.
 
   Transparent qresponse_name.
 
+
+  Ltac apply_and3P := apply/and3P; split=> //.
   
+  Lemma filter_preserves_conformance label ty φ :
+    queries_conform ty φ ->
+    queries_conform ty (filter_queries_with_label label φ).
+  Proof.
+    funelim (filter_queries_with_label label φ) => //=.
+
+    - rewrite queries_conform_equation_1 /=; simp query_conforms => /and3P [/andP [/and5P [Hty Hspread Hne Hsqsc Hqsh] Hqsc] Hsh Hmerge].
+      apply_and3P.
+      * apply/andP; split=> //=.
+        simp query_conforms.
+        apply/and5P; split=> //=.
+        admit.
+  Abort.
+    
   
   
  
