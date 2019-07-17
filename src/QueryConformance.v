@@ -342,6 +342,13 @@ Section QueryConformance.
       of a particular type, therefore, the conformance is checked
       based on the schema and the current type in context.
 
+     This checks the following things specified in the spec :
+     1. Fields are defined (https://graphql.github.io/graphql-spec/June2018/#sec-Field-Selections-on-Objects-Interfaces-and-Unions-Types)
+     2. Selection type is correct (https://graphql.github.io/graphql-spec/June2018/#sec-Leaf-Field-Selections)
+
+     3. Arguments (https://graphql.github.io/graphql-spec/June2018/#sec-Argument-Names)
+
+     4. Inline fragments are possible (https://graphql.github.io/graphql-spec/June2018/#sec-Fragment-spread-is-possible)
    **)
   
   Equations query_conforms (ty : Name) query : bool :=
@@ -370,7 +377,7 @@ Section QueryConformance.
         | Some fld => [&& (is_object_type s fld.(return_type) || is_abstract_type s fld.(return_type)),
                       arguments_conform s fld.(fargs) α,
                       φ != [::] &
-                      queries_conform fld.(return_type) φ];
+                      all (query_conforms fld.(return_type)) φ];
         | _ => false
         };
 
@@ -380,25 +387,65 @@ Section QueryConformance.
         | Some fld => [&& (is_object_type s fld.(return_type) || is_abstract_type s fld.(return_type)),
                       arguments_conform s fld.(fargs) α,
                       φ != [::] &
-                      queries_conform fld.(return_type) φ];
+                      all (query_conforms fld.(return_type)) φ];
         | _ => false
         };
 
       query_conforms ty (InlineFragment t φ) :=
-        [&& [|| is_object_type s t, is_interface_type s t | is_union_type s t], (* This might be a bit redundant *)
-         is_fragment_spread_possible s ty t,
+        (* [&& [|| is_object_type s t, is_interface_type s t | is_union_type s t], (* This might be a bit redundant *) *)
+        [&& is_fragment_spread_possible s ty t,
          φ != [::] &
-         queries_conform t φ]
-    }
-  where
-  queries_conform (ty : Name) queries : bool :=
-    {
-      queries_conform ty queries :=  [&& all (query_conforms ty) queries,
-                                            have_compatible_response_shapes ty queries &
-                                            is_field_merging_possible ty queries]
+         all (query_conforms t) φ]
     }.
 
-  
+
+  (* Ignoring emptyness *)
+  Definition queries_conform (ty : Name) queries : bool :=
+    [&& all (query_conforms ty) queries,
+     have_compatible_response_shapes ty queries &
+     is_field_merging_possible ty queries].
+    
+  Definition queries_conform_inv ty φ :
+    all (query_conforms ty) φ ->
+    have_compatible_response_shapes ty φ ->
+    is_field_merging_possible ty φ ->
+    queries_conform ty φ.
+  Proof.
+    by intros; rewrite /queries_conform; apply/and3P; split.
+  Qed.
+
+  Transparent qname.
+  Lemma conformed_fields_lookup ty φ :
+    queries_conform ty φ ->
+    forall q (Hfield : q.(is_field)),
+      q \in φ ->
+            exists fld,
+              lookup_field_in_type s ty (qname q Hfield) = Some fld.
+  Proof.
+    elim: φ => //=; case=> [f α | l f α | f α β | l f α β | t β] φ IH Hqsc q Hfield.
+
+    - rewrite inE => /orP [/eqP Heq | Hin].
+      * move: Hfield; rewrite Heq /= => Hfield.
+        move: Hqsc; rewrite /queries_conform /=; simp query_conforms; case lookup_field_in_type => //= fld _.
+          by exists fld.
+      * apply: IH => //=.
+        move: Hqsc; rewrite /queries_conform /=; case/and3P=> [/andP [_ Hqsc]].
+        simp have_compatible_response_shapes; case lookup_field_in_type => //= fld.
+  Abort.
+    
+
+  Lemma found_fields_with_response_name_share_field_name_in_obj ty rname φ :
+    is_object_type s ty ->
+    is_field_merging_possible ty φ ->
+    forall fname,
+      all (has_field_name fname) (find_queries_with_label s rname ty φ).
+  Proof.
+    elim: φ => //=; case=> [f α | l f α | f α β | l f α β | t β] φ IH Hscope; simp is_field_merging_possible.
+
+    - rewrite Hscope /=; simp are_equivalent => /andP [Hequiv Hmerge] fname.
+  Admitted.
+                           
+    
 
 (*
   Lemma queries_conform_inv schema ty queries :
@@ -413,7 +460,7 @@ Section QueryConformance.
                           [&& (is_object_type s fld.(return_type) || is_abstract_type s fld.(return_type)),
                            arguments_conform s fld.(fargs) α,
                            φ != [::] &
-                           queries_conform fld.(return_type) φ])
+                           all (query_conforms fld.(return_type)) φ])
             (query_conforms type_in_scope (NestedField f α φ)).
   Proof.
     apply: (iffP idP).
@@ -429,7 +476,7 @@ Section QueryConformance.
                           [&& (is_object_type s fld.(return_type) || is_abstract_type s fld.(return_type)),
                            arguments_conform s fld.(fargs) α,
                            φ != [::] &
-                           queries_conform fld.(return_type) φ])
+                           all (query_conforms fld.(return_type)) φ])
             (query_conforms type_in_scope (NestedLabeledField l f α φ)).
   Proof.
     apply: (iffP idP).
@@ -502,7 +549,7 @@ Section QueryConformance.
   Proof.
     move/is_object_type_wfP=> [intfs [flds Hlook]].
     move/is_interface_type_wfP=> [iflds Hlook'].
-    simp query_conforms=> /and5P [_ Hspread _ _ _].
+    simp query_conforms=> /and3P [Hspread _ _].
     move: Hspread; rewrite /is_fragment_spread_possible; simp get_possible_types; rewrite Hlook Hlook' /=.
     by rewrite -seq1IC; apply: seq1I_N_nil.
   Qed.
@@ -516,7 +563,7 @@ Section QueryConformance.
     funelim (is_object_type s type_in_scope) => // _.
     funelim (is_union_type s t) => // _.
     simp query_conforms.
-    move/and4P=> [_ Hspread _ _].
+    move/and3P=> [Hspread _ _].
     move: Hspread; rewrite /is_fragment_spread_possible; simp get_possible_types; rewrite Heq Heq0 /=.
     rewrite /union_members Heq.
     by rewrite -seq1IC; apply: seq1I_N_nil.
@@ -537,8 +584,7 @@ Section QueryConformance.
       by move/(union_spreads_in_object_scope _ _ _ Hobj Hunion); right.
     - move: Hqsc; rewrite /queries_conform => /andP [Hall Hmerge].
       move=> H.      
-      simp query_conforms; apply/and5P; split=> //.
-      * by apply/or3P; case: Htype; [constructor 2 | constructor 3].
+      simp query_conforms; apply/and3P; split=> //.
       * move/is_object_type_wfP: Hobj => [intfs [flds Holook]].
         case: H => [Himpl | Hmb]; 
         rewrite /is_fragment_spread_possible; simp get_possible_types.
@@ -568,21 +614,19 @@ Section QueryConformance.
   Proof.
     move=> Hobj Hintf Hne Hqsc.
     apply: (iffP idP).
-    - query_conforms.
-      move=> [_ Hspread _ _].
+    - simp query_conforms => /and3P [Hspread _ _].
       move: (object_spreads_E _ _ _ Hobj Hspread) => [Heq | // | /in_union Hun].
       * move: (is_object_type_interfaceN Hobj); rewrite Heq.
         by rewrite /negb Hintf.
       * by move: (is_interface_type_unionN Hintf); rewrite /negb Hun.
-    - move=> Himpl.
-      query_conforms; split.
-      * by apply/or3P; constructor 1.
+    - move=> Himpl; simp query_conforms.
+      apply/and3P; split=> //=.
       * rewrite /is_fragment_spread_possible.
         move/get_possible_types_interfaceE: Hintf => ->.
         move/get_possible_types_objectE: Hobj => ->.
           by rewrite seq1I Himpl.
 
-      all: do ?[by move: Hqsc; rewrite /queries_conform => /andP [H1 H2]].
+            by move: Hqsc; rewrite /queries_conform => /andP [H1 H2].
   Qed.
 
 
@@ -732,8 +776,7 @@ Section QueryConformance.
     query_conforms type_in_scope (InlineFragment type_in_scope [:: ϕ]).
   Proof.
     simp query_conforms => Hqc.
-    apply/and5P; split=> //.
-    apply/or3P. apply: (type_in_scope_N_scalar_enum _ _ Hqc).
+    apply/and3P; split=> //.
     rewrite /is_fragment_spread_possible; simp get_possible_types.
     
     move: (type_in_scope_N_scalar_enum _ _ Hqc) => [Hobj | Hint | Hunion].
@@ -754,11 +797,9 @@ Section QueryConformance.
 
    Lemma inline_subqueries_conform ty t ϕ :
     query_conforms ty (InlineFragment t ϕ) ->
-    queries_conform t ϕ.
+    all (query_conforms t) ϕ.
   Proof.
-    simp query_conforms.
-    move/and5P=> [_ _ Hne H Hmerge].
-    by apply/andP. 
+    by simp query_conforms; case/and3P.
   Qed.
 
   Lemma sf_conforms_in_interface_in_obj ti tyo f α :
@@ -794,15 +835,7 @@ Section QueryConformance.
     queries_conform ty φ ->
     queries_conform ty (filter_queries_with_label label φ).
   Proof.
-    funelim (filter_queries_with_label label φ) => //=.
-
-    - rewrite queries_conform_equation_1 /=; simp query_conforms => /and3P [/andP [/and5P [Hty Hspread Hne Hsqsc Hqsh] Hqsc] Hsh Hmerge].
-      apply_and3P.
-      * apply/andP; split=> //=.
-        simp query_conforms.
-        apply/and5P; split=> //=.
-        admit.
-  Abort.
+    Abort.
     
   
   

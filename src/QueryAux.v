@@ -97,22 +97,34 @@ Section QueryAux.
 
 
   
- Equations are_equivalent (q1 q2 : @Query Name Vals) : bool :=
-   {
-     are_equivalent (SingleField f α) (SingleField f' α') :=  (f == f') && (α == α');
-     are_equivalent (SingleField f α) (LabeledField _ f' α') :=  (f == f') && (α == α');
-     
-     are_equivalent (LabeledField _ f α) (SingleField f' α') :=  (f == f') && (α == α');
-     are_equivalent (LabeledField _ f α) (LabeledField _ f' α') :=  (f == f') && (α == α');
+  Equations has_response_name : Name -> @Query Name Vals -> bool :=
+    {
+      has_response_name _ (InlineFragment _ _) := false;
+      has_response_name rname q := (qresponse_name q _) == rname
+    }.
 
-     are_equivalent (NestedField f α _) (NestedField f' α' _) :=  (f == f') && (α == α');
-     are_equivalent (NestedField f α _) (NestedLabeledField _ f' α' _) :=  (f == f') && (α == α');
+  Equations has_field_name : Name -> @Query Name Vals -> bool :=
+    {
+      has_field_name _ (InlineFragment _ _) := false;
+      has_field_name rname q := (qname q _) == rname
+    }.
+  
+  Equations have_same_field_name : @Query Name Vals -> @Query Name Vals -> bool :=
+    {
+      have_same_field_name (InlineFragment _ _) _ := false;
+      have_same_field_name _ (InlineFragment _ _) := false;
+      have_same_field_name q1 q2 := (qname q1 _) == (qname q2 _)
+    }.
 
-     are_equivalent (NestedLabeledField _ f α _) (NestedField f' α' _) :=  (f == f') && (α == α');
-     are_equivalent (NestedLabeledField _ f α _) (NestedLabeledField _ f' α' _) :=  (f == f') && (α == α');
+  Equations have_same_arguments : @Query Name Vals -> @Query Name Vals -> bool :=
+    {
+      have_same_arguments (InlineFragment _ _) _ := false;
+      have_same_arguments _ (InlineFragment _ _) := false;
+      have_same_arguments q1 q2 := (qargs q1 _) == (qargs q2 _)
+    }.
 
-     are_equivalent _ _ := false
-   }.
+  Definition are_equivalent (q1 q2 : @Query Name Vals) : bool := have_same_field_name q1 q2 && have_same_arguments q1 q2.
+  
  
   Variable s : @wfSchema Name Vals.
 
@@ -376,10 +388,36 @@ Section QueryAux.
       by funelim (find_fields_with_response_name k qs) => //=; simp query_size; ssromega.
   Qed.
 
+
+   Equations is_simple_field_selection : @Query Name Vals -> bool :=
+    {
+      is_simple_field_selection (SingleField _ _) := true;
+      is_simple_field_selection (LabeledField _ _ _) := true;
+      is_simple_field_selection _ := false
+    }.
+  
+  Equations is_nested_field_selection : @Query Name Vals -> bool :=
+    {
+      is_nested_field_selection (NestedField _ _ _) := true;
+      is_nested_field_selection (NestedLabeledField _ _ _ _) := true;
+      is_nested_field_selection _ := false
+    }.
+
+
+  Lemma merge_simple_fields_is_empty φ :
+    all is_simple_field_selection φ ->
+    merge_selection_sets φ = [::].
+  Proof.
+    by elim: φ => //=; case.
+  Qed.
+
     
 End QueryAux.
 
-
+Arguments has_response_name [Name Vals].
+Arguments has_field_name [Name Vals].
+Arguments have_same_field_name [Name Vals].
+Arguments have_same_arguments [Name Vals].
 Arguments are_equivalent [Name Vals].
 Arguments filter_queries_with_label [Name Vals].
 Arguments find_queries_with_label [Name Vals].
