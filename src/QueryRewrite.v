@@ -269,19 +269,20 @@ Section QueryRewrite.
     funelim (find_fragments_with_guard t queries) => //=; simp query_size; ssromega.
   Qed.
   
-  Obligation Tactic := intros; simp query_size; do ? ssromega; rewrite ?queries_size_app.
+  Obligation Tactic := intros; simp query_size; do ? ssromega; rewrite ?queries_size_cat.
 
-  
+
+  (* Assuming queries are in grounded2 *)
   Equations remove_redundancies (queries : seq (@Query Name Vals)) :
     seq (@Query Name Vals) by wf (queries_size queries) lt :=
     {
       remove_redundancies [::] := [::];
       
       remove_redundancies (SingleField f α :: queries) :=
-        (SingleField f α) :: remove_redundancies (filter_queries_with_label f queries);
+        SingleField f α :: remove_redundancies (filter_queries_with_label f queries);
       
       remove_redundancies (LabeledField l f α :: queries) :=
-        (LabeledField l f α) :: remove_redundancies (filter_queries_with_label l queries);
+        LabeledField l f α :: remove_redundancies (filter_queries_with_label l queries);
 
       remove_redundancies (NestedField f α φ :: queries) :=
         NestedField f α (remove_redundancies (φ ++ (merge_selection_sets (find_fields_with_response_name f queries))))

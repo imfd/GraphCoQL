@@ -529,6 +529,16 @@ Section WellFormedness.
       by rewrite -Heq.
   Qed.
 
+  Lemma return_type_is_same_for_obj_and_supertype (schema : wfSchema) t ty :
+    t \in get_possible_types schema ty ->
+          forall f fld fld',
+            lookup_field_in_type schema t f = Some fld ->
+            lookup_field_in_type schema ty f = Some fld' ->
+            fld.(return_type) = fld'.(return_type).
+  Admitted.
+    
+    
+        
    Lemma field_in_interface_in_object_E (schema : wfSchema) ty ti f fld fld' :
     ty \in implementation schema ti ->
            lookup_field_in_type schema ti f = Some fld ->

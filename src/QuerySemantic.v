@@ -139,16 +139,16 @@ Section QuerySemantic.
     all: do ?[by have Hleq := (filter_queries_with_label_leq_size f qs); ssromega].
     all: do ?[by have Hleq := (filter_queries_with_label_leq_size l qs); ssromega].
   
-    all: do ?[by rewrite queries_size_app;
+    all: do ?[by rewrite queries_size_cat;
             have Hleq1 := (found_queries_leq_size s f u.(type) qs);
             have Hleq2 := (merged_selections_leq (find_queries_with_label s f u.(type) qs)); ssromega].
 
-    all: do ?[by rewrite queries_size_app;
+    all: do ?[by rewrite queries_size_cat;
             have Hleq1 := (found_queries_leq_size s l u.(type) qs);
             have Hleq2 := (merged_selections_leq (find_queries_with_label s l u.(type) qs)); ssromega].
 
 
-    all: do ? [by rewrite ?queries_size_app; ssromega].
+    all: do ? [by rewrite ?queries_size_cat; ssromega].
   Qed.
 
    
@@ -217,7 +217,7 @@ Section QuerySemantic.
 
   Hint Resolve equiv_sym.
 
-  Hint Resolve queries_size_app.
+  Hint Resolve queries_size_cat.
   Lemma equiv_refl ty φ :
     ty ⊢ φ ≡ φ.
   Proof.
@@ -233,7 +233,7 @@ Section QuerySemantic.
     (*   * exact: Hlook. *)
     (*   * move=> t Hin. *)
     (*     apply: IH => /=. *)
-    (*     rewrite queries_size_app. *)
+    (*     rewrite queries_size_cat. *)
     (*     admit. (* leq size *) *)
     (*     apply: IH. *)
     (*     admit. (* leq size *) *)
@@ -245,7 +245,7 @@ Section QuerySemantic.
     (*   * apply: equiv_sym. *)
     (*     apply: EIF11 => //=. *)
     (*     apply: IH => //=. *)
-    (*     rewrite queries_size_app; ssromega. *)
+    (*     rewrite queries_size_cat; ssromega. *)
 
     (*   * apply: equiv_sym. *)
     (*     apply: EIF21 => //=; apply: IH; ssromega. *)
@@ -394,13 +394,10 @@ Section QuerySemantic.
   
   Lemma merge_ground_swap ty fld φ :
     is_object_type s ty ->
-    all (fun q => match q with
-               | SingleField f _
-               | LabeledField _ f _
-               | NestedField f _ _
-               | NestedLabeledField _ f _ _ => lookup_field_in_type s ty f == Some fld
-               | _ => false
-               end) φ ->
+    all (fun q => if q.(oqname) is Some name then
+                 lookup_field_in_type s ty name == Some fld
+               else
+                 false) φ ->
     merge_selection_sets (ground s ty φ) = ground s fld.(return_type) (merge_selection_sets φ).
   Proof.
     move=> Hscope.
@@ -414,92 +411,317 @@ Section QuerySemantic.
     - move=> [/eqP Hlook Hall]; simp ground; rewrite Hlook /= Hscope /=; simp merge_selection_sets => /=.
       rewrite ground_cat (IH fld) //=.
   Qed.
+
+
+
   
- 
-  
-  Lemma equiv_cat_tail ty φ φ1 φ2 :
+  Lemma merge_eq α β χ fld ty f φ1 φ2 :
     ty ⊢ φ1 ≡ φ2 ->
-    queries_conform s ty φ1 ->
-    queries_conform s ty φ2 ->
-    queries_conform s ty φ ->
-    ty ⊢ φ ++ φ1 ≡ φ ++ φ2.
+    all (are_equivalent (NestedField f α β)) φ1 ->
+    all (are_equivalent (NestedField f α χ)) φ2 ->
+    lookup_field_in_type s ty f = Some fld ->
+    forall rty, rty \in get_possible_types s fld.(return_type) ->
+                   rty ⊢ merge_selection_sets (find_queries_with_label s f ty φ1) ≡
+                       merge_selection_sets (find_queries_with_label s f ty φ2).
   Proof.
-    
-    (* - intros. *)
-    
-    move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
-    elim: n ty φ φ1 φ2 => //= [| n IH] ty φ φ1 φ2; first by rewrite leqn0 => /queries_size_0_nil ->; rewrite 2!cat0s.
+    elim=> //=.
+    - intros.
+      simp find_queries_with_label; case: eqP => //= [Heq | Hneq].
+      simp merge_selection_sets => /=.
+      rewrite -Heq.
+      rewrite Heq H6 in H.
+      case: H => H.
+      rewrite H in H7.
+      apply: H0 => //=.
 
+      move/eqP/negbTE in Hneq; rewrite eq_sym in Hneq.
+      rewrite -(find_filter_swap _ f0) //.
+      rewrite -[X in _ ⊢ _ ≡ merge_selection_sets X](find_filter_swap _ f0) //.
+      apply: H3 => //.
+      (* filter preserves all equiv *)
+  Admitted.
       
-    case: φ => //=; case=> [f α | | f α β | | t β] φ; simp query_size => /= Hleq Heq Hqc1 Hqc2.
+  Lemma merge_eq2 α β fld ty f φ1 φ2 :
+    ty ⊢ φ1 ≡ φ2 ->
+    all (are_equivalent (NestedField f α β)) (find_queries_with_label s f ty φ1) ->
+    all (are_equivalent (NestedField f α β)) (find_queries_with_label s f ty φ2) ->
+    lookup_field_in_type s ty f = Some fld ->
+    forall rty, rty \in get_possible_types s fld.(return_type) ->
+                   rty ⊢ merge_selection_sets (find_queries_with_label s f ty φ1) ≡
+                       merge_selection_sets (find_queries_with_label s f ty φ2).
+  Proof.
+    elim=> //=.
+    - intros.
+      simp find_queries_with_label; case: eqP => //= [/eqP Heq | Hneq].
+      * simp find_queries_with_label in H1.
+        rewrite Heq /= in H1.
+        rewrite /are_equivalent /= in H1.
+        admit.
 
-    - constructor; rewrite 2!filter_queries_with_label_cat; apply IH.
-      * by have Hfleq := (filter_queries_with_label_leq_size f φ); ssromega.
-
-      * by apply: filter_preserves_equiv.
-
-      * admit. (* filter preserves conformance *)
-      * admit. (* filter preserves conformance *)
-      * admit. (* filter preserves conformance *)
-        
-    - admit. (* Labeled *)
-
-    - rewrite queries_conform_equation_1 /=; simp query_conforms.
-      case Hlook : lookup_field_in_type => [fld|] //= Hqsc.
-      apply: (ENF1 _ _ _ _ _ fld) => //=.
-      * move=> t Hin.
-        rewrite 2!find_queries_with_label_cat 2!merge_selection_sets_cat 2!catA.
-        apply: IH => //=.
-        admit. (* size *)
-
-        apply: collect_equiv => //=.
-        exact: Hlook.
-        done.
-        admit. (* collect preserves conformance *)
-        admit. (* collect preserves conformance *)
-        admit. (* conformance *)
-
-    - rewrite 2!filter_queries_with_label_cat; apply: IH => //=.
-      * by have Hfleq := (filter_queries_with_label_leq_size f φ); ssromega.
-
-      * by apply: filter_preserves_equiv.
-
-      * admit. (* Conformance *)
-      * admit.
       * admit.
 
-    - admit. (* Labeled *)
+    - intros.
+      simp find_queries_with_label; case: eqP => //= [Heq | Hneq].
+      * simp merge_selection_sets => /=.
+        rewrite -Heq.
+        rewrite Heq H6 in H.
+        case: H => H.
+        rewrite H in H7.
+        apply: H0 => //=.
 
-    - move=> Hqc; case Hfapplies: (does_fragment_type_apply s ty t).
-      * apply: EIF11 => //=; apply: EIF12 => //=.
-        rewrite 2!catA; apply: IH => //=.
-        admit. (* size *)
-        admit. (* Conformance *)
-
-      * apply: EIF21 => //=; apply: EIF22 => //=.
-        apply: IH => //=; [by ssromega | admit].
+      * move/eqP/negbTE in Hneq; rewrite eq_sym in Hneq.
+        rewrite -(find_filter_swap _ f0) //.
+        rewrite -[X in _ ⊢ _ ≡ merge_selection_sets X](find_filter_swap _ f0) //.
+        apply: H3 => //.
+        (* filter preserves all equiv *)
+        admit.
+        admit.
+    - intros.
+      simp find_queries_with_label; rewrite H /=.
+      rewrite -find_queries_with_label_cat.
+      apply: H1 => //=.
+      admit.
 
   Admitted.
+      
+  
+      
+ 
+      
+  Lemma filter_preserves_merging f ty φ :
+    is_field_merging_possible s ty φ ->
+    is_field_merging_possible s ty (filter_queries_with_label f φ).
+  Proof.
+  Admitted.
+      
+  Lemma is_merging_possible_in_subtype ty φ :
+    is_field_merging_possible s ty φ ->
+    forall t, t \in get_possible_types s ty ->
+               is_field_merging_possible s t φ.
+  Proof.
+    move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
+    elim: n φ ty => /= [| n IH] φ ty; first by rewrite leqn0 => /queries_size_0_nil ->.
+    
+    case: φ => //= q φ.
+    case: q => [f α | l f α | f α β | l f α β | t β]; simp query_size => Hleq.
+
+    - rewrite is_field_merging_possible_equation_2.
+      case Hscope : is_object_type => /= /andP [Hallequiv Hmerge] t Htin; have Htobj := (in_possible_types_is_object Htin).
+      * rewrite is_field_merging_possible_equation_2 Htobj /=.
+        have -> := (in_object_possible_types Hscope Htin).
+          by apply_andP.
+
+      * rewrite is_field_merging_possible_equation_2 Htobj /=.
+        apply_andP.
+        admit.
+        apply: (IH _ ty) => //=.
+        by have Hfleq := (filter_queries_with_label_leq_size f φ); ssromega.
+
+    - rewrite is_field_merging_possible_equation_3.
+      case Hscope : is_object_type => /= /andP [Hallequiv Hmerge] t Htin; have Htobj := (in_possible_types_is_object Htin).
+      * rewrite is_field_merging_possible_equation_3 Htobj /=.
+        have -> := (in_object_possible_types Hscope Htin).
+          by apply_andP.
+
+      * rewrite is_field_merging_possible_equation_3 Htobj /=.
+        apply_andP.
+        admit.
+        apply: (IH _ ty) => //=.
+        by have Hfleq := (filter_queries_with_label_leq_size l φ); ssromega.
+
+    - rewrite is_field_merging_possible_equation_4.
+      case Hlook : lookup_field_in_type => [fld|] //=.
+      case Hscope : is_object_type => /= /and3P [Hallequiv Hsmerge Hmerge] t Htin; have Htobj := (in_possible_types_is_object Htin).
+
+      * have -> := (in_object_possible_types Hscope Htin).
+        rewrite is_field_merging_possible_equation_4 Hlook /= Hscope /=.
+        apply_and3P.
+
+      * rewrite is_field_merging_possible_equation_4.
+        have [fld2 Hlook2] : exists fld2, lookup_field_in_type s t f = Some fld2 by admit.
+        rewrite Hlook2 /= Htobj /=.
+        apply_and3P.
+        admit.
+
+        apply: (IH _ fld.(return_type)).
+        rewrite queries_size_cat.
+        have Hfleq := (found_queries_leq_size s f t φ).
+        have Hmleq := (merged_selections_leq (find_queries_with_label s f t φ)); ssromega.
+
+        admit.
+        admit. (* fld' is subtype of parent's field *)
+
+        apply: (IH _ ty) => //=.
+        by have Hfleq := (filter_queries_with_label_leq_size f φ); ssromega.
+
+    - admit.
+
+    - rewrite is_field_merging_possible_equation_6.
+      case Hspread : is_fragment_spread_possible => //=.
+
+      * case Hscope : is_object_type => /=.
+        + move=> Hmerge sty Htin.
+          rewrite is_field_merging_possible_equation_6.
+          have Hteq := (in_object_possible_types Hscope Htin).
+          by rewrite Hteq Hspread /= Hscope /=.
+
+        + move=> /andP [Hmerge Hmerges] sty Htin.
+          rewrite is_field_merging_possible_equation_6.
+          case Hspread2 : is_fragment_spread_possible => //=.
+          have -> /= := (in_possible_types_is_object Htin).
+          apply: (IH _ t) => //=.
+            by rewrite queries_size_cat.
+            admit.
+          apply: (IH _ ty) => //=.
+          ssromega.
+
+      * move=> Hmerge sty Htin.
+        rewrite is_field_merging_possible_equation_6.
+        case Hspread2 : is_fragment_spread_possible => //=.
+        + admit. (* Contradiction : if t spreads in ty -> t = ty -> t spreads in ty ->*<- *)
+
+        + apply: (IH _ ty) => //=; ssromega.
+
+  Admitted.
+        
+
+  
+  (* 
+     This property is not valid without some kind of property, meaning that :
+          ty ⊢ φ1 ≡ φ2 ->
+          ∀ φ, 
+             ty ⊢ φ ++ φ1 ≡ φ ++ φ2 
+             
+             is not always true.
+
+     Example: 
+              φ1 := f ; f { β } 
+              φ2 := f
+              φ := f { χ }
+             
+             φ1 is equivalent to φ2 in the current definition, but combined with φ
+             they are no longer equivalent.
+             The thing is that the relation is implicitly exploiting the fact that 
+             there won't be two fields with the same label but different structure
+             (eg. f and f { β })
+
+     Properties I need :
+     1) lookup ≠ ⊥
+     2) merge (find f φ1) ≡ merge (find f φ2) : How?
+        * equiv is on a subtype of field's return type 
+        * find f will find only queries with the same structure (all simple or all nested) 
+        * fields found must also lookup to field with same return type (or subtype, etc)
+   *)
+  Lemma equiv_cat_tail ty φ φ1 φ2 :
+    ty ⊢ φ1 ≡ φ2 ->
+    is_field_merging_possible s ty (φ ++ φ1) ->
+    is_field_merging_possible s ty (φ ++ φ2) ->
+    ty ⊢ φ ++ φ1 ≡ φ ++ φ2.
+  Proof.
+    move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
+    elim: n ty φ φ1 φ2 => //= [| n IH] ty φ φ1 φ2; first by rewrite leqn0 => /queries_size_0_nil ->; rewrite 2!cat0s.
+    case: φ => //=; case=> [f α | | f α β | | t β] φ; simp query_size => /= Hleq Heq Hmerge1 Hmerge2.
+    - apply: ESF.
+      rewrite 2!filter_queries_with_label_cat.
+      apply: IH.
+      by have Hfleq := (filter_queries_with_label_leq_size f φ); ssromega.
+        by apply: filter_preserves_equiv.
+        move: Hmerge1; rewrite is_field_merging_possible_equation_2.
+        by case is_object_type => //= /andP [_ Hmerge]; rewrite -filter_queries_with_label_cat.
+        move: Hmerge2; rewrite is_field_merging_possible_equation_2.
+        by case is_object_type => //= /andP [_ Hmerge]; rewrite -filter_queries_with_label_cat.
+      
+    - admit. (* label *)
+
+    - case Hlook : (lookup_field_in_type s ty f) => [fld|] /=.
+      apply: (ENF _ _ _ _ _ fld) => //=.
+      * move=> t Hin.
+        rewrite 2!find_queries_with_label_cat 2!merge_selection_sets_cat.
+        rewrite !catA.
+        apply: IH.
+        have Hfeq1 := (found_queries_leq_size s f ty φ).
+        have Hfeq2 := (merged_selections_leq (find_queries_with_label s f ty φ)).
+          by rewrite queries_size_cat; ssromega.
+
+          
+          move: Hmerge1 Hmerge2; rewrite 2!is_field_merging_possible_equation_4 Hlook /=.
+          case is_object_type => //=.
+          rewrite 2!find_queries_with_label_cat 2!all_cat => /and3P [/andP [_ Hequiv] _ _] /and3P [/andP [_ Hequiv2] _ _].
+          apply: (merge_eq2 α β fld) => //=.
+          rewrite ?find_fields_cat // ?all_cat  => /and3P [/andP [_ Hequiv] _ _] /and3P [/andP [_ Hequiv2] _ _].
+          apply: (merge_eq2 α β fld) => //=.
+          admit. (* find fields is equiv -> find queries should also (subseq) *)
+          admit.
+
+          
+          move: Hmerge1; rewrite is_field_merging_possible_equation_4 Hlook /=.
+          case is_object_type => /= /and3P [Hallequiv Hsmerge Hmerge].
+          rewrite -catA -merge_selection_sets_cat -find_queries_with_label_cat.
+          apply: (is_merging_possible_in_subtype fld.(return_type)) => //=.
+          rewrite -catA -merge_selection_sets_cat -find_queries_with_label_cat.
+          apply: (is_merging_possible_in_subtype fld.(return_type)) => //=.
+          admit.
+
+          move: Hmerge2; rewrite is_field_merging_possible_equation_4 Hlook /=.
+          case is_object_type => /= /and3P [Hallequiv Hsmerge Hmerge].
+          rewrite -catA -merge_selection_sets_cat -find_queries_with_label_cat.
+          apply: (is_merging_possible_in_subtype fld.(return_type)) => //=.
+          rewrite -catA -merge_selection_sets_cat -find_queries_with_label_cat.
+          apply: (is_merging_possible_in_subtype fld.(return_type)) => //=.
+          admit.
+
+          
+
+      *  rewrite 2!filter_queries_with_label_cat.
+         apply: IH.
+           by have Hfleq := (filter_queries_with_label_leq_size f φ); ssromega.
+             by apply: filter_preserves_equiv.
+             move: Hmerge1; rewrite is_field_merging_possible_equation_4 Hlook /=.
+               by case is_object_type => //= /and3P [_ Hsmerge Hmerge]; rewrite -filter_queries_with_label_cat.
+             move: Hmerge2; rewrite is_field_merging_possible_equation_4 Hlook /=.
+               by case is_object_type => //= /and3P [_ Hsmerge Hmerge]; rewrite -filter_queries_with_label_cat.
+
+      * admit. (* Invalid *)
+
+    - admit. (* Label *)
+
+    - case Hfapplies : (does_fragment_type_apply s ty t) => /=.
+      * apply: EIF11 => //; apply: EIF12 => //.
+        have Hspread : is_fragment_spread_possible s t ty by admit.
+        have Hobj : is_object_type s ty by admit.
+        rewrite 2!catA; apply: IH => //.
+          by rewrite queries_size_cat.
+          by move: Hmerge1; rewrite is_field_merging_possible_equation_6 Hspread /= Hobj /= catA.
+          by move: Hmerge2; rewrite is_field_merging_possible_equation_6 Hspread /= Hobj /= catA.
+          
+      * apply: EIF21 => //; apply: EIF22 => //; apply: IH => //; [ssromega | |].
+        move: Hmerge1; rewrite is_field_merging_possible_equation_6.
+        case Hspread : is_fragment_spread_possible => //=.
+        have -> /= : is_object_type s ty = false by admit.
+        by case/andP.
+        move: Hmerge2; rewrite is_field_merging_possible_equation_6.
+        case Hspread : is_fragment_spread_possible => //=.
+        have -> /= : is_object_type s ty = false by admit.
+        by case/andP.        
+
+  Admitted.
+  
 
     
   Theorem equiv_cat ty φ φ' β β' :
-    queries_conform s ty φ ->
-    queries_conform s ty φ' ->
-    queries_conform s ty β ->
-    queries_conform s ty β' ->
+    is_field_merging_possible s ty (φ' ++ β) ->
+    is_field_merging_possible s ty (φ' ++ β') ->
     ty ⊢ φ ≡ φ' ->
     ty ⊢ β ≡ β' ->
     ty ⊢ φ ++ β ≡ φ' ++ β'.
   Proof.
-    move=> Hqsc1 Hqsc1' Hqsc2 Hqsc2' Heq1 Heq2.
-    have Heq11 := (equiv_cat_hd ty φ φ' Heq1 β).
-    have Heq22 := (equiv_cat_tail ty φ' β β' Heq2).
+    move=> Hmerge1 Hmerge2 Heq1 Heq2.
     apply: equiv_trans.
-    exact: Heq11.
-    exact: Heq22.
+    apply: equiv_cat_hd.
+    exact: Heq1.
+      by apply: equiv_cat_tail.
   Qed.
-
-
+  
   
   Lemma empty_frag_equiv_nil ty tys :
     ty ⊢ [seq InlineFragment t [::] | t <- tys] ≡ [::].
@@ -508,7 +730,7 @@ Section QuerySemantic.
     case Hfapplies : (does_fragment_type_apply s ty t) => /=; [by apply: EIF11 | by apply: EIF21].
   Qed.
 
-  Lemma filter_all f φ :
+  Lemma filter_all f (φ : seq (@Query Name Vals)) :
     all (has_response_name f) φ ->
     filter_queries_with_label f φ = [::].
   Proof.
@@ -528,13 +750,7 @@ Section QuerySemantic.
     by rewrite Heq IHqs.
   Qed.
   
-  (* Lemma filter_frag (qs : seq (@NamedType Name)) f α : *)
-  (*   @filter_queries_with_label Name Vals f [seq InlineFragment t0 [:: SingleField f α] | t0 <- qs] = *)
-  (*   [seq InlineFragment t0 [::] | t0 <- qs]. *)
-  (* Proof. *)
-  (*   elim: qs => //= q qs IHqs; simp filter_queries_with_label => /=; case: eqP => //= _; simp filter_queries_with_label. *)
-  (*     by rewrite IHqs. *)
-  (*  Qed. *)
+ 
 
   
   Lemma find_ground_obj_swap ty f φ :
@@ -575,52 +791,12 @@ Section QuerySemantic.
 
 
 
-  Lemma merge_fields_equiv ty φ1 φ2 :
-    ty ⊢ φ1 ≡ φ2 ->
-    queries_conform s ty φ1 ->
-    queries_conform s ty φ2 ->
-    all (fun q => q.(is_field)) φ1 ->
-    all (fun q => q.(is_field)) φ2 ->
-    forall t,
-      t ⊢ merge_selection_sets φ1 ≡ merge_selection_sets φ2. 
-  Proof.
-    elim=> //=.
-
-    - intros; simp merge_selection_sets => //=.
-      have Hmeq : merge_selection_sets (filter_queries_with_label f φ) = merge_selection_sets φ by admit.
-      rewrite ?Hmeq in H0.
-      admit.
-
-    - intros; simp merge_selection_sets => //=.
-  Abort.
       
     
   Transparent has_response_name.
 
 
     
-  Lemma ground_subtype t ty φ :
-    t \in get_possible_types s ty ->
-          ty ⊢ ground s ty φ ≡ ground s t φ.
-  Proof.
-    move=> Hin.
-    have Ht : is_object_type s t by apply: (in_possible_types_is_object Hin).
-    elim: φ => //=; case=> [f α | l f α | f α β | l f α β | t' β] φ IH; simp ground.
-
-    - case Hscope : is_object_type => /=; rewrite Ht /=.
-      apply: ESF => //=.
-        by apply: filter_preserves_equiv.
-
-        admit.
-
-    - rewrite Ht /=; case Hscope : is_object_type => /=; admit. (* Labeled *)
-
-    - case Hlook1 : lookup_field_in_type => [fld |] //=.
-      * case Hlook2 : lookup_field_in_type => [fld' |] //=.
-        + rewrite Ht /=; case Hscope : is_object_type => /=.
-          apply:( ENF1 _ _ _ _ _ fld) => //=.
-          move=> t' Htin.
-  Abort.
 
   Lemma object_applies_to_itself ty :
     is_object_type s ty ->
@@ -655,8 +831,360 @@ Section QuerySemantic.
       * apply: EIF21 => //=.
           by apply: IH.
   Qed.
-  
+
+  Lemma inline_nested_field_is_equiv α β fld f ty ptys :
+    is_object_type s ty ->
+    lookup_field_in_type s ty f = Some fld ->
+    uniq ptys ->
+    ty \in ptys ->
+           ty ⊢ [seq InlineFragment t [:: NestedField f α β] | t <- ptys] ≡ [:: NestedField f α β].
+  Proof.
+    elim: ptys => //= t ptys IH Hscope Hlook /andP [Hnin Huniq].
+    rewrite inE => /orP [/eqP Heq | Hin].
+    - rewrite -Heq.
+      apply: EIF11 => /=.
+      * by apply: (object_applies_to_itself ty Hscope).
+      * apply: (ENF _ _ _ _ _ fld) => //=.
+        move=> rty Hin.
+        simp find_queries_with_label.
+        have -> : forall φ,
+            ty \notin φ ->
+            find_queries_with_label s f ty [seq InlineFragment t' [:: NestedField f α β] | t' <- φ] = [::].
+        admit.
+        apply: equiv_refl.
+        admit.
+        rewrite filter_frag //=; simp filter_queries_with_label.
+        apply: empty_frag_equiv_nil.
+          by apply_andP; apply/eqP.
+
+  Admitted.
+
+  Lemma is_merging_possible_in_hd ty φ1 φ2 :
+    is_field_merging_possible s ty (φ1 ++ φ2) ->
+    is_field_merging_possible s ty φ1.
+  Proof.
+    move: {2}(queries_size _) (leqnn (queries_size φ1)) => n.
+    elim: n ty φ1 φ2 => //= [| n IH] ty φ1 φ2 ; first by rewrite leqn0 => /queries_size_0_nil ->.
+
+    case: φ1 => //=.
+    case=> [f α | l f α | f α β | l f α β | t β] φ1; simp query_size => Hleq.
+    - rewrite !is_field_merging_possible_equation_2.
+      case is_object_type => /=; rewrite ?find_queries_with_label_cat ?find_fields_cat ?filter_queries_with_label_cat ?all_cat //=.
+
+      * move=> /andP [/andP [Heq _] Hmerge].
+        apply_andP.
+        apply: IH => //=.
+          by have Hfleq := (filter_queries_with_label_leq_size f φ1); ssromega.
+          exact: Hmerge.
+      
+      * move=> /andP [/andP [Heq _] Hmerge].
+        apply_andP.
+        apply: IH.
+          by have Hfleq := (filter_queries_with_label_leq_size f φ1); ssromega.
+          exact: Hmerge.
+
+
+    - admit. (* Labeled *)
+
+    - rewrite !is_field_merging_possible_equation_4.
+      case lookup_field_in_type => //= fld.
+      case is_object_type => /=; rewrite ?find_queries_with_label_cat ?find_fields_cat ?filter_queries_with_label_cat ?all_cat //=;
+      move=> /and3P [/andP [Heq _] Hsmerge Hmerge].
+      apply_and3P.
+      * have Hbeq : queries_size (β ++ merge_selection_sets (find_queries_with_label s f ty φ1)) <= n.
+          rewrite queries_size_cat.
+          have Hfleq := (found_queries_leq_size s f ty φ1).
+          by have Hmleq := (merged_selections_leq (find_queries_with_label s f ty φ1)); ssromega.
+        rewrite merge_selection_sets_cat catA in Hsmerge.
+        by have Hm := (IH fld.(return_type) (β ++ merge_selection_sets (find_queries_with_label s f ty φ1))
+                                        (merge_selection_sets (find_queries_with_label s f ty φ2))
+                                        Hbeq
+                                        Hsmerge).
+
+      * apply: IH => //=.
+        by have Hfleq := (filter_queries_with_label_leq_size f φ1); ssromega.
+          exact: Hmerge.
+
+      apply_and3P.
+      * have Hbeq : queries_size (β ++ merge_selection_sets (find_fields_with_response_name f φ1)) <= n.
+          rewrite queries_size_cat.
+          have Hfleq := (found_fields_leq_size f φ1).
+          by have Hmleq := (merged_selections_leq (find_fields_with_response_name f φ1)); ssromega.
+        rewrite merge_selection_sets_cat catA in Hsmerge.
+        by have Hm := (IH fld.(return_type) (β ++ merge_selection_sets (find_fields_with_response_name f φ1))
+                                        (merge_selection_sets (find_fields_with_response_name f φ2))
+                                        Hbeq
+                                        Hsmerge).
+
+      * apply: IH => //=.
+        by have Hfleq := (filter_queries_with_label_leq_size f φ1); ssromega.
+          exact: Hmerge.
+
+    - admit. (* Labeled *)
+
+    - rewrite 2!is_field_merging_possible_equation_6.
+      case is_fragment_spread_possible => //=; last by apply: IH => //=; ssromega.
+      case is_object_type => /=.
+      * by rewrite catA; apply: IH; rewrite queries_size_cat.
+      * rewrite catA; case/andP=> [Hmerge1 Hmerge2].
+        apply_andP; apply: IH; rewrite ?queries_size_cat; do ? ssromega.
+        exact: Hmerge1.
+        exact: Hmerge2.
+  Admitted.
+
         
+  Lemma ground_subtype_equiv t ty φ :
+    t \in get_possible_types s ty ->
+    is_field_merging_possible s ty φ ->
+          t ⊢ ground s ty φ ≡ ground s t φ.
+  Proof.
+    move=> Hin.
+    have Hobj := (in_possible_types_is_object Hin).
+    move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
+    elim: n ty φ t Hobj Hin => //= [| n IH] ty φ t Hobj Hin; first by rewrite leqn0 => /queries_size_0_nil ->.
+    case: φ => //=; case => [f α | l f α | f α β | l f α β | t' β] φ; simp query_size => Hleq Hmerge.
+
+    - simp ground; rewrite Hobj /=.
+      case Hscope : is_object_type => //=.
+      * apply: ESF => //=.
+        rewrite 2!filter_ground_swap; apply: IH => //=.
+        by have Hfleq := (filter_queries_with_label_leq_size f φ); ssromega.
+        move: Hmerge; rewrite is_field_merging_possible_equation_2 Hscope /=.
+          by case/andP.
+
+      * apply: equiv_trans.
+        apply: equiv_cat_hd.
+        apply: inline_simple_field_is_equiv => //=.
+        apply: ESF => //=.
+        rewrite 2!filter_ground_swap; apply: IH => //=.
+        by have Hfleq := (filter_queries_with_label_leq_size f φ); ssromega.
+        move: Hmerge; rewrite is_field_merging_possible_equation_2 Hscope /=.
+          by case/andP.
+
+    - admit. (* Labeled *)
+      
+    - simp ground.
+      have [fld1 Hlook1] : exists fld1, lookup_field_in_type s ty f = Some fld1 by admit.
+      have [fld2 Hlook2] : exists fld2, lookup_field_in_type s t f = Some fld2 by admit.
+      have Hrtyeq : fld2.(return_type).(tname) \in get_possible_types s fld1.(return_type).(tname) by admit.
+      rewrite Hlook1 Hlook2 /= Hobj /=.
+      case Hscope : is_object_type => //=.
+      + have Hteq := (in_object_possible_types Hscope Hin).
+        have Hfeq : fld2 = fld1 by rewrite -Hteq Hlook2 in Hlook1; case: Hlook1.
+        rewrite Hfeq.
+        apply: (ENF _ _ _ _ _ fld1) => //=; first by rewrite -Hfeq.
+        move=> rty Htin.
+        rewrite -Hteq.
+        apply: equiv_trans.
+        apply: equiv_cat_hd.
+        apply: IH => //=; do ? ssromega.
+        apply: (in_possible_types_is_object Htin).
+        move: Hmerge; rewrite is_field_merging_possible_equation_4 Hlook1 /= Hscope /=.
+        case/and3P => [_ Hsmerge _].
+        apply: is_merging_possible_in_hd => //=.
+        exact: Hsmerge.
+        apply: equiv_cat_hd.
+        apply: equiv_sym.
+        apply: IH => //=; do ? ssromega.
+        apply: in_possible_types_is_object; exact: Htin.
+        move: Hmerge; rewrite is_field_merging_possible_equation_4 Hlook1 /= Hscope /=.
+        case/and3P => [_ Hsmerge _].
+        apply: is_merging_possible_in_hd => //=.        
+        exact: Hsmerge.
+        rewrite 2!filter_ground_swap; apply: IH => //=.
+        by have Hfleq := (filter_queries_with_label_leq_size f φ); ssromega.
+        move: Hmerge; rewrite is_field_merging_possible_equation_4 Hlook1 /= Hscope /=.
+          by case/and3P.
+
+      + apply: equiv_trans.
+        apply: equiv_cat_hd.
+        apply: inline_nested_field_is_equiv => //=.
+        exact: Hlook2.
+        admit.
+
+        apply: (ENF _ _ _ _ _ fld2) => //=.
+        move=> rty Htin.
+        admit. (* Similar reasoning *)
+
+        admit. (* similar reasoning *)
+
+    - admit. (* Labeled *)
+
+    - simp ground; rewrite Hobj /=.
+      case Hscope : is_object_type => //=.
+      * have Hteq := (in_object_possible_types Hscope Hin).
+        rewrite Hteq.
+          by case Hfapplies1 : does_fragment_type_apply => //=.
+
+      * case Ht : is_object_type => /=.
+        + case Hfapplies1 : does_fragment_type_apply => //=; case Hfapplies2 : does_fragment_type_apply => //=.
+          apply: EIF11 => //=.
+          have Hteq : t' = t.
+          by rewrite /does_fragment_type_apply Ht eq_sym in Hfapplies2; apply/eqP.
+          move: Hmerge; rewrite is_field_merging_possible_equation_6 Hteq.
+          have -> /= : is_fragment_spread_possible s t ty by admit.
+          rewrite Hscope /= => /andP [Hmerge1 Hmerge2].
+          admit.
+
+          apply: EIF21 => //=.
+          apply: IH => //=; do ? ssromega.
+          move: Hmerge; rewrite is_field_merging_possible_equation_6.
+          have -> /= : is_fragment_spread_possible s t' ty by admit.
+          by rewrite Hscope /= => /andP [Hmerge1 Hmerge2].
+
+          have Hteq : t' = t by rewrite /does_fragment_type_apply Ht eq_sym in Hfapplies2; apply/eqP.
+          admit. (* Contradiction *)
+
+          apply: IH => //=; do ?ssromega.
+          admit. (* Similar reasoning *)
+
+        + case Hfapplies : does_fragment_type_apply => /=.
+          admit. (* map is equiv to ground s t φ *)
+          
+          
+          
+  Admitted.
+  
+  
+  (*
+    I don't really need equiv cat here... But I still need some properties of the queries.
+    In particular, I would like to do the following :
+    
+    merge (ground ty φ) = ground fld.rty (merge φ)
+
+    - forall q ∈ φ, q.qname = name -> lookup name = Some fld 
+   *)
+  Lemma ground_equiv1 t φ1 φ2 :
+    t ⊢ φ1 ≡ φ2 ->
+    forall ty, 
+      t \in get_possible_types s ty ->
+            is_field_merging_possible s ty φ1 ->
+            is_field_merging_possible s ty φ2 ->
+            t ⊢ ground s ty φ1 ≡ φ2.
+  Proof.
+    move: {2}(queries_size _) (leqnn (queries_size φ1)) => n.
+    elim: n t φ1 φ2 => //= [| n IH] t φ1 φ2; first by rewrite leqn0 => /queries_size_0_nil ->.
+
+    move=> Hleq Heq; move: Hleq.
+    inversion Heq => //=; simp query_size => Hleq ty Hin Hmerge1 Hmerge2.
+
+    
+    - intros; simp ground.
+      case Hscope : is_object_type => /=.
+      * apply: ESF => //=.
+        have Hobj := (in_possible_types_is_object Hin).
+        rewrite filter_ground_swap; apply: IH => //=.
+        by have Hfleq := (filter_queries_with_label_leq_size f φ); ssromega.
+        move: Hmerge1; rewrite is_field_merging_possible_equation_2.
+          by rewrite Hscope; case/andP.
+        move: Hmerge2; rewrite is_field_merging_possible_equation_2.
+          by rewrite Hscope; case/andP.
+
+      * have Hobj := (in_possible_types_is_object Hin).
+        apply: equiv_trans.
+        apply: equiv_cat_hd.
+        apply: inline_simple_field_is_equiv => //=.
+        apply: ESF => //=.
+        rewrite filter_ground_swap; apply: IH => //=.
+          by have Hfleq := (filter_queries_with_label_leq_size f φ); ssromega.
+
+        move: Hmerge1; rewrite is_field_merging_possible_equation_2.
+          by rewrite Hscope; case/andP.
+        move: Hmerge2; rewrite is_field_merging_possible_equation_2.
+          by rewrite Hscope; case/andP.
+
+    - intros; simp ground.
+      have [fld' Hlook] : exists fld', lookup_field_in_type s ty f = Some fld' by admit.
+      rewrite Hlook /=.
+      case Hscope : is_object_type => /=.
+      * have Hteq := (in_object_possible_types Hscope Hin).
+        apply: (ENF _ _ _ _ _ fld) => //=.
+        move=> rty Htin.
+        rewrite Hteq.
+        apply: equiv_trans.
+        apply: (equiv_cat _ _ β _ (merge_selection_sets (find_queries_with_label s f ty φ))).
+        admit. (* field merging for subqueries with ground *)
+        move: Hmerge1; rewrite is_field_merging_possible_equation_4 Hlook /= Hscope /=.
+        case/and3P => *.
+        apply: (is_merging_possible_in_subtype fld'.(return_type)) => //=.
+        admit. (* rty <: fld'.return_type *)
+        
+        apply: IH => //=; first by ssromega.
+        admit. (* rty <: fld'.return_type *)
+        admit. (* β field merges *)
+        admit. (* β field merges *)
+        apply: (merge_eq2 α β fld') => //=.
+        apply: IH => //=; admit.
+        admit.
+        admit.
+        
+        admit. (* ty <: fld'.return_type *)
+        rewrite -Hteq; apply: H0 => //=.
+        admit.
+        
+      * apply: equiv_trans.
+        apply: equiv_cat_hd.
+        apply: inline_nested_field_is_equiv => //=; admit.
+        apply: (ENF _ _ _ _ _ fld) => //=.
+        move=> rty Htin.
+        apply: (equiv_trans _ _ (β ++ merge_selection_sets (find_queries_with_label s f t φ))).
+        apply: equiv_cat => //=.
+        admit. (* field merging for subqueries with ground *)
+        move: Hmerge1; rewrite is_field_merging_possible_equation_4 Hlook /= Hscope /=.
+        case/and3P => *.
+        apply: (is_merging_possible_in_subtype fld'.(return_type)) => //=.
+        admit.
+        admit.
+        apply: IH => //=; first by ssromega; admit.
+        admit.
+        admit.
+        admit.
+        apply: (merge_eq2 α β fld') => //=; admit.
+        apply: H0 => //=.
+        admit.
+
+    - intros; simp ground; case Hscope : is_object_type => /=.
+      * have Hteq : ty = t by admit.
+        rewrite Hteq H /=.
+        rewrite -ground_cat; apply: IH => //=; first by rewrite queries_size_cat. 
+          by rewrite -{2}Hteq.
+          admit.
+          admit.
+          
+      * case Ht : is_object_type => /=.
+
+        + have Hteq : t0 = t by admit.
+          have Hfapplies : does_fragment_type_apply s t0 ty by admit.
+          rewrite Hfapplies /=.
+          rewrite Hteq.
+          apply: EIF11.
+          apply: object_applies_to_itself.
+          apply: (in_possible_types_is_object Hin).
+          apply: equiv_trans.
+          apply: equiv_cat_tail.
+          apply: ground_subtype_equiv => //=.
+          admit.
+          admit.
+          admit.
+          rewrite -ground_cat; apply: IH => //=.
+          rewrite queries_size_cat; ssromega.
+          admit.
+          admit.
+          apply: is_merging_possible_in_subtype.
+          exact: Hmerge2.
+          done.
+
+        + admit. (* Similar reasoning but need to show that map reduces to ground t β *)
+
+          
+    - apply: EIF12 => //=.
+      
+      
+          admit.
+          
+          
+          
+      
   (*
     Missing lemmas : 
     1. Conformance is preserved:
@@ -683,51 +1211,7 @@ Section QuerySemantic.
             queries_conform s ty φ1 ->
             queries_conform s ty φ2 ->
             t ⊢ ground s ty φ1 ≡ φ2.
-  Proof.
-    (* move: {2}(queries_size _) (leqnn (queries_size φ1)) => n. *)
-    (* elim: n φ1 φ2 t => /= [| n IH] φ1 φ2 t. *)
-    (* - by rewrite leqn0 => /queries_size_0_nil -> Heq *; simp ground. *)
-
-    (* - move=> Hleq Heq. *)
-    (*   case: Heq Hleq => //=. *)
-
-    (* - intros; simp ground. *)
-    (*   case Hscope : is_object_type => /=. *)
-    (*   * apply: ESF. *)
-    (*     rewrite filter_ground_swap; apply: IH => //=; admit. (* filter preserves conformance *) *)
-
-    (*   * apply: equiv_trans. *)
-    (*     apply: equiv_cat_hd. *)
-    (*     apply: (inline_simple_field_is_equiv _ t f α (in_possible_types_is_object H)) => //=. *)
-    (*     apply: ESF; rewrite filter_ground_swap; apply: IH => //=; admit. (* filter preserves conformance *) *)
-      
-    (* - admit. *)
-
-    (* - intros; simp ground. *)
-    (*   case Hscope : is_object_type => /=. *)
-    (*   (* ty0 ∈ Ot *) *)
-    (*   * have Hteq : ty = t by admit. *)
-    (*     rewrite Hteq i /= -ground_cat; apply: IH => //=. *)
-    (*     admit. *)
-    (*       by rewrite -{2}Hteq. *)
-    (*       admit. (* Queries conform *) *)
-    (*         by rewrite -Hteq. *)
-
-    (*   (* ty0 ∈ At *) *)
-    (*   * case Ht : is_object_type => /=. *)
-    (*     have Hteq : t0 = ty by admit. (* Same object *) *)
-    (*     have -> /= : does_fragment_type_apply s t0 ty by admit. (* By subtyping *) *)
-    (*     apply: EIF11 => //=. *)
-    (*     apply: equiv_trans. *)
-    (*     apply: equiv_cat. *)
-    (*     admit. *)
-    (*     admit. *)
-    (*     admit. *)
-    (*     admit. *)
-    (*     apply: IH => //=; admit. *)
-    (*     apply: (IH _ φ) => //=; admit. *)
-    (*     exact: e. *)
-        
+  Proof.        
     elim=> //=.
 
     - intros; simp ground.
@@ -742,12 +1226,12 @@ Section QuerySemantic.
         
         
     - intros; simp ground.
-      case Hlook2 : lookup_field_in_type => [fld'|] //=.
+      case Hlook2 : lookup_field_in_type => [fld'|] //=; last by admit.
       case Hscope : is_object_type => /=.
 
       * have Hteq : ty = ty0 by apply (in_object_possible_types Hscope H4).
         rewrite -Hteq H in Hlook2; case: Hlook2 => <-.
-        apply: (ENF1 _ _ _ _ _ fld) => //=.
+        apply: (ENF _ _ _ _ _ fld) => //=.
         + move=> t' Htin.
           rewrite -Hteq.
           rewrite (find_ground_obj_swap ty _ _ (in_possible_types_is_object H4)) //=.
@@ -769,9 +1253,11 @@ Section QuerySemantic.
                     [:: NestedField f α (ground s fld.(return_type) β)].
           by admit.
 
+        have Hrty : fld'.(return_type) = fld.(return_type) by admit.
+        rewrite Hrty.
         apply: equiv_trans.
         apply: equiv_cat_hd; exact: (Htrans (get_possible_types s ty0)).
-        apply: (ENF1 _ _ _ _ _ fld) => //=.
+        apply: (ENF _ _ _ _ _ fld) => //=.
         move=> t' Htin.
         have -> : find_queries_with_label s f ty (ground s ty0 φ) = ground s ty (find_queries_with_label s f ty φ).
           by admit.
@@ -783,6 +1269,7 @@ Section QuerySemantic.
 
         rewrite filter_ground_swap; apply: H3 => //=; admit. (* filter preserves conformance *)
 
+        
 
     - intros; simp ground.
       case Hscope : is_object_type => /=.
@@ -868,10 +1355,10 @@ Section QuerySemantic.
     - intros; simp remove_redundancies.
       apply: ESF.
       rewrite filter_remove_swap filter_filter_absorb //.
-      apply: (H0 ty0) => //=; admit.
+      apply: (H0 ty0) => //=; admit. (* filte preserves grounding *)
       
     - intros; simp remove_redundancies.
-      apply: (ENF1 _ _ _ _ _ fld) => //=.
+      apply: (ENF _ _ _ _ _ fld) => //=.
       * move=> t' Htin.
         have -> : find_queries_with_label s f ty (remove_redundancies (filter_queries_with_label f φ)) = [::] by admit.
         simp merge_selection_sets => /=.
@@ -879,7 +1366,7 @@ Section QuerySemantic.
         have -> : find_fields_with_response_name f φ = find_queries_with_label s f ty φ by admit.
         apply: H1 => //=.
         exact: Htin.
-        admit.
+        admit. (* subqueries are grounded wrt return type *)
         admit.
         
       * rewrite filter_remove_swap filter_filter_absorb //; apply: H3 => //=.
@@ -922,7 +1409,7 @@ Section QuerySemantic.
 
     - simp remove_redundancies; case Hlook : (lookup_field_in_type s t f) => [fld|] /=.
       
-      * apply: ENF1 => //=; first exact: Hlook.
+      * apply: ENF => //=; first exact: Hlook.
         + move=> t' Htin.
           rewrite -filter_remove_swap.
           have -> : find_queries_with_label s f t (filter_queries_with_label f (remove_redundancies φ)) = [::] by admit.
@@ -1067,7 +1554,7 @@ Section QuerySemantic.
         congr cons; last by apply: (IH ty) => //=; have Hfleq := (filter_queries_with_label_leq_size f φ1); ssromega.
         congr pair; congr Object.
         apply: (IH u.(type) v) => //=.
-        rewrite queries_size_app.
+        rewrite queries_size_cat.
          have Hleq1 := (found_queries_leq_size s f u.(type) φ1).
          have Hleq2 := (merged_selections_leq (find_queries_with_label s f u.(type) φ1)); ssromega.
 
@@ -1077,7 +1564,7 @@ Section QuerySemantic.
       *  congr cons;  last by apply: (IH ty) => //=; have Hfleq := (filter_queries_with_label_leq_size f φ1); ssromega.
          congr pair; congr Array; apply/eq_in_map=> v Hin.
          congr Object; apply: (IH u.(type) v) => //=.
-          rewrite queries_size_app.
+          rewrite queries_size_cat.
          have Hleq1 := (found_queries_leq_size s f u.(type) φ1).
          have Hleq2 := (merged_selections_leq (find_queries_with_label s f u.(type) φ1)); ssromega.
 
@@ -1085,7 +1572,7 @@ Section QuerySemantic.
         apply: (IH ty) => //=; ssromega.
 
     - move=> t β φ1 φ2 Happl Heq; simp query_size => Hleq; simp execute_selection_set; rewrite Happl /=.
-      apply: (IH ty) => //=; rewrite queries_size_app; ssromega.
+      apply: (IH ty) => //=; rewrite queries_size_cat; ssromega.
 
     - move=> t β φ1 φ2 Hnappl Heq; simp query_size => Hleq; simp execute_selection_set; rewrite Hnappl /=.
       apply: (IH ty) => //=; ssromega.
@@ -1218,7 +1705,7 @@ Section QuerySemantic.
       rewrite 2!find_queries_with_label_cat 2!merge_selection_sets_cat.
       rewrite 2!catA.
       apply: IH => //.
-      rewrite queries_size_app.
+      rewrite queries_size_cat.
       have Hleq1 := (found_queries_leq_size s f ty qs1).
       have Hleq2 := (merged_selections_leq (find_queries_with_label s f ty qs1)).
       ssromega.
@@ -1471,7 +1958,7 @@ Section QuerySemantic.
     }
    where "⦃ queries 'in' u ⦄" := (execute_selection_set2 u queries).
    all: do [simp query_size]; do ?by ssromega.
-     by rewrite queries_size_app; ssromega.
+     by rewrite queries_size_cat; ssromega.
   Qed.
 
 
@@ -1653,7 +2140,7 @@ Section QuerySemantic.
       * admit. (* Copy & Paste *) 
        
       * simp execute_selection_set; case does_fragment_type_apply => /=.
-        rewrite 2!catA; apply: IH => //; rewrite queries_size_app; ssromega.
+        rewrite 2!catA; apply: IH => //; rewrite queries_size_cat; ssromega.
         by apply: IH => //; ssromega.
   Admitted.
   
@@ -1868,7 +2355,7 @@ Section QuerySemantic.
           have Hpty := (get_possible_types_objectE Hscope).
           have Hinpty2 := Hinpty.
           rewrite Hpty mem_seq1 /= in Hinpty2; move/eqP in Hinpty2.
-          rewrite Hinpty2 Hfapplies /= -ground_cat; apply: IH => //; by rewrite queries_size_app; rewrite -/(queries_size φ) in Hleq; ssromega.
+          rewrite Hinpty2 Hfapplies /= -ground_cat; apply: IH => //; by rewrite queries_size_cat; rewrite -/(queries_size φ) in Hleq; ssromega.
           (* fragment type does not apply *)
           simp execute_selection_set.
           have Hinpty2 := Hinpty.
@@ -2267,7 +2754,7 @@ Section QuerySemantic.
     }
    where "⦃ queries 'in' u ⦄" := (execute_selection_set2 u queries).
    all: do ? by ssromega.
-   all: do [by rewrite ?queries_size_app -/(queries_size φ); ssromega].
+   all: do [by rewrite ?queries_size_cat -/(queries_size φ); ssromega].
   Qed.
 
  

@@ -163,6 +163,10 @@ Section SchemaAux.
   Definition is_composite_type (ty : NamedType) : bool :=
     [|| is_object_type ty, is_interface_type ty | is_union_type ty].
 
+  Definition is_leaf_type (ty : NamedType) : bool :=
+    is_scalar_type ty || is_enum_type ty.
+  
+
   Lemma is_object_type_interfaceN ty :
     is_object_type ty ->
     is_interface_type ty = false.

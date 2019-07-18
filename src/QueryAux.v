@@ -44,7 +44,7 @@ Section QueryAux.
       queries_size (cons hd tl) := query_size hd + queries_size tl
     }.
 
-  Lemma queries_size_app qs qs' :
+  Lemma queries_size_cat qs qs' :
     queries_size (qs ++ qs') = queries_size qs + queries_size qs'.
   Proof.
     elim: qs qs' => //= hd tl IH qs'.
@@ -123,7 +123,27 @@ Section QueryAux.
       have_same_arguments q1 q2 := (qargs q1 _) == (qargs q2 _)
     }.
 
-  Definition are_equivalent (q1 q2 : @Query Name Vals) : bool := have_same_field_name q1 q2 && have_same_arguments q1 q2.
+  
+
+   Equations is_simple_field_selection : @Query Name Vals -> bool :=
+    {
+      is_simple_field_selection (SingleField _ _) := true;
+      is_simple_field_selection (LabeledField _ _ _) := true;
+      is_simple_field_selection _ := false
+    }.
+  
+  Equations is_nested_field_selection : @Query Name Vals -> bool :=
+    {
+      is_nested_field_selection (NestedField _ _ _) := true;
+      is_nested_field_selection (NestedLabeledField _ _ _ _) := true;
+      is_nested_field_selection _ := false
+    }.
+
+  
+  Definition are_equivalent (q1 q2 : @Query Name Vals) : bool :=
+    [&& (q1.(is_simple_field_selection) && (q2.(is_simple_field_selection)) ||
+         q1.(is_nested_field_selection) && q2.(is_nested_field_selection)),
+        have_same_field_name q1 q2 & have_same_arguments q1 q2].
   
  
   Variable s : @wfSchema Name Vals.
@@ -196,7 +216,7 @@ Section QueryAux.
   Lemma found_queries_leq_size l O__t qs :
     queries_size (find_queries_with_label l O__t qs) <= queries_size qs.
   Proof.
-    funelim (find_queries_with_label _ _ qs) => //=; simp query_size; rewrite ?queries_size_app; ssromega.
+    funelim (find_queries_with_label _ _ qs) => //=; simp query_size; rewrite ?queries_size_cat; ssromega.
   Qed.
 
   Lemma found_queries_are_fields k O__t qs :
@@ -227,6 +247,19 @@ Section QueryAux.
     rewrite all_cat; apply_andP.
   Qed.
 
+  Transparent oqresponse_name qresponse_name.
+  Lemma found_queries_have_response_name rname O__t qs :
+    forall q, q \in find_queries_with_label rname O__t qs ->
+               q.(oqresponse_name) = Some rname.
+  Proof.
+    funelim (find_queries_with_label rname O__t qs) => //= q; rewrite ?inE.
+
+    all: do ? [move=> /orP [/eqP -> /= | Hin]].
+    all: do ? [by move/eqP in Heq; rewrite Heq].
+    all: do ?[by apply: H].
+    by rewrite mem_cat => /orP [Hin1 | Hin2]; [apply: H | apply: H0].
+  Qed.
+        
   Lemma all_in_same_label label O__t qs :
     forall q (Hfield : q.(is_field)), q \in find_queries_with_label label O__t qs ->
                                        (qresponse_name q Hfield) = label.
@@ -298,7 +331,7 @@ Section QueryAux.
     queries_size (merge_selection_sets qs) < queries_size qs.
   Proof.
     funelim (merge_selection_sets qs) => //=.
-    case: q; intros => //=; simp query_size; rewrite ?queries_size_app;
+    case: q; intros => //=; simp query_size; rewrite ?queries_size_cat;
     case: l H => //= hd tl /(_ is_true_true) H; ssromega.
   Qed.
 
@@ -306,7 +339,7 @@ Section QueryAux.
     queries_size (merge_selection_sets qs) <= queries_size qs.
   Proof.
     funelim (merge_selection_sets qs) => //=.
-    case: q; intros => //=; simp query_size; rewrite ?queries_size_app;
+    case: q; intros => //=; simp query_size; rewrite ?queries_size_cat;
      ssromega.
   Qed.
 
@@ -318,7 +351,7 @@ Section QueryAux.
   Qed.
   
 
-    Lemma filter_queries_with_label_cat l (qs1 qs2 : seq (@Query Name Vals)) :
+  Lemma filter_queries_with_label_cat l (qs1 qs2 : seq (@Query Name Vals)) :
     filter_queries_with_label l (qs1 ++ qs2) = filter_queries_with_label l qs1 ++ filter_queries_with_label l qs2.
   Proof.
     elim: qs1  => //= hd tl IH.
@@ -334,74 +367,67 @@ Section QueryAux.
     filter_queries_with_label f1 (filter_queries_with_label f2 φ) =
     filter_queries_with_label f2 (filter_queries_with_label f1 φ).
   Admitted.
-
-    Lemma filter_filter_absorb k (qs : seq (@Query Name Vals)) :
+  
+  Lemma filter_filter_absorb k (qs : seq (@Query Name Vals)) :
     filter_queries_with_label k (filter_queries_with_label k qs) = filter_queries_with_label k qs.
   Admitted.
-
-
-     Equations find_fields_with_response_name : Name -> seq (@Query Name Vals) -> seq (@Query Name Vals) :=
+  
+  
+  Equations? find_fields_with_response_name (rname : Name) (φ : seq (@Query Name Vals)) :
+    seq (@Query Name Vals) by wf (queries_size φ) :=
     {
-       find_fields_with_response_name _ [::] := [::];
-
-       find_fields_with_response_name k (InlineFragment t φ :: qs) := find_fields_with_response_name k qs;
-
-      find_fields_with_response_name k (SingleField f α :: qs)
-        with f == k :=
+      find_fields_with_response_name _ [::] := [::];
+      
+      
+      find_fields_with_response_name rname (SingleField f α :: qs)
+        with f == rname :=
         {
-        | true := SingleField f α :: find_fields_with_response_name k qs;
-        | _ := find_fields_with_response_name k qs
+        | true := SingleField f α :: find_fields_with_response_name rname qs;
+        | _ := find_fields_with_response_name rname qs
         };
       
-      find_fields_with_response_name k (LabeledField l f α :: qs)
-        with l == k :=
+      find_fields_with_response_name rname (LabeledField l f α :: qs)
+        with l == rname :=
         {
-        | true := LabeledField l f α :: find_fields_with_response_name k qs;
-        | _ := find_fields_with_response_name k qs
+        | true := LabeledField l f α :: find_fields_with_response_name rname qs;
+        | _ := find_fields_with_response_name rname qs
         };
 
       
-      find_fields_with_response_name k (NestedField f α φ :: qs)
-        with f == k :=
+      find_fields_with_response_name rname (NestedField f α φ :: qs)
+        with f == rname :=
         {
-        | true := NestedField f α φ :: find_fields_with_response_name k qs;
-        | _ := find_fields_with_response_name k qs
+        | true := NestedField f α φ :: find_fields_with_response_name rname qs;
+        | _ := find_fields_with_response_name rname qs
         };
       
-      find_fields_with_response_name k (NestedLabeledField l f α φ :: qs)
-        with l == k :=
+      find_fields_with_response_name rname (NestedLabeledField l f α φ :: qs)
+        with l == rname :=
         {
-        | true := NestedLabeledField l f α φ  :: find_fields_with_response_name k qs;
-        | _ := find_fields_with_response_name k qs
-        }
+        | true := NestedLabeledField l f α φ  :: find_fields_with_response_name rname qs;
+        | _ := find_fields_with_response_name rname qs
+        };
+      
+      find_fields_with_response_name rname (InlineFragment t φ :: qs) :=
+        find_fields_with_response_name rname φ ++ find_fields_with_response_name rname qs
     }.
+  Proof.
+    all: do [by simp query_size; ssromega].
+  Qed.
 
   Lemma all_found_fields_are_fields k qs :
     all (fun q => q.(is_field)) (find_fields_with_response_name k qs).
   Proof.
-      by funelim (find_fields_with_response_name k qs).
+    funelim (find_fields_with_response_name k qs) => //=.
+      by rewrite all_cat; apply_andP.
   Qed.
 
   Lemma found_fields_leq_size k qs :
     queries_size (find_fields_with_response_name k qs) <= queries_size qs.
   Proof.
-      by funelim (find_fields_with_response_name k qs) => //=; simp query_size; ssromega.
+    funelim (find_fields_with_response_name k qs) => //=; simp query_size; do ? ssromega.
+      by rewrite queries_size_cat; ssromega.
   Qed.
-
-
-   Equations is_simple_field_selection : @Query Name Vals -> bool :=
-    {
-      is_simple_field_selection (SingleField _ _) := true;
-      is_simple_field_selection (LabeledField _ _ _) := true;
-      is_simple_field_selection _ := false
-    }.
-  
-  Equations is_nested_field_selection : @Query Name Vals -> bool :=
-    {
-      is_nested_field_selection (NestedField _ _ _) := true;
-      is_nested_field_selection (NestedLabeledField _ _ _ _) := true;
-      is_nested_field_selection _ := false
-    }.
 
 
   Lemma merge_simple_fields_is_empty φ :
@@ -411,6 +437,57 @@ Section QueryAux.
     by elim: φ => //=; case.
   Qed.
 
+  
+
+  Lemma find_all_q_equiv_to_sf_are_simple ty f α φ :
+    all (are_equivalent (SingleField f α)) (find_queries_with_label f ty φ) ->
+    all (fun q => q.(is_simple_field_selection)) (find_queries_with_label f ty φ).
+  Proof.
+    funelim (find_queries_with_label f ty φ) => //=.
+
+    all: do ? by case/andP=> *; apply_andP; apply: (H α).
+    all: do ? by move=> *; apply: (H α).
+
+    by rewrite 2!all_cat => /andP [Hall1 Hall2]; apply_andP; [apply: (H α) | apply: (H0 α)].
+
+  Qed.
+
+  Lemma find_all_f_equiv_to_sf_are_simple ty f α (φ : seq (@Query Name Vals)) :
+    all (are_equivalent (SingleField f α)) (find_fields_with_response_name f φ) ->
+    all (fun q => q.(is_simple_field_selection)) (find_queries_with_label f ty φ).
+  Proof.
+    funelim (find_queries_with_label f ty φ) => //=.
+
+    all: do ?[by simp find_fields_with_response_name; rewrite Heq /= => /andP [Hequiv Hequivs]; apply_andP; apply: (H α)].
+
+    all: do ? by simp find_fields_with_response_name; rewrite Heq /= => *; apply: (H α).
+
+    - by simp find_fields_with_response_name; rewrite 2!all_cat => /andP [Hequiv Hequivs]; apply_andP; [apply: (H α) | apply: (H0 α)].
+    - by simp find_fields_with_response_name; rewrite all_cat => /andP [Hequiv Hequivs]; apply: (H α).
+        
+  Qed.
+
+
+
+  Lemma find_queries_subseq_find_fields ty f φ :
+    subseq (find_queries_with_label f ty φ) (find_fields_with_response_name f φ).
+  Proof.
+    funelim (find_queries_with_label f ty φ) => //=.
+    all: do ?[simp find_fields_with_response_name; rewrite Heq /=; case: ifP => //=; by move/negbT/eqP].
+
+    all: do ? by simp find_fields_with_response_name; rewrite Heq /=.
+
+    by simp find_fields_with_response_name; rewrite cat_subseq.
+    simp find_fields_with_response_name.
+    rewrite -[find_queries_with_label _ _ _]cat0s; rewrite cat_subseq //=.
+    apply: sub0seq.
+  Qed. 
+
+  Lemma find_fields_cat rname φ1 φ2 :
+    find_fields_with_response_name rname (φ1 ++ φ2) =
+    find_fields_with_response_name rname φ1 ++ find_fields_with_response_name rname φ2.
+  Admitted.
+    
     
 End QueryAux.
 

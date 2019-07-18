@@ -188,13 +188,28 @@ Section Query.
       qname (InlineFragment _ _) Hfld := _
     }.
 
+  Equations oqname (query : Query) : option Name :=
+    {
+      oqname (InlineFragment _ _) := None;
+      oqname q := Some (qname q _)
+    }.
+
+    
   Equations qlabel query (Hlab : query.(is_labeled)) : Name :=
     {
       qlabel (LabeledField label _ _) _ := label;
       qlabel (NestedLabeledField label _ _ _) _ := label;
       qlabel _ Hlab := _
     }.
-  
+
+  Equations oqlabel (query : Query) : option Name :=
+    {
+      oqlabel (LabeledField label _ _) := Some label;
+      oqlabel (NestedLabeledField label _ _ _) := Some label;
+      oqlabel _ := None
+    }.
+                         
+    
   Definition qsubqueries query : seq Query :=
     match query with
     | NestedField _ _ ϕ
@@ -218,6 +233,12 @@ Section Query.
       qargs (InlineFragment _ _) Hfld := _
     }.
 
+  Equations oqargs (query : Query) : option {fmap Name -> Vals} :=
+    {
+      oqargs (InlineFragment _ _) := None;
+      oqargs q := Some (qargs q _)
+    }.
+
   
   Equations qresponse_name query (Hfld : query.(is_field)) :  Name :=
     {
@@ -226,6 +247,12 @@ Section Query.
       qresponse_name (NestedField f _ _) _ := f;
       qresponse_name (NestedLabeledField l _ _ _) _ := l;
       qresponse_name (InlineFragment _ _) Hfld := _
+    }.
+
+  Equations oqresponse_name (query : Query) : option Name :=
+    {
+      oqresponse_name (InlineFragment _ _) := None;
+      oqresponse_name q := Some (qresponse_name q _)
     }.
 
 
@@ -246,7 +273,12 @@ Arguments is_labeled [Name Vals].
 Arguments has_subqueries [Name Vals].
 
 Arguments qname [Name Vals].
+Arguments oqname [Name Vals].
+Arguments qlabel [Name Vals].
+Arguments oqlabel [Name Vals].
 Arguments qargs [Name Vals].
+Arguments oqargs [Name Vals].
 Arguments qsubqueries [Name Vals].
 Arguments qsubqueries' [Name Vals].
 Arguments qresponse_name [Name Vals].
+Arguments oqresponse_name [Name Vals].

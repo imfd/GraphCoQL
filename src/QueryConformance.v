@@ -213,17 +213,17 @@ Section QueryConformance.
  Solve Obligations with intros; simp query_size; have Hleq := (filter_queries_with_label_leq_size f qs); ssromega.
  Solve Obligations with intros; simp query_size; have Hleq := (filter_queries_with_label_leq_size l qs); ssromega.
  Next Obligation.
-   simp query_size; rewrite queries_size_app.
+   simp query_size; rewrite queries_size_cat.
    have Hleq1 := (found_fields_leq_size f qs).
    have Hleq2 := (merged_selections_leq (find_fields_with_response_name f qs)); ssromega.
  Qed.
  Next Obligation.
-   simp query_size; rewrite queries_size_app.
+   simp query_size; rewrite queries_size_cat.
    have Hleq1 := (found_fields_leq_size l qs).
    have Hleq2 := (merged_selections_leq (find_fields_with_response_name l qs)); ssromega.
  Qed.
  Next Obligation.
-   by rewrite queries_size_app; simp query_size.
+   by rewrite queries_size_cat; simp query_size.
  Qed.
  
 
@@ -308,31 +308,30 @@ Section QueryConformance.
        }
    }.
  
- Solve Obligations with intros; simp query_size; rewrite ?queries_size_app; do ? ssromega.
+ Solve Obligations with intros; simp query_size; rewrite ?queries_size_cat; do ? ssromega.
  Solve Obligations with intros; simp query_size; have Hleq := (filter_queries_with_label_leq_size f qs); ssromega.
  Solve Obligations with intros; simp query_size; have Hleq := (filter_queries_with_label_leq_size l qs); ssromega.
 
  Next Obligation.
-   simp query_size; rewrite queries_size_app.
+   simp query_size; rewrite queries_size_cat.
    have Hleq1 := (found_queries_leq_size s f ty qs).
    have Hleq2 := (merged_selections_leq (find_queries_with_label s f ty qs)); ssromega.
  Qed.
  Next Obligation.
-   simp query_size; rewrite queries_size_app.
+   simp query_size; rewrite queries_size_cat.
    have Hleq1 := (found_fields_leq_size f qs).
    have Hleq2 := (merged_selections_leq (find_fields_with_response_name f qs)); ssromega.
  Qed.
  Next Obligation.
-   simp query_size; rewrite queries_size_app.
+   simp query_size; rewrite queries_size_cat.
    have Hleq1 := (found_queries_leq_size s l ty qs).
    have Hleq2 := (merged_selections_leq (find_queries_with_label s l ty qs)); ssromega.
  Qed.
   Next Obligation.
-   simp query_size; rewrite queries_size_app.
+   simp query_size; rewrite queries_size_cat.
    have Hleq1 := (found_fields_leq_size l qs).
    have Hleq2 := (merged_selections_leq (find_fields_with_response_name l qs)); ssromega.
  Qed.
-
 
 
   
@@ -350,6 +349,29 @@ Section QueryConformance.
 
      4. Inline fragments are possible (https://graphql.github.io/graphql-spec/June2018/#sec-Fragment-spread-is-possible)
    **)
+
+  (* Equations? selections_are_defined (ty : Name) (φ : seq (@Query Name Vals)) : bool by wf (queries_size φ) := *)
+  (*   { *)
+  (*     selections_are_defined _ [::] := true; *)
+      
+  (*     selections_are_defined ty (InlineFragment t β :: φ) := *)
+  (*       selections_are_defined t β && selections_are_defined ty φ; *)
+
+  (*     selections_are_defined ty (q :: φ) := *)
+  (*       isSome (lookup_field_in_type s ty (qname q _)) && selections_are_defined ty φ *)
+  (*   }. *)
+  (* Proof. *)
+  (*   all: do [simp query_size; ssromega]. *)
+  (* Qed. *)
+
+  (* Equations? selections_have_appropriate_types (ty : Name) (φ : seq (@Query Name Vals)) : bool := *)
+  (*   { *)
+  (*     selections_have_appropriate_types _ [::] := true; *)
+
+      
+  
+                                      
+      
   
   Equations query_conforms (ty : Name) query : bool :=
     {
