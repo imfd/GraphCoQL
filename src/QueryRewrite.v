@@ -22,6 +22,8 @@ Require Import Ssromega.
 
 Require Import SeqExtra.
 
+Require Import QueryTactics.
+
 Section QueryRewrite.
 
   Variables Name Vals : ordType.
@@ -431,8 +433,178 @@ Section QueryRewrite.
     - by apply: remove_redundancies_is_non_redundant.
   Qed.
 
-    
-    
+  (* Supposed to be applied over an object type *)
+  Equations? reground (type_in_scope : @NamedType Name) (queries : seq (@Query Name Vals)) :
+    seq (@Query Name Vals) by wf (queries_size queries) :=
+    {
+      reground _ [::] := [::];
+
+      reground ty (SingleField f α :: qs)
+        with lookup_field_in_type s ty f :=
+        {
+        | Some _ := SingleField f α :: reground ty (filter_queries_with_label f qs);
+        | _ := reground ty qs
+        };
+      
+      reground ty (LabeledField l f α :: qs)
+        with lookup_field_in_type s ty f :=
+        {
+        | Some _ := LabeledField l f α :: reground ty (filter_queries_with_label l qs);
+        | _ := reground ty qs
+        };
+
+      reground ty (NestedField f α φ :: qs)
+        with lookup_field_in_type s ty f :=
+        {
+        | Some fld
+            with is_object_type s fld.(return_type) :=
+            {
+            | true := NestedField f α (reground fld.(return_type) (φ ++ merge_selection_sets (find_queries_with_label s f ty qs)))
+                                 :: reground ty (filter_queries_with_label f qs);
+            | _ := NestedField f α [seq InlineFragment t (reground t (φ ++ merge_selection_sets (find_queries_with_label s f ty qs))) | t <- get_possible_types s fld.(return_type)] ::
+                              reground ty (filter_queries_with_label f qs)
+            };
+        
+        | _ => reground ty qs
+        };
+      
+      reground ty (NestedLabeledField l f α φ :: qs)
+        with lookup_field_in_type s ty f :=
+        {
+        | Some fld
+            with is_object_type s fld.(return_type) :=
+            {
+            | true := NestedLabeledField l f α (reground fld.(return_type) (φ ++ merge_selection_sets (find_queries_with_label s l ty qs)))
+                                        :: reground ty (filter_queries_with_label l qs);
+            | _ := NestedLabeledField l f α [seq InlineFragment t (reground t (φ ++ merge_selection_sets (find_queries_with_label s l ty qs))) | t <- get_possible_types s fld.(return_type)] ::
+                              reground ty (filter_queries_with_label l qs)
+            };
+        
+        | _ => reground ty qs
+        };
+        
+      
+      reground ty (InlineFragment t φ :: qs)
+        with does_fragment_type_apply s ty t :=
+        {
+        | true := reground ty (φ ++ qs);
+        | _ := reground ty qs
+        }
+
+    }.
+  Proof.
+    all: do [leq_queries_size].
+  Qed.
+
+  Equations ground_queries (type_in_scope : @NamedType Name) (queries : seq (@Query Name Vals)) :
+    seq (@Query Name Vals) :=
+    {
+      ground_queries ty qs
+        with is_object_type s ty :=
+        {
+              | true := reground ty qs;
+              | _ := [seq InlineFragment t (reground t qs) | t <- get_possible_types s ty]
+        }
+    }.
+
+
+  (* Missing 2 cases with subtypes *)
+  Lemma reground_are_grounded2 ty φ :
+    is_object_type s ty ->
+    are_grounded2 s ty (reground ty φ).
+  Proof.
+    apply_funelim (reground ty φ) => //=; clear ty φ.
+    - by move=> ty f fld α φ IH Hlook Hscope; rewrite Hscope /=; apply_and3P; apply: IH.
+
+    - by move=> ty f fld l α φ IH Hlook Hscope; rewrite Hscope /= ; apply_and3P; apply: IH.
+
+    - move=> ty f fld α β φ IHsub IH Hrty Hlook Hscope; rewrite Hscope /=; apply_and3P; last by apply: IH.
+        by simp is_grounded2; rewrite Hlook /=; apply: IHsub.
+
+    - move=> fld ty f α β φ IHsub IH Hrty Hlook Hscope; rewrite Hscope /=; apply_and3P; last by apply: IH.
+      simp is_grounded2; rewrite Hlook /=.
+      admit. (* induction over possible types and then IHsub *)
+
+    - move=> fld ty f l α β φ IHsub IH Hrty Hlook Hscope; rewrite Hscope /=; apply_and3P; last by apply: IH.
+        by simp is_grounded2; rewrite Hlook /=; apply: IHsub.
+
+    - move=> fld ty f l α β φ IHsub IH Hrty Hlook Hscope; rewrite Hscope /=; apply_and3P; last by apply: IH.
+      simp is_grounded2; rewrite Hlook /=.
+      admit. (* Similar as previous *)
+  Admitted.
+      
+  Lemma ground_queries_are_grounded2 ty φ :
+    are_grounded2 s ty (ground_queries ty φ).
+  Proof.
+    apply_funelim (ground_queries ty φ) => /=; clear ty φ.
+    - by move=> ty φ Hscope; apply: reground_are_grounded2.
+    - move=> ty φ Hscope.
+      have := (@in_possible_types_is_object Name Vals s ty).
+      elim: get_possible_types => //= t ptys IH Hinobj.
+      rewrite Hscope /=; apply_and3P.
+      * simp is_grounded2; apply_andP; [| apply: reground_are_grounded2]; by apply: Hinobj; apply: mem_head.
+      * by apply: IH => t' Hin; apply: Hinobj; apply: mem_tail.
+  Qed.
+
+  Lemma reground_are_non_redundant ty φ :
+    is_object_type s ty ->
+    are_non_redundant (reground ty φ).
+  Proof.
+  Admitted.
+
+  Lemma ground_queries_are_non_redundant ty φ :
+    are_non_redundant (ground_queries ty φ).
+  Proof.
+    apply_funelim (ground_queries ty φ) => //=; clear ty φ; first by intros; apply: reground_are_non_redundant.
+    move=> ty φ Hscope.
+    have := (@in_possible_types_is_object Name Vals s ty).
+    elim: get_possible_types => //= t ptys IH Hinobj.
+    simp are_non_redundant; apply_and3P.
+  Admitted.
+
+
+  Lemma filter_reground_swap rname ty φ :
+    filter_queries_with_label rname (reground ty φ) = reground ty (filter_queries_with_label rname φ).
+  Proof.
+    move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
+    elim: n φ rname => /= [| n IH] φ rname ; first by rewrite leqn0 => /queries_size_0_nil ->.
+    case: φ => //= q φ.
+    case_query q; simp query_size => Hleq; simp reground.
+    - lookup => //=; simp filter_queries_with_label; case: eqP => /= Heq.
+      * by rewrite Heq -IH // filter_filter_absorb.
+      * simp reground; rewrite Hlook /= IH //; [by rewrite filter_swap | by leq_queries_size].
+      * by apply: IH.
+      * by simp reground; rewrite Hlook /=; apply: IH.
+    - lookup => //=; simp filter_queries_with_label; case: eqP => /= Heq.
+      * by rewrite Heq -IH // filter_filter_absorb.
+      * simp reground; rewrite Hlook /= IH //; [by rewrite filter_swap | by leq_queries_size].
+      * by apply: IH.
+      * by simp reground; rewrite Hlook /=; apply: IH.
+
+    - lookup => //=; simp filter_queries_with_label; case: eqP => /= Heq; do ? by apply: IH; leq_queries_size.
+      * case Hscope : is_object_type => //=; simp filter_queries_with_label => //=; case: eqP => //= _;
+        by rewrite Heq -IH // ?filter_filter_absorb; leq_queries_size.
+
+      * case Hscope : is_object_type => //=; simp filter_queries_with_label => //=; case: eqP => //= _;
+        simp reground; rewrite Hlook /= Hscope /= find_filter_swap; do ? by apply/eqP.
+        all: do ? [rewrite IH ?filter_filter_absorb; leq_queries_size; by rewrite filter_swap].
+
+      * by simp reground; rewrite Hlook /=; apply: IH; leq_queries_size.
+
+    - lookup => //=; simp filter_queries_with_label; case: eqP => /= Heq; do ? by apply: IH; leq_queries_size.
+      * case Hscope : is_object_type => //=; simp filter_queries_with_label => //=; case: eqP => //= _;
+        by rewrite Heq -IH // ?filter_filter_absorb; leq_queries_size.
+
+      * case Hscope : is_object_type => //=; simp filter_queries_with_label => //=; case: eqP => //= _;
+        simp reground; rewrite Hlook /= Hscope /= find_filter_swap; do ? by apply/eqP.
+        all: do ? [rewrite IH ?filter_filter_absorb; leq_queries_size; by rewrite filter_swap].
+
+      * by simp reground; rewrite Hlook /=; apply: IH; leq_queries_size.
+
+    - case Hfapplies : does_fragment_type_apply => //=; simp filter_queries_with_label.
+      * by simp reground; rewrite Hfapplies /= -filter_queries_with_label_cat; apply: IH; leq_queries_size.
+      * by simp reground; rewrite Hfapplies /=; apply: IH; leq_queries_size.
+  Qed.
       
 End QueryRewrite.
 
@@ -445,3 +617,6 @@ Arguments filter_fragments_with_guard [Name Vals].
 Arguments remove_redundancies [Name Vals].
 
 Arguments normalize [Name Vals].
+
+Arguments reground [Name Vals].
+Arguments ground_queries [Name Vals].

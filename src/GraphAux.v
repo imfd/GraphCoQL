@@ -82,6 +82,7 @@ Section GraphAux.
   Admitted.
 
   
+  
     
   Lemma ohead_in_nodes graph nds v :
     all (fun node => node \in graph.(nodes)) nds ->

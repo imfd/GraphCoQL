@@ -227,8 +227,7 @@ Section QueryConformance.
  Qed.
  
 
- (* Equations can't generate the graph *)
- Equations(noind) is_field_merging_possible (ty : Name) queries : bool by wf (queries_size queries)  :=
+ Equations is_field_merging_possible (ty : Name) queries : bool by wf (queries_size queries)  :=
    {
      is_field_merging_possible _ [::] := true;
 
@@ -331,10 +330,107 @@ Section QueryConformance.
    simp query_size; rewrite queries_size_cat.
    have Hleq1 := (found_fields_leq_size l qs).
    have Hleq2 := (merged_selections_leq (find_fields_with_response_name l qs)); ssromega.
- Qed.
+  Qed.
+  Next Obligation.
+    move: {2}(queries_size _) (leqnn (queries_size queries)) => n.
+    elim: n ty queries => /= [| n IH] ty queries.
+    by rewrite leqn0 => /queries_size_0_nil ->; constructor.
+    
+    case: queries => //=; first by constructor.
+    case=> //= [f α | l f α | f α β | l f α β | t β] qs; simp query_size => Hleq.
+    - rewrite is_field_merging_possible_equation_2.
+      apply: is_field_merging_possible_graph_refinement_2.
+      case Hscope : is_object_type => /=.
+      * rewrite is_field_merging_possible_clause_2_equation_1.
+        apply: is_field_merging_possible_clause_2_graph_equation_1.
+        apply: IH => //=.
+          by have Hfleq := (filter_queries_with_label_leq_size f qs); ssromega.
+
+      * rewrite is_field_merging_possible_clause_2_equation_2.
+        apply: is_field_merging_possible_clause_2_graph_equation_2.
+        apply: IH => //=.
+          by have Hfleq := (filter_queries_with_label_leq_size f qs); ssromega.
+
+    - rewrite is_field_merging_possible_equation_3.
+      have Hfleq := (filter_queries_with_label_leq_size l qs).
+      apply: is_field_merging_possible_graph_refinement_3.
+      case Hscope : is_object_type => /=.
+      * rewrite is_field_merging_possible_clause_3_equation_1.
+        apply: is_field_merging_possible_clause_3_graph_equation_1.
+        by apply: IH => //=; ssromega.
+
+      * rewrite is_field_merging_possible_clause_3_equation_2.
+        apply: is_field_merging_possible_clause_3_graph_equation_2.
+        apply: IH => //=; ssromega.
+
+    - rewrite is_field_merging_possible_equation_4.
+      have Hfleq := (filter_queries_with_label_leq_size f qs).
+      have Hfoundleq1 := (found_queries_leq_size s f ty qs).
+      have Hfoundleq2 := (found_fields_leq_size f qs).
+      have Hmleq1 := (merged_selections_leq (find_queries_with_label s f ty qs)).
+      have Hmleq2 := (merged_selections_leq (find_fields_with_response_name f qs)).
+      apply: is_field_merging_possible_graph_refinement_4.
+      case Hlook : lookup_field_in_type => [fld|] //=.
+      * apply: is_field_merging_possible_clause_4_graph_refinement_1.
+        case Hscope : is_object_type => /=.
+        + rewrite is_field_merging_possible_clause_4_clause_1_equation_1.
+          apply: is_field_merging_possible_clause_4_clause_1_graph_equation_1 => /=.
+          by apply: IH => //=; rewrite queries_size_cat; ssromega.
+          by apply: IH => //=; ssromega.
+            
+        + rewrite is_field_merging_possible_clause_4_clause_1_equation_2.
+          apply: is_field_merging_possible_clause_4_clause_1_graph_equation_2 => /=.
+          by apply: IH => //=; rewrite queries_size_cat; ssromega.
+          by apply: IH => //=; ssromega.
+
+      * rewrite is_field_merging_possible_clause_4_equation_2 //=.
+        by apply: is_field_merging_possible_clause_4_graph_equation_2.
+
+    - rewrite is_field_merging_possible_equation_5.
+      have Hfleq := (filter_queries_with_label_leq_size l qs).
+      have Hfoundleq1 := (found_queries_leq_size s l ty qs).
+      have Hfoundleq2 := (found_fields_leq_size l qs).
+      have Hmleq1 := (merged_selections_leq (find_queries_with_label s l ty qs)).
+      have Hmleq2 := (merged_selections_leq (find_fields_with_response_name l qs)).
+      apply: is_field_merging_possible_graph_refinement_5.
+      case Hlook : lookup_field_in_type => [fld|] //=.
+      * apply: is_field_merging_possible_clause_5_graph_refinement_1.
+        case Hscope : is_object_type => /=.
+        + rewrite is_field_merging_possible_clause_5_clause_1_equation_1.
+          apply: is_field_merging_possible_clause_5_clause_1_graph_equation_1 => /=.
+          by apply: IH => //=; rewrite queries_size_cat; ssromega.
+          by apply: IH => //=; ssromega.
+            
+        + rewrite is_field_merging_possible_clause_5_clause_1_equation_2.
+          apply: is_field_merging_possible_clause_5_clause_1_graph_equation_2 => /=.
+          by apply: IH => //=; rewrite queries_size_cat; ssromega.
+          by apply: IH => //=; ssromega.
+
+      * rewrite is_field_merging_possible_clause_5_equation_2 //=.
+        by apply: is_field_merging_possible_clause_5_graph_equation_2.
+
+    - rewrite is_field_merging_possible_equation_6.
+      apply: is_field_merging_possible_graph_refinement_6.
+      case Hspreads : is_fragment_spread_possible => /=.
+      * rewrite is_field_merging_possible_clause_6_equation_1 //=.
+        apply: is_field_merging_possible_clause_6_graph_refinement_1.
+        case Hscope : is_object_type => /=.
+        + rewrite is_field_merging_possible_clause_6_clause_1_equation_1.
+          apply: is_field_merging_possible_clause_6_clause_1_graph_equation_1.
+          by apply: IH => //=; rewrite queries_size_cat.
+
+        + rewrite is_field_merging_possible_clause_6_clause_1_equation_2.
+          apply: is_field_merging_possible_clause_6_clause_1_graph_equation_2.
+          by apply: IH; rewrite queries_size_cat.
+          by apply: IH; ssromega.
+
+      * rewrite is_field_merging_possible_clause_6_equation_2 //=.
+        apply: is_field_merging_possible_clause_6_graph_equation_2.
+        by apply: IH => //=; ssromega.
+  Defined.
 
 
-  
+        
   (** Checks whether a query conforms to a given schema.
       
       Every query (or selection of fields) is set in a given context

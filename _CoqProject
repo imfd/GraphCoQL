@@ -19,6 +19,7 @@
 ./src/Query.v
 ./src/QueryAux.v
 ./src/QueryConformance.v
+./src/QueryTactics.v
 
 ./src/NRGTNF.v
 ./src/QueryRewrite.v
