@@ -256,7 +256,7 @@ Section NRGTNF.
       are_similar (InlineFragment t _) (InlineFragment t' _) := t == t';
       are_similar (InlineFragment _ _) _ := false;
       are_similar _ (InlineFragment _ _) := false;
-      are_similar q1 q2 := (qresponse_name q1 _) == (qresponse_name q2 _)
+      are_similar q1 q2 := ((qresponse_name q1 _) == (qresponse_name q2 _)) && ((qargs q1 _) == (qargs q2 _))
     }.
    
   Equations? are_non_redundant (queries : seq (@Query Name Vals)) : bool

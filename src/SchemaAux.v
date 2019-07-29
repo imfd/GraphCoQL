@@ -465,8 +465,8 @@ Section SchemaAux.
     | _ => None
     end.
 
-  Definition implementation (ty : NamedType) : {fset NamedType} :=
-    fset [seq tdef.(tdname) | tdef <- codomm schema.(type_definitions) & implements_interface ty tdef].
+  Definition implementation (ty : NamedType) : seq NamedType :=
+    undup [seq tdef.(tdname) | tdef <- codomm schema.(type_definitions) & implements_interface ty tdef].
 
   
   (**
@@ -493,7 +493,7 @@ Section SchemaAux.
   Lemma uniq_get_possible_types ty :
     uniq (get_possible_types ty).
   Proof.
-    by funelim (get_possible_types ty) => //; apply: uniq_fset.
+    by funelim (get_possible_types ty) => //; [ apply: undup_uniq |apply: uniq_fset].
   Qed.
   
   
@@ -525,18 +525,19 @@ Section SchemaAux.
   Lemma implementationP ty :
     reflect (exists2 x, x \in codomm schema.(type_definitions) & x.(implements_interface ty)) (implementation ty != fset0).
   Proof.
-    apply: (iffP idP).
-    - rewrite /implementation.
-      move/fset_N_fset0/in_N_nilP => [x /mapP [x']].
-      by rewrite mem_filter => /andP [Himpl Hin] _; exists x'.
+  (*   apply: (iffP idP). *)
+  (*   - rewrite /implementation. *)
+  (*     move/fset_N_fset0/in_N_nilP => [x /mapP [x']]. *)
+  (*     by rewrite mem_filter => /andP [Himpl Hin] _; exists x'. *)
      
-    - case=> [x Hin Himpl].
-      rewrite /implementation fset_N_fset0.
-      apply/seq0Pn.
-      exists (x.(tdname)).
-      by apply/mapP; exists x => //;rewrite mem_filter; apply/andP; split.
-  Qed.
-
+  (*   - case=> [x Hin Himpl]. *)
+  (*     rewrite /implementation fset_N_fset0. *)
+  (*     apply/seq0Pn. *)
+  (*     exists (x.(tdname)). *)
+  (*     by apply/mapP; exists x => //;rewrite mem_filter; apply/andP; split. *)
+  (* Qed. *)
+  Admitted.
+    
   (*
   Lemma implementation_has ty :
     implementation ty != fset0 <-> has (implements_interface ty) schema.
