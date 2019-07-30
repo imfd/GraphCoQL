@@ -190,21 +190,143 @@ Section QuerySemantic.
       | [ |- context [ ⟦ _ ⟧ˢ in _ ] ] => simp execute_selection_set
       end.
 
+
+
+  
+ 
+
+   Lemma exec_frags_nil_func (f : Name -> seq (@Query Name Vals) -> seq Query) u ptys φ :
+    uniq ptys ->
+    all (is_object_type s) ptys ->
+    u.(type) \notin ptys ->
+    ⟦ [seq InlineFragment t (f t φ) | t <- ptys] ⟧ˢ in u = [::].
+  Proof.
+    elim: ptys => //= t ptys IH /andP [Hnin Huniq] /andP [Hobj Hinobj] Hunin.
+    have /negbTE Hneq : u.(type) != t by move/memPn: Hunin => /(_ t (mem_head t ptys)); rewrite eq_sym.
+    exec; rewrite /does_fragment_type_apply Hobj Hneq /=.
+    apply: IH => //=.
+    move: Hunin; rewrite /negb; case: ifP => //=.
+      by case: ifP => //= Hin <- _; apply: mem_tail.
+  Qed.
+
+   Lemma exec_frags_nil u ptys φ :
+    uniq ptys ->
+    all (is_object_type s) ptys ->
+    u.(type) \notin ptys ->
+    ⟦ [seq InlineFragment t φ | t <- ptys] ⟧ˢ in u = [::].
+   Proof.
+     by apply: (exec_frags_nil_func (fun t qs => qs)).
+  Qed.
+  
+  Lemma exec_frags_nil_get_types u ty φ :
+    u.(type) \notin get_possible_types s ty ->
+    ⟦ [seq InlineFragment t φ | t <- get_possible_types s ty] ⟧ˢ in u = [::].
+  Proof.
+    by move=> Hnin; apply: exec_frags_nil => //=; [apply: uniq_get_possible_types | apply/allP; apply: in_possible_types_is_object].
+  Qed.
+
+
+
+  Lemma exec_cat_frags_func (f : Name -> seq (@Query Name Vals) -> seq Query) ptys u φ1 φ2 :
+    (forall rname t φ, filter_queries_with_label rname (f t φ) = f t (filter_queries_with_label rname φ)) ->
+    uniq ptys ->
+    all (is_object_type s) ptys ->
+    u.(type) \notin ptys ->
+    ⟦ φ1 ++ [seq InlineFragment t (f t φ2) | t <- ptys] ⟧ˢ in u = ⟦ φ1 ⟧ˢ in u.   
+  Proof.
+    move=> Hfilterswap.
+    move=> Hnin.
+    move: {2}(queries_size _) (leqnn (queries_size φ1)) => n.
+    elim: n φ1 φ2 => /= [| n IH] φ1 φ2; first by rewrite leqn0 => /queries_size_0_nil ->; apply: exec_frags_nil_func.
+    case: φ1 => //= [Hleq|q φ1]; first by apply: exec_frags_nil_func.
+    have Hinlineswap : forall ptys rname φ, [seq InlineFragment t (filter_queries_with_label rname (f t φ)) | t <- ptys] =
+                                  [seq InlineFragment t (f t (filter_queries_with_label rname φ)) | t <- ptys].
+      by elim=> //= t' ptys' IH' rname φ; rewrite Hfilterswap IH'.
+    
+    
+    case_query q; simp query_size => Hleq Hobj Hunin; exec;
+                                      rewrite ?filter_queries_with_label_cat ?filter_map_inline_func ?Hinlineswap.
+    all: do ? by congr cons; apply: IH; leq_queries_size.
+
+    - case fld.(return_type) => //= rty.
+      * case ohead => [v|] //=; rewrite filter_queries_with_label_cat filter_map_inline_func Hinlineswap IH //; leq_queries_size.
+        congr cons; congr pair; congr Object.
+        by rewrite find_queries_with_label_cat find_map_inline_nil_func // cats0.
+
+      * rewrite filter_queries_with_label_cat filter_map_inline_func Hinlineswap IH //; leq_queries_size.
+        rewrite find_queries_with_label_cat find_map_inline_nil_func // cats0.
+          by congr cons; congr pair; congr Array.
+
+    - by apply: IH; leq_queries_size.
+
+    - case fld.(return_type) => //= rty.
+      * case ohead => [v|] //=; rewrite filter_queries_with_label_cat filter_map_inline_func Hinlineswap IH //; leq_queries_size.
+        congr cons; congr pair; congr Object.
+        by rewrite find_queries_with_label_cat find_map_inline_nil_func // cats0.
+      * rewrite filter_queries_with_label_cat filter_map_inline_func Hinlineswap IH //; leq_queries_size.
+        rewrite find_queries_with_label_cat find_map_inline_nil_func // cats0.
+          by congr cons; congr pair; congr Array.
+
+    - by apply: IH; leq_queries_size.
+
+    - by case: does_fragment_type_apply => //=; rewrite ?catA; apply: IH => //; leq_queries_size.
+  Qed.
+  
+  Lemma exec_cat_frags ptys u φ1 φ2 :
+    uniq ptys ->
+    all (is_object_type s) ptys ->
+    u.(type) \notin ptys ->
+    ⟦ φ1 ++ [seq InlineFragment t φ2 | t <- ptys] ⟧ˢ in u = ⟦ φ1 ⟧ˢ in u.                                                            
+  Proof.
+    by apply: (exec_cat_frags_func (fun t qs => qs)).
+  Qed.
+
+  Lemma exec_cat_frags_get_types ty u φ1 φ2 :
+    u.(type) \notin get_possible_types s ty ->
+    ⟦ φ1 ++ [seq InlineFragment t φ2 | t <- get_possible_types s ty] ⟧ˢ in u =
+     ⟦ φ1 ⟧ˢ in u.                                                                      
+  Proof.
+    by move=> Hnin; apply: exec_cat_frags => //; [apply: uniq_get_possible_types | apply/allP; apply: in_possible_types_is_object].
+  Qed.
+    
+
+  
+  Lemma exec_inlined_func (f : Name -> seq (@Query Name Vals) -> seq Query) ptys u φ :
+    (forall rname t φ, filter_queries_with_label rname (f t φ) = f t (filter_queries_with_label rname φ)) ->
+    uniq ptys ->
+    all (is_object_type s) ptys ->
+    u.(type) \in ptys ->
+                 ⟦ [seq InlineFragment t (f t φ) | t <- ptys] ⟧ˢ in u =  ⟦ [:: InlineFragment u.(type) (f u.(type) φ) ] ⟧ˢ in u.
+  Proof.
+    move=> Hswap.
+    elim: ptys => //= t ptys IH /andP [Hnin Huniq] /andP [Hobj Hinobj].
+    rewrite inE => /orP [/eqP Heq | Hin].
+    - rewrite -Heq in Hnin *; exec.
+      have -> /= : does_fragment_type_apply s u.(type) u.(type).
+        by apply: object_applies_to_itself; rewrite Heq; apply: Hobj.
+        by rewrite cats0; apply: exec_cat_frags_func.
+      
+    - rewrite {1}execute_selection_set_equation_6.
+      have -> /= : does_fragment_type_apply s u.(type) t = false.
+      rewrite /does_fragment_type_apply.
+      move/memPn: Hnin => /(_ u.(type) Hin) /negbTE.
+        by rewrite Hobj /=.
+      by apply: IH.
+  Qed.
+  
   Lemma exec_inlined ptys u φ :
-    u \in g.(nodes) ->
-          uniq ptys ->
-          u.(type) \in ptys ->
+    uniq ptys ->
+    all (is_object_type s) ptys ->
+    u.(type) \in ptys ->
                  ⟦ [seq InlineFragment t φ | t <- ptys] ⟧ˢ in u =  ⟦ [:: InlineFragment u.(type) φ ] ⟧ˢ in u.
   Proof.
-    elim: ptys => //= t ptys IH Huin /andP [Hnin Huniq].
-    rewrite inE => /orP [/eqP Heq | Hin].
-    - rewrite Heq in Hnin *; exec; case: does_fragment_type_apply => //=.
-      * rewrite cats0.
-  Admitted.
+    by apply: (exec_inlined_func (fun t qs => qs)).
+  Qed.
 
     
 
-  Theorem reground_exec φ u :
+
+  Lemma reground_exec φ u :
     u \in g.(nodes) ->
     ⟦ reground s u.(type) φ ⟧ˢ in u =  ⟦ φ ⟧ˢ in u.
   Proof.    
@@ -212,16 +334,22 @@ Section QuerySemantic.
     all: do ? [by intros; exec; rewrite filter_reground_swap filter_filter_absorb // H].
     - move=> Huin; exec.
       case Hrty : f.(return_type) => [rty| rty] /=.
-      * case Hv : ohead => [v|] //=; rewrite filter_reground_swap filter_filter_absorb // H0 //.
-        rewrite -filter_reground_swap find_filter_nil.
+      * case Hv : ohead => [v|] //=;
+        rewrite filter_reground_swap filter_filter_absorb // H0 // -filter_reground_swap find_filter_nil.
         simp merge_selection_sets => /=; rewrite cats0.
         rewrite Hrty /= in H.
-        congr cons.
-        congr pair; congr Object.
+        congr cons; congr pair; congr Object.
         have Hvin : v \in g.(nodes).
         apply: ohead_in_nodes; last by apply: Hv.
-          by apply: u_and_target_nodes_in_nodes.
-        have Hvtype : v.(type) = rty by admit. (* Graph Conformance and bc rty ∈ Ot *)
+        apply/allP.
+          by apply: neighbours_are_in_nodes.
+        have Hvtype : v.(type) = rty.
+        rewrite Hrty /= in Heq.
+        apply: (in_object_possible_types Heq).
+        have Hlook : lookup_field_in_type s u.(type) (Field s3 f1) = Some f by [].
+        move/ohead_in: Hv => Hin.
+        move: (@neighbours_are_subtype_of_field Name Vals s g u (Field s3 f1) f Hlook v Hin).
+          by rewrite Hrty.
         by apply: H => //; rewrite Hvtype.
         
         
@@ -230,10 +358,14 @@ Section QuerySemantic.
         rewrite -filter_reground_swap find_filter_nil.
         simp merge_selection_sets => /=; rewrite cats0.
         rewrite Hrty /= in H.
-        have Hvin : v \in g.(nodes) by admit.
-          (* apply: u_and_target_nodes_in_nodes. *)
-        have Hvtype : v.(type) = rty by admit. (* Graph Conformance and bc rty ∈ Ot *)
-          by apply: H => //; rewrite Hvtype.
+        have Hvin : v \in g.(nodes).
+        apply: neighbours_are_in_nodes; exact: Hin.
+        have Hvtype : v.(type) = rty.
+        rewrite Hrty in Heq; apply: (in_object_possible_types Heq).
+        have Hlook : lookup_field_in_type s u.(type) (Field s3 f1) = Some f by [].
+        move: (@neighbours_are_subtype_of_field Name Vals s g u (Field s3 f1) f Hlook v Hin).
+          by rewrite Hrty /=. (* ?? *)
+        by apply: H => //; rewrite Hvtype.
     
     - move=> Huin; exec.
       case Hrty : f.(return_type) => [rty | rty] //=.
@@ -241,34 +373,121 @@ Section QuerySemantic.
         rewrite -filter_reground_swap find_filter_nil.
         simp merge_selection_sets => /=; rewrite cats0.
         congr cons; congr pair; congr Object.
-        have -> /= : ⟦ [seq InlineFragment t (reground s t (l0 ++ merge_selection_sets (find_queries_with_label s s3 (type u) l)))
-                      | t <- get_possible_types s rty] ⟧ˢ in v =  ⟦ [:: InlineFragment v.(type) (reground s v.(type) (l0 ++ merge_selection_sets (find_queries_with_label s s3 (type u) l)))] ⟧ˢ in v by admit. (* Prove that v \in get_possible_types by graph conformance *)
-        exec.
+        rewrite exec_inlined_func //.
+         exec.
         have Hvin : v \in g.(nodes).
         apply: ohead_in_nodes; last by apply: Hv.
-          by apply: u_and_target_nodes_in_nodes.
+          by apply/allP; apply: neighbours_are_in_nodes.
         have Hvobj := (node_in_graph_has_object_type Hvin).
         have -> /= : does_fragment_type_apply s v.(type) v.(type) by apply: object_applies_to_itself.
         rewrite cats0.
           by apply: H.
+        
+        by apply: filter_reground_swap.
+        by apply: uniq_get_possible_types.
+        by apply/allP; apply: in_possible_types_is_object.
+
+        move/ohead_in: Hv => Hin.
+        move: (@neighbours_are_subtype_of_field Name Vals s g u (Field s3 f1) f Heq0 v Hin).
+          by rewrite Hrty.
+        
+      * rewrite filter_reground_swap filter_filter_absorb // H0 //; congr cons; congr pair; congr Array.
+        apply/eq_in_map => v Hin; congr Object.
+        rewrite -filter_reground_swap find_filter_nil.
+        simp merge_selection_sets => /=; rewrite cats0 exec_inlined_func.
+        exec.
+        have Hvin : v \in g.(nodes) by apply: neighbours_are_in_nodes; exact: Hin.
+        have Hvobj := (node_in_graph_has_object_type Hvin).
+        have -> /= : does_fragment_type_apply s v.(type) v.(type) by apply: object_applies_to_itself.
+        rewrite cats0.
+          by apply: H.
+        by apply: filter_reground_swap.
+        by apply: uniq_get_possible_types.
+        by apply/allP; apply: in_possible_types_is_object.  
+
+        move: (@neighbours_are_subtype_of_field Name Vals s g u (Field s3 f1) f Heq0 v Hin).
+          by rewrite Hrty.
+     
+
+    - move=> Huin; exec.
+      case Hrty : f.(return_type) => [rty| rty] /=.
+      * case Hv : ohead => [v|] //=;
+        rewrite filter_reground_swap filter_filter_absorb // H0 // -filter_reground_swap find_filter_nil.
+        simp merge_selection_sets => /=; rewrite cats0.
+        rewrite Hrty /= in H.
+        congr cons; congr pair; congr Object.
+        have Hvin : v \in g.(nodes).
+        apply: ohead_in_nodes; last by apply: Hv.
+        apply/allP.
+          by apply: neighbours_are_in_nodes.
+        have Hvtype : v.(type) = rty.
+        rewrite Hrty /= in Heq.
+        apply: (in_object_possible_types Heq).
+        have Hlook : lookup_field_in_type s u.(type) (Field s5 f2) = Some f by [].
+        move/ohead_in: Hv => Hin.
+        move: (@neighbours_are_subtype_of_field Name Vals s g u (Field s5 f2) f Hlook v Hin).
+          by rewrite Hrty.
+        by apply: H => //; rewrite Hvtype.
+        
+        
       * rewrite filter_reground_swap filter_filter_absorb // H0 //; congr cons; congr pair; congr Array.
         apply/eq_in_map => v Hin; congr Object.
         rewrite -filter_reground_swap find_filter_nil.
         simp merge_selection_sets => /=; rewrite cats0.
-         have -> /= : ⟦ [seq InlineFragment t (reground s t (l0 ++ merge_selection_sets (find_queries_with_label s s3 (type u) l)))
-                      | t <- get_possible_types s rty] ⟧ˢ in v =  ⟦ [:: InlineFragment v.(type) (reground s v.(type) (l0 ++ merge_selection_sets (find_queries_with_label s s3 (type u) l)))] ⟧ˢ in v by admit.
+        rewrite Hrty /= in H.
+        have Hvin : v \in g.(nodes).
+        apply: neighbours_are_in_nodes; exact: Hin.
+        have Hvtype : v.(type) = rty.
+        rewrite Hrty in Heq; apply: (in_object_possible_types Heq).
+        have Hlook : lookup_field_in_type s u.(type) (Field s5 f2) = Some f by [].
+        move: (@neighbours_are_subtype_of_field Name Vals s g u (Field s5 f2) f Hlook v Hin).
+          by rewrite Hrty /=. (* ?? *)
+        by apply: H => //; rewrite Hvtype.
+    
+    - move=> Huin; exec.
+      case Hrty : f.(return_type) => [rty | rty] //=.
+      * case Hv : ohead => [v|] /=; rewrite filter_reground_swap filter_filter_absorb // H0 //.
+        rewrite -filter_reground_swap find_filter_nil.
+        simp merge_selection_sets => /=; rewrite cats0.
+        congr cons; congr pair; congr Object.
+        rewrite exec_inlined_func //.
          exec.
-         have Hvin : v \in g.(nodes) by admit. (* v \in neighbours *)
-         
-         have Hvobj := (node_in_graph_has_object_type Hvin).
-         have -> /= : does_fragment_type_apply s v.(type) v.(type) by apply: object_applies_to_itself.
-         rewrite cats0.
-           by apply: H.
+        have Hvin : v \in g.(nodes).
+        apply: ohead_in_nodes; last by apply: Hv.
+          by apply/allP; apply: neighbours_are_in_nodes.
+        have Hvobj := (node_in_graph_has_object_type Hvin).
+        have -> /= : does_fragment_type_apply s v.(type) v.(type) by apply: object_applies_to_itself.
+        rewrite cats0.
+          by apply: H.
+        
+        by apply: filter_reground_swap.
+        by apply: uniq_get_possible_types.
+        by apply/allP; apply: in_possible_types_is_object.
 
-    - admit. (* Labeled *)
-    - admit. (* Labeled *)
-  Admitted.
+        move/ohead_in: Hv => Hin.
+        move: (@neighbours_are_subtype_of_field Name Vals s g u (Field s5 f2) f Heq0 v Hin).
+          by rewrite Hrty.
 
+
+      * rewrite filter_reground_swap filter_filter_absorb // H0 //; congr cons; congr pair; congr Array.
+        apply/eq_in_map => v Hin; congr Object.
+        rewrite -filter_reground_swap find_filter_nil.
+        simp merge_selection_sets => /=; rewrite cats0 exec_inlined_func.
+        exec.
+        have Hvin : v \in g.(nodes) by apply: neighbours_are_in_nodes; exact: Hin.
+        have Hvobj := (node_in_graph_has_object_type Hvin).
+        have -> /= : does_fragment_type_apply s v.(type) v.(type) by apply: object_applies_to_itself.
+        rewrite cats0.
+          by apply: H.
+        by apply: filter_reground_swap.
+        by apply: uniq_get_possible_types.
+        by apply/allP; apply: in_possible_types_is_object.  
+
+        move: (@neighbours_are_subtype_of_field Name Vals s g u (Field s5 f2) f Heq0 v Hin).
+          by rewrite Hrty.
+  Qed.
+
+  
   Lemma ground_queries_exec ty φ u :
     u \in g.(nodes) ->
     u.(type) \in get_possible_types s ty ->
@@ -276,19 +495,19 @@ Section QuerySemantic.
   Proof.
     funelim (ground_queries s ty φ) => //= Huin Hin.
     - by have <- /= := (in_object_possible_types Heq Hin); apply: reground_exec.
-    - have -> /= : ⟦ [seq InlineFragment t (reground s t queries) | t <- get_possible_types s type_in_scope] ⟧ˢ in u =  ⟦ [:: InlineFragment u.(type) (reground s u.(type) queries)] ⟧ˢ in u by admit.
+    - have -> /= : ⟦ [seq InlineFragment t (reground s t queries) | t <- get_possible_types s type_in_scope] ⟧ˢ in u =  ⟦ [:: InlineFragment u.(type) (reground s u.(type) queries)] ⟧ˢ in u.
+      apply: exec_inlined_func => //=.
+      by apply: filter_reground_swap.
+      by apply: uniq_get_possible_types.
+      by apply/allP; apply: in_possible_types_is_object.
+       
       exec.
       have -> /= : does_fragment_type_apply s u.(type) u.(type) by apply: object_applies_to_itself; apply: (in_possible_types_is_object Hin).
       rewrite cats0.
         by apply: reground_exec.
-  Admitted.
+  Qed.
         
     
-  Theorem ground_exec ty φ u :
-    u.(type) \in get_possible_types s ty ->
-                 ⟦ ground_queries s ty φ ⟧ˢ in u =  ⟦ φ ⟧ˢ in u.
-  Proof.
-    funelim (ground_queries s ty φ) => //=.
 
 
   Lemma exec_nil u φ2 :

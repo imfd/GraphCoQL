@@ -351,6 +351,45 @@ Section QueryAux.
         by rewrite queries_size_cat; ssromega.
     Qed.
 
+     Lemma find_map_inline_nil_func (f : Name -> seq (@Query Name Vals) -> seq Query) rname t ptys φ :
+      uniq ptys ->
+      all (is_object_type s) ptys ->
+      t \notin ptys ->
+      find_queries_with_label rname t [seq InlineFragment t' (f t' φ) | t' <- ptys] = [::].
+    Proof.      
+      elim: ptys => //= t' ptys IH /andP [Hnin Huniq] /andP [Hobj Hinobj] Htnin.
+      simp find_queries_with_label.
+      have -> /= : does_fragment_type_apply t t' = false.
+      rewrite /does_fragment_type_apply Hobj /=. 
+        by move/memPn: Htnin => /(_ t' (mem_head t' ptys)) /negbTE; rewrite eq_sym.
+      apply: IH => //=.
+      by move: Htnin; rewrite /negb; case: ifP => //=; case: ifP => //= Hcontr <- _; apply: mem_tail.
+    Qed.
+   
+    Lemma find_map_inline_nil rname t ptys φ :
+      uniq ptys ->
+      all (is_object_type s) ptys ->
+      t \notin ptys ->
+      find_queries_with_label rname t [seq InlineFragment t' φ | t' <- ptys] = [::].
+    Proof.
+      
+      elim: ptys => //= t' ptys IH /andP [Hnin Huniq] /andP [Hobj Hinobj] Htnin.
+      simp find_queries_with_label.
+      have -> /= : does_fragment_type_apply t t' = false.
+      rewrite /does_fragment_type_apply Hobj /=. 
+        by move/memPn: Htnin => /(_ t' (mem_head t' ptys)) /negbTE; rewrite eq_sym.
+      apply: IH => //=.
+      by move: Htnin; rewrite /negb; case: ifP => //=; case: ifP => //= Hcontr <- _; apply: mem_tail.
+    Qed.
+
+    Lemma find_map_inline_nil_get_types rname t ty φ :
+      t \notin get_possible_types s ty ->
+      find_queries_with_label rname t [seq InlineFragment t' φ | t' <- get_possible_types s ty] = [::].
+    Proof.
+      by move=> Hnin; apply: find_map_inline_nil => //=; [apply: uniq_get_possible_types | apply/allP; apply: in_possible_types_is_object].
+    Qed.
+
+
 
   End Find.
     
@@ -450,7 +489,22 @@ Section QueryAux.
       funelim (filter_queries_with_label rname qs) => //=; do ? by simp find_queries_with_label; move/negbTE in Heq; rewrite Heq /=.
       by simp find_queries_with_label; case: does_fragment_type_apply => //=; rewrite H H0 /=.
     Qed.
-      
+
+    Lemma filter_map_inline_func (f : Name -> seq (@Query Name Vals) -> seq Query) rname φ ptys :
+      filter_queries_with_label rname [seq InlineFragment t (f t φ) | t <- ptys] =
+      [seq InlineFragment t (filter_queries_with_label rname (f t φ)) | t <- ptys].
+    Proof.
+        by elim: ptys => //= t ptys IH; simp filter_queries_with_label; rewrite IH.
+    Qed.
+    
+    Lemma filter_map_inline rname φ ptys :
+      filter_queries_with_label rname [seq InlineFragment t φ | t <- ptys] =
+      [seq InlineFragment t (filter_queries_with_label rname φ) | t <- ptys].
+    Proof.
+        by elim: ptys => //= t ptys IH; simp filter_queries_with_label; rewrite IH.
+    Qed.
+
+    
   End Filter.
 
   Section Merging.
