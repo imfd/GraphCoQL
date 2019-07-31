@@ -16,6 +16,8 @@
 ./src/theory/SchemaAuxLemmas.v
 
 ./src/SchemaWellFormedness.v
+./src/theory/SchemaWFLemmas.v
+
 ./src/Graph.v
 ./src/GraphAux.v
 ./src/GraphConformance.v
