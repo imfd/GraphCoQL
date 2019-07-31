@@ -488,7 +488,7 @@ Section QuerySemantic.
   Qed.
 
   
-  Lemma ground_queries_exec ty φ u :
+  Theorem ground_queries_exec ty φ u :
     u \in g.(nodes) ->
     u.(type) \in get_possible_types s ty ->
                  ⟦ ground_queries s ty φ ⟧ˢ in u =  ⟦ φ ⟧ˢ in u.
@@ -506,8 +506,30 @@ Section QuerySemantic.
       rewrite cats0.
         by apply: reground_exec.
   Qed.
-        
+
+
+  Lemma normalize_root_query_is_in_normal_form φ :
+    queries_conform s s.(query_type) φ ->
+    are_non_redundant (reground s s.(query_type) φ) /\
+    are_grounded s (reground s s.(query_type) φ).
+  Proof.
+    intros; split.
+    - by apply: reground_are_non_redundant; apply: query_has_object_type.
+    - apply: (are_grounded2_are_grounded Name Vals _ _ s.(query_type)).
+        by apply: reground_are_grounded2; apply: query_has_object_type.
+  Qed.
     
+    
+  Theorem exec_normalize_from_root φ :
+    queries_conform s s.(query_type) φ ->
+    ⟦ ground_queries s s.(query_type) φ ⟧ˢ in g.(root) =  ⟦ φ ⟧ˢ in g.(root).
+  Proof.
+    intros; apply: ground_queries_exec.
+    - by apply: root_in_nodes.
+    - have -> /= := (root_query_type g).
+      have Hobj := (query_has_object_type s).
+        by rewrite get_possible_types_objectE //= mem_seq1; apply/eqP.
+  Qed.
 
 
   Lemma exec_nil u φ2 :
