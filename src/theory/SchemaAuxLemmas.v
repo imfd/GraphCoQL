@@ -115,7 +115,7 @@ Section Theory.
       exists (t : @NamedType Name) intfs flds, lookup_type s ty = Some (ObjectTypeDefinition t intfs flds).
     Proof.
       funelim (is_object_type s ty) => // _.
-        by exists s0, f, l.
+        by exists object_name , interfaces, fields.
     Qed.
 
     Lemma is_interface_type_E ty :
@@ -124,7 +124,7 @@ Section Theory.
     Proof.
       split.
       funelim (is_interface_type s ty) => // _.
-        by exists s1, l0.
+        by exists interface_name, fields0.
         case=> i; case=> flds Hlook.
           by rewrite is_interface_type_equation_1 Hlook.
     Qed.
@@ -135,10 +135,11 @@ Section Theory.
     Proof.
       split.
       funelim (is_union_type s ty) => // _.
-        by exists s2, f0.
+        by exists union_name, union_members.
         case=> u; case=> mbs Hlook.
           by rewrite is_union_type_equation_1 Hlook.  
     Qed.
+    
     Lemma is_object_type_interfaceN ty :
       is_object_type s ty ->
       is_interface_type s ty = false.

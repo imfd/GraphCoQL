@@ -165,11 +165,20 @@ Section Schema.
      **)
 
     Inductive TypeDefinition : Type :=
-    | ScalarTypeDefinition : Name -> TypeDefinition
-    | ObjectTypeDefinition : Name -> {fset NamedType} -> seq FieldDefinition -> TypeDefinition
-    | InterfaceTypeDefinition : Name -> seq FieldDefinition -> TypeDefinition
-    | UnionTypeDefinition : Name -> {fset NamedType} -> TypeDefinition
-    | EnumTypeDefinition : Name -> {fset EnumValue} -> TypeDefinition.
+    | ScalarTypeDefinition (scalar_name : Name)
+                           
+    | ObjectTypeDefinition (object_name : Name)
+                           (interfaces : {fset NamedType})
+                           (fields : seq FieldDefinition)
+                           
+    | InterfaceTypeDefinition (interface_name : Name)
+                              (fields : seq FieldDefinition)
+                              
+    | UnionTypeDefinition (union_name : Name)
+                          (union_members : {fset NamedType})
+                          
+    | EnumTypeDefinition (enum_name : Name)
+                         (enum_members : {fset EnumValue}).
     
 
   
