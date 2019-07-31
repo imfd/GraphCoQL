@@ -10,8 +10,11 @@
 ./src/Ssromega.v
 ./src/CpdtTactics.v
 ./src/SeqExtra.v
+
 ./src/Schema.v
 ./src/SchemaAux.v
+./src/theory/SchemaAuxLemmas.v
+
 ./src/SchemaWellFormedness.v
 ./src/Graph.v
 ./src/GraphAux.v
