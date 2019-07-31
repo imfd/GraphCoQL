@@ -18,7 +18,69 @@ Section SchemaAux.
 
   Variable Name : ordType.
 
-  
+  Section ArgDefExtractors.
+
+    Implicit Type (arg : @FieldArgumentDefinition Name).
+    
+    (** Extractors for a FieldArgument **)
+    Definition argname arg := let: FieldArgument n _ := arg in n.
+    Definition argtype arg := let: FieldArgument _ t := arg in t.
+
+  End ArgDefExtractors.
+
+  Section FieldDefExtractors.
+
+    Implicit Type fld : @FieldDefinition Name.
+    
+     (** Extractors for a Field **)
+    Definition fname fld := let: Field f _ _ := fld in f.
+    Definition fargs fld := let: Field _ args _ := fld in args.
+    Definition return_type fld := let: Field _ _ ty := fld in ty.
+
+  End FieldDefExtractors.
+
+  Section TypeDefExtractors.
+
+    Implicit Type tdef : @TypeDefinition Name.
+    
+      (** Extractors for a type definition **)
+    Definition tdname tdef : Name :=
+      match tdef with 
+      | ScalarTypeDefinition name => name
+      | ObjectTypeDefinition name _ _ => name
+      | InterfaceTypeDefinition name _ => name
+      | UnionTypeDefinition name _ => name
+      | EnumTypeDefinition name _ => name
+      end.
+
+
+    Definition tfields tdef : seq FieldDefinition :=
+      match tdef with 
+      | ObjectTypeDefinition _ _ flds
+      | InterfaceTypeDefinition _ flds => flds
+      | _ => [::]
+      end.
+
+    Definition tintfs tdef : {fset NamedType} :=
+      match tdef with
+      | ObjectTypeDefinition _ intfs _ => intfs
+      | _ => fset0
+      end.
+
+    Definition tmbs tdef : {fset NamedType} :=
+      match tdef with
+      | UnionTypeDefinition _ mbs => mbs
+      | _ => fset0
+      end.
+
+    Definition tenums tdef : {fset (@EnumValue Name)} :=
+      match tdef with
+      | EnumTypeDefinition _ enums => enums
+      | _ => fset0
+      end.
+
+    End TypeDefExtractors.
+    
   (* Schema used as parameter in later functions *) 
   Variable schema : @schema Name.
 
