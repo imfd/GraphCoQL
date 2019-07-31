@@ -50,11 +50,7 @@ Section SchemaAux.
       by apply: IH.
   Qed.
 
-  Lemma mem_tail {A : eqType} (tl : seq A) (x hd : A) : x \in tl -> x \in (hd :: tl).
-  Proof.
-      by rewrite in_cons => Hin; apply/orP; right.
-  Qed.
-  
+
 
       
  Lemma get_first_E A (p : pred A) s tdef : (get_first p s = Some tdef) -> get_first p s.
@@ -163,6 +159,12 @@ Section SchemaAux.
 
   Definition is_abstract_type (ty : NamedType) : bool :=
     is_interface_type ty ||  is_union_type ty.
+
+  Definition is_composite_type (ty : NamedType) : bool :=
+    [|| is_object_type ty, is_interface_type ty | is_union_type ty].
+
+  Definition is_leaf_type (ty : NamedType) : bool :=
+    is_scalar_type ty || is_enum_type ty.
   
 
   Lemma is_object_type_interfaceN ty :
@@ -463,8 +465,8 @@ Section SchemaAux.
     | _ => None
     end.
 
-  Definition implementation (ty : NamedType) : {fset NamedType} :=
-    fset [seq tdef.(tdname) | tdef <- codomm schema.(type_definitions) & implements_interface ty tdef].
+  Definition implementation (ty : NamedType) : seq NamedType :=
+    undup [seq tdef.(tdname) | tdef <- codomm schema.(type_definitions) & implements_interface ty tdef].
 
   
   (**
@@ -477,17 +479,22 @@ Section SchemaAux.
      3. Union : Possible types are all members of the union.
 
    **)
-  Equations get_possible_types (ty : @NamedType Name) : {fset @NamedType Name} :=
+  Equations get_possible_types (ty : @NamedType Name) : seq (@NamedType Name) :=
     {
       get_possible_types ty with lookup_type ty :=
         {
-        | Some (ObjectTypeDefinition _ _ _) => fset1 ty;
+        | Some (ObjectTypeDefinition _ _ _) => [:: ty];
         | Some (InterfaceTypeDefinition iname _) => implementation iname;
         | Some (UnionTypeDefinition _ mbs) => mbs;
-        | _ => fset0
+        | _ => [::]
         }
     }.
-      
+
+  Lemma uniq_get_possible_types ty :
+    uniq (get_possible_types ty).
+  Proof.
+    by funelim (get_possible_types ty) => //; [ apply: undup_uniq |apply: uniq_fset].
+  Qed.
   
   
 
@@ -518,18 +525,19 @@ Section SchemaAux.
   Lemma implementationP ty :
     reflect (exists2 x, x \in codomm schema.(type_definitions) & x.(implements_interface ty)) (implementation ty != fset0).
   Proof.
-    apply: (iffP idP).
-    - rewrite /implementation.
-      move/fset_N_fset0/in_N_nilP => [x /mapP [x']].
-      by rewrite mem_filter => /andP [Himpl Hin] _; exists x'.
+  (*   apply: (iffP idP). *)
+  (*   - rewrite /implementation. *)
+  (*     move/fset_N_fset0/in_N_nilP => [x /mapP [x']]. *)
+  (*     by rewrite mem_filter => /andP [Himpl Hin] _; exists x'. *)
      
-    - case=> [x Hin Himpl].
-      rewrite /implementation fset_N_fset0.
-      apply/seq0Pn.
-      exists (x.(tdname)).
-      by apply/mapP; exists x => //;rewrite mem_filter; apply/andP; split.
-  Qed.
-
+  (*   - case=> [x Hin Himpl]. *)
+  (*     rewrite /implementation fset_N_fset0. *)
+  (*     apply/seq0Pn. *)
+  (*     exists (x.(tdname)). *)
+  (*     by apply/mapP; exists x => //;rewrite mem_filter; apply/andP; split. *)
+  (* Qed. *)
+  Admitted.
+    
   (*
   Lemma implementation_has ty :
     implementation ty != fset0 <-> has (implements_interface ty) schema.
@@ -613,6 +621,7 @@ Section SchemaAux.
     move/is_union_type_E => [u [mbs Hlook]].
       by simp get_possible_types; rewrite /union_members Hlook.
   Qed.
+
 (*
   Lemma in_possible_types_E t ty :
     t \in get_possible_types ty ->

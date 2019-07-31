@@ -58,30 +58,41 @@ Section WellFormedness.
       Subtype sch ty ty' ->
       Subtype sch (ListType ty) (ListType ty'). 
 
-  Fixpoint is_subtype sch (ty ty' : type) : bool :=
-    match ty, ty' with
-    | (ListType lty), (ListType lty') => is_subtype sch lty lty'
-    | (NT name), (NT name') => [|| (name == name'),
-                               declares_implementation sch ty ty' | 
-                              (name \in (union_members sch name'))]
-    | _, _ => false
-    end.
+  Equations is_subtype sch (ty ty' : @type Name) : bool :=
+    {
+      is_subtype sch (ListType lty) (ListType lty') := is_subtype sch lty lty';
 
-   Lemma subtypeP sch ty ty': reflect (Subtype sch ty ty') (is_subtype sch ty ty').
+      is_subtype sch (NT name) (NT name') :=
+        [|| (name == name'),
+         declares_implementation sch name name' | 
+         (name \in (union_members sch name'))];
+      
+      is_subtype _ _ _ := false
+    }.
+
+   (* Lemma subtypeP sch ty ty': reflect (Subtype sch ty ty') (is_subtype sch ty ty'). *)
+   (* Proof. *)
+   (*  apply: (iffP idP). *)
+   (*  elim: ty ty' => n. *)
+   (*    - case=>  //. *)
+   (*      * by move=> n' /= /or3P [/eqP -> | Hi | Hu]; [apply ST_Refl | apply ST_Interface | apply ST_Union]. *)
+   (*      by move=> IH; case=> // => t' /= /IH; apply ST_ListType. *)
+   (*  elim=> //=. *)
+   (*    - elim=> //=. *)
+   (*      * by move=> *; apply/or3P; constructor 1. *)
+   (*    - by move=> * /=; apply/or3P; constructor 2. *)
+   (*    by move=> * /=; apply/or3P; constructor 3. *)
+   (* Qed. *)
+
+
+   (* Lemma is_subtype_is_same_or_in_possible_types sch (ty ty' : type) :
+     reflect (ty = ty' \/ ty.(tname) \in get_possible_types sch ty')
+             (is_subtype sch  ty ty').
    Proof.
-    apply: (iffP idP).
-    elim: ty ty' => n.
-      - case=>  //.
-        * by move=> n' /= /or3P [/eqP -> | Hi | Hu]; [apply ST_Refl | apply ST_Interface | apply ST_Union].
-        by move=> IH; case=> // => t' /= /IH; apply ST_ListType.
-    elim=> //=.
-      - elim=> //=.
-        * by move=> *; apply/or3P; constructor 1.
-      - by move=> * /=; apply/or3P; constructor 2.
-      by move=> * /=; apply/or3P; constructor 3.
-   Qed.
-
-
+     apply: (iffP idP).
+     - move/subtypeP; case => //.
+       * by intros; left.
+       * move=> n n' Hdecl. *)
  
      
          
@@ -147,20 +158,17 @@ Section WellFormedness.
       by move=> t H /= /H; apply VList_Type.
   Qed.
 
-    Lemma obj_subtype sch (ty ty' : type) :
+    Lemma obj_subtypeE sch (ty ty' : type) :
      is_object_type sch ty ->
      is_subtype sch ty ty' ->
      [\/ ty' = ty,
       is_interface_type sch ty' |
       is_union_type sch ty'].
-   Proof.
-     move=> Hobj.
-     rewrite /is_subtype /=.
-     case: ty Hobj; case: ty' => // ty ty' Hobj.
-     move/or3P=> [/eqP -> | Hdecl | Hunion].
-       by constructor 1.
-       constructor 2. move/declares_in_implementation: Hdecl.
-   Abort.
+    Proof.
+      funelim (is_subtype sch ty ty') => //= Hobj.
+      - case/or3P => [/eqP -> | |]; first by constructor 1. 
+        * (* need conformance *)
+    Abort.
   
   (** 
       It checks whether an argument is well-formed by checking that
@@ -476,14 +484,15 @@ Section WellFormedness.
     t \in implementation schema ty ->
     is_interface_type schema ty.
   Proof.
-    move/in_fset_N_fset0.
-    move/implementationP=> [tdef /codommP [t'  Hlook]].
-    move: (lookup_type_name_wf Hlook) => Heq; rewrite Heq in Hlook.
-    move/lookup_in_schemaP: Hlook => Hin.
-    move/(implements_declares_implementation ty Hin).
-    by apply: declares_implementation_are_interfaces.
-  Qed.
-
+    
+    (* move/in_fset_N_fset0. *)
+    (* move/implementationP=> [tdef /codommP [t'  Hlook]]. *)
+    (* move: (lookup_type_name_wf Hlook) => Heq; rewrite Heq in Hlook. *)
+    (* move/lookup_in_schemaP: Hlook => Hin. *)
+    (* move/(implements_declares_implementation ty Hin). *)
+    (* by apply: declares_implementation_are_interfaces. *)
+  (* Qed. *)
+  Admitted.
  
     
   Lemma field_in_interface_in_object (schema : wfSchema) ty ti f :
@@ -521,6 +530,9 @@ Section WellFormedness.
       by rewrite -Heq.
   Qed.
 
+ 
+    
+        
    Lemma field_in_interface_in_object_E (schema : wfSchema) ty ti f fld fld' :
     ty \in implementation schema ti ->
            lookup_field_in_type schema ti f = Some fld ->
@@ -628,9 +640,11 @@ Section WellFormedness.
      is_subtype schema (NT ty) (NT ty') ->
      ty = ty'.
    Proof.
-     move=> Hobj.
-     rewrite /is_subtype.
-     move/or3P=> [/eqP // | | ].
+     funelim (is_subtype schema (NT ty) (NT ty')) => //= Hobj.
+     case: H => ->.
+     case: H0 => ->.
+     case/or3P; first by apply/eqP.
+     
      move/declares_implementation_are_interfaces.
      by move: (is_object_type_interfaceN Hobj) => ->.
      move/in_union.
@@ -647,7 +661,9 @@ Section WellFormedness.
        is_subtype schema fld'.(return_type) fld.(return_type)].
    Proof.
    Admitted.
-       
+
+
+
 End WellFormedness.
 
 

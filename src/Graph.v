@@ -83,7 +83,7 @@ Section GraphQLGraph.
    **)
   Record graphQLGraph := GraphQLGraph {
                             root : node;
-                            E : {fset node * fld * node};
+                            E : seq (node * fld * node)
                           }.
 
   (*
@@ -103,7 +103,7 @@ Section GraphQLGraph.
   
   (** Packing and unpacking for graphs, needed for canonical instances **)
   Definition prod_of_graph (g : graphQLGraph) := let: GraphQLGraph r e := g in (r, e).
-  Definition graph_of_prod (p : node * {fset node * fld * node}) :=
+  Definition graph_of_prod (p : node * seq (node * fld * node)) :=
     let: (r, e) := p in GraphQLGraph r e.
 
 

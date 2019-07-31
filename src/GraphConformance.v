@@ -103,16 +103,17 @@ Section Conformance.
    **)
   Definition edge_conforms schema graph (edge : node * fld * (@node Name Vals)) : bool :=
     let: (src, fld, target) := edge in
-    match lookup_field_type schema src.(type) fld.(label) with
-    | Some return_type => [&& is_subtype schema return_type (NT target.(type)),
-                          (is_list_type return_type || is_field_unique_for_src_node graph src fld) &
-                          arguments_conform schema src.(type) fld]
+    match lookup_field_in_type schema src.(type) fld.(label) with
+    | Some fdef => [&& (* is_subtype schema (NT target.(type)) fdef.(return_type), *) (* wrong... right? *)
+                     target.(type) \in get_possible_types schema fdef.(return_type),
+                   (is_list_type fdef.(return_type) || is_field_unique_for_src_node graph src fld) &
+                   arguments_conform schema src.(type) fld]
     | _ => false
     end.
 
   
   Definition edges_conform schema graph :=
-    all (edge_conforms schema graph) graph.(E).
+    uniq graph.(E) && all (edge_conforms schema graph) graph.(E).
 
   
   (**
@@ -131,12 +132,12 @@ Section Conformance.
    **)
 
   Definition field_conforms schema ty (fd : fld * (Vals + seq Vals)) : bool :=
-    match lookup_field_type schema ty fd.1.(label) with
-    | Some return_type =>
+    match lookup_field_in_type schema ty fd.1.(label) with
+    | Some fdef =>
       arguments_conform schema ty fd.1 &&
       match fd.2 with
-      | (inl value) => hasType schema return_type value
-      | (inr values) => all (hasType schema return_type) values
+      | (inl value) => hasType schema fdef.(return_type) value
+      | (inr values) => all (hasType schema fdef.(return_type)) values
       end
     | _ => false
     end.
@@ -187,6 +188,37 @@ Section Conformance.
     case: graph => g H *.
       by move: (aux_root_query_type H).
   Qed.
+
+  Lemma node_in_graph_has_object_type schema (graph : conformedGraph schema) :
+    forall u, u \in graph.(nodes) -> is_object_type schema u.(type).
+  Proof.
+    apply/nodes_have_object_typeP.
+    by case: graph.
+  Qed.
+
+  Lemma neighbours_are_subtype_of_field schema (graph : conformedGraph schema) u fld fdef  :
+    lookup_field_in_type schema u.(type) fld.(label) = Some fdef ->
+    forall v, v \in neighbours_with_field graph u fld ->
+               v.(type) \in get_possible_types schema fdef.(return_type).
+  Proof.
+    move=> Hlook.
+    case: graph => g Hroot Hedges.
+    
+    have Hedge : forall e, e \in g.(E) -> edge_conforms schema g e.
+      by apply/allP; move: Hedges; rewrite /edges_conform; case/andP.
+
+    move=> Hflds Hobjs v.
+    rewrite /neighbours_with_field -in_undup => /mapP [v'].
+    rewrite mem_filter => /andP [/andP [/eqP Hsrc /eqP Hfld] Hin] Htrgt.    
+    move: (Hedge v' Hin).
+    rewrite /edge_conforms /=.
+    case: v' Hsrc Hfld Hin Htrgt => //=.
+    case=> //= src fld' v' -> -> Hin ->.
+      by rewrite Hlook /=; case/and3P.
+  Qed.
+    
+               
+    
 
 End Conformance.
 

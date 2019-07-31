@@ -1,5 +1,4 @@
 From mathcomp Require Import all_ssreflect.
-Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 Set Asymmetric Patterns.
@@ -35,278 +34,455 @@ Section Eq.
   Implicit Type schema : @wfSchema Name Vals.
 
 
-
+  Ltac orL := apply/orP; left.
+  Ltac orR := apply/orP; right.
+  
+  Ltac apply_andP := apply/andP; split=> //.
+  Ltac apply_and3P := apply/and3P; split=> //.
+  Ltac are_in_normal_form := rewrite /are_in_normal_form => /andP; case.
+  Ltac all_cons := rewrite {1}/all -/(all _ _) => /andP; case.
+  Ltac query_conforms := rewrite /query_conforms -/(query_conforms _ _); try move/and4P; try apply/and4P.
+  
  
 
   
  
 
 
+  Open Scope fset.
 
  
- 
+
+  
     
   
-  Lemma nrl_subqueries (n : Name) (ϕ ϕ' : seq (seq (@ResponseObject Name Vals))) : ϕ = ϕ' -> NestedListResult n ϕ = NestedListResult n ϕ'. Proof. by move=> ->. Qed.
 
 
  
-  Lemma qwe schema (g : @conformedGraph Name Vals schema) u qs qs' α n :
-    (forall u : node_eqType Name Vals, u \in nodes g -> eval_queries schema g u qs = eval_queries schema g u qs') ->
-    [seq (eval_queries schema g v qs) | v <- neighbours_with_field g u {| label := n; args := α |}] =
-  [seq (eval_queries schema g v qs') | v <- neighbours_with_field g u {| label := n; args := α |}].
-  Proof. Admitted.
-
- 
-
-
- 
-
-  Inductive and6 (P1 P2 P3 P4 P5 P6 : Prop) : Prop :=
-    And6 of P1 & P2 & P3 & P4 & P5 & P6.
-  Variables (T : Type) (P1 P2 P3 P4 P5 P6: T -> Prop).
-  Variable b1 b2 b3 b4 b5 b6 : bool.
-
-  Local Notation a P := (forall x, P x).
-
-  Notation "[ /\ P1 , P2 , P3 , P4 , P5 & P6 ]" := (and6 P1 P2 P3 P4 P5 P6) : type_scope.
-
-  Lemma all_and6 : implies (forall x, [/\ P1 x, P2 x, P3 x, P4 x, P5 x & P6 x])
-                           [/\ a P1, a P2, a P3, a P4, a P5 & a P6].
-  Proof. by split=> haveP; split=> x; case: (haveP x). Qed.
-
-  Lemma and6P : reflect [/\ b1, b2, b3, b4, b5 & b6] [&& b1, b2, b3, b4, b5 & b6].
+  Lemma inlined_query_eq_eval schema (g : @conformedGraph Name Vals schema) u ty φ :
+    query_conforms schema ty φ ->
+    get_possible_types schema ty <> [::] ->
+    eval schema g u φ =
+    eval_queries schema g u [seq InlineFragment t [:: φ] | t <- get_possible_types schema ty].
   Proof.
-      by case b1; case b2; case b3; case b4; case b5; case b6; constructor; try by case.
+  Admitted.
+    
+
+  Lemma map_normalize_eval_eq :
+    forall schema ty φ (g : @conformedGraph Name Vals schema) (nodes : seq node),
+      (forall u, eval_queries schema g u φ = eval_queries schema g u (normalize__φ schema ty φ)) ->
+      [seq eval_queries schema g v φ | v <- nodes] =
+      [seq eval_queries schema g v (normalize__φ schema ty φ) | v <- nodes].
+  Proof.
+    move=> schema ty φ g nodes H.
+    elim: nodes => //= hd tl IH.
+    rewrite IH.
+    congr cons.
+    by rewrite (H hd).
   Qed.
 
-  
-  Theorem all_q_has_nrgtnf_q schema (g : @conformedGraph Name Vals schema):
-    forall (ϕ : @Query Name Vals),
-      query_conforms schema schema.(query_type) ϕ ->
-      Correct schema (schema.(query_type), schema.(query_type)) ϕ ->
 
-      exists (ϕ' : seq (@Query Name Vals)),
-        [/\
-         queries_conform schema schema.(query_type) ϕ',
-         are_in_normal_form schema ϕ',
-         are_non_redundant ϕ',
-         multi (QueryRewrite schema schema.(query_type)) [:: ϕ] ϕ' &
-         eval schema g g.(root) ϕ = eval_queries schema g g.(root) ϕ'].
+  Lemma implementation_nil_for_union schema ty :
+    is_union_type schema ty ->
+    implementation schema ty = fset0.
+  Admitted.
+
+
+  Lemma wf_responses_catE rs1 rs2 :
+    wf_responses (rs1 ++ rs2) = [&& wf_responses rs1,
+                                 wf_responses rs2 &
+                                 all (fun r1 => all (fun r2 => @have_compatible_shapes Name Vals r1 r2) rs2) rs1].
   Proof.
-    move=> ϕ.
-    elim ϕ using Query_ind with
-        (Pl := fun qs =>
-                forall root current,
-                  queries_conform schema current qs ->
-                  Forall (Correct schema (root, current)) qs ->
-                  exists (qs' : seq Query),
-                    [/\
-                     queries_conform schema current qs',
-                     are_in_normal_form schema qs',
-                     are_non_redundant qs',
-                     multi (QueryRewrite schema current) qs qs' &
-                     forall u, u \in nodes g -> eval_queries schema g u qs = eval_queries schema g u qs']).
+    elim: rs1 rs2 => //= [| hd tl IH] rs2.
+    - by rewrite andbT.
+    - rewrite all_cat.
+      rewrite IH.
+      set A := wf_response hd.
+      set B := all _ tl.
+      set C := all _ rs2.
+      set D := wf_responses tl.
+      set E := wf_responses rs2.
+      set F := all _ _.
+      rewrite -[(B && C) && _]andbA.
+      rewrite -[RHS]andbA.
+      rewrite -[(B && D) && _]andbA.
+      rewrite [E && (C && _)]andbCA.
+      by rewrite [D && (C && _)]andbCA.
+  Qed.
 
-    - move=> f α; exists [:: (SingleField f α)]; split => //.
-      by rewrite /queries_conform /all; apply/andP; split => //; apply/andP.
-      by apply: multi_refl.
-    - move=> l f α; exists [:: (LabeledField l f α)]; split => //.
-      by rewrite /queries_conform /all; apply/andP; split=> //; apply/andP.
-      by apply: multi_refl.              
 
-    - move=> f α qs IH Hqc Hok.
-      (* Get the field defined in the schema *)
-      move: (nf_conforms_lookup_some Hqc); case=> fld Hlook.
-      (* Get the proof that the subquery conforms according to the field's type *)
-      move: (nf_queries_conform'' Hlook Hqc) => Hqsc.
-      (* Get the field's type - Why not simpler to get? *)
-      move: (nf_correct_lookup_some Hok); case=> ty' Hlook'.
-      (* Get proof that subqueries are free of issues *)
-      move: (nested_field_subqueries_correct Hok Hlook').
-      move: Hqsc.
-      move: (lookup_field_or_type Hlook Hlook') => Heq; rewrite -Heq => Hqsc Hqsok.
-      move: (IH ty' ty' Hqsc Hqsok) => {IH}; case=> qs' [Hqsc' Hqsnf' Hqsnr' Hred' Hev'].
-      
-      exists [:: (NestedField f α qs')]; split => //=.
-      * rewrite /queries_conform /all; apply/andP; split=> //.
-        rewrite /query_conforms Hlook -/(query_conforms _ _).
-        apply/andP; split=> //.
-        apply/and3P; split=> //.
-        apply/norP.
-        move
-      * rewrite /are_in_normal_form.
-        apply/andP; split=> //.
-        rewrite /all /is_in_normal_form. by apply/andP.
-      * rewrite /are_non_redundant.
-        apply/andP; split=> //.
-        rewrite /all /is_non_redundant. by apply/andP.
-      (* Proof of rewriting *)
-      * apply: multi_step.
-        apply: SQ => //.
-        apply: multi_step.
-          by apply: (AQR_Nested Hqc Hlook' Hred').
-        by apply: multi_refl.
-        by apply: multi_refl.
-      (* Proof of evaluating to the same *)    
-      * move: (root_in_nodes g) => Hrootin.
-        case: lookup_field_type => //.
-        (* Check the type of the node; named type or list type *)
-        case=> [nt | lt].
-        + case E: get_target_nodes_with_field => [|v tl] //.
-            case OH: ohead => [v'|] //.
-            inversion OH.
-            rewrite -E in OH.
-            move: (@u_and_target_nodes_in_nodes g g.(root) (Field f α) Hrootin) => Hall.
-            move: (ohead_in_nodes Hall OH) => Hv'.
-            move: (Hev' v' Hv').
-            by rewrite -/(eval_queries _ _ _) => ->.
-        + apply: singleton; apply: nrl_subqueries.
-            by apply: qwe; apply: Hev'.
+  
+  Lemma normalize_preserves_eval :
+    forall schema ty φ (g : @conformedGraph Name Vals schema) u,
+      u \in g.(nodes) ->
+      u.(type) \in get_possible_types schema ty ->
+      query_conforms schema ty φ ->
+      has_valid_fragments schema ty φ ->
+      eval schema g u φ =  eval_queries schema g u (normalize schema ty φ).
+  Proof.
+    apply (normalize_elim
+             (fun schema ty q nqs =>
+                forall (g : @conformedGraph Name Vals schema) u,
+                  u \in g.(nodes) ->
+                  u.(type) \in get_possible_types schema ty ->
+                  query_conforms schema ty q ->
+                  has_valid_fragments schema ty q ->
+                  eval schema g u q = eval_queries schema g u nqs)
+             (fun schema ty qs nqs =>
+                forall (g : @conformedGraph Name Vals schema) u,
+                  u \in g.(nodes) ->
+                  u.(type) \in get_possible_types schema ty ->
+                  queries_conform schema ty qs ->
+                  all (has_valid_fragments schema ty) qs ->
+                  eval_queries schema g u qs = eval_queries schema g u nqs)) => schema //; last first.
 
-    (* LabeledField is similar to previous case *)
-    - move=> l f α qs IH Hqc Hok.
-      move: (nlf_conforms_lookup_some Hqc); case=> fld Hlook.
-      move: (nlf_queries_conform'' Hlook Hqc) => Hqsc.
-      move: (nlf_correct_lookup_some Hok); case=> ty' Hlook'.
-      move: (nlf_queries_correct Hlook' Hok).
-      move: Hqsc.
-      move: (lookup_field_or_type Hlook Hlook') => Heq; rewrite -Heq => Hqsc Hqsok.
-      move: (IH ty' ty' Hqsc Hqsok); case=> qs' [Hqne' Hqsok' Hqsnf' Hqsnr' Hred' Hev'].
-      
-      exists [:: (NestedLabeledField l f α qs')]; split => //=.
-       * apply: Forall_cons => //=.
-        apply: CNLF => //.
-        move: Hqc.
-        rewrite /query_conforms Hlook.
-        case: ifP => // _.
-        move/and3P=> [_ Hargs _].
-        rewrite /queries_conform -Heq.
-        apply/and3P; split=> //.
-        apply: (queries_correct_conform Hqsok').
-        apply: Hlook'.
-        apply: Hqsok'.
-      * rewrite /are_in_normal_form.
-        apply/andP; split=> //.
-        rewrite /all /is_in_normal_form. by apply/andP.
-      * rewrite /are_non_redundant.
-        apply/andP; split=> //.
-        rewrite /all /is_non_redundant. by apply/andP.
-         (* Proof of rewriting *)
-      * apply: multi_step.
-        apply: SQ => //.
-        apply: multi_step.
-          by apply: (AQR_LabeledNested Hqc Hlook' Hred').
-        by apply: multi_refl.
-          by apply: multi_refl.
-      * move: (root_in_nodes g) => Hrootin.
-        case: lookup_field_type => //.
-        (* Check the type of the node; named type or list type *)
-        case=> [nt | lt].
-        + case E: get_target_nodes_with_field => [|v tl] //.
-            case OH: ohead => [v'|] //.
-            inversion OH.
-            rewrite -E in OH.
-            move: (@u_and_target_nodes_in_nodes g g.(root) (Field f α) Hrootin) => Hall.
-            move: (ohead_in_nodes Hall OH) => Hv'.
-            move: (Hev' v' Hv').
-            by rewrite -/(eval_queries _ _ _) => ->.
-        + apply: singleton; apply: nrl_subqueries.
-            by apply: qwe; apply: Hev'.
+    - move=> ty hd tl IHhd IHtl g u Hin Hpty.
+      rewrite /queries_conform; case/andP.
+      all_cons => [Hqc Hqsc] /=.
+      all_cons => [Hmerge Hmerges].
+      all_cons => [Hv Hvs].
+      rewrite /eval_queries /=.
+      rewrite map_cat.
+      rewrite IHhd //.
+      rewrite /eval_queries.
+      set rs1 := map _ (normalize _ _ hd).
+      case rs1 => //= [| hd1 tl1].
+      admit.
+      rewrite foldl_cat.
+      set rs1' := foldl _ hd1 tl1.
+      rewrite -/(collect (rs1' :: (map _ tl))) -/(collect (rs1' :: map _ (normalize__φ _ _ tl))).
+      rewrite /eval_queries in IHtl.
+      set rs2 := map _ tl.
+      set rs2' := map _ (normalize__φ _ _ tl).
+      rewrite rs2 in IHtl
+      move: (IHtl g u Hin Hpty _ Hvs).
+      rewrite IHhd // /eval_queries.
+      rewrite IHhd // IHtl //; last first.
+        by rewrite /queries_conform; apply/andP; split.
+        rewrite eval_collect_cat //.
+        rewrite wf_responses_catE.
+        apply/and3P; split; do ? by apply: eval_queries_response_are_wf.
+        rewrite -IHhd // -IHtl //; last by rewrite /queries_conform; apply/andP; split.
+        apply/allP => r Hevin.
+        apply/allP => r2 Hevin2.
 
-      
-    (* InlineFragment *)        
-    - move=> t qs IH Hqc Hok.
-      (* Get proof that subqueries conform *)
-      move: (inline_subqueries_conform Hqc) => Hqsc.
-      (* Get proof that subqueries are free of issues *)
-      move: (inline_subqueries_correct Hok) => Hqsok.
-      move: (IH schema.(query_type) t Hqsc Hqsok) => {IH}; case=> qs' [Hqsne' Hqsok' Hqsnf' Hqsnr' Hred' Hev'].
-      move: (query_type_object_wf_schema schema) => Hqobj.
-      move: (are_in_normal_form_E Hqsnf') => [Hqs' Hallqsnf'].
-      pose Hqc' := Hqc.
-      move: Hqc'.
-      rewrite /query_conforms.      
-      move/and4P=> [/or3P [Hobj | Hint | Hunion] Hspread _ _]; exists qs'.
-      * move: (object_spreads_in_object_scope Hqobj Hobj Hqsc).
-        case.
-        move/(_ Hqc) => Heq _; rewrite -Heq.
-        split=> //.
-          by rewrite Heq; rewrite Heq in Hqsok'.
-        apply: multi_step => //.
-        rewrite -Heq in Hqc.
-        apply: Inline_same => //.
-        apply: Hred'.
-        move: (Hev' g.(root) (root_in_nodes g)) => <-.
-        rewrite Heq.
-          by apply (eval_query_inline g qs).
-      * move: (interface_spreads_in_object_scope Hqobj Hint Hqc) => Himpl.
-        split=> //.
-        + apply: (queries_correct_impl Himpl Hqsok').
-        + apply: multi_step.
-          apply: SQ => //.
-          apply: multi_step => //.
-          apply (AQR_Inline Hqc Hred')  => //.
-          apply: multi_refl.
-
-          apply: multi_step => //.
-          apply: SQ => //.
-          apply: (foo Hqobj Hint Hspread Hqsne' Hqsok').
-          apply: multi_step.
-          apply: AQR_Inline_Impl => //.
-          apply: (foo Hqobj Hint Hspread Hqsne' Hqsok').
-          apply: multi_refl.
-          apply: multi_step.
-          apply: Inline_same.
-          apply: inline_conforms_to_same_type => //.
-            by constructor 1.
-          move: (foo Hqobj Hint Hspread Hqsne' Hqsok').
-          rewrite /query_conforms.
-          move/and4P=> [_ _ _].
-          move/(queries_conform_inv Hqsne')=> Hqsc'.
-          apply: (bleble Himpl Hqsc' Hqsok').
-          apply: multi_refl.
-        + rewrite eval_equation_5.
-          move/is_interface_type_E: Hint => [i [flds ->]].
-          move: (root_query_type g) => ->.
-          move/declares_in_implementation: Himpl => ->.
-          apply: (Hev' g.(root) (root_in_nodes g)).
-     * move: (union_spreads_in_object_scope Hqobj Hunion Hqc) => Hmb.
-       split=> //.
-       + apply: (queries_correct_mb Hmb Hqsok').
-       + apply: multi_step.
-          apply: SQ => //.
-          apply: multi_step => //.
-          apply (AQR_Inline Hqc Hred')  => //.
-          apply: multi_refl.
-
-          apply: multi_step => //.
-          apply: SQ => //.
-          apply: (foo' Hqobj Hunion Hspread Hqsne' Hqsok').
-          apply: multi_step.
-          apply: AQR_Inline_Member => //.
-          apply: (foo' Hqobj Hunion Hspread Hqsne' Hqsok').
-          apply: multi_refl.
-          apply: multi_step.
-          apply: Inline_same.
-          apply: inline_conforms_to_same_type => //.
-            by constructor 1.
-          move: (foo' Hqobj Hunion Hspread Hqsne' Hqsok').
-          rewrite /query_conforms.
-          move/and4P=> [_ _ _].
-          move/(queries_conform_inv Hqsne')=> Hqsc'.
-          apply: (bleble' Hmb Hqsc' Hqsok').
-          apply: multi_refl.
-       + rewrite eval_equation_5.
-         move/is_union_type_E: Hunion => [u [mbs Hlook]].
-         move: (root_query_type g) => ->.
-         rewrite /union_members in Hmb.
-         rewrite Hlook in Hmb.
-         rewrite Hlook Hmb.
-         apply: (Hev' g.(root) (root_in_nodes g)).
-    (* Empty list *)
-     * done.
+        all: do ?[by intros; apply: eval_same_query_in_list].
+    all: do ?[by intros; simp query_conforms in H1; rewrite Heq /= in H1].
+     
+    - move=> ty f α Hscope g u Hin Hupty Gqc Hv.
+      simp try_inline_query.
+      rewrite [eval]lock.
+      case: eqP => //= Hpty; rewrite -lock.
+      * admit.
+      * by apply: inlined_query_eq_eval.
+        
+     
+    - move=> ty l f α Hscope g u _ _ Hqc Hv.
+      simp try_inline_query.
+      rewrite [eval]lock.
+      case: eqP => //= Hpty; rewrite -lock.
+      * admit. 
+      * by apply: inlined_query_eq_eval.
     
-     * 
+    - move=> ty f fld α φ IH Hscope Hlook g u Hin Hpty Hqc Hv.
+      rewrite -[RHS]eval_same_query_in_list //.
+      rewrite /eval.
+      case Hlookty : lookup_field_type => [rty|]; last by simp collect.
+      case: rty Hlookty => //= rty Hlookty.
+      * case Hohead: ohead => [v|]; simp collect => //.
+        rewrite /eval_queries in IH.
+        rewrite IH //.
+        admit.
+        admit.
+        by simp query_conforms in Hqc; rewrite Hlook /= in Hqc; case/and4P: Hqc.
+          by simp has_valid_fragments in Hv; rewrite Hlook /= in Hv.
+      * admit.
+        
+    - move=> ty f fld α φ IH Hscope Hlook g u Hin Hupty Hqc Hv.
+      rewrite [eval]lock /=.
+      simp try_inline_query.
+      case: eqP => //= Hpty; rewrite -lock.
+      * rewrite -eval_same_query_in_list //=.
+        case Hlookty : lookup_field_type => [rty|]; last by simp collect.
+        case: rty Hlookty => //= rty Hlookty.
+        + case Hohead: ohead => [v|]; simp collect => //.
+          rewrite /eval_queries in IH; rewrite IH //.
+          admit.
+          admit.
+            by simp query_conforms in Hqc; rewrite Hlook /= in Hqc; case/and4P: Hqc.
+          by simp has_valid_fragments in Hv; rewrite Hlook /= in Hv.
+        + admit.
+       * admit.
+
+    - move=> ty f fld l α φ IH Hscope Hlook g u Hin Hpty Hqc Hv.
+      rewrite -[RHS]eval_same_query_in_list //.
+      rewrite /eval.
+      case Hlookty : lookup_field_type => [rty|]; last by simp collect.
+      case: rty Hlookty => //= rty Hlookty.
+      * case Hohead: ohead => [v|]; simp collect => //.
+        rewrite /eval_queries in IH.
+        rewrite IH //.
+        admit.
+        admit.
+        by simp query_conforms in Hqc; rewrite Hlook /= in Hqc; case/and4P: Hqc.
+          by simp has_valid_fragments in Hv; rewrite Hlook /= in Hv.
+      * admit.
+
+    - move=> ty f fld l α φ IH Hscope Hlook g u Hin Hupty Hqc Hv /=.
+     rewrite [eval]lock /=.
+      simp try_inline_query.
+      case: eqP => //= Hpty; rewrite -lock.
+      * rewrite -eval_same_query_in_list //=.
+        case Hlookty : lookup_field_type => [rty|]; last by simp collect.
+        case: rty Hlookty => //= rty Hlookty.
+        + case Hohead: ohead => [v|]; simp collect => //.
+          rewrite /eval_queries in IH; rewrite IH //.
+          admit.
+          admit.
+            by simp query_conforms in Hqc; rewrite Hlook /= in Hqc; case/and4P: Hqc.
+          by simp has_valid_fragments in Hv; rewrite Hlook /= in Hv.
+        + admit.
+          * admit.
+
+            
+    - move=> t b ty φ IH Ht Hscope g u Hin.
+      rewrite get_possible_types_objectE //= inE => Huty /and5P [_ _ _ Hqsc Hmerge].
+      simp has_valid_fragments; rewrite Hscope /= => /andP [/eqP Hteq Hv].
+      rewrite -Hteq in Huty.
+      rewrite Huty /=.
+      apply: IH => //=.
+        by rewrite get_possible_types_objectE //= inE -Hteq.
+      by rewrite /queries_conform Hteq in Hqsc Hmerge *; apply/andP; split.
+          
+    - move=> t ty φ IH Ht Hscope g u Hin Hpty Hqc Hv.
+      rewrite [eval]lock /=.
+      move: Hqc => /= /and5P [_ _ _ Hqsc Hmerge].
+      move: Hv; simp has_valid_fragments; rewrite Hscope /= => /andP [_] Hv.  
+      rewrite -lock -eval_same_query_in_list //=.
+      rewrite /eval_queries in IH; rewrite -IH //.
+      admit.
+        by rewrite /queries_conform; apply/andP; split => //.
+            
+    - move=> t ty φ IH Ht Hscope g u Hin Hpty Hqc Hv.
+      (*
+      rewrite -IH //= /eval_queries.
+      case: eqP => //= Heq.
+      * move: (type_in_scope_N_obj_is_abstract _ _ _ _ _  Hqc Hscope).
+        move: Hv; simp has_valid_fragments; rewrite Hscope /= => {Heq} /andP [/orP [/eqP Heq | Hcontr] Hv]; last first.
+          by rewrite Hcontr in Ht.
+        rewrite /is_abstract_type => /orP [Hintf | Hunion].
+        rewrite get_possible_types_interfaceE // in Hpty IH.
+        rewrite -Heq in Hpty IH *.
+        rewrite Hpty //=.
+        
+        rewrite get_possible_types_unionE // in Hpty IH.
+        rewrite -Heq in Hpty IH Hunion *.
+
+        rewrite implementation_nil_for_union //= Hpty //=.
+       *)
+      admit.
+         
+    - move=> ty hd tl IHhd IHtl g u Hin Hpty.
+      rewrite /queries_conform; case/andP.
+      all_cons => [Hqc Hqsc] /=.
+      all_cons => [Hmerge Hmerges].
+      all_cons => [Hv Hvs].
+      rewrite {2}/eval_queries /=.
+      rewrite map_cat flatten_cat. 
+      rewrite IHhd // /eval_queries.
+      rewrite IHhd // IHtl //; last first.
+        by rewrite /queries_conform; apply/andP; split.
+        rewrite eval_collect_cat //.
+        rewrite wf_responses_catE.
+        apply/and3P; split; do ? by apply: eval_queries_response_are_wf.
+        rewrite -IHhd // -IHtl //; last by rewrite /queries_conform; apply/andP; split.
+        apply/allP => r Hevin.
+        apply/allP => r2 Hevin2.
+  Admitted.
+        
+
+  
+  Lemma normalize_preserves_valid_fragments :
+    forall schema ty q,
+      has_valid_fragments schema ty q ->
+      all (has_valid_fragments schema ty) (normalize schema ty q).
+  Admitted.
+
+   Lemma normalize__φ_preserves_valid_fragments :
+    forall schema ty qs,
+      all (has_valid_fragments schema ty) qs ->
+      all (has_valid_fragments schema ty) (normalize__φ schema ty qs).
+  Admitted.
+
+   Lemma remove_redundancies_eval_eq schema (g : @conformedGraph Name Vals schema) φ :
+     forall ty u,
+       u \in g.(nodes) ->
+       u.(type) \in get_possible_types schema ty ->
+       queries_conform schema ty φ ->
+       all (has_valid_fragments schema ty) φ ->
+       eval_queries schema g u φ = eval_queries schema g u (remove_redundancies φ).
+   Proof.
+     funelim (remove_redundancies φ) => // ty u Hin Hpty;
+     all_cons => [Hqc Hqsc];
+     all_cons => [Hv Hvs] /=.
+
+     all: do ?[rewrite -(H schema g ty u) // -?eval_queries_equation_2].
+     all: do ?[by apply: filter_preserves_pred].
+     admit.
+     admit.
+
+
+     rewrite -(H0 schema g ty u) //; do ?[by apply: filter_preserves_pred].
+     simp eval => /=.
+     case Hlook : lookup_field_type => [rty |] //.
+     case: rty Hlook => rty Hlook.
+     case ohead => [v |] //=.
+     rewrite -(H schema g rty v) //=.
+     simp collect.
+     congr cons. congr NestedResult.
+     
+     rewrite eval_collect_cat.
+     rewrite (collect_collect_2_cat Name Vals (responses_size (eval_queries schema g v l0 ++ eval_queries schema g v (β__φ s2 l)))) //.
+     rewrite -catA.
+     rewrite (β_filter_nil Name Vals s2 (eval_queries schema g u (γ__φ _ _))).
+     rewrite cats0.
+     admit.
+     admit.
+     exact: Name. (* ?? *)
+   Admitted.
+
+
+
+   forall schema graph φ ty,
+     
+     query_conforms schema ty φ ->
+     has_valid_fragments schema ty φ ->
+
+     exists φ',
+       multi Rewrite φ φ' /\
+       all (query_conforms schema ty) φ' /\
+       all (has_valid_fragments schema ty) φ' /\
+       are_in_normal_form schema φ' /\
+       are_non_redundant φ' /\
+         forall u, u \in g.(nodes) ->
+              u.(type) \in get_possible_types schema ty ->
+                           eval schema g u φ = eval_queries schema g u φ'].
+     
+  
        
+  Theorem all_q_has_nrgtnf_q schema (g : @conformedGraph Name Vals schema):
+    forall (φ : @Query Name Vals) ty,
+      query_conforms schema ty φ ->
+      has_valid_fragments schema ty φ ->
+
+      exists (φ' : seq Query),
+        [/\
+         all (query_conforms schema ty) φ',
+         all (has_valid_fragments schema ty) φ',
+         are_in_normal_form schema φ',
+         are_non_redundant φ' &
+         forall u, u \in g.(nodes) ->
+              u.(type) \in get_possible_types schema ty ->
+                    eval schema g u φ = eval_queries schema g u φ'].
+  Proof.
+    case=> [f α | l f α | f α φ | l f α φ | t φ] ty Hqc Hv;
+    [ exists [:: SingleField f α]
+    | exists [:: LabeledField l f α]
+    | exists (remove_redundancies (normalize schema ty (NestedField f α φ)))
+    | exists (remove_redundancies (normalize schema ty (NestedLabeledField l f α φ)))
+    | exists (remove_redundancies (normalize schema ty (InlineFragment t φ)))]; split=> //.
+
+    all: do ?[by rewrite all_seq1].
+    all: do ?[by apply: remove_redundancies_preserves_conformance; apply: normalize_preserves_conformance].
+    all: do ?[by apply: remove_redundancies_preserves_valid_fragments; apply: normalize_preserves_valid_fragments].
+    all: do ?[by apply: remove_redundancies_normalize_preserves_normal_form].
+    all: do ?[by apply: remove_redundancies_is_non_redundant].
+    all: do ?[by move=> u Hin Hty; rewrite -remove_redundancies_eval_eq; apply: normalize_preserves_eval].
+    all: do ?[by intros => /=; rewrite cats0; apply: eval_collect_same].
+    intros.
+    rewrite -(remove_redundancies_eval_eq _ _ _ ty u) //.
+    apply: normalize_preserves_eval => //.
+    by apply: normalize_preserves_conformance.
+    by apply: normalize_preserves_valid_fragments.
+
+    intros.
+    rewrite -(remove_redundancies_eval_eq _ _ _ ty u) //.
+    apply: normalize_preserves_eval => //.
+    by apply: normalize_preserves_conformance.
+    by apply: normalize_preserves_valid_fragments.
+
+    intros.
+    rewrite -(remove_redundancies_eval_eq _ _ _ ty u) //.
+    apply: normalize_preserves_eval => //.
+    by apply: normalize_preserves_conformance.
+      by apply: normalize_preserves_valid_fragments.
+  Qed.
+  
+  Theorem bleble schema (g : @conformedGraph Name Vals schema) :
+    forall (φ : @Query Name Vals),
+      query_conforms schema schema.(query_type) φ ->
+      has_valid_fragments schema schema.(query_type) φ ->
+
+      exists (φ' : seq Query),
+        [/\
+         all (query_conforms schema schema.(query_type)) φ',
+         all (has_valid_fragments schema schema.(query_type)) φ',
+         are_in_normal_form schema φ',
+         are_non_redundant φ' &
+         eval schema g g.(root) φ = eval_queries schema g g.(root) φ'].
+  Proof.
+    case=> [f α | l f α | f α φ | l f α φ | t φ] Hqc Hv;
+    [ exists [:: SingleField f α]
+    | exists [:: LabeledField l f α]
+    | exists (remove_redundancies (normalize schema schema.(query_type) (NestedField f α φ)))
+    | exists (remove_redundancies (normalize schema schema.(query_type) (NestedLabeledField l f α φ)))
+    | exists (remove_redundancies (normalize schema schema.(query_type) (InlineFragment t φ)))]; split=> //.
+
+    all: do ?[by rewrite all_seq1].
+    all: do ?[by apply: remove_redundancies_preserves_conformance; apply: normalize_preserves_conformance].
+    all: do ?[by apply: remove_redundancies_preserves_valid_fragments; apply: normalize_preserves_valid_fragments].
+    all: do ?[by apply: remove_redundancies_normalize_preserves_normal_form].
+    all: do ?[by apply: remove_redundancies_is_non_redundant].
+    all: do ?[by intros => /=; rewrite cats0; apply: eval_collect_same].
+    
+    intros.
+    move: (root_in_nodes g) => Hin.
+    have Hpty :  type (root g) \in get_possible_types schema (query_type schema).
+    rewrite get_possible_types_objectE //=.
+    rewrite mem_seq1.
+      by apply/eqP; apply: root_query_type.
+      by apply: query_has_object_type.
+    rewrite -(remove_redundancies_eval_eq _ _ _ schema.(query_type)) //.
+    apply: normalize_preserves_eval => //.
+    
+    by apply: normalize_preserves_conformance.
+    by apply: normalize_preserves_valid_fragments.
+
+    intros.
+    move: (root_in_nodes g) => Hin.
+    have Hpty :  type (root g) \in get_possible_types schema (query_type schema).
+    rewrite get_possible_types_objectE //=.
+    rewrite mem_seq1.
+      by apply/eqP; apply: root_query_type.
+      by apply: query_has_object_type.
+    rewrite -(remove_redundancies_eval_eq _ _ _ schema.(query_type)) //.
+    apply: normalize_preserves_eval => //.
+    
+    by apply: normalize_preserves_conformance.
+    by apply: normalize_preserves_valid_fragments.
+
+    intros.
+    move: (root_in_nodes g) => Hin.
+    have Hpty :  type (root g) \in get_possible_types schema (query_type schema).
+    rewrite get_possible_types_objectE //=.
+    rewrite mem_seq1.
+      by apply/eqP; apply: root_query_type.
+      by apply: query_has_object_type.
+    rewrite -(remove_redundancies_eval_eq _ _ _ schema.(query_type)) //.
+    apply: normalize_preserves_eval => //.
+    
+    by apply: normalize_preserves_conformance.
+    by apply: normalize_preserves_valid_fragments.
+  Qed.
+  
 End Eq.
