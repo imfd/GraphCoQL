@@ -107,10 +107,7 @@ Section Schema.
         https://facebook.github.io/graphql/June2018/#sec-Field-Arguments **)
     Inductive FieldArgumentDefinition := FieldArgument (argname : Name) (argtype : type).
 
-    (** Extractors for a FieldArgument **)
-    Definition argname arg := let: FieldArgument n _ := arg in n.
-    Definition argtype arg := let: FieldArgument _ t := arg in t.
-    
+     
 
     (** Packing and unpacking of a field argument, needed for canonical instances **)
     Definition prod_of_arg (arg : FieldArgumentDefinition) := let: FieldArgument n t := arg in (n, t).
@@ -133,11 +130,7 @@ Section Schema.
                                       (args : {fset FieldArgumentDefinition})
                                       (return_type : type).
 
-    (** Extractors for a Field **)
-    Definition fname fld := let: Field f _ _ := fld in f.
-    Definition fargs fld := let: Field _ args _ := fld in args.
-    Definition return_type fld := let: Field _ _ ty := fld in ty.
-
+   
     (** Packing and unpacking of a field, needed for canonical instances **)
     Definition prod_of_field (f : FieldDefinition) := let: Field n args t := f in (n, args, t).
     Definition field_of_prod (p : Name * {fset FieldArgumentDefinition} * type)  := let: (n, args, t) := p in Field n args t.
@@ -172,48 +165,23 @@ Section Schema.
      **)
 
     Inductive TypeDefinition : Type :=
-    | ScalarTypeDefinition : Name -> TypeDefinition
-    | ObjectTypeDefinition : Name -> {fset NamedType} -> seq FieldDefinition -> TypeDefinition
-    | InterfaceTypeDefinition : Name -> seq FieldDefinition -> TypeDefinition
-    | UnionTypeDefinition : Name -> {fset NamedType} -> TypeDefinition
-    | EnumTypeDefinition : Name -> {fset EnumValue} -> TypeDefinition.
+    | ScalarTypeDefinition (scalar_name : Name)
+                           
+    | ObjectTypeDefinition (object_name : Name)
+                           (interfaces : {fset NamedType})
+                           (fields : seq FieldDefinition)
+                           
+    | InterfaceTypeDefinition (interface_name : Name)
+                              (fields : seq FieldDefinition)
+                              
+    | UnionTypeDefinition (union_name : Name)
+                          (union_members : {fset NamedType})
+                          
+    | EnumTypeDefinition (enum_name : Name)
+                         (enum_members : {fset EnumValue}).
     
 
-    (** Extractors for a type definition **)
-    Definition tdname tdef : Name :=
-      match tdef with 
-      | ScalarTypeDefinition name => name
-      | ObjectTypeDefinition name _ _ => name
-      | InterfaceTypeDefinition name _ => name
-      | UnionTypeDefinition name _ => name
-      | EnumTypeDefinition name _ => name
-      end.
-
-
-    Definition tfields tdef : seq FieldDefinition :=
-      match tdef with 
-      | ObjectTypeDefinition _ _ flds
-      | InterfaceTypeDefinition _ flds => flds
-      | _ => [::]
-      end.
-
-    Definition tintfs tdef : {fset NamedType} :=
-      match tdef with
-      | ObjectTypeDefinition _ intfs _ => intfs
-      | _ => fset0
-      end.
-
-    Definition tmbs tdef : {fset NamedType} :=
-      match tdef with
-      | UnionTypeDefinition _ mbs => mbs
-      | _ => fset0
-      end.
-
-    Definition tenums tdef : {fset EnumValue} :=
-      match tdef with
-      | EnumTypeDefinition _ enums => enums
-      | _ => fset0
-      end.
+  
 
 
     
@@ -307,11 +275,6 @@ Notation "'union' U '{' mbs '}'" := (UnionTypeDefinition U mbs) : schema_scope.
 Notation "'enum' E '{' evs '}'" := (EnumTypeDefinition E evs) : schema_scope.
 
  *)
-Arguments argname [Name].
-Arguments argtype [Name].
-Arguments fname [Name].
-Arguments fargs [Name].
-Arguments return_type [Name].
 Arguments NamedType [Name].
 Arguments type [Name].
 Arguments FieldArgumentDefinition [Name].
@@ -320,4 +283,4 @@ Arguments TypeDefinition [Name].
 Arguments Schema [Name].
 
 Arguments tname [Name].
-Arguments tintfs [Name].
+

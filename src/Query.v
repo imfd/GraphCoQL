@@ -6,35 +6,42 @@ Unset Printing Implicit Defensive.
 
 Set Asymmetric Patterns.
 
-From Equations Require Import Equations.
 From extructures Require Import ord fmap.
 
 
 Require Import treeordtype.
-Require Import Schema.
-Require Import SchemaAux.
-
-Require Import SeqExtra.
-Require Import Ssromega.
 
 Delimit Scope query_scope with QUERY.
 Open Scope query_scope.
 
-Require Import Arith.
 
 Section Query.
 
   Variables Name Vals : ordType.
 
   Unset Elimination Schemes.
+  
   Inductive Query : Type :=
-  | SingleField : Name -> {fmap Name -> Vals} -> Query
-  | LabeledField : Name -> Name -> {fmap Name -> Vals} -> Query
-  | NestedField : Name -> {fmap Name -> Vals} -> seq Query -> Query
-  | NestedLabeledField : Name -> Name -> {fmap Name -> Vals} -> seq Query -> Query
-  | InlineFragment : @NamedType Name -> seq Query -> Query.
+  | SingleField (response_name : Name)
+                (arguments : {fmap Name -> Vals})
+                
+  | LabeledField (label : Name)
+                 (response_name : Name)
+                 (arguments : {fmap Name -> Vals})
+                 
+  | NestedField (response_name : Name)
+                (arguments : {fmap Name -> Vals})
+                (subqueries : seq Query)
+                
+  | NestedLabeledField (label : Name)
+                       (response_name : Name)
+                       (arguments : {fmap Name -> Vals})
+                       (subqueries : seq Query)
 
- 
+  | InlineFragment (type_condition : Name)
+                   (subqueries : seq Query).
+
+  Set Elimination Schemes.
   
   Definition Query_rect (P : Query -> Type)
              (Pl : seq Query -> Type)
@@ -90,6 +97,8 @@ Section Query.
 
 
 
+
+  
   Fixpoint tree_of_query query : GenTree.tree (option Name * Name * {fmap Name -> Vals}):=
     match query with
     | SingleField f α => GenTree.Node 0 [:: GenTree.Leaf  (None, f, α)]
@@ -152,109 +161,8 @@ Section Query.
   Canonical query_ordType := OrdType Query (PcanOrdMixin tree_of_queryK).
 
 
-   (** Boolean predicates to check what type the query is:
-      - Fields : Everything not an inline fragment
-      - Inline : An inline fragment 
-   **)
-  Equations is_field (query : Query) : bool :=
-    is_field (InlineFragment _ _) := false;
-    is_field _ := true.
-
-  Equations is_inline_fragment (query : Query) : bool :=
-    is_inline_fragment (InlineFragment _ _) := true;
-    is_inline_fragment _ := false.       
-
-  Definition is_labeled (query : Query) : bool :=
-    match query with
-    | LabeledField _ _ _
-    | NestedLabeledField _ _ _ _ => true
-    | _ => false
-    end.
-
-  Definition has_subqueries (query : Query) : bool :=
-    match query with
-    | SingleField _ _
-    | LabeledField _ _ _ => false
-    | _ => true
-    end.
-  
-  (** Extractors for queries **)
-  Equations qname query (Hfld : query.(is_field)) :  Name :=
-    {
-      qname (SingleField f _) _ := f;
-      qname (LabeledField _ f _) _ := f;
-      qname (NestedField f _ _) _ := f;
-      qname (NestedLabeledField _ f _ _) _ := f;
-      qname (InlineFragment _ _) Hfld := _
-    }.
-
-  Equations oqname (query : Query) : option Name :=
-    {
-      oqname (InlineFragment _ _) := None;
-      oqname q := Some (qname q _)
-    }.
-
-    
-  Equations qlabel query (Hlab : query.(is_labeled)) : Name :=
-    {
-      qlabel (LabeledField label _ _) _ := label;
-      qlabel (NestedLabeledField label _ _ _) _ := label;
-      qlabel _ Hlab := _
-    }.
-
-  Equations oqlabel (query : Query) : option Name :=
-    {
-      oqlabel (LabeledField label _ _) := Some label;
-      oqlabel (NestedLabeledField label _ _ _) := Some label;
-      oqlabel _ := None
-    }.
-                         
-    
-  Definition qsubqueries query : seq Query :=
-    match query with
-    | NestedField _ _ ϕ
-    | NestedLabeledField _ _ _ ϕ
-    | InlineFragment _ ϕ => ϕ
-    | _ => [::]
-    end.
-
-  Equations qsubqueries' (query : Query) (Hhas : query.(has_subqueries)) : seq Query :=
-    {
-      qsubqueries' query Hhas := query.(qsubqueries)
-    }.
- 
-  
-  Equations qargs query (Hfld : query.(is_field)) :  {fmap Name -> Vals} :=
-    {
-      qargs (SingleField _ α) _ := α;
-      qargs (LabeledField _ _ α) _ := α;
-      qargs (NestedField _ α _) _ := α;
-      qargs (NestedLabeledField _ _ α _) _ := α;
-      qargs (InlineFragment _ _) Hfld := _
-    }.
-
-  Equations oqargs (query : Query) : option {fmap Name -> Vals} :=
-    {
-      oqargs (InlineFragment _ _) := None;
-      oqargs q := Some (qargs q _)
-    }.
 
   
-  Equations qresponse_name query (Hfld : query.(is_field)) :  Name :=
-    {
-      qresponse_name (SingleField f _) _ := f;
-      qresponse_name (LabeledField l _ _) _ := l;
-      qresponse_name (NestedField f _ _) _ := f;
-      qresponse_name (NestedLabeledField l _ _ _) _ := l;
-      qresponse_name (InlineFragment _ _) Hfld := _
-    }.
-
-  Equations oqresponse_name (query : Query) : option Name :=
-    {
-      oqresponse_name (InlineFragment _ _) := None;
-      oqresponse_name q := Some (qresponse_name q _)
-    }.
-
 
     
 End Query.
@@ -265,20 +173,3 @@ Arguments LabeledField [Name Vals].
 Arguments NestedField [Name Vals].
 Arguments NestedLabeledField [Name Vals].
 Arguments InlineFragment [Name Vals].
-
-
-Arguments is_field [Name Vals].
-Arguments is_inline_fragment [Name Vals].
-Arguments is_labeled [Name Vals].
-Arguments has_subqueries [Name Vals].
-
-Arguments qname [Name Vals].
-Arguments oqname [Name Vals].
-Arguments qlabel [Name Vals].
-Arguments oqlabel [Name Vals].
-Arguments qargs [Name Vals].
-Arguments oqargs [Name Vals].
-Arguments qsubqueries [Name Vals].
-Arguments qsubqueries' [Name Vals].
-Arguments qresponse_name [Name Vals].
-Arguments oqresponse_name [Name Vals].

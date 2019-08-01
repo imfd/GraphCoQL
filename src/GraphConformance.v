@@ -3,7 +3,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-From extructures Require Import ord fset fmap.
+From extructures Require Import ord fmap.
 
 
 Require Import Schema.
@@ -11,6 +11,7 @@ Require Import SchemaWellFormedness.
 Require Import SchemaAux.
 Require Import Graph.
 Require Import GraphAux.
+
 
 Section Conformance.
 
@@ -52,16 +53,6 @@ Section Conformance.
     all (argument_conforms schema ty f.(label)) f.(args).
  
 
-  Lemma argument_conformsP schema ty fname arg :
-    reflect (exists2 fld_arg, lookup_argument_in_type_and_field schema ty fname arg.1 = Some fld_arg & schema.(hasType) fld_arg.(argtype) arg.2)
-            (argument_conforms schema ty fname arg).
-  Proof.
-    apply: (iffP idP); rewrite /argument_conforms; case: arg => argname value.
-    - case Hlook : lookup_argument_in_type_and_field => [arg|] // Hty.
-        by exists arg.
-    - by case=> fld_arg Hlook Hty; rewrite Hlook.
-  Qed.
-    
     
 
 
@@ -154,11 +145,6 @@ Section Conformance.
     all (fun node : node => is_object_type schema node.(type)) graph.(nodes).
 
   
-  Lemma nodes_have_object_typeP schema graph :
-    reflect (forall node, node \in graph.(nodes) -> is_object_type schema node.(type))
-            (nodes_have_object_type schema graph).
-  Proof. by apply: (iffP allP). Qed.
-
   (**
      A GraphQL graph conforms to a given Schema if:
      1. Its root conforms to the Schema.
@@ -178,45 +164,6 @@ Section Conformance.
   Coercion graph_of_conformed_graph schema (g : conformedGraph schema) := let: ConformedGraph g _ _ _ _ := g in g.
 
 
-  Lemma aux_root_query_type schema graph :
-    root_type_conforms schema graph -> graph.(root).(type) = schema.(query_type).
-  Proof. by rewrite /root_type_conforms; move/eqP. Qed.
-  
-  Lemma root_query_type schema (graph : conformedGraph schema) :
-    graph.(root).(type) = schema.(query_type).
-  Proof.
-    case: graph => g H *.
-      by move: (aux_root_query_type H).
-  Qed.
-
-  Lemma node_in_graph_has_object_type schema (graph : conformedGraph schema) :
-    forall u, u \in graph.(nodes) -> is_object_type schema u.(type).
-  Proof.
-    apply/nodes_have_object_typeP.
-    by case: graph.
-  Qed.
-
-  Lemma neighbours_are_subtype_of_field schema (graph : conformedGraph schema) u fld fdef  :
-    lookup_field_in_type schema u.(type) fld.(label) = Some fdef ->
-    forall v, v \in neighbours_with_field graph u fld ->
-               v.(type) \in get_possible_types schema fdef.(return_type).
-  Proof.
-    move=> Hlook.
-    case: graph => g Hroot Hedges.
-    
-    have Hedge : forall e, e \in g.(E) -> edge_conforms schema g e.
-      by apply/allP; move: Hedges; rewrite /edges_conform; case/andP.
-
-    move=> Hflds Hobjs v.
-    rewrite /neighbours_with_field -in_undup => /mapP [v'].
-    rewrite mem_filter => /andP [/andP [/eqP Hsrc /eqP Hfld] Hin] Htrgt.    
-    move: (Hedge v' Hin).
-    rewrite /edge_conforms /=.
-    case: v' Hsrc Hfld Hin Htrgt => //=.
-    case=> //= src fld' v' -> -> Hin ->.
-      by rewrite Hlook /=; case/and3P.
-  Qed.
-    
                
     
 
