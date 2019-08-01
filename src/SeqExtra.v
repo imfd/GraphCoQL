@@ -50,6 +50,21 @@ Section SeqExtra.
   Qed.
   
 
+
+  
+  Lemma in_undup (s : seq A) (x : A) :
+    x \in s <-> x \in undup s.
+  Proof.
+    elim: s => //= y s [IHl IHr]; split.
+    - rewrite inE => /orP [/eqP <- | Hin]; case: ifP => //=.
+      * by intros; apply/orP; left; apply/eqP.
+      * by intros; apply: IHl.
+      * by intros; apply/orP; right; apply: IHl.
+    - case: ifP => //=; intros; rewrite inE; apply/orP.
+      * by right; apply: IHr.
+      * by case/orP: H => [/eqP <- | Hin]; [left; apply/eqP | right; apply: IHr].      
+  Qed.
+
   
   Lemma filter_preserves_pred (p pred : A -> bool) (s : seq A) :
     all p s ->

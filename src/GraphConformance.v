@@ -12,6 +12,8 @@ Require Import SchemaAux.
 Require Import Graph.
 Require Import GraphAux.
 
+Require Import SeqExtra.
+
 Section Conformance.
 
 

@@ -20,6 +20,8 @@
 
 ./src/Graph.v
 ./src/GraphAux.v
+./src/theory/GraphAuxLemmas.v
+
 ./src/GraphConformance.v
 
 ./src/Query.v
