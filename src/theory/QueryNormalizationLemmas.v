@@ -21,7 +21,7 @@ Require Import QueryConformance.
 
 
 Require Import NRGTNF.
-Require Import QueryRewrite.
+Require Import QueryNormalization.
 
 Require Import Ssromega.
 
