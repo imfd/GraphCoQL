@@ -23,6 +23,7 @@
 ./src/theory/GraphAuxLemmas.v
 
 ./src/GraphConformance.v
+./src/theory/GraphConformanceLemmas.v
 
 ./src/Query.v
 ./src/QueryAux.v
