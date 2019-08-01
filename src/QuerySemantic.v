@@ -47,79 +47,79 @@ Section QuerySemantic.
     {
       ⟦ [::] ⟧ˢ in _ := [::];
       
-      ⟦ InlineFragment t φ :: qs ⟧ˢ in u
+      ⟦ f[[α]] :: φ ⟧ˢ in u
+        with lookup_field_in_type s u.(type) f :=
+        {
+        | Some _
+            with u.(fields) (Field f α) :=
+            {
+            | Some (inl value) => (f, Leaf (SingleValue value)) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
+            | Some (inr values) => (f, Array (map (Leaf \o SingleValue) values)) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
+            | None => (f, Leaf Null) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u  (* Should throw error? *)
+            };
+        | _ := ⟦ φ ⟧ˢ in u (* Should throw error *)
+        };
+      
+      ⟦ l:f[[α]] :: φ ⟧ˢ in u
+        with lookup_field_in_type s u.(type) f :=
+        {
+        | Some _
+            with u.(fields) (Field f α) :=
+            {
+            | Some (inl value) => (l, Leaf (SingleValue value)) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
+            | Some (inr values) => (l, Array (map (Leaf \o SingleValue) values)) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
+            | None => (l, Leaf Null) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u (* Should throw error? *)
+            };
+
+        | _ := ⟦ φ ⟧ˢ in u (* Should throw error *)
+        };
+
+      
+      ⟦ f[[α]] { β } :: φ ⟧ˢ in u 
+        with lookup_field_in_type s u.(type) f :=
+        {
+        | Some fld
+            with fld.(return_type) :=
+            {
+            | [ _ ] := (f, Array [seq {- (⟦ β ++ merge_selection_sets (find_queries_with_label s f u.(type) φ) ⟧ˢ in v) -} | v <- neighbours_with_field g u (Field f α)])
+                              :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
+            | NT _
+                with ohead (neighbours_with_field g u (Field f α)) :=
+                {
+                | Some v => (f, {- (⟦ β ++ merge_selection_sets (find_queries_with_label s f u.(type) φ) ⟧ˢ in v) -}) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
+                
+                | _ =>  (f, Leaf Null) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u
+                }
+            };
+
+        | None => ⟦ φ ⟧ˢ in u (* Should throw error *)
+        };
+
+      ⟦ l:f[[α]] { β } :: φ ⟧ˢ in u
+        with lookup_field_in_type s u.(type) f :=
+        {
+        | Some fld
+            with fld.(return_type) :=
+            {
+            | [ _ ] := (l, Array [seq {- (⟦ β ++ merge_selection_sets (find_queries_with_label s l u.(type) φ) ⟧ˢ in v) -} | v <- neighbours_with_field g u (Field f α)])
+                              :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
+            | NT _
+                with ohead (neighbours_with_field g u (Field f α)) :=
+                {
+                | Some v => (l, {- (⟦ β ++ merge_selection_sets (find_queries_with_label s l u.(type) φ) ⟧ˢ in v) -}) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
+                
+                | _ =>  (l, Leaf Null) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u
+                }
+            };
+
+        | None => ⟦ φ ⟧ˢ in u (* Should throw error *)
+        };
+
+       ⟦ on t { β } :: φ ⟧ˢ in u
         with does_fragment_type_apply s u.(type) t :=
         {
-        | true := ⟦ φ ++ qs ⟧ˢ in u;
-        | _ := ⟦ qs ⟧ˢ in u
-        };
-
-      ⟦ SingleField f α :: qs ⟧ˢ in u
-        with lookup_field_in_type s u.(type) f :=
-        {
-        | Some _
-            with u.(fields) (Field f α) :=
-            {
-            | Some (inl value) => (f, Leaf (SingleValue value)) :: ⟦ filter_queries_with_label f qs ⟧ˢ in u;
-            | Some (inr values) => (f, Array (map (Leaf \o SingleValue) values)) :: ⟦ filter_queries_with_label f qs ⟧ˢ in u;
-            | None => (f, Leaf Null) :: ⟦ filter_queries_with_label f qs ⟧ˢ in u  (* Should throw error? *)
-            };
-        | _ := ⟦ qs ⟧ˢ in u (* Should throw error *)
-        };
-      
-      ⟦ LabeledField l f α :: qs ⟧ˢ in u
-        with lookup_field_in_type s u.(type) f :=
-        {
-        | Some _
-            with u.(fields) (Field f α) :=
-            {
-            | Some (inl value) => (l, Leaf (SingleValue value)) :: ⟦ filter_queries_with_label l qs ⟧ˢ in u;
-            | Some (inr values) => (l, Array (map (Leaf \o SingleValue) values)) :: ⟦ filter_queries_with_label l qs ⟧ˢ in u;
-            | None => (l, Leaf Null) :: ⟦ filter_queries_with_label l qs ⟧ˢ in u (* Should throw error? *)
-            };
-
-        | _ := ⟦ qs ⟧ˢ in u (* Should throw error *)
-        };
-
-      
-      ⟦ NestedField f α φ :: qs ⟧ˢ in u 
-        with lookup_field_in_type s u.(type) f :=
-        {
-        | Some fld
-            with fld.(return_type) :=
-            {
-            |  ListType _ := (f, Array [seq Object (⟦ φ ++ merge_selection_sets (find_queries_with_label s f u.(type) qs) ⟧ˢ in v) | v <- neighbours_with_field g u (Field f α)])
-                              :: ⟦ filter_queries_with_label f qs ⟧ˢ in u;
-            | NT _
-                with ohead (neighbours_with_field g u (Field f α)) :=
-                {
-                | Some v => (f, Object (⟦ φ ++ merge_selection_sets (find_queries_with_label s f u.(type) qs) ⟧ˢ in v)) :: ⟦ filter_queries_with_label f qs ⟧ˢ in u;
-                
-                | _ =>  (f, Leaf Null) :: ⟦ filter_queries_with_label f qs ⟧ˢ in u
-                }
-            };
-
-        | None => ⟦ qs ⟧ˢ in u (* Should throw error *)
-        };
-
-      execute_selection_set u (NestedLabeledField l f α φ :: qs)
-        with lookup_field_in_type s u.(type) f :=
-        {
-        | Some fld
-            with fld.(return_type) :=
-            {
-            |  ListType _ := (l, Array [seq Object (⟦ φ ++ merge_selection_sets (find_queries_with_label s l u.(type) qs) ⟧ˢ in v) | v <- neighbours_with_field g u (Field f α)])
-                              :: ⟦ filter_queries_with_label l qs ⟧ˢ in u;
-            | NT _
-                with ohead (neighbours_with_field g u (Field f α)) :=
-                {
-                | Some v => (l, Object (⟦ φ ++ merge_selection_sets (find_queries_with_label s l u.(type) qs) ⟧ˢ in v)) :: ⟦ filter_queries_with_label l qs ⟧ˢ in u;
-                
-                | _ =>  (l, Leaf Null) :: ⟦ filter_queries_with_label l qs ⟧ˢ in u
-                }
-            };
-
-        | None => ⟦ qs ⟧ˢ in u (* Should throw error *)
+        | true := ⟦ β ++ φ ⟧ˢ in u;
+        | _ := ⟦ φ ⟧ˢ in u
         }
 
     }
@@ -176,12 +176,12 @@ Section QuerySemantic.
         | Some fld
             with fld.(return_type) :=
             {
-            | ListType _ => (f, Array [seq Object (⦃ φ in v ⦄) | v <- neighbours_with_field g u (Field f α)]) :: ⦃ qs in u ⦄;
+            | ListType _ => (f, Array [seq {- ⦃ φ in v ⦄ -} | v <- neighbours_with_field g u (Field f α)]) :: ⦃ qs in u ⦄;
         
             | NT ty
                 with ohead (neighbours_with_field g u (Field f α)) :=
                 {
-                | Some v => (f, Object (⦃ φ in v ⦄)) :: ⦃ qs in u ⦄;
+                | Some v => (f, {- ⦃ φ in v ⦄ -}) :: ⦃ qs in u ⦄;
                 
                 | _ =>  (f, Leaf Null) :: ⦃ qs in u ⦄
                 }
@@ -195,12 +195,12 @@ Section QuerySemantic.
         | Some fld
             with fld.(return_type) :=
             {
-            | ListType _ => (l, Array [seq Object (⦃ φ in v ⦄) | v <- neighbours_with_field g u (Field f α)]) :: ⦃ qs in u ⦄;
+            | ListType _ => (l, Array [seq {- ⦃ φ in v ⦄ -} | v <- neighbours_with_field g u (Field f α)]) :: ⦃ qs in u ⦄;
         
             | NT ty
                 with ohead (neighbours_with_field g u (Field f α)) :=
                 {
-                | Some v => (l, Object (⦃ φ in v ⦄)) :: ⦃ qs in u ⦄;
+                | Some v => (l, {- ⦃ φ in v ⦄ -}) :: ⦃ qs in u ⦄;
                 
                 | _ =>  (l, Leaf Null) :: ⦃ qs in u ⦄
                 }

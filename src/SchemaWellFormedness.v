@@ -60,7 +60,7 @@ Section WellFormedness.
         Subtype ty ty' ->
         Subtype [ ty ] [ ty' ]. 
 
-    Reserved Notation " ty1 <: ty2" (at level 60).
+    Reserved Infix "<:" (at level 60).
     Equations is_subtype (ty ty' : @type Name) : bool :=
       {
         [ lty ] <: [ lty' ] := lty <: lty';
@@ -228,22 +228,22 @@ Section WellFormedness.
       match tdef with
       | Scalar _ => true
                                    
-      | Object name implements interfaces {{ fields }} =>
+      | Object name implements interfaces { fields } =>
         [&& (fields != [::]),
          uniq [seq fld.(fname) | fld <- fields],
          all (is_field_wf) fields,
          all (is_interface_type s) interfaces &
          all (implements_interface_correctly name) interfaces]
 
-      | Interface _ {{ fields }} =>
+      | Interface _ { fields } =>
         [&& (fields != [::]),
          uniq [seq fld.(fname) | fld <- fields] &
          all (is_field_wf) fields]
 
-      | Union name {{ members }} =>
+      | Union name { members } =>
         (members != fset0) && all (is_object_type s) members
 
-      | Enum _ {{ enumValues }} => enumValues != fset0
+      | Enum _ { enumValues } => enumValues != fset0
                                                      
       end.
 
@@ -274,4 +274,4 @@ End WellFormedness.
 
 Arguments wfSchema [Name Vals].
 
-Notation "ty1 <: ty2" := (is_subtype ty1 ty2) (at level 50) : schema_scope.
+Infix "<:" := is_subtype (at level 50) : schema_scope.
