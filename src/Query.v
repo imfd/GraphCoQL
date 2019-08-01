@@ -173,3 +173,14 @@ Arguments LabeledField [Name Vals].
 Arguments NestedField [Name Vals].
 Arguments NestedLabeledField [Name Vals].
 Arguments InlineFragment [Name Vals].
+
+Delimit Scope query_scope with QUERY.
+Open Scope query_scope.
+
+
+Notation "f [[ α ]]" := (SingleField f α) (at level 20, α at next level) : query_scope.
+Notation "l : f [[ α ]]" := (LabeledField l f α) (at level 20, f at next level, α at next level)  : query_scope.
+Notation "f [[ α ]] { φ }" := (NestedField f α φ) (at level 20, α at next level, φ at next level) : query_scope.
+Notation "l : f [[ α ]] { φ }" := (NestedLabeledField l f α φ)
+                                 (at level 20, f at next level, α at next level, φ at next level)  : query_scope.
+Notation "'on' t { φ }" := (InlineFragment t φ) (t at next level, φ at next level) : query_scope.

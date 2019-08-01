@@ -34,67 +34,68 @@ Section QueryAux.
      **)
     Equations is_field query : bool :=
       {
-        is_field (InlineFragment _ _) := false;
+        is_field (on _ { _ }) := false;
         is_field _ := true
       }.
 
     Equations is_inline_fragment query : bool :=
       {
-        is_inline_fragment (InlineFragment _ _) := true;
+        is_inline_fragment (on _ { _ }) := true;
         is_inline_fragment _ := false
       }.
-
+    
+   
     Definition is_labeled query : bool :=
       match query with
-      | LabeledField _ _ _
-      | NestedLabeledField _ _ _ _ => true
+      | _ : _ [[ _ ]]
+      | _ : _ [[ _ ]] { _ } => true
       | _ => false
       end.
 
     Definition has_subqueries query : bool :=
       match query with
-      | SingleField _ _
-      | LabeledField _ _ _ => false
+      | _ [[ _ ]]
+      | _ : _ [[ _ ]] => false
       | _ => true
       end.
     
     (** Extractors for queries **)
     Equations qname query (Hfld : query.(is_field)) :  Name :=
       {
-        qname (SingleField f _) _ := f;
-        qname (LabeledField _ f _) _ := f;
-        qname (NestedField f _ _) _ := f;
-        qname (NestedLabeledField _ f _ _) _ := f;
-        qname (InlineFragment _ _) Hfld := _
+        qname (f [[ _ ]]) _ := f;
+        qname (_ : f [[ _ ]]) _ := f;
+        qname (f [[ _ ]] { _ }) _ := f;
+        qname (_ : f [[ _ ]] { _ }) _ := f;
+        qname (on _ { _ }) Hfld := _
       }.
 
     Equations oqname query : option Name :=
       {
-        oqname (InlineFragment _ _) := None;
+        oqname (on _ { _ }) := None;
         oqname q := Some (qname q _)
       }.
 
     
     Equations qlabel query (Hlab : query.(is_labeled)) : Name :=
       {
-        qlabel (LabeledField label _ _) _ := label;
-        qlabel (NestedLabeledField label _ _ _) _ := label;
+        qlabel (label : _ [[ _ ]]) _ := label;
+        qlabel (label : _ [[ _ ]] { _ }) _ := label;
         qlabel _ Hlab := _
       }.
 
     Equations oqlabel query : option Name :=
       {
-        oqlabel (LabeledField label _ _) := Some label;
-        oqlabel (NestedLabeledField label _ _ _) := Some label;
+        oqlabel (label : _ [[ _ ]]) := Some label;
+        oqlabel (label : _ [[ _ ]] { _ }) := Some label;
         oqlabel _ := None
       }.
     
     
     Definition qsubqueries query : seq Query :=
       match query with
-      | NestedField _ _ ϕ
-      | NestedLabeledField _ _ _ ϕ
-      | InlineFragment _ ϕ => ϕ
+      | _ [[ _ ]] { φ }
+      | _ : _ [[ _ ]] { φ }
+      | on _ { φ } => φ
       | _ => [::]
       end.
 
@@ -107,59 +108,59 @@ Section QueryAux.
     
     Equations qargs query (Hfld : query.(is_field)) :  {fmap Name -> Vals} :=
       {
-        qargs (SingleField _ α) _ := α;
-        qargs (LabeledField _ _ α) _ := α;
-        qargs (NestedField _ α _) _ := α;
-        qargs (NestedLabeledField _ _ α _) _ := α;
-        qargs (InlineFragment _ _) Hfld := _
+        qargs (_ [[ α ]]) _ := α;
+        qargs (_ : _ [[ α ]]) _ := α;
+        qargs (_ [[ α ]] { _ }) _ := α;
+        qargs (_ : _ [[ α ]] { _ }) _ := α;
+        qargs (on _ { _ }) Hfld := _
       }.
 
     Equations oqargs query : option {fmap Name -> Vals} :=
       {
-        oqargs (InlineFragment _ _) := None;
+        oqargs (on _ { _ }) := None;
         oqargs q := Some (qargs q _)
       }.
 
     
     Equations qresponse_name query (Hfld : query.(is_field)) :  Name :=
       {
-        qresponse_name (SingleField f _) _ := f;
-        qresponse_name (LabeledField l _ _) _ := l;
-        qresponse_name (NestedField f _ _) _ := f;
-        qresponse_name (NestedLabeledField l _ _ _) _ := l;
-        qresponse_name (InlineFragment _ _) Hfld := _
+        qresponse_name (f [[ _ ]]) _ := f;
+        qresponse_name (l : _ [[ _ ]]) _ := l;
+        qresponse_name (f [[ _ ]] { _ }) _ := f;
+        qresponse_name (l : _ [[ _ ]] { _ }) _ := l;
+        qresponse_name (on _ { _ }) Hfld := _
       }.
 
     Equations oqresponse_name query : option Name :=
       {
-        oqresponse_name (InlineFragment _ _) := None;
+        oqresponse_name (on _ { _ }) := None;
         oqresponse_name q := Some (qresponse_name q _)
       }.
 
     
     Equations has_response_name : Name -> @Query Name Vals -> bool :=
       {
-        has_response_name _ (InlineFragment _ _) := false;
+        has_response_name _ (on _ { _ }) := false;
         has_response_name rname q := (qresponse_name q _) == rname
       }.
 
     Equations has_field_name : Name -> @Query Name Vals -> bool :=
       {
-        has_field_name _ (InlineFragment _ _) := false;
+        has_field_name _ (on _ { _ }) := false;
         has_field_name rname q := (qname q _) == rname
       }.
     
     Equations have_same_field_name : @Query Name Vals -> @Query Name Vals -> bool :=
       {
-        have_same_field_name (InlineFragment _ _) _ := false;
-        have_same_field_name _ (InlineFragment _ _) := false;
+        have_same_field_name (on _ { _ }) _ := false;
+        have_same_field_name _ (on _ { _ }) := false;
         have_same_field_name q1 q2 := (qname q1 _) == (qname q2 _)
       }.
 
     Equations have_same_arguments : @Query Name Vals -> @Query Name Vals -> bool :=
       {
-        have_same_arguments (InlineFragment _ _) _ := false;
-        have_same_arguments _ (InlineFragment _ _) := false;
+        have_same_arguments (on _ { _ }) _ := false;
+        have_same_arguments _ (on _ { _ }) := false;
         have_same_arguments q1 q2 := (qargs q1 _) == (qargs q2 _)
       }.
 
@@ -167,8 +168,8 @@ Section QueryAux.
 
     Equations is_simple_field_selection : @Query Name Vals -> bool :=
       {
-        is_simple_field_selection (SingleField _ _) := true;
-        is_simple_field_selection (LabeledField _ _ _) := true;
+        is_simple_field_selection (_ [[_]]) := true;
+        is_simple_field_selection (_ : _ [[_]]) := true;
         is_simple_field_selection _ := false
       }.
 
@@ -176,8 +177,8 @@ Section QueryAux.
     
     Equations is_nested_field_selection : @Query Name Vals -> bool :=
       {
-        is_nested_field_selection (NestedField _ _ _) := true;
-        is_nested_field_selection (NestedLabeledField _ _ _ _) := true;
+        is_nested_field_selection (_ [[_]] { _ }) := true;
+        is_nested_field_selection (_ : _ [[_]] { _ }) := true;
         is_nested_field_selection _ := false
       }.
 
@@ -194,9 +195,9 @@ Section QueryAux.
     (** Get the query's size, according to Jorge and Olaf's version **)
     Equations query_size query : nat :=
       {
-        query_size (NestedField _ _ q') := 1 + queries_size q';
-        query_size (NestedLabeledField _ _ _ q') => 1 + (queries_size q');
-        query_size (InlineFragment _ q') => 1 + (queries_size q');
+        query_size (_ [[_]] { φ }) := 1 + queries_size φ;
+        query_size (_ : _ [[_]] { φ }) := 1 + (queries_size φ);
+        query_size (on _ { φ }) := 1 + (queries_size φ);
         query_size _ := 1
       }
     where
@@ -228,23 +229,6 @@ Section QueryAux.
     
     Variable s : @wfSchema Name Vals.
 
-    (* (** Checks whether the field selection is defined in the given name *) *)
-    (* Equations is_defined query (Hfield : query.(is_field)) (ty : Name) : bool := *)
-    (*   { *)
-    (*     is_defined q Hfield ty := isSome (lookup_field_in_type s ty (qname q Hfield)) *)
-    (*   }. *)
-
-    (* Equations? are_defined queries (ty : Name) : bool by wf (queries_size queries) := *)
-    (*   { *)
-    (*     are_defined [::] _ := true; *)
-
-    (*     are_defined (InlineFragment t β :: φ) ty := are_defined β t && are_defined φ ty; *)
-
-    (*     are_defined (q :: φ) ty := is_defined q _ ty && are_defined φ ty *)
-    (*   }. *)
-    (* Proof. *)
-    (*   all: do ? [simp query_size; ssromega]. *)
-    (* Qed. *)
 
     
     (**
@@ -284,7 +268,7 @@ Section QueryAux.
       {
         find_queries_with_label _ _ [::] := [::];
 
-        find_queries_with_label k O__t (InlineFragment t φ :: qs)
+        find_queries_with_label k O__t (on t { φ } :: qs)
           with does_fragment_type_apply s O__t t :=
           {
           | true := find_queries_with_label k O__t φ ++ find_queries_with_label k O__t qs;
@@ -312,36 +296,36 @@ Section QueryAux.
         find_fields_with_response_name _ [::] := [::];
         
         
-        find_fields_with_response_name rname (SingleField f α :: qs)
+        find_fields_with_response_name rname (f [[α]] :: qs)
           with f == rname :=
           {
-          | true := SingleField f α :: find_fields_with_response_name rname qs;
+          | true := f [[α]] :: find_fields_with_response_name rname qs;
           | _ := find_fields_with_response_name rname qs
           };
         
-        find_fields_with_response_name rname (LabeledField l f α :: qs)
+        find_fields_with_response_name rname (l : f [[α]] :: qs)
           with l == rname :=
           {
-          | true := LabeledField l f α :: find_fields_with_response_name rname qs;
+          | true := l : f [[α]] :: find_fields_with_response_name rname qs;
           | _ := find_fields_with_response_name rname qs
           };
 
         
-        find_fields_with_response_name rname (NestedField f α φ :: qs)
+        find_fields_with_response_name rname (f [[α]] { φ } :: qs)
           with f == rname :=
           {
-          | true := NestedField f α φ :: find_fields_with_response_name rname qs;
+          | true := f [[α]] { φ } :: find_fields_with_response_name rname qs;
           | _ := find_fields_with_response_name rname qs
           };
         
-        find_fields_with_response_name rname (NestedLabeledField l f α φ :: qs)
+        find_fields_with_response_name rname (l : f [[α]] { φ }:: qs)
           with l == rname :=
           {
-          | true := NestedLabeledField l f α φ  :: find_fields_with_response_name rname qs;
+          | true := l : f [[α]] { φ } :: find_fields_with_response_name rname qs;
           | _ := find_fields_with_response_name rname qs
           };
         
-        find_fields_with_response_name rname (InlineFragment t φ :: qs) :=
+        find_fields_with_response_name rname (on t { φ } :: qs) :=
           find_fields_with_response_name rname φ ++ find_fields_with_response_name rname qs
       }.
     Proof.
@@ -362,8 +346,8 @@ Section QueryAux.
       {
         filter_queries_with_label _ [::] := [::];
 
-        filter_queries_with_label l (InlineFragment t φ :: qs) :=
-          InlineFragment t (filter_queries_with_label l φ) :: filter_queries_with_label l qs;
+        filter_queries_with_label l (on t { φ } :: qs) :=
+          on t { filter_queries_with_label l φ } :: filter_queries_with_label l qs;
 
         filter_queries_with_label l (q :: qs)
           with (qresponse_name q _) != l :=

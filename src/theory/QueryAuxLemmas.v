@@ -151,7 +151,7 @@ Section Theory.
     Proof.
       funelim (find_queries_with_label s rname O__t qs) => //= q; rewrite ?inE.
 
-      all: do ? [move=> /orP [/eqP -> /= | Hin]].
+      all: do ? [move=> /orP [/eqP -> /= | Hin] ].
       all: do ? [by simpl in Heq; move/eqP in Heq; congr Some].
       all: do ?[by apply: H].    
         by rewrite mem_cat => /orP [Hin1 | Hin2]; [apply: H | apply: H0].

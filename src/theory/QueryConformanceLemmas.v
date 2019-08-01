@@ -52,7 +52,7 @@ Section Theory.
       move: Hspread.
       rewrite /is_fragment_spread_possible.
       simp get_possible_types.
-      move/is_object_type_wfP: Hobj => [intfs [flds Hlook]].
+      move/is_object_type_wfP: Hobj => [intfs [flds Hlook] ].
       rewrite Hlook /=.
         by case lookup_type => [t|] //=; case: t => //=; intros; apply: seq1I_N_nil.
         
@@ -103,7 +103,7 @@ Section Theory.
       query_conforms s type_in_scope (InlineFragment t ϕ) ->
       type_in_scope \in implementation s t.
     Proof.
-      move/is_object_type_wfP=> [intfs [flds Hlook]].
+      move/is_object_type_wfP=> [intfs [flds Hlook] ].
       move/is_interface_type_wfP=> [iflds Hlook'].
       simp query_conforms=> /and3P [Hspread _ _].
       move: Hspread; rewrite /is_fragment_spread_possible; simp get_possible_types; rewrite Hlook Hlook' /=.
@@ -142,7 +142,7 @@ Section Theory.
       - move: Hqsc; rewrite /queries_conform => /andP [Hall Hmerge].
         move=> H.      
         simp query_conforms; apply/and3P; split=> //.
-        * move/is_object_type_wfP: Hobj => [intfs [flds Holook]].
+        * move/is_object_type_wfP: Hobj => [intfs [flds Holook] ].
           case: H => [Himpl | Hmb]; 
                       rewrite /is_fragment_spread_possible; simp get_possible_types.
           move: (has_implementation_is_interface Himpl) => /is_interface_type_wfP [iflds Hilook].
@@ -289,7 +289,7 @@ Section Theory.
       case=> [f α |  l f α |  f α ϕ |  l f α ϕ |  t ϕ]; simp query_conforms.
       all: do ?[case Hlook: lookup_field_in_type => [fld|] //= _;
                                                    have H: lookup_field_in_type ty f by rewrite /isSome Hlook].
-      all: do ?[by move: (lookup_field_in_type_is_obj_or_intf H) => [Hobj | Hint]; [constructor 1 | constructor 2]].
+      all: do ?[by move: (lookup_field_in_type_is_obj_or_intf H) => [Hobj | Hint]; [constructor 1 | constructor 2] ].
       
     (*
     case Hlook: lookup_type => [tdef|] //.
@@ -382,7 +382,7 @@ Section Theory.
       case: arg => n v.
       have: lookup_field_in_type s ti f = Some fld -> fld \in fields s ti.
       move: (has_implementation_is_interface Hin) => /is_interface_type_E.
-      case=> [i [flds Hilook]].
+      case=> [i [flds Hilook] ].
       
       rewrite /fields /lookup_field_in_type Hilook.
     Admitted.

@@ -50,16 +50,16 @@ Section Theory.
   Ltac exec :=
     repeat
       match goal with
-      | [ H : lookup_field_in_type _ _ _ = _ |- context [ lookup_field_in_type _ _ _]] => rewrite H /=
-      | [ H : (fields _) _ = _ |- context [ (fields _) _]] => rewrite H /=
+      | [ H : lookup_field_in_type _ _ _ = _ |- context [ lookup_field_in_type _ _ _] ] => rewrite H /=
+      | [ H : (fields _) _ = _ |- context [ (fields _) _] ] => rewrite H /=
 
-      | [|- context [ lookup_field_in_type _ _ _]] => lookup
-      | [|- context [ ?u.(fields) ]] =>
+      | [|- context [ lookup_field_in_type _ _ _] ] => lookup
+      | [|- context [ ?u.(fields) ] ] =>
         let Hv := fresh "Hv" in
         let v := fresh "v" in
         let vs := fresh "vs" in
-        case Hv : (u.(fields) _) => [[v | vs] |] /=
-      | [ H : does_fragment_type_apply _ _ _ = _ |- context [ does_fragment_type_apply _ _ _]] => rewrite H /=
+        case Hv : (u.(fields) _) => [ [v | vs] |] /=
+      | [ H : does_fragment_type_apply _ _ _ = _ |- context [ does_fragment_type_apply _ _ _] ] => rewrite H /=
       | [ |- context [ _, _ ⊢ ⟦ _ ⟧ˢ in _ ] ] => simp execute_selection_set
       end.
 
@@ -123,7 +123,7 @@ Section Theory.
 
     - case fld.(return_type) => //= rty.
       * case ohead => [v|] //=; rewrite filter_queries_with_label_cat filter_map_inline_func Hinlineswap IH //; leq_queries_size.
-        congr cons; congr pair; congr Object.
+        congr cons; congr pair; congr Response.Object.
           by rewrite find_queries_with_label_cat find_map_inline_nil_func // cats0.
 
       * rewrite filter_queries_with_label_cat filter_map_inline_func Hinlineswap IH //; leq_queries_size.
@@ -134,7 +134,7 @@ Section Theory.
 
     - case fld.(return_type) => //= rty.
       * case ohead => [v|] //=; rewrite filter_queries_with_label_cat filter_map_inline_func Hinlineswap IH //; leq_queries_size.
-        congr cons; congr pair; congr Object.
+        congr cons; congr pair; congr Response.Object.
           by rewrite find_queries_with_label_cat find_map_inline_nil_func // cats0.
       * rewrite filter_queries_with_label_cat filter_map_inline_func Hinlineswap IH //; leq_queries_size.
         rewrite find_queries_with_label_cat find_map_inline_nil_func // cats0.
@@ -211,7 +211,7 @@ Section Theory.
                                rewrite filter_reground_swap filter_filter_absorb // H0 // -filter_reground_swap find_filter_nil.
         simp merge_selection_sets => /=; rewrite cats0.
         rewrite Hrty /= in H.
-        congr cons; congr pair; congr Object.
+        congr cons; congr pair; congr Response.Object.
         have Hvin : v \in g.(nodes).
         apply: ohead_in_nodes; last by apply: Hv.
         apply/allP.
@@ -227,7 +227,7 @@ Section Theory.
               
               
       * rewrite filter_reground_swap filter_filter_absorb // H0 //; congr cons; congr pair; congr Array.
-        apply/eq_in_map => v Hin; congr Object.
+        apply/eq_in_map => v Hin; congr Response.Object.
         rewrite -filter_reground_swap find_filter_nil.
         simp merge_selection_sets => /=; rewrite cats0.
         rewrite Hrty /= in H.
@@ -245,7 +245,7 @@ Section Theory.
       * case Hv : ohead => [v|] /=; rewrite filter_reground_swap filter_filter_absorb // H0 //.
         rewrite -filter_reground_swap find_filter_nil.
         simp merge_selection_sets => /=; rewrite cats0.
-        congr cons; congr pair; congr Object.
+        congr cons; congr pair; congr Response.Object.
         rewrite exec_inlined_func //.
         exec.
         have Hvin : v \in g.(nodes).
@@ -265,7 +265,7 @@ Section Theory.
                     by rewrite Hrty.
                     
       * rewrite filter_reground_swap filter_filter_absorb // H0 //; congr cons; congr pair; congr Array.
-        apply/eq_in_map => v Hin; congr Object.
+        apply/eq_in_map => v Hin; congr Response.Object.
         rewrite -filter_reground_swap find_filter_nil.
         simp merge_selection_sets => /=; rewrite cats0 exec_inlined_func.
         exec.
@@ -288,7 +288,7 @@ Section Theory.
                                rewrite filter_reground_swap filter_filter_absorb // H0 // -filter_reground_swap find_filter_nil.
         simp merge_selection_sets => /=; rewrite cats0.
         rewrite Hrty /= in H.
-        congr cons; congr pair; congr Object.
+        congr cons; congr pair; congr Response.Object.
         have Hvin : v \in g.(nodes).
         apply: ohead_in_nodes; last by apply: Hv.
         apply/allP.
@@ -304,7 +304,7 @@ Section Theory.
               
               
       * rewrite filter_reground_swap filter_filter_absorb // H0 //; congr cons; congr pair; congr Array.
-        apply/eq_in_map => v Hin; congr Object.
+        apply/eq_in_map => v Hin; congr Response.Object.
         rewrite -filter_reground_swap find_filter_nil.
         simp merge_selection_sets => /=; rewrite cats0.
         rewrite Hrty /= in H.
@@ -322,7 +322,7 @@ Section Theory.
       * case Hv : ohead => [v|] /=; rewrite filter_reground_swap filter_filter_absorb // H0 //.
         rewrite -filter_reground_swap find_filter_nil.
         simp merge_selection_sets => /=; rewrite cats0.
-        congr cons; congr pair; congr Object.
+        congr cons; congr pair; congr Response.Object.
         rewrite exec_inlined_func //.
         exec.
         have Hvin : v \in g.(nodes).
@@ -343,7 +343,7 @@ Section Theory.
 
 
       * rewrite filter_reground_swap filter_filter_absorb // H0 //; congr cons; congr pair; congr Array.
-        apply/eq_in_map => v Hin; congr Object.
+        apply/eq_in_map => v Hin; congr Response.Object.
         rewrite -filter_reground_swap find_filter_nil.
         simp merge_selection_sets => /=; rewrite cats0 exec_inlined_func.
         exec.

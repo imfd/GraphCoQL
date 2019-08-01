@@ -48,37 +48,37 @@ Section SchemaAux.
     
     (** Extractors for a type definition **)
     Definition tdname tdef : Name :=
-      match tdef with 
-      | ScalarTypeDefinition name => name
-      | ObjectTypeDefinition name _ _ => name
-      | InterfaceTypeDefinition name _ => name
-      | UnionTypeDefinition name _ => name
-      | EnumTypeDefinition name _ => name
+      match tdef with
+      | Scalar name
+      | Object name implements _ { _ }
+      | Interface name { _ }
+      | Union name { _ }
+      | Enum name { _ } => name
       end.
 
 
     Definition tfields tdef : seq FieldDefinition :=
       match tdef with 
-      | ObjectTypeDefinition _ _ flds
-      | InterfaceTypeDefinition _ flds => flds
+      | Object _ implements _ { flds }
+      | Interface _ { flds } => flds
       | _ => [::]
       end.
 
     Definition tintfs tdef : {fset NamedType} :=
       match tdef with
-      | ObjectTypeDefinition _ intfs _ => intfs
+      | Object _ implements intfs { _ } => intfs
       | _ => fset0
       end.
 
     Definition tmbs tdef : {fset NamedType} :=
       match tdef with
-      | UnionTypeDefinition _ mbs => mbs
+      | Union _ { mbs }=> mbs
       | _ => fset0
       end.
 
     Definition tenums tdef : {fset (@EnumValue Name)} :=
       match tdef with
-      | EnumTypeDefinition _ enums => enums
+      | Enum _ { enums } => enums
       | _ => fset0
       end.
 
@@ -109,7 +109,7 @@ Section SchemaAux.
     (** Checks whether the given type is defined as a Scalar in the Schema **)
     Definition is_scalar_type (ty : NamedType) : bool :=
       match (lookup_type ty) with
-      | Some (ScalarTypeDefinition _) => true
+      | Some (Scalar _) => true
       | _ => false
       end.
 
@@ -119,7 +119,7 @@ Section SchemaAux.
     Equations is_object_type (ty : @NamedType Name) : bool :=
       is_object_type ty with lookup_type ty :=
         {
-        | Some (ObjectTypeDefinition _ _ _) := true;
+        | Some (Object _ implements _ { _ }) := true;
         | _ := false
         }.
 
@@ -129,7 +129,7 @@ Section SchemaAux.
     Equations is_interface_type (ty : @NamedType Name) : bool :=
       is_interface_type ty with lookup_type ty :=
         {
-        | Some (InterfaceTypeDefinition _ _) := true;
+        | Some (Interface _ { _ }) := true;
         | _ := false
         }.
 
@@ -139,7 +139,7 @@ Section SchemaAux.
     Equations is_union_type (ty : @NamedType Name) : bool :=
       is_union_type ty with lookup_type ty :=
         {
-        | Some (UnionTypeDefinition _ _) := true;
+        | Some (Union _ { _ }) := true;
         | _ := false
         }.
 
@@ -147,14 +147,14 @@ Section SchemaAux.
     (** Checks whether the given type is defined as an Enum in the Schema **)
     Definition is_enum_type (ty : NamedType) : bool :=
       match (lookup_type ty) with
-      | Some (EnumTypeDefinition _ _) => true
+      | Some (Enum _ { _ }) => true
       | _ => false
       end.
 
     (** Checks whether the given type is a list type (does not care for the wrapped type) **)
     Definition is_list_type (ty : @type Name) : bool :=
       match ty with
-      | (ListType ty') => true
+      | [ ty' ] => true
       | _ => false
       end.
 
@@ -225,8 +225,8 @@ Section SchemaAux.
     (** Get list of fields declared in an Object or Interface type definition **)
     Definition fields (ty : NamedType) : seq FieldDefinition :=
       match lookup_type ty with
-      | Some (ObjectTypeDefinition _ _ flds) => flds
-      | Some (InterfaceTypeDefinition _ flds) => flds
+      | Some (Object _ implements _ { flds })
+      | Some (Interface _ { flds }) => flds
       | _ => [::]
       end.
     
@@ -241,7 +241,7 @@ Section SchemaAux.
      **)
     Definition union_members (ty : NamedType) : {fset NamedType} :=
       match lookup_type ty with
-      | Some (UnionTypeDefinition name mbs) => mbs
+      | Some (Union _ { mbs }) => mbs
       | _ => fset0
       end.
 
@@ -251,7 +251,7 @@ Section SchemaAux.
      **)
     Definition declares_implementation (ty ty' : NamedType) : bool :=
       match lookup_type ty with
-      | Some (ObjectTypeDefinition _ intfs _) => ty' \in intfs
+      | Some (Object _ implements intfs { _ }) => ty' \in intfs
       | _ => false
       end.
 
@@ -283,9 +283,9 @@ Section SchemaAux.
       {
         get_possible_types ty with lookup_type ty :=
           {
-          | Some (ObjectTypeDefinition _ _ _) => [:: ty];
-          | Some (InterfaceTypeDefinition iname _) => implementation iname;
-          | Some (UnionTypeDefinition _ mbs) => mbs;
+          | Some (Object _ implements _ { _ }) => [:: ty];
+          | Some (Interface iname { _ }) => implementation iname;
+          | Some (Union _ { mbs }) => mbs;
           | _ => [::]
           }
       }.

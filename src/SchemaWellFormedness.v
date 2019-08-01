@@ -58,19 +58,21 @@ Section WellFormedness.
                 
     | ST_ListType : forall ty ty',
         Subtype ty ty' ->
-        Subtype (ListType ty) (ListType ty'). 
+        Subtype [ ty ] [ ty' ]. 
 
+    Reserved Infix "<:" (at level 60).
     Equations is_subtype (ty ty' : @type Name) : bool :=
       {
-        is_subtype (ListType lty) (ListType lty') := is_subtype lty lty';
+        [ lty ] <: [ lty' ] := lty <: lty';
 
-        is_subtype (NT name) (NT name') :=
+        NT name <: NT name' :=
           [|| (name == name'),
            declares_implementation s name name' | 
            (name \in (union_members s name'))];
         
-        is_subtype _ _ := false
-      }.
+        _ <: _ := false
+      }
+    where "ty1 <: ty2" := (is_subtype ty1 ty2).
 
     
     
@@ -97,7 +99,7 @@ Section WellFormedness.
     Fixpoint is_valid_argument_type  (ty : type) : bool :=
       match ty with
       | NT name => is_scalar_type s ty || is_enum_type s ty
-      | ListType ty' => is_valid_argument_type  ty'
+      | [ ty' ] => is_valid_argument_type  ty'
       end.
 
 
@@ -115,7 +117,7 @@ Section WellFormedness.
     Fixpoint is_valid_field_type (ty : type) : bool :=
       match ty with
       | NT n => is_declared s n
-      | ListType ty' => is_valid_field_type  ty'
+      | [ ty' ] => is_valid_field_type  ty'
       end.
     
 
@@ -153,7 +155,7 @@ Section WellFormedness.
     Definition is_field_ok (fld fld' : FieldDefinition) : bool :=
       [&& (fld.(fname) == fld'.(fname)),
        fsubset fld'.(fargs) fld.(fargs) &
-       is_subtype fld.(return_type) fld'.(return_type)].
+       fld.(return_type) <: fld'.(return_type)].
     
 
 
@@ -224,24 +226,24 @@ Section WellFormedness.
 
     Fixpoint is_type_def_wf (tdef : TypeDefinition) : bool :=
       match tdef with
-      | ScalarTypeDefinition _ => true
+      | Scalar _ => true
                                    
-      | ObjectTypeDefinition name interfaces fields =>
+      | Object name implements interfaces { fields } =>
         [&& (fields != [::]),
          uniq [seq fld.(fname) | fld <- fields],
          all (is_field_wf) fields,
          all (is_interface_type s) interfaces &
          all (implements_interface_correctly name) interfaces]
 
-      | InterfaceTypeDefinition _ fields =>
+      | Interface _ { fields } =>
         [&& (fields != [::]),
          uniq [seq fld.(fname) | fld <- fields] &
          all (is_field_wf) fields]
 
-      | UnionTypeDefinition name members =>
+      | Union name { members } =>
         (members != fset0) && all (is_object_type s) members
 
-      | EnumTypeDefinition _ enumValues => enumValues != fset0
+      | Enum _ { enumValues } => enumValues != fset0
                                                      
       end.
 
@@ -271,3 +273,5 @@ End WellFormedness.
 
 
 Arguments wfSchema [Name Vals].
+
+Infix "<:" := is_subtype (at level 50) : schema_scope.
