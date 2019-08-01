@@ -42,5 +42,6 @@
 ./src/Response.v
 
 ./src/QuerySemantic.v
-./src/QueryEq.v
+./src/theory/QuerySemanticsLemmas.v
+
 ./src/Example.v

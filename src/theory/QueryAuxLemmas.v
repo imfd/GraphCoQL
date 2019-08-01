@@ -29,6 +29,18 @@ Section Theory.
   Implicit Type φ : seq (@Query Name Vals).
   Implicit Type query : @Query Name Vals.
 
+
+  Section DefPreds.
+    Variable (s : @wfSchema Name Vals).
+    
+    Lemma object_applies_to_itself ty :
+      is_object_type s ty ->
+      does_fragment_type_apply s ty ty.
+    Proof.
+        by rewrite /does_fragment_type_apply => ->.
+    Qed.
+  End DefPreds.
+  
   Section Size.
     
     Lemma queries_size_sumn φ :
