@@ -326,6 +326,18 @@ Section Theory.
    Proof.
    Admitted.
 
+    Lemma get_possible_types_N_nil_are_Ot ty :
+      get_possible_types s ty != [::] ->
+      all (is_object_type s) (get_possible_types s ty).
+    Proof.
+      funelim (get_possible_types s ty) => //= _.
+      - by simp is_object_type; rewrite Heq.
+      - apply/allP=> x; apply: in_implementation_is_object.
+      - apply/allP=> x.
+        have <- : union_members s ty = union_members0 by rewrite /union_members Heq. 
+          by apply: in_union_is_object.
+    Qed.
+
 
 End Theory.
 

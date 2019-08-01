@@ -36,7 +36,7 @@ Section Theory.
       - by rewrite /lookup_type; move/getmP.
     Qed.
 
-     Lemma fields_E (tdef : @TypeDefinition Name) :
+    Lemma fields_E (tdef : @TypeDefinition Name) :
       (tdef.(tdname), tdef) \in s.(type_definitions) ->
                                 fields s tdef.(tdname) = tdef.(tfields).
     Proof.
@@ -97,8 +97,8 @@ Section Theory.
       - rewrite /lookup_field_type.
         case lookup_field_in_type => // fld.
           by case=> <-; exists fld.
-                         - move=> [fld Hlook <-].
-                             by rewrite /lookup_field_type Hlook.
+                               - move=> [fld Hlook <-].
+                                   by rewrite /lookup_field_type Hlook.
     Qed.
 
     
@@ -222,20 +222,20 @@ Section Theory.
     Qed.
 
     
-  Lemma ty_not_scalar_or_enum ty tdef:
-    lookup_type s ty = Some tdef ->
-    ~~(is_scalar_type s ty || is_enum_type s ty) ->
-    [\/ is_object_type s ty, is_interface_type s ty | is_union_type s ty].
-  Proof. 
-    rewrite /negb.
-    case: ifP => //.
-    rewrite /is_scalar_type /is_enum_type.
-    case Hlook: lookup_type => [sm|] //.
-    case: sm Hlook => //.
-    by move=> o intfs flds Hlook _ _ _; constructor; rewrite is_object_type_equation_1 Hlook.
-    by move=> i flds Hlook _ _; constructor; rewrite is_interface_type_equation_1 Hlook.
-    by move=> u mbs Hlook _ _; constructor; rewrite is_union_type_equation_1 Hlook.
-  Qed.
+    Lemma ty_not_scalar_or_enum ty tdef:
+      lookup_type s ty = Some tdef ->
+      ~~(is_scalar_type s ty || is_enum_type s ty) ->
+      [\/ is_object_type s ty, is_interface_type s ty | is_union_type s ty].
+    Proof. 
+      rewrite /negb.
+      case: ifP => //.
+      rewrite /is_scalar_type /is_enum_type.
+      case Hlook: lookup_type => [sm|] //.
+      case: sm Hlook => //.
+        by move=> o intfs flds Hlook _ _ _; constructor; rewrite is_object_type_equation_1 Hlook.
+          by move=> i flds Hlook _ _; constructor; rewrite is_interface_type_equation_1 Hlook.
+            by move=> u mbs Hlook _ _; constructor; rewrite is_union_type_equation_1 Hlook.
+    Qed.
 
 
 
@@ -284,9 +284,9 @@ Section Theory.
       - rewrite /declares_implementation.
         case Hlook : lookup_type => [tdef|] //.
           by exists tdef => // {Hlook}; case: tdef H => //.
-               - move=> [tdef Hlook Hin].
-                 rewrite /declares_implementation Hlook.
-                   by move: (in_intfs Hin) => [n [flds ->]].
+                    - move=> [tdef Hlook Hin].
+                      rewrite /declares_implementation Hlook.
+                        by move: (in_intfs Hin) => [n [flds ->]].
     Qed.
 
     Lemma uniq_get_possible_types ty :
@@ -297,9 +297,9 @@ Section Theory.
     
     
 
-   
     
-   
+    
+    
 
     Lemma declares_in_implementation t ty :
       (declares_implementation s t ty) <-> (t \in implementation s ty).
@@ -375,6 +375,8 @@ Section Theory.
       move/is_union_type_E => [u [mbs Hlook]].
         by simp get_possible_types; rewrite /union_members Hlook.
     Qed.
+
+   
 
   End Subtypes.
 
