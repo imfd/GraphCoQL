@@ -7,6 +7,7 @@ From Equations Require Import Equations.
 
 Require Import SchemaAux.
 Require Import QueryAux.
+Require Import QueryAuxLemmas.
 Require Import Ssromega.
   
   Ltac case_query q :=
