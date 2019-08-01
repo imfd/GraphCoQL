@@ -31,6 +31,8 @@
 ./src/theory/QueryConformanceLemmas.v
 
 ./src/NRGTNF.v
+./src/theory/NRGTNFLemmas.v
+
 ./src/QueryRewrite.v
 
 ./src/Response.v
