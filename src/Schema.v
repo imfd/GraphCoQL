@@ -264,9 +264,6 @@ End Schema.
 
 (*
 
-Notation "[ name ]" := (ListType name).
-Notation "argname : ty" := (FieldArgument argname ty) : schema_scope.
-Notation "fname '(' args ')' ':' ty" := (Field fname args ty) (at level 50) : schema_scope.
 Notation "'scalar' S" := (ScalarTypeDefinition S) (at level 0) : schema_scope.
 Notation "'object' O '{' flds '}'" := (ObjectTypeDefinition O [::] flds) : schema_scope.
 Notation "'object' O 'implements' I '{' flds '}'" := (ObjectTypeDefinition O I flds) : schema_scope.
@@ -284,3 +281,25 @@ Arguments Schema [Name].
 
 Arguments tname [Name].
 
+
+Delimit Scope schema_scope with SCHEMA.
+Open Scope schema_scope.
+
+Notation "[ name ]" := (ListType name).
+Notation "argname : ty" := (FieldArgument argname ty) : schema_scope.
+Notation "fname '(' args ')' ':' ty" := (Field fname args ty) (at level 50) : schema_scope.
+
+
+Notation "'Scalar' scalar_name" := (ScalarTypeDefinition scalar_name) (at level 0) : schema_scope.
+
+Notation "'Object' object_name 'implements' interfaces '{{' fields '}}'" :=
+  (ObjectTypeDefinition object_name interfaces fields)  : schema_scope.
+
+Notation "'Interface' interface_name '{{' fields '}}'" :=
+  (InterfaceTypeDefinition interface_name fields) : schema_scope.
+
+Notation "'Union' union_name '{{' union_members '}}'" :=
+  (UnionTypeDefinition union_name union_members) : schema_scope.
+
+Notation "'Enum' enum_name '{{' enum_members '}}'" :=
+  (EnumTypeDefinition enum_name enum_members) : schema_scope.
