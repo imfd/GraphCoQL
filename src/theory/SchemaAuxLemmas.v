@@ -1,4 +1,5 @@
 From mathcomp Require Import all_ssreflect.
+Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
@@ -204,13 +205,13 @@ Section Theory.
     Lemma is_object_ifinterfaceF {A : Type} ty (Tb Fb : A) :
       is_object_type s ty -> (if is_interface_type s ty then Tb else Fb) = Fb.
     Proof.
-        by move=> Hobj; move: (is_object_type_interfaceN ty Hobj) => ->. 
+        by move=> Hobj; move: (is_object_type_interfaceN Hobj) => ->. 
     Qed.
 
     Lemma is_object_ifunionF {A : Type} ty (Tb Fb : A) :
       is_object_type s ty -> (if is_union_type s ty then Tb else Fb) = Fb.
     Proof.
-        by move=> Hobj; move: (is_object_type_unionN ty Hobj) => ->.
+        by move=> Hobj; move: (is_object_type_unionN Hobj) => ->.
     Qed.
 
     
@@ -219,6 +220,23 @@ Section Theory.
     Proof.
         by rewrite /is_abstract_type => /orP [/is_interface_type_objectN -> | /is_union_type_objectN ->].
     Qed.
+
+    
+  Lemma ty_not_scalar_or_enum ty tdef:
+    lookup_type s ty = Some tdef ->
+    ~~(is_scalar_type s ty || is_enum_type s ty) ->
+    [\/ is_object_type s ty, is_interface_type s ty | is_union_type s ty].
+  Proof. 
+    rewrite /negb.
+    case: ifP => //.
+    rewrite /is_scalar_type /is_enum_type.
+    case Hlook: lookup_type => [sm|] //.
+    case: sm Hlook => //.
+    by move=> o intfs flds Hlook _ _ _; constructor; rewrite is_object_type_equation_1 Hlook.
+    by move=> i flds Hlook _ _; constructor; rewrite is_interface_type_equation_1 Hlook.
+    by move=> u mbs Hlook _ _; constructor; rewrite is_union_type_equation_1 Hlook.
+  Qed.
+
 
 
     
@@ -268,7 +286,7 @@ Section Theory.
           by exists tdef => // {Hlook}; case: tdef H => //.
                - move=> [tdef Hlook Hin].
                  rewrite /declares_implementation Hlook.
-                   by move: (in_intfs ity tdef Hin) => [n [flds ->]].
+                   by move: (in_intfs Hin) => [n [flds ->]].
     Qed.
 
     Lemma uniq_get_possible_types ty :

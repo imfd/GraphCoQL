@@ -1,4 +1,5 @@
 From mathcomp Require Import all_ssreflect.
+Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
@@ -74,7 +75,7 @@ Section Theory.
     Proof.
       move=> Hin.
       have Hlt := (subqueries_lt_query query).
-      have Hleq := (in_queries_lt _ _ Hin).
+      have Hleq := (in_queries_lt Hin).
       ssromega.
     Qed.
 

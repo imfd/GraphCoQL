@@ -28,6 +28,7 @@
 ./src/QueryTactics.v
 
 ./src/QueryConformance.v
+./src/theory/QueryConformanceLemmas.v
 
 ./src/NRGTNF.v
 ./src/QueryRewrite.v

@@ -1,4 +1,5 @@
 From mathcomp Require Import all_ssreflect.
+Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 From extructures Require Import ord fset fmap.
@@ -149,7 +150,7 @@ Section Theory.
     is_interface_type s ity.
   Proof.
     move=> Hdecl.
-    move: (declares_implementation_is_object Name s ity tdef Hdecl).
+    move: (declares_implementation_is_object Hdecl).
     move/is_object_type_wfP=> [intfs [flds /lookup_in_schemaP Hlook]].
     move: Hdecl Hlook; wfschema => Hdecl Hlook.
     move: (Hok (tdef, ObjectTypeDefinition tdef intfs flds) Hlook).
@@ -174,13 +175,13 @@ Section Theory.
   Proof.
     move=> Hin.
     move/declares_in_implementation: Hin => Hdecl.
-    move: (declares_implementation_is_object Name s ti ty  Hdecl) => /is_object_type_wfP.
+    move: (declares_implementation_is_object  Hdecl) => /is_object_type_wfP.
     case=> [intfs [flds Hlook]].
     rewrite {2}/lookup_field_in_type Hlook.
     move/lookup_field_in_typeP=> [tdef [ty' [Hlook' Hfin]]] Heq /=.
-    move: (lookup_type_name_wf ti tdef Hlook') => Heq'.
+    move: (lookup_type_name_wf Hlook') => Heq'.
     rewrite /declares_implementation Hlook in Hdecl.
-    move: (lookup_type_name_wf ty _ Hlook) => Hneq.
+    move: (lookup_type_name_wf Hlook) => Hneq.
 
     move/lookup_in_schemaP: Hlook => Hin.
     move: Hlook' Hin; wfschema => Hlook' Hin.
@@ -266,12 +267,12 @@ Section Theory.
     - move=> [<- | Hintfs | Hunion]; simp get_possible_types.
       * move/is_object_type_wfP: Hobj => [intfs [flds Hlook]].
           by rewrite Hlook; apply/fset1P.
-      * move: (declares_in_implementation Name s t ty).
+      * move: (declares_in_implementation s t ty).
         case=> _ H.
         move: (H Hintfs) => /declares_implementation_are_interfaces.
         move/is_interface_type_wfP=> [flds Hlook].
         by rewrite Hlook.
-      - move: (in_union Name s t ty Hunion) => /is_union_type_wfP [mbs Hlook].
+      - move: (in_union Hunion) => /is_union_type_wfP [mbs Hlook].
         by rewrite /union_members Hlook in Hunion *.
   Qed. 
 
@@ -309,9 +310,9 @@ Section Theory.
      case/or3P; first by apply/eqP.
      
      move/declares_implementation_are_interfaces.
-     by move: (is_object_type_interfaceN Name s ty' Hobj) => ->.
+     by move: (is_object_type_interfaceN Hobj) => ->.
      move/in_union.
-     by move: (is_object_type_unionN Name s ty' Hobj) => ->.
+     by move: (is_object_type_unionN Hobj) => ->.
    Qed.
 
    

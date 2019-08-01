@@ -38,7 +38,13 @@ Require Import Ssromega.
              let Hmleq := fresh in
              have Hfleq := (found_queries_leq_size s rname ty qs);
              have Hmleq := (merged_selections_leq (find_queries_with_label s rname ty qs)); ssromega                         
-     
+
+           | [|- context [ queries_size (merge_selection_sets (find_fields_with_response_name ?rname ?qs)) ]] =>
+              let Hfleq := fresh in
+              let Hmleq := fresh in
+              have Hfleq := (found_fields_leq_size rname qs);
+              have Hmleq := (merged_selections_leq (find_fields_with_response_name rname qs)); ssromega                             
+
            | [|- context [queries_size (merge_selection_sets ?qs)]] =>
               let Hfleq := fresh in
               have Hfleq := (merged_selections_leq qs); ssromega                            
