@@ -2,6 +2,7 @@ From mathcomp Require Import all_ssreflect.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
+From CoqUtils Require Import string.
 From extructures Require Import ord fset fmap.
 
 From Equations Require Import Equations.
@@ -15,57 +16,52 @@ Require Import SchemaAux.
 
 Section WellFormedness.
 
-  Variables (Name Vals : ordType).
+  Variables (Vals : eqType).
 
   Section Defs.
     
-    Variable (s : @schema Name).
+    Variable (s : graphQLSchema).
 
     
-    (** Subtype relation
+    (** ** Subtyping relation.
+        Using Schema as the lookup function in the schema (Schema : Name -> TypeDefinition).
 
    
-                 ----------------------- (ST_Refl)
+                 [-----------------------] (ST_Refl) #<br>#
                        ty <: ty
 
                   
-       Doc(O) = type O implements ... I ... { ... }
-                Doc(I) = interface I { ...}
+       Schema(O) = type O implements ... I ... { ... }
+                Schema(I) = interface I { ...}
        ------------------------------------------- (ST_Object)
                          O <: I
 
            
                          T <: U
-                ------------------------- (ST_ListType)
+                [-------------------------] (ST_ListType)
                        [T] <: [U]
+                       
 
+    ----
+    **** Observations
 
-    Some observations:
-        1. Transitivity : There is no need to specify this because only objects can 
-        be subtype of an interface and not between objects. Interfaces cannot be
-        subtype of another interface.
-     **)
-    Inductive Subtype : type -> type -> Prop :=
-    | ST_Refl : forall ty, Subtype ty ty
-                              
-    | ST_Interface : forall n n',
-        declares_implementation s n n' ->
-        Subtype (NT n) (NT n')
-                
-    | ST_Union : forall n n',
-        (n \in (union_members s n')) ->
-        Subtype (NT n) (NT n')
-                
-    | ST_ListType : forall ty ty',
-        Subtype ty ty' ->
-        Subtype [ ty ] [ ty' ]. 
+        1. Limitations : Subtyping is strictly between objects and interfaces.
+           There cannot be an object that is subtype of another, as well as an
+           interface implementing another interface.
 
+        2. Transitivity : Because of the limitation, there is no need to specify
+           or worry about transitivity of the relation.
+
+        #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Objects'> See also: Object Type Validation subsection </a>#
+
+        #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Interfaces'> See also: Interface Type Validation subsection </a>#
+    *)
     Reserved Infix "<:" (at level 60).
-    Equations is_subtype (ty ty' : @type Name) : bool :=
+    Equations is_subtype (ty ty' : type) : bool :=
       {
         [ lty ] <: [ lty' ] := lty <: lty';
 
-        NT name <: NT name' :=
+        NamedType name <: NamedType name' :=
           [|| (name == name'),
            declares_implementation s name name' | 
            (name \in (union_members s name'))];
@@ -77,201 +73,289 @@ Section WellFormedness.
     
     
     
-    (** The two following definitions describe whether a given type is a valid type
-      for a field argument (IsValidArgumentType) and if it is a valid type for a field itself 
-      (IsValidFieldType).
+    (** ** Valid argument's type
 
-      In the spec they are correspondently named "IsInputField" and "IsOutputField".
+        The following definition describe whether a given type is valid
+        for a field argument.
 
-      https://facebook.github.io/graphql/June2018/#sec-Input-and-Output-Types **)
+        In the spec it is named "IsInputType" but here it is renamed to make it more clear
+        that it is a check on the argument's type.
 
-    Inductive valid_argument_type  : type -> Prop :=
-    | VScalar_Arg : forall ty,
-        is_scalar_type s ty ->
-        valid_argument_type (NT ty)
-    | VEnum_Arg : forall ty,
-        is_enum_type s ty ->
-        valid_argument_type (NT ty)
-    | VList_Arg : forall ty,
-        valid_argument_type ty ->
-        valid_argument_type (ListType ty).
+        Observations:
+
+        1. InputObject : The spec allows the Input Object type as well as the
+           scalar and enum types, but since we are not currently implementing it, 
+           we discard it in this definition.
+
+        2. Non-Null type : Similarly as the previous point.
+
+        https://graphql.github.io/graphql-spec/June2018/#sec-Input-and-Output-Types
+        https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
+        https://graphql.github.io/graphql-spec/June2018/#sec-Objects (Section 'Type Validation')
+        https://graphql.github.io/graphql-spec/June2018/#sec-Interfaces (Section 'Type Validation')
+    *)
+    Equations is_valid_argument_type (ty : type) : bool :=
+      {
+        is_valid_argument_type [ ty ] := is_valid_argument_type ty;
+        is_valid_argument_type (NamedType name) := is_scalar_type s name || is_enum_type s name
+      }.
+
+
+    (** ** Valid field's return type 
+        
+        The following definition describe whether a given type is valid
+        for a field's return type.
+
+        In the spec it is named "IsOutputType" but here it is renamed to make it more clear
+        that it is a check on the field's return type.
+
+        Observations:
+
+        1. InputObject : The spec does not allow Input Object type to be
+           a valid return type but since we are not implementing it, we
+           simply ignore it. This allows for every other type to be a valid
+           return type (as long as it is declared in the schema).
+
+        https://graphql.github.io/graphql-spec/June2018/#sec-Input-and-Output-Types
+        https://graphql.github.io/graphql-spec/June2018/#sec-Objects (Section 'Type Validation')
+        https://graphql.github.io/graphql-spec/June2018/#sec-Interfaces (Section 'Type Validation')
+    *)
+    Equations is_valid_field_type (ty : type) : bool :=
+      {
+        is_valid_field_type [ ty ] := is_valid_field_type ty;
+        is_valid_field_type (NamedType name) := is_declared s name
+      }.
     
-    Fixpoint is_valid_argument_type  (ty : type) : bool :=
-      match ty with
-      | NT name => is_scalar_type s ty || is_enum_type s ty
-      | [ ty' ] => is_valid_argument_type  ty'
-      end.
 
+    (** ** Argument Well-formedness
 
-    
-    (* Because we are not considering InputObjects, a field may have any type, 
-     as long as it is declared in the Schema. *)
-    Inductive valid_field_type  : type -> Prop :=
-    | VBase_Type : forall n,
-        is_declared s n ->
-        valid_field_type (NT n)      
-    | VList_Type : forall ty,
-        valid_field_type ty ->
-        valid_field_type (ListType ty).
-    
-    Fixpoint is_valid_field_type (ty : type) : bool :=
-      match ty with
-      | NT n => is_declared s n
-      | [ ty' ] => is_valid_field_type  ty'
-      end.
-    
+      It checks whether an argument definition is well-formed by checking that
+      its type is a valid type for an argument. 
 
-    (** 
-      It checks whether an argument is well-formed by checking that
-      its type is a valid type for an argument **)
-    Definition is_field_argument_wf (arg : FieldArgumentDefinition) : bool :=
+      Observations:
+      1. Introspection : There is no check as to whether the argument's name 
+         begins with '__' because introspection is not implemented in this 
+         formalisation.
+
+      https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
+      https://graphql.github.io/graphql-spec/June2018/#sec-Objects (Section 'Type Validation')
+      https://graphql.github.io/graphql-spec/June2018/#sec-Interfaces (Section 'Type Validation')
+    *)
+    Definition is_wf_field_argument (arg : FieldArgumentDefinition) : bool :=
       is_valid_argument_type arg.(argtype).
 
     
-    (**
-     It states whether a field is well-formed.
+    (** ** Field Well-formedness
 
-                 ty isValidFieldType
-                  NoDuplicates args
-           ∀ arg ∈ args, arg isWellFormed
-           ------------------------------
-           (fname (args) : ty) isAWellFormedField
-     **)
-    Definition is_field_wf (fld : FieldDefinition) : bool :=
-      is_valid_field_type fld.(return_type) &&
-                                            (* uniq [seq arg.(argname) | arg <- fld.(fargs)] &  // Not specified... But should be? *)
-                                            all (is_field_argument_wf) fld.(fargs).
+     It checks whether a field is well-formed, independently of the type where it is
+     defined:
+
+     - It's return type is valid.
+     - There are no two arguments with the same name.
+     - All of its arguments are well-formed.
 
 
+     Observations:
+     1. Introspection : There is no check as to whether the argument's name 
+         begins with '__' because introspection is not implemented in this 
+         formalisation.
+     2. Argument's uniqueness : We could not find a reference in the spec
+        stating whether it is valid or not to have repeated arguments
+        but we are including this notion in this definition.
+               
+    *)
+    Definition is_wf_field (fld : FieldDefinition) : bool :=
+      [&& is_valid_field_type fld.(return_type),
+          uniq [seq arg.(argname) | arg <- fld.(fargs)] &  (* Not currently in the spec *)
+          all is_wf_field_argument fld.(fargs)].
 
-    (** This checks whether an object field is valid w/r to another from an implemented interface.
-      It checks the following:
+
+
+    (** ** Valid field implementation
+
+    This checks whether a field is valid w/r to another. This is used to check 
+    whether an Object type is correctly implementing an interface's fields.
+    
+    It checks the following:
       1. Both fields have the same name.
-      2. The arguments of the interface field must be a subset of the object's arguments.
+      2. The arguments of the interface field must be a subset of the object's arguments
+         (the types of the arguments are invariant, therefore we can simply check that it's a subset).
       3. The object's field return type must be a subtype of the interface's field.
 
-      This is not checking that any additional argument in the object must be a "non-required" field.
-     **)
-    Definition is_field_ok (fld fld' : FieldDefinition) : bool :=
-      [&& (fld.(fname) == fld'.(fname)),
-       fsubset fld'.(fargs) fld.(fargs) &
-       fld.(return_type) <: fld'.(return_type)].
+     
+    Observations:
+    1. Non-null extra arguments : The spec requires that any additional argument included in the object's
+       field must not be of a non-null type. Since we do not implement non-null types, we are not including 
+       this check. 
+    2. J&O : In Jorge and Olaf's paper, there is no check regarding arguments between an object 
+       type and its interface.
+
+      https://graphql.github.io/graphql-spec/June2018/#sec-Objects (Section 'Type Validation')
+    *)
+    Definition is_valid_field_implementation (object_field interface_field : FieldDefinition) : bool :=
+      [&& object_field.(fname) == interface_field.(fname),
+          subseq interface_field.(fargs) object_field.(fargs) &   (* I think this is wrong... *)
+          object_field.(return_type) <: interface_field.(return_type)].
     
 
 
 
     
-    (**
-     This checks whether an object type implements correctly an interface, 
-     by properly defining every field defined in the interface.
+    (** ** Valid interface implementation
+
+     This checks whether an object type correctly implements an interface, 
+     by properly implementing every field defined in the interface.
+     Using Schema as the lookup function in the schema (Schema : Name -> TypeDefinition).
 
 
             Schema(O) = type O implements ... I ... { Flds }   
                     Schema(I) = interface I { Flds' }
-                 ∀ fld' ∈ Flds', ∃ fld ∈ Flds s.t fld OK fld'
+      ∀ ifld ∈ Flds', ∃ ofld ∈ Flds s.t ofld is_valid_field_implementation ifld
             ------------------------------------------------
-                        O implementsOK I
+                        O implements_correctly I
 
-     **)
-    
-    Definition implements_interface_correctly (ty ty' : NamedType) : bool :=
-      let ifields := fields s ty' in
-      let ofields := fields s ty in
-      all (fun f' => has (fun f => is_field_ok f f') ofields) ifields.
+
+     Observations:
+     1. Implementation : From an implementation point of view, this definition might seem
+        a bit redundant (considering its posterior use). For the moment it is left here 
+        for readibility purposes.
+     *)
+    Definition implements_interface_correctly (object_type interface_type : Name) : bool :=
+      let interface_fields := fields s interface_type in
+      let object_fields := fields s object_type in
+      all (fun ifld => has (fun ofld => is_valid_field_implementation ofld ifld) object_fields) interface_fields.
     
 
     
-    (**
+    (** ** TypeDefinition Well-formedness
+        Using Schema as the lookup function in the schema (Schema : Name -> TypeDefinition).
+
 
                        Schema(S) = scalar S 
                        -----------------------
-                           scalar S OK
+                           scalar S is_wf_type_def
 
 
-                 Schema(O) = type O implements Ifs { Flds }
-                           notEmpty Flds
-                         NoDuplicates Flds
-                            Flds OK in O
-                            Ifs OK in O
+                 Schema(O) = Object O implements Intfs { Flds }
+                           Flds ≠ ∅
+                           Flds are_unique
+                    ∀ field ∈ Flds, field is_wf_field
+                           Intfs are_unique
+                  ∀ intf ∈ Intfs, S(intf) = interface intf { ... }
+                  ∀ intf ∈ Intfs, O implements_interface_correctly intf 
                 -----------------------------------------
-                          type O { Flds } 
+                  Object O implements Intfs { Flds } is_wf_type_def
 
 
 
                     Schema(I) = interface I { Flds }
-                           notEmpty Flds
-                         NoDuplicates Flds
-                            Flds OK in I
+                           Flds ≠ ∅
+                          Flds are_unique
+                         ∀ field ∈ Flds, field is_wf_field
                 ----------------------------------------
-                        interface I { Flds } 
+                        interface I { Flds }  is_wf_type_def
 
 
 
                        Schema(U) = union U { Mbs }
-                           notEmpty Mbs
-                         NoDuplicates Mbs
-                     ∀ mb ∈ Mbs, mb ObjectType
+                           Mbs ≠ ∅
+                         Mbs are_unique
+                     ∀ mb ∈ Mbs, Schema(mb) = Object mb implements ... { ... }
                 -----------------------------------------
-                          union U { Mbs } 
+                          union U { Mbs } is_wf_type_def
 
 
                        Schema(E) = enum E { Evs }
-                           notEmpty Evs
-                         NoDuplicates Evs
+                           Evs ≠ ∅
+                          Evs are_unique
                 -----------------------------------------
                           enum E { Evs } 
 
-     **)
-    
 
-    Fixpoint is_type_def_wf (tdef : TypeDefinition) : bool :=
+
+     Observations:
+     1. Enums : The spec does not specify whether the enum members must be different from 
+        other defined types in the schema (eg. Object type 'Human' cannot be part of a 
+        defined Enum type).
+     
+
+     https://graphql.github.io/graphql-spec/June2018/#sec-Scalars
+     https://graphql.github.io/graphql-spec/June2018/#sec-Objects (Section 'Type Validation')
+     https://graphql.github.io/graphql-spec/June2018/#sec-Interfaces (Section 'Type Validation')
+     https://graphql.github.io/graphql-spec/June2018/#sec-Unions (Section 'Type Validation')
+     https://graphql.github.io/graphql-spec/June2018/#sec-Enums (Section 'Type Validation')
+     *)
+    Fixpoint is_wf_type_def (tdef : TypeDefinition) : bool :=
       match tdef with
       | Scalar _ => true
                                    
       | Object name implements interfaces { fields } =>
-        [&& (fields != [::]),
-         uniq [seq fld.(fname) | fld <- fields],
-         all (is_field_wf) fields,
-         all (is_interface_type s) interfaces &
-         all (implements_interface_correctly name) interfaces]
-
+        [&& fields != [::],
+            uniq [seq fld.(fname) | fld <- fields],
+            all is_wf_field fields,
+            uniq interfaces,
+            all (is_interface_type s) interfaces &
+            all (implements_interface_correctly name) interfaces]
+ 
       | Interface _ { fields } =>
-        [&& (fields != [::]),
-         uniq [seq fld.(fname) | fld <- fields] &
-         all (is_field_wf) fields]
+        [&& fields != [::],
+            uniq [seq fld.(fname) | fld <- fields] &
+            all is_wf_field fields]
 
       | Union name { members } =>
-        (members != fset0) && all (is_object_type s) members
+        [&& members != [::],
+            uniq members &
+            all (is_object_type s) members]
 
-      | Enum _ { enumValues } => enumValues != fset0
+      | Enum _ { enumValues } => enumValues != [::]
                                                      
       end.
 
 
     
-    
-    Definition is_schema_wf : bool :=
-      [&& s.(query_type) \in s.(schema_names),
-                             is_object_type s s.(query_type),
-                             all (fun p => has_name p.1 p.2) s.(type_definitions) &
-                             all (fun p => is_type_def_wf p.2) s.(type_definitions)].
+    (** *** Schema Well-formedness 
+
+    This checks whether a schema is well-formed. 
+    1. The Query root operation is actually defined in the schema.
+    2. The Query type is an Object type.
+    3. Every type definition is well-formed 
+
+    Observations:
+
+    1. J&O : In Jorge and Olaf's paper, they describe a schema as being 'consistent'
+       if "every object type that implements an interface type i defines at least all 
+       the fields that i defines". Because they work with functions and sets they can 
+       simplify some checks about uniqueness of names, etc. Their notion does not capture, 
+       I believe, that fields' arguments between an object type and its interface have 
+       to satisfy some property (being a subset of the other).
+       
+    *)
+    Definition is_wf_schema : bool :=
+      [&& s.(query_type) \in s.(schema_names),      (* This is a bit redundant with the check about Query ∈ Ot *)
+          is_object_type s s.(query_type) &
+          all is_wf_type_def s.(type_definitions)].
 
   End Defs.
   
-  
-  Structure wfSchema := WFSchema {
-                           sch : @schema Name;
-                           hasType :  Name -> Vals -> bool;
-                           _ : is_schema_wf sch;
+
+  (** *** Well-formed Schema
+
+  A well-formed schema is a schema which satisfies the well-formedness property.
+  We also include the predicate "has_type", which 
+   *)
+  Structure wfGraphQLSchema := WFGraphQLSchema {
+                           schema : graphQLSchema;
+                           has_type :  Name -> Vals -> bool;
+                           _ : is_wf_schema schema;
                          }.
 
   
-  Coercion sch : wfSchema >-> Schema.schema.
+  Coercion schema : wfGraphQLSchema >-> graphQLSchema.
 
 
 End WellFormedness.
 
 
-Arguments wfSchema [Name Vals].
+Arguments wfGraphQLSchema [Vals].
 
 Infix "<:" := is_subtype (at level 50) : schema_scope.

@@ -2,8 +2,8 @@ From mathcomp Require Import all_ssreflect.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-From extructures Require Import ord fset fmap.
 
+From CoqUtils Require Import string.
 From Equations Require Import Equations.
 
 Require Import Schema.
@@ -13,89 +13,63 @@ Require Import SchemaWellFormedness.
 
 Section Theory.
 
-  Variable (Name Vals : ordType).
-  Variable (s : @wfSchema Name Vals).
+  Variable (Vals : eqType).
+  Variable (s : @wfGraphQLSchema Vals).
   
 
+  Ltac wfschema s :=
+    let sch := fresh in
+    let Hhty := fresh in
+    let Hqin := fresh in
+    let Hqobj := fresh in
+    let Hok := fresh in
+    case: s => sch Hhty; rewrite /is_wf_schema => /=  /and3P [Hqin Hqobj /allP Hok].
 
   
-  Lemma implements_interface_correctlyP (ity ty : NamedType) :
-    reflect (forall fi, fi \in fields s ity ->
-                          exists f, f \in fields s ty /\ is_field_ok s f fi)
-            (implements_interface_correctly s ty ity).
+  Lemma implements_interface_correctlyP (object_type interface_type : Name) :
+    reflect (forall ifield, ifield \in fields s interface_type ->
+                          exists ofield, ofield \in fields s object_type /\ is_valid_field_implementation s ofield ifield)
+            (implements_interface_correctly s object_type interface_type).
   Proof.
     apply: (iffP idP).
     - rewrite /implements_interface_correctly => /allP H.
-      by move=> fi /H /hasP [f Hin Hok]; exists f.
+      by move=> ifield /H /hasP [ofield Hin Hok]; exists ofield.
     - move=> H.
       rewrite /implements_interface_correctly.
-      apply/allP => fi Hin.
+      apply/allP => ifield Hin.
       apply/hasP.
-      by move: (H fi Hin) => [f [Hin' Hok]]; exists f.
+      by move: (H ifield Hin) => [ofield [Hin' Hok]]; exists ofield.
   Qed.
 
-  
-  Lemma is_type_def_wf_objE name interfaces fields :
-    is_type_def_wf s (ObjectTypeDefinition name interfaces fields) =
-    [&& (fields != [::]),
-       uniq [seq fld.(fname) | fld <- fields],
-       all (is_field_wf s) fields,
-       all (is_interface_type s) interfaces &
-       all (implements_interface_correctly s name) interfaces].
-  Proof.
-      by case: sch. Qed.
 
-  Lemma is_type_def_wf_unionE name mbs :
-    is_type_def_wf s (UnionTypeDefinition name mbs) = (mbs != fset0) && all (is_object_type s) mbs.
-  Proof. by case: sch. Qed.
-
-  Ltac wfschema := case: s => sch Hhty; rewrite /is_schema_wf => /= /and4P [Hqin Hqobj Hhn /allP Hok].
 
   Lemma query_has_object_type :
     is_object_type s s.(query_type).
   Proof.
-      by  wfschema.
+    by wfschema s. 
   Qed.
 
 
-  Lemma tdefs_N_nil :
-    s.(type_definitions) != emptym.
-  Proof.
-    wfschema.
-    rewrite /schema_names in_fset in Hqin.
-    move/mapP: Hqin => [x /codommP [t Hs] Hqin].
-    case: (type_definitions sch) Hs.
-    by case.
-  Qed.
-
-  Lemma lookup_type_name_wf ty tdef :
-    lookup_type s ty = Some tdef ->
-    ty = tdef.(tdname).
-  Proof.
-    wfschema.
-    rewrite /lookup_type.
-    move/getmP=> Hin.
-    move/allP: Hhn.
-    by move/(_ (ty, tdef) Hin) => /has_nameP /=.
-  Qed.
-
-  
-  Lemma lookup_in_schema_wfP ty tdef :
-    reflect (lookup_type s ty = Some tdef /\ ty = tdef.(tdname))
-            ((ty, tdef) \in s.(type_definitions)).
-  Proof.
-    wfschema.
-    apply: (iffP idP).
-    - move=> Hin.
-      move/allP: Hhn.
-      move/(_ (ty, tdef) Hin) => /has_nameP /= Heq.
-      rewrite Heq in Hin *.
-        by move/lookup_in_schemaP: Hin; split.
-    - move=> [Hlook Heq].
-      by apply/lookup_in_schemaP.
-  Qed.
 
  
+  
+  (* Lemma lookup_in_schema_wfP ty tdef : *)
+  (*   reflect (lookup_type s ty = Some tdef /\ ty = tdef.(tdname)) *)
+  (*           ((ty, tdef) \in s.(type_definitions)). *)
+  (* Proof. *)
+  (*   wfschema s. *)
+  (*   apply: (iffP idP). *)
+  (*   - move=> Hin. *)
+  (*     move/allP: Hhn. *)
+  (*     move/(_ (ty, tdef) Hin) => /has_nameP /= Heq. *)
+  (*     rewrite Heq in Hin *. *)
+  (*       by move/lookup_in_schemaP: Hin; split. *)
+  (*   - move=> [Hlook Heq]. *)
+  (*     by apply/lookup_in_schemaP. *)
+  (* Qed. *)
+
+ 
+
   Lemma is_scalar_type_wfE ty :
     reflect (lookup_type s ty = Some (ScalarTypeDefinition ty))
             (is_scalar_type s ty).
@@ -145,9 +119,9 @@ Section Theory.
   Qed.
 
     
-  Lemma declares_implementation_are_interfaces tdef (ity : Name) :
-    declares_implementation s tdef ity ->
-    is_interface_type s ity.
+  Lemma declares_implementation_are_interfaces tdef (interface_type : Name) :
+    declares_implementation s tdef interface_type ->
+    is_interface_type s interface_type.
   Proof.
     move=> Hdecl.
     move: (declares_implementation_is_object Hdecl).
@@ -158,7 +132,7 @@ Section Theory.
     rewrite /declares_implementation in Hdecl.
     move/lookup_in_schemaP: Hlook => Hlook.
     rewrite Hlook in Hdecl.
-    by apply: (Hintf ity Hdecl).
+    by apply: (Hintf interface_type Hdecl).
   Qed.
   
   
@@ -202,7 +176,7 @@ Section Theory.
     (*   rewrite Hneq in Hin. *)
     (*     by rewrite (fields_E Hin) in Hfin => /=. *)
     (*     apply/has_field_nameP. *)
-    (*     move: Hok; rewrite /is_field_ok => [/and3P [/eqP HE]] _ _. *)
+    (*     move: Hok; rewrite /is_valid_field_implementation => [/and3P [/eqP HE]] _ _. *)
     (*     by rewrite -Heq. *)
     (* Qed. *)
   Admitted.
@@ -276,6 +250,12 @@ Section Theory.
         by rewrite /union_members Hlook in Hunion *.
   Qed. 
 
+  Lemma uniq_get_possible_types (ty : Name) :
+      uniq (get_possible_types s ty).
+  Proof.
+      by funelim (get_possible_types s ty) => //; [ apply: undup_uniq |apply: uniq_fset].
+  Qed.
+    
 
     Lemma in_possible_types_is_object ty :
     forall t,
@@ -316,9 +296,9 @@ Section Theory.
    Qed.
 
    
-   Lemma args_are_subset_in_implementation ity oty  :
-     oty \in implementation s ity ->
-      forall fld, fld \in ity.(fields s) ->
+   Lemma args_are_subset_in_implementation interface_type oty  :
+     oty \in implementation s interface_type ->
+      forall fld, fld \in interface_type.(fields s) ->
       exists fld', fld' \in oty.(fields s) ->                                     
       [/\ fld'.(fname) = fld.(fname),                
        fsubset fld.(fargs) fld'.(fargs) &

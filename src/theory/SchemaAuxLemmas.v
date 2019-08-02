@@ -4,7 +4,8 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 From Equations Require Import Equations.
-From extructures Require Import ord fset fmap.
+From CoqUtils Require Import string.
+
 
 Require Import Schema.
 Require Import SchemaAux.
@@ -12,14 +13,12 @@ Require Import SeqExtra.
 
 Section Theory.
 
-  Variable (Name : ordType).
-
-
-  Variable (s : @schema Name).
+  
+  Variable (s : graphQLSchema).
   
 
   
-  Lemma has_nameP name tdef : reflect (name = tdef.(tdname)) (@has_name Name name tdef).
+  Lemma has_nameP name tdef : reflect (name = tdef.(tdname)) (has_name name tdef).
   Proof. by apply: (iffP eqP). Qed.
   
 
@@ -27,23 +26,35 @@ Section Theory.
   Section Lookup.
     
 
-    Lemma lookup_in_schemaP (ty : Name) tdef :
-      reflect (lookup_type s ty = Some tdef)
-              ((ty, tdef) \in s.(type_definitions)).
-    Proof.
-      apply: (iffP idP).
-      - by move/getmP.
-      - by rewrite /lookup_type; move/getmP.
-    Qed.
+    (* Lemma lookup_in_schemaP (ty : Name) tdef : *)
+    (*   reflect (lookup_type s ty = Some tdef) *)
+    (*           ((ty, tdef) \in s.(type_definitions)). *)
+    (* Proof. *)
+    (*   apply: (iffP idP). *)
+    (*   - by move/getmP. *)
+    (*   - by rewrite /lookup_type; move/getmP. *)
+    (* Qed. *)
 
-    Lemma fields_E (tdef : @TypeDefinition Name) :
-      (tdef.(tdname), tdef) \in s.(type_definitions) ->
-                                fields s tdef.(tdname) = tdef.(tfields).
-    Proof.
-      move/lookup_in_schemaP => Hlook.
-      rewrite /fields /tfields Hlook.
-        by case: tdef Hlook. 
-    Qed.
+    (* Lemma fields_E (tdef : TypeDefinition) : *)
+    (*   (tdef.(tdname), tdef) \in s.(type_definitions) -> *)
+    (*                             fields s tdef.(tdname) = tdef.(tfields). *)
+    (* Proof. *)
+    (*   move/lookup_in_schemaP => Hlook. *)
+    (*   rewrite /fields /tfields Hlook. *)
+    (*     by case: tdef Hlook.  *)
+    (* Qed. *)
+
+  (*   Lemma lookup_type_name_wf ty tdef : *)
+  (*   lookup_type s ty = Some tdef -> *)
+  (*   ty = tdef.(tdname). *)
+  (* Proof. *)
+  (*   wfschema s. *)
+  (*   rewrite /lookup_type. *)
+  (*   move/getmP=> Hin. *)
+  (*   move/allP: Hhn. *)
+  (*   by move/(_ (ty, tdef) Hin) => /has_nameP /=. *)
+  (* Qed. *)
+
 
     Lemma has_field_nameP (name : Name) (fld : FieldDefinition) :
       reflect (name = fld.(fname)) (has_field_name name fld).
@@ -113,7 +124,7 @@ Section Theory.
 
     Lemma is_object_type_E ty :
       is_object_type s ty ->
-      exists (t : @NamedType Name) intfs flds, lookup_type s ty = Some (ObjectTypeDefinition t intfs flds).
+      exists t intfs flds, lookup_type s ty = Some (ObjectTypeDefinition t intfs flds).
     Proof.
       funelim (is_object_type s ty) => // _.
         by exists object_name , interfaces, fields.
@@ -248,14 +259,14 @@ Section Theory.
   
   Section Subtypes.
 
-    Lemma union_members_E tdef :
-      (tdef.(tdname), tdef) \in s.(type_definitions) ->
-                                union_members s tdef.(tdname) = tdef.(tmbs).
-    Proof.
-      move/lookup_in_schemaP => Hlook.
-      rewrite /union_members /tmbs {}Hlook .
-        by case: tdef.
-    Qed.
+    (* Lemma union_members_E tdef : *)
+    (*   (tdef.(tdname), tdef) \in s.(type_definitions) -> *)
+    (*                             union_members s tdef.(tdname) = tdef.(tmbs). *)
+    (* Proof. *)
+    (*   move/lookup_in_schemaP => Hlook. *)
+    (*   rewrite /union_members /tmbs {}Hlook . *)
+    (*     by case: tdef. *)
+    (* Qed. *)
 
     Lemma in_union (t ty : Name) :
       t \in union_members s ty ->
@@ -266,7 +277,7 @@ Section Theory.
     Qed.
 
     
-    Lemma in_intfs ty (tdef : @TypeDefinition Name):
+    Lemma in_intfs ty (tdef : TypeDefinition):
       ty \in tdef.(tintfs) ->
              exists n flds, tdef = ObjectTypeDefinition n tdef.(tintfs) flds.
     Proof.
@@ -289,13 +300,7 @@ Section Theory.
                         by move: (in_intfs Hin) => [n [flds ->]].
     Qed.
 
-    Lemma uniq_get_possible_types ty :
-      uniq (get_possible_types s ty).
-    Proof.
-        by funelim (get_possible_types s ty) => //; [ apply: undup_uniq |apply: uniq_fset].
-    Qed.
-    
-    
+   
 
     
     
@@ -306,18 +311,18 @@ Section Theory.
     Proof.
     Admitted.
 
-    Lemma implements_interface_is_object (ity : Name) tdef :
-      (tdef.(tdname), tdef) \in s.(type_definitions) ->
-                                implements_interface ity tdef ->
-                                is_object_type s tdef.(tdname).
-    Proof.
-      move/lookup_in_schemaP => Hlook.
-      rewrite /implements_interface.
-      move/in_intfs=> [n [flds Heq]].
-      rewrite Heq in Hlook * => /=.
-      rewrite is_object_type_equation_1.
-        by rewrite Hlook.
-    Qed.
+    (* Lemma qimplements_interface_is_object (ity : Name) tdef : *)
+    (*   (tdef.(tdname), tdef) \in s.(type_definitions) -> *)
+    (*                             implements_interface ity tdef -> *)
+    (*                             is_object_type s tdef.(tdname). *)
+    (* Proof. *)
+    (*   move/lookup_in_schemaP => Hlook. *)
+    (*   rewrite /implements_interface. *)
+    (*   move/in_intfs=> [n [flds Heq]]. *)
+    (*   rewrite Heq in Hlook * => /=. *)
+    (*   rewrite is_object_type_equation_1. *)
+    (*     by rewrite Hlook. *)
+    (* Qed. *)
 
     Lemma declares_implementation_is_object (ity oty : Name) :
       declares_implementation s oty ity ->
@@ -337,23 +342,23 @@ Section Theory.
       apply: declares_implementation_is_object.
     Qed.
     
-    Lemma implements_declares_implementation (ity : Name) (tdef : TypeDefinition) :
-      (tdef.(tdname), tdef) \in s.(type_definitions) ->
-                                declares_implementation s tdef.(tdname) ity <-> implements_interface ity tdef.
-    Proof.
-      move/lookup_in_schemaP=> Htdef.
-      split.
-      - rewrite /declares_implementation.
-        rewrite Htdef.
-        case: tdef Htdef => // o i f Hin.
-      - rewrite /implements_interface /declares_implementation Htdef.
-          by case: tdef Htdef.
-    Qed.
+    (* Lemma implements_declares_implementation (ity : Name) (tdef : TypeDefinition) : *)
+    (*   (tdef.(tdname), tdef) \in s.(type_definitions) -> *)
+    (*                             declares_implementation s tdef.(tdname) ity <-> implements_interface ity tdef. *)
+    (* Proof. *)
+    (*   move/lookup_in_schemaP=> Htdef. *)
+    (*   split. *)
+    (*   - rewrite /declares_implementation. *)
+    (*     rewrite Htdef. *)
+    (*     case: tdef Htdef => // o i f Hin. *)
+    (*   - rewrite /implements_interface /declares_implementation Htdef. *)
+    (*       by case: tdef Htdef. *)
+    (* Qed. *)
 
     
     Lemma get_possible_types_objectE ty :
       is_object_type s ty ->
-      get_possible_types s ty = fset1 ty.
+      get_possible_types s ty = [:: ty].
     Proof.
       move/is_object_type_E=> [o [intfs [flds Hlook]]].
         by simp get_possible_types; rewrite Hlook.
@@ -365,7 +370,7 @@ Section Theory.
             t = ty.
     Proof.
       move/get_possible_types_objectE => ->.
-        by rewrite in_fset1 => /eqP.
+        by rewrite mem_seq1 => /eqP.
     Qed.
     
     Lemma get_possible_types_unionE ty :
