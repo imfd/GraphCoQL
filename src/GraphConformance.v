@@ -3,8 +3,9 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-From extructures Require Import ord fmap.
+From CoqUtils Require Import string.
 
+Require Import Base.
 
 Require Import Schema.
 Require Import SchemaWellFormedness.
@@ -16,17 +17,17 @@ Require Import GraphAux.
 Section Conformance.
 
 
-  Variables (N Name Vals: ordType).
+  Variables (Vals: eqType).
 
   
-  Implicit Type schema : @wfSchema Name Vals.
-  Implicit Type graph : @graphQLGraph Name Vals. 
+  Implicit Type schema : @wfGraphQLSchema Vals.
+  Implicit Type graph : @graphQLGraph Vals. 
 
 
   (** 
       It states that a Graph's root must have the same type as the Schema's root
    **)
-  Definition root_type_conforms schema graph : bool := graph.(root).(type) == schema.(query_type).
+  Definition root_type_conforms schema graph : bool := graph.(root).(ntype) == schema.(query_type).
   
 
 
@@ -43,7 +44,7 @@ Section Conformance.
   Definition argument_conforms schema (ty fname : Name) (arg : Name * Vals) : bool :=
     let: (argname, value) := arg in
     match lookup_argument_in_type_and_field schema ty fname argname with
-    | Some field_arg => (hasType schema) field_arg.(argtype) value    (* If the argument is declared then check its value's type *)
+    | Some field_arg => (has_type schema) field_arg.(argtype) value    (* If the argument is declared then check its value's type *)
     | _ => false
     end.
 
@@ -64,7 +65,7 @@ Section Conformance.
       This is used when checking that an edge conforms to a Schema (see next definition).
    **)
   Definition field_type_conforms schema (field_type target_type : Name) : bool :=
-    is_subtype schema (NT target_type) (NT field_type).
+    schema ⊢ NamedType target_type <: NamedType field_type.
 
 
   
@@ -92,13 +93,13 @@ Section Conformance.
         that given field.
 
    **)
-  Definition edge_conforms schema graph (edge : node * fld * (@node Name Vals)) : bool :=
+  Definition edge_conforms schema graph (edge : node * fld * @node Vals) : bool :=
     let: (src, fld, target) := edge in
-    match lookup_field_in_type schema src.(type) fld.(label) with
+    match lookup_field_in_type schema src.(ntype) fld.(label) with
     | Some fdef => [&& (* is_subtype schema (NT target.(type)) fdef.(return_type), *) (* wrong... right? *)
-                     target.(type) \in get_possible_types schema fdef.(return_type),
+                     target.(ntype) \in get_possible_types schema fdef.(return_type),
                    (is_list_type fdef.(return_type) || is_field_unique_for_src_node graph src fld) &
-                   arguments_conform schema src.(type) fld]
+                   arguments_conform schema src.(ntype) fld]
     | _ => false
     end.
 
@@ -127,14 +128,14 @@ Section Conformance.
     | Some fdef =>
       arguments_conform schema ty fd.1 &&
       match fd.2 with
-      | (inl value) => hasType schema fdef.(return_type) value
-      | (inr values) => all (hasType schema fdef.(return_type)) values
+      | (inl value) => schema.(has_type) fdef.(return_type) value
+      | (inr values) => all (schema.(has_type) fdef.(return_type)) values
       end
     | _ => false
     end.
   
   Definition node_fields_conform schema (u : node) :=
-    all (field_conforms schema u.(type)) u.(fields).
+    all (field_conforms schema u.(ntype)) u.(nfields).
 
   
   Definition fields_conform schema graph :=
@@ -142,7 +143,7 @@ Section Conformance.
 
   
   Definition nodes_have_object_type schema graph : bool :=
-    all (fun node : node => is_object_type schema node.(type)) graph.(nodes).
+    all (fun node : node => is_object_type schema node.(ntype)) graph.(nodes).
 
   
   (**
@@ -169,4 +170,4 @@ Section Conformance.
 
 End Conformance.
 
-Arguments conformedGraph [Name Vals]. 
+Arguments conformedGraph [Vals]. 
