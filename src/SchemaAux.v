@@ -5,7 +5,7 @@ Unset Printing Implicit Defensive.
 
 From Equations Require Import Equations.
 From CoqUtils Require Import string.
-
+Require Import Base.
 
 Require Import Schema.
 Require Import SeqExtra.

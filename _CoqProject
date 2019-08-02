@@ -11,37 +11,52 @@
 ./src/CpdtTactics.v
 ./src/SeqExtra.v
 
+./src/Base.v
+
 ./src/Schema.v
 ./src/SchemaAux.v
-./src/theory/SchemaAuxLemmas.v
-
 ./src/SchemaWellFormedness.v
-./src/theory/SchemaWFLemmas.v
+
 
 ./src/Graph.v
 ./src/GraphAux.v
-./src/theory/GraphAuxLemmas.v
-
 ./src/GraphConformance.v
-./src/theory/GraphConformanceLemmas.v
+
 
 ./src/Query.v
 ./src/QueryAux.v
-./src/theory/QueryAuxLemmas.v
 ./src/QueryTactics.v
-
 ./src/QueryConformance.v
-./src/theory/QueryConformanceLemmas.v
+
 
 ./src/NRGTNF.v
-./src/theory/NRGTNFLemmas.v
-
 ./src/QueryNormalization.v
-./src/theory/QueryNormalizationLemmas.v
 
 ./src/Response.v
 
 ./src/QuerySemantic.v
-./src/theory/QuerySemanticsLemmas.v
 
 ./src/Example.v
+
+./src/theory/SchemaAuxLemmas.v
+./src/theory/SchemaWFLemmas.v
+./src/theory/QuerySemanticsLemmas.v
+./src/theory/GraphAuxLemmas.v
+./src/theory/GraphConformanceLemmas.v
+
+./src/theory/QueryAuxLemmas.v
+./src/theory/QueryConformanceLemmas.v
+./src/theory/NRGTNFLemmas.v
+./src/theory/QueryNormalizationLemmas.v
+
+
+
+
+
+
+
+
+
+
+
+

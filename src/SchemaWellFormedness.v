@@ -7,7 +7,7 @@ From extructures Require Import ord fset fmap.
 
 From Equations Require Import Equations.
 
-
+Require Import Base.
 Require Import Schema.
 Require Import SchemaAux.
 
@@ -358,4 +358,4 @@ End WellFormedness.
 
 Arguments wfGraphQLSchema [Vals].
 
-Infix "<:" := is_subtype (at level 50) : schema_scope.
+Notation "s ⊢ ty1 <: ty2" := (is_subtype s ty1 ty2) (at level 50, ty1 at next level) : schema_scope.
