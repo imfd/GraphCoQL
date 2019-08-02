@@ -39,6 +39,7 @@ coqdocjs.repl = {
     "mu": "μ",
     "nu": "ν",
     "omega": "ω",
+    "varphi": "φ",
     "phi": "ϕ",
     "pi": "π",
     "psi": "ψ",
