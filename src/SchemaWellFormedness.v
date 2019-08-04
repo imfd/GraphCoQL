@@ -23,22 +23,22 @@ Section WellFormedness.
     Variable (s : graphQLSchema).
 
     
-    (** ** Subtyping relation.
+    (** *** Subtyping relation.
         Using Schema as the lookup function in the schema (Schema : Name -> TypeDefinition).
 
    
-                 [-----------------------] (ST_Refl) #<br>#
+                 [―――――――――――――――――] (ST_Refl) #<br>#
                        ty <: ty
 
                   
-       Schema(O) = type O implements ... I ... { ... }
-                Schema(I) = interface I { ...}
-       ------------------------------------------- (ST_Object)
+        Schema(O) = type O implements ... I ... { ... }  #<br>#
+                Schema(I) = interface I { ...}           #<br>#
+       [――――――――――――――――――――――――――――――――――――――――――――――] (ST_Object) #<br>#
                          O <: I
 
            
-                         T <: U
-                [-------------------------] (ST_ListType)
+                         T <: U                         #<br>#
+                [―――――――――――――――――――――] (ST_ListType)   #<br>#
                        [T] <: [U]
                        
 
@@ -73,7 +73,7 @@ Section WellFormedness.
     
     
     
-    (** ** Valid argument's type
+    (** *** Valid argument's type
 
         The following definition describe whether a given type is valid
         for a field argument.
@@ -101,7 +101,7 @@ Section WellFormedness.
       }.
 
 
-    (** ** Valid field's return type 
+    (** *** Valid field's return type 
         
         The following definition describe whether a given type is valid
         for a field's return type.
@@ -127,7 +127,7 @@ Section WellFormedness.
       }.
     
 
-    (** ** Argument Well-formedness
+    (** *** Argument Well-formedness
 
       It checks whether an argument definition is well-formed by checking that
       its type is a valid type for an argument. 
@@ -145,7 +145,7 @@ Section WellFormedness.
       is_valid_argument_type arg.(argtype).
 
     
-    (** ** Field Well-formedness
+    (** *** Field Well-formedness
 
      It checks whether a field is well-formed, independently of the type where it is
      defined:
@@ -171,7 +171,7 @@ Section WellFormedness.
 
 
 
-    (** ** Valid field implementation
+    (** *** Valid field implementation
 
     This checks whether a field is valid w/r to another. This is used to check 
     whether an Object type is correctly implementing an interface's fields.
@@ -194,14 +194,14 @@ Section WellFormedness.
     *)
     Definition is_valid_field_implementation (object_field interface_field : FieldDefinition) : bool :=
       [&& object_field.(fname) == interface_field.(fname),
-          subseq interface_field.(fargs) object_field.(fargs) &   (* I think this is wrong... *)
+          all (mem object_field.(fargs)) interface_field.(fargs) & 
           object_field.(return_type) <: interface_field.(return_type)].
     
 
 
 
     
-    (** ** Valid interface implementation
+    (** *** Valid interface implementation
 
      This checks whether an object type correctly implements an interface, 
      by properly implementing every field defined in the interface.
@@ -313,7 +313,7 @@ Section WellFormedness.
 
 
     
-    (** *** Schema Well-formedness 
+    (** ** Schema Well-formedness 
 
     This checks whether a schema is well-formed. 
     1. The Query root operation is actually defined in the schema.

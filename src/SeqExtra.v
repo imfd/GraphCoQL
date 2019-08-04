@@ -41,7 +41,12 @@ Section SeqExtra.
                    by apply: IH.
   Qed.
 
-
+  Lemma get_first_pred (p : pred A) (s : seq A) (x : A) :
+    get_first p s = Some x ->
+    p x.
+  Proof.
+      by elim: s => //= y s IH; case: ifP => //= Hp; case=> <-.
+  Qed.
 
   
   Lemma get_first_E (p : pred A) s tdef : (get_first p s = Some tdef) -> get_first p s.

@@ -75,19 +75,20 @@ Section SchemaAux.
   
   Variable schema : graphQLSchema.
 
-  (** Finds the first type definitions that has the given name **)
-  Equations find_tdef_with_name (tdefs : seq TypeDefinition) (ty : Name) : option TypeDefinition :=
-    {
-      find_tdef_with_name [::] _ := None;
-      find_tdef_with_name (tdef :: tdefs) ty
-        with tdef.(tdname) == ty :=
-        {
-        | true := Some tdef;
-        | _ := find_tdef_with_name tdefs ty
-        }
-    }.
+  (* (** Finds the first type definitions that has the given name **) *)
+  (* Equations find_tdef_with_name (tdefs : seq TypeDefinition) (ty : Name) : option TypeDefinition := *)
+  (*   { *)
+  (*     find_tdef_with_name [::] _ := None; *)
+  (*     find_tdef_with_name (tdef :: tdefs) ty *)
+  (*       with tdef.(tdname) == ty := *)
+  (*       { *)
+  (*       | true := Some tdef; *)
+  (*       | _ := find_tdef_with_name tdefs ty *)
+  (*       } *)
+  (*   }. *)
   
-  Definition lookup_type (ty : Name) := find_tdef_with_name schema.(type_definitions) ty.
+  Definition lookup_type (ty : Name) :=
+    get_first (fun tdef => tdef.(tdname) == ty) schema.(type_definitions).
 
   
   

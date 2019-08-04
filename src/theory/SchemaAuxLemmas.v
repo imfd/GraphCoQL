@@ -6,7 +6,7 @@ Unset Printing Implicit Defensive.
 From Equations Require Import Equations.
 From CoqUtils Require Import string.
 
-
+Require Import Base.
 Require Import Schema.
 Require Import SchemaAux.
 Require Import SeqExtra.
@@ -44,19 +44,15 @@ Section Theory.
     (*     by case: tdef Hlook.  *)
     (* Qed. *)
 
-  (*   Lemma lookup_type_name_wf ty tdef : *)
-  (*   lookup_type s ty = Some tdef -> *)
-  (*   ty = tdef.(tdname). *)
-  (* Proof. *)
-  (*   wfschema s. *)
-  (*   rewrite /lookup_type. *)
-  (*   move/getmP=> Hin. *)
-  (*   move/allP: Hhn. *)
-  (*   by move/(_ (ty, tdef) Hin) => /has_nameP /=. *)
-  (* Qed. *)
+    Lemma lookup_type_name_wf ty tdef :
+      lookup_type s ty = Some tdef ->
+      ty = tdef.(tdname).
+    Proof.
+        by rewrite /lookup_type => /get_first_pred /eqP ->.
+    Qed.
 
 
-    Lemma has_field_nameP (name : Name) (fld : FieldDefinition) :
+    Lemma has_field_nameP (name : string) (fld : FieldDefinition) :
       reflect (name = fld.(fname)) (has_field_name name fld).
     Proof.
         by apply: (iffP eqP). Qed.
@@ -268,7 +264,7 @@ Section Theory.
     (*     by case: tdef. *)
     (* Qed. *)
 
-    Lemma in_union (t ty : Name) :
+    Lemma in_union (t ty : string) :
       t \in union_members s ty ->
             is_union_type s ty.      
     Proof.
@@ -311,7 +307,7 @@ Section Theory.
     Proof.
     Admitted.
 
-    (* Lemma qimplements_interface_is_object (ity : Name) tdef : *)
+    (* Lemma qimplements_interface_is_object (ity : string) tdef : *)
     (*   (tdef.(tdname), tdef) \in s.(type_definitions) -> *)
     (*                             implements_interface ity tdef -> *)
     (*                             is_object_type s tdef.(tdname). *)
@@ -324,7 +320,7 @@ Section Theory.
     (*     by rewrite Hlook. *)
     (* Qed. *)
 
-    Lemma declares_implementation_is_object (ity oty : Name) :
+    Lemma declares_implementation_is_object (ity oty : string) :
       declares_implementation s oty ity ->
       is_object_type s oty.
     Proof.
@@ -342,7 +338,7 @@ Section Theory.
       apply: declares_implementation_is_object.
     Qed.
     
-    (* Lemma implements_declares_implementation (ity : Name) (tdef : TypeDefinition) : *)
+    (* Lemma implements_declares_implementation (ity : string) (tdef : TypeDefinition) : *)
     (*   (tdef.(tdname), tdef) \in s.(type_definitions) -> *)
     (*                             declares_implementation s tdef.(tdname) ity <-> implements_interface ity tdef. *)
     (* Proof. *)

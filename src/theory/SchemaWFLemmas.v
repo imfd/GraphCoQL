@@ -6,6 +6,7 @@ Unset Printing Implicit Defensive.
 From CoqUtils Require Import string.
 From Equations Require Import Equations.
 
+Require Import Base.
 Require Import Schema.
 Require Import SchemaAux.
 Require Import SchemaAuxLemmas.
@@ -26,7 +27,7 @@ Section Theory.
     case: s => sch Hhty; rewrite /is_wf_schema => /=  /and3P [Hqin Hqobj /allP Hok].
 
   
-  Lemma implements_interface_correctlyP (object_type interface_type : Name) :
+  Lemma implements_interface_correctlyP (object_type interface_type : string) :
     reflect (forall ifield, ifield \in fields s interface_type ->
                           exists ofield, ofield \in fields s object_type /\ is_valid_field_implementation s ofield ifield)
             (implements_interface_correctly s object_type interface_type).
@@ -70,18 +71,18 @@ Section Theory.
 
  
 
-  Lemma is_scalar_type_wfE ty :
-    reflect (lookup_type s ty = Some (ScalarTypeDefinition ty))
-            (is_scalar_type s ty).
-  Proof.
-    apply: (iffP idP).
-    - rewrite /is_scalar_type.
-      case Hlook: lookup_type => [tdef|] //.
-      move/lookup_type_name_wf: Hlook => ->.
-        by case: tdef.
-    - move=> Hlook.
-      by rewrite /is_scalar_type Hlook.
-  Qed.
+  (* Lemma is_scalar_type_wfE ty : *)
+  (*   reflect (lookup_type s ty = Some (ScalarTypeDefinition ty)) *)
+  (*           (is_scalar_type s ty). *)
+  (* Proof. *)
+  (*   apply: (iffP idP). *)
+  (*   - rewrite /is_scalar_type. *)
+  (*     case Hlook: lookup_type => [tdef|] //. *)
+  (*     move/lookup_type_name_wf: Hlook => ->. *)
+  (*       by case: tdef. *)
+  (*   - move=> Hlook. *)
+  (*     by rewrite /is_scalar_type Hlook. *)
+  (* Qed. *)
 
   
   Lemma is_object_type_wfP ty :
@@ -90,9 +91,8 @@ Section Theory.
   Proof.
     apply: (iffP idP)=> //.
     - funelim (is_object_type s ty) => // _.
-      by exists interfaces, fields; rewrite Heq; move/lookup_type_name_wf: Heq => ->.
-    - move=> [intfs [flds Hlook]].
-        by rewrite is_object_type_equation_1 Hlook.
+      by exists interfaces, fields; rewrite Heq; move/lookup_type_name_wf: Heq =>  -> /=.
+    - by move=> [intfs [flds Hlook]]; simp is_object_type; rewrite Hlook.
   Qed.
 
   Lemma is_interface_type_wfP ty :
@@ -119,22 +119,21 @@ Section Theory.
   Qed.
 
     
-  Lemma declares_implementation_are_interfaces tdef (interface_type : Name) :
+  Lemma declares_implementation_are_interfaces tdef (interface_type : string) :
     declares_implementation s tdef interface_type ->
     is_interface_type s interface_type.
   Proof.
     move=> Hdecl.
-    move: (declares_implementation_is_object Hdecl).
-    move/is_object_type_wfP=> [intfs [flds /lookup_in_schemaP Hlook]].
-    move: Hdecl Hlook; wfschema => Hdecl Hlook.
-    move: (Hok (tdef, ObjectTypeDefinition tdef intfs flds) Hlook).
-    move=> /= /and5P [_ _ _ /allP Hintf _].
-    rewrite /declares_implementation in Hdecl.
-    move/lookup_in_schemaP: Hlook => Hlook.
-    rewrite Hlook in Hdecl.
-    by apply: (Hintf interface_type Hdecl).
-  Qed.
-  
+    have /is_object_type_wfP [intfs [flds Hlook]] := (declares_implementation_is_object Hdecl).
+    move: Hdecl Hlook; wfschema s => Hdecl Hlook.
+    move: (H3 (ObjectTypeDefinition tdef intfs flds)).
+  (*   move=> /= /and5P [_ _ _ /allP Hintf _]. *)
+  (*   rewrite /declares_implementation in Hdecl. *)
+  (*   move/lookup_in_schemaP: Hlook => Hlook. *)
+  (*   rewrite Hlook in Hdecl. *)
+  (*   by apply: (Hintf interface_type Hdecl). *)
+  (* Qed. *)
+  Admitted.
   
   Lemma has_implementation_is_interface ty t :
     t \in implementation s ty ->
@@ -157,11 +156,11 @@ Section Theory.
     rewrite /declares_implementation Hlook in Hdecl.
     move: (lookup_type_name_wf Hlook) => Hneq.
 
-    move/lookup_in_schemaP: Hlook => Hin.
-    move: Hlook' Hin; wfschema => Hlook' Hin.
-    move: (Hok (ty, (ObjectTypeDefinition ty intfs flds)) Hin) => {Hok}.
-    move=> /= /and5P [_ _ _ _ /allP Hintfs].
-    move: (Hintfs ti Hdecl) => {Hintfs Hdecl}.
+    (* move/lookup_in_schemaP: Hlook => Hin. *)
+    (* move: Hlook' Hin; wfschema => Hlook' Hin. *)
+    (* move: (Hok (ty, (ObjectTypeDefinition ty intfs flds)) Hin) => {Hok}. *)
+    (* move=> /= /and5P [_ _ _ _ /allP Hintfs]. *)
+    (* move: (Hintfs ti Hdecl) => {Hintfs Hdecl}. *)
     (* I think the problem is that it is defined on "s" which is the variable... *)
     (* Should probably be solved by modularizing. *)
     (* move=> /(implements_interface_correctlyP ti ty) H'. *)
@@ -205,11 +204,11 @@ Section Theory.
   Proof.
     rewrite /union_members.
     case Hlook: lookup_type => [tdef|] //.
-    case: tdef Hlook => // u mbs /lookup_in_schemaP Hlook.
-    move: Hlook; wfschema => Hlook.
-    move/Hok: Hlook => /=; by case/andP.
-  Qed.
-
+    (* case: tdef Hlook => // u mbs /lookup_in_schemaP Hlook. *)
+    move: Hlook; wfschema s => Hlook.
+    (* move/Hok: Hlook => /=; by case/andP. *)
+  (* Qed. *)
+  Admitted.
 
     
 
@@ -233,14 +232,14 @@ Section Theory.
     move=> Hobj.
     apply: (iffP idP).
     - apply_funelim (get_possible_types s ty) => //=.
-      * by move=> ty' o i flds _;  rewrite in_fset1 => /eqP ->; constructor 1.
+      * by move=> ty' o i flds _;  rewrite mem_seq1 => /eqP ->; constructor 1.
       * by move=> ty' i flds /lookup_type_name_wf /= ->; constructor 2.
       * by move=> ty' u mbs Hlook; rewrite /union_members Hlook; constructor 3.
       
         
     - move=> [<- | Hintfs | Hunion]; simp get_possible_types.
       * move/is_object_type_wfP: Hobj => [intfs [flds Hlook]].
-          by rewrite Hlook; apply/fset1P.
+          by rewrite Hlook /= mem_seq1; apply/eqP.
       * move: (declares_in_implementation s t ty).
         case=> _ H.
         move: (H Hintfs) => /declares_implementation_are_interfaces.
@@ -250,12 +249,14 @@ Section Theory.
         by rewrite /union_members Hlook in Hunion *.
   Qed. 
 
-  Lemma uniq_get_possible_types (ty : Name) :
+  Lemma uniq_get_possible_types (ty : string) :
       uniq (get_possible_types s ty).
   Proof.
-      by funelim (get_possible_types s ty) => //; [ apply: undup_uniq |apply: uniq_fset].
-  Qed.
+    funelim (get_possible_types s ty) => //=; first by apply: undup_uniq.
+    (* Union members are unique -> from wf of schema *)
     
+  (* Qed. *)
+    Admitted.
 
     Lemma in_possible_types_is_object ty :
     forall t,
@@ -263,7 +264,7 @@ Section Theory.
           is_object_type s t.
   Proof.
     funelim (get_possible_types s ty) => // t.
-    - rewrite in_fset1 => /eqP ->.
+    - rewrite mem_seq1 => /eqP ->.
       by simp is_object_type; rewrite Heq.
     - by move/in_implementation_is_object.
     - have <-: union_members s ty = union_members0 by rewrite /union_members Heq.
@@ -281,10 +282,10 @@ Section Theory.
 
    Lemma is_subtype_obj_eq ty ty' :
      is_object_type s ty' ->
-     is_subtype s (NT ty) (NT ty') ->
+     is_subtype s (NamedType ty) (NamedType ty') ->
      ty = ty'.
    Proof.
-     funelim (is_subtype s (NT ty) (NT ty')) => //= Hobj.
+     funelim (is_subtype s (NamedType ty) (NamedType ty')) => //= Hobj.
      case: H => ->.
      case: H0 => ->.
      case/or3P; first by apply/eqP.
@@ -296,27 +297,27 @@ Section Theory.
    Qed.
 
    
-   Lemma args_are_subset_in_implementation interface_type oty  :
-     oty \in implementation s interface_type ->
-      forall fld, fld \in interface_type.(fields s) ->
-      exists fld', fld' \in oty.(fields s) ->                                     
-      [/\ fld'.(fname) = fld.(fname),                
-       fsubset fld.(fargs) fld'.(fargs) &
-       is_subtype s fld'.(return_type) fld.(return_type)].
-   Proof.
-   Admitted.
+   (* Lemma args_are_subset_in_implementation interface_type oty  : *)
+   (*   oty \in implementation s interface_type -> *)
+   (*    forall fld, fld \in interface_type.(fields s) -> *)
+   (*    exists fld', fld' \in oty.(fields s) ->                                      *)
+   (*    [/\ fld'.(fname) = fld.(fname),                 *)
+   (*     fld.(fargs) fld'.(fargs) & *)
+   (*     is_subtype s fld'.(return_type) fld.(return_type)]. *)
+   (* Proof. *)
+   (* Admitted. *)
 
-    Lemma get_possible_types_N_nil_are_Ot ty :
-      get_possible_types s ty != [::] ->
-      all (is_object_type s) (get_possible_types s ty).
-    Proof.
-      funelim (get_possible_types s ty) => //= _.
-      - by simp is_object_type; rewrite Heq.
-      - apply/allP=> x; apply: in_implementation_is_object.
-      - apply/allP=> x.
-        have <- : union_members s ty = union_members0 by rewrite /union_members Heq. 
-          by apply: in_union_is_object.
-    Qed.
+    (* Lemma get_possible_types_N_nil_are_Ot ty : *)
+    (*   get_possible_types s ty != [::] -> *)
+    (*   all (is_object_type s) (get_possible_types s ty). *)
+    (* Proof. *)
+    (*   funelim (get_possible_types s ty) => //= _. *)
+    (*   - by simp is_object_type; rewrite Heq. *)
+    (*   - apply/allP=> x; apply: in_implementation_is_object. *)
+    (*   - apply/allP=> x. *)
+    (*     have <- : union_members s ty = union_members0 by rewrite /union_members Heq.  *)
+    (*       by apply: in_union_is_object. *)
+    (* Qed. *)
 
 
 End Theory.
