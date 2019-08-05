@@ -70,31 +70,7 @@ Section Theory.
       t = type_in_scope.
     Proof.
     Admitted.
-    (* wfquery.
-    move=> Hobj'.
-    pose H' := Hobj'.
-    move/is_object_type_E: H' => [obj [intfs [flds H]]] Hobj Hne Hqsc.
-    split.
-    - simp query_conforms.
-      move/and4P=> [/or3P _ Hspread _ _].
-      move: (object_spreads_E _ _ _ Hobj Hspread)=> [||] //.
-      * move/has_implementation_is_interface=> Hcontr.
-        move: (is_object_type_interfaceN Hobj') => //.
-          by rewrite Hcontr.
-      * move/in_union => Hcontr.
-        move: (is_object_type_unionN Hobj').
-          by rewrite Hcontr.
-    - move=> Heq; rewrite Heq /=.
-      move: Hqsc; rewrite /queries_conform.
-      move/andP=> [Hall Hmerge].
-      apply/and5P; split=> //.
-        by apply/or3P; constructor 1.
-        rewrite /is_fragment_spread_possible; simp get_possible_types => /=.
-        by rewrite H /= /seqI /=; case: ifP => //=; rewrite inE => /eqP.
-      by rewrite Heq in Hall.
-      by rewrite -Heq.
-  Qed.
-     *)
+    
 
     
     Lemma interface_spreads_in_object_scope type_in_scope t ϕ :

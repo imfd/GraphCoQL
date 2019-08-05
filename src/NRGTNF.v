@@ -4,9 +4,9 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 From Equations Require Import Equations.
-From extructures Require Import ord fmap fset.
+From CoqUtils Require Import string.
 
-
+Require Import Base.
 Require Import Query.
 Require Import QueryAux.
 Require Import SchemaWellFormedness.
@@ -22,11 +22,11 @@ Require Import Ssromega.
 
 Section NRGTNF.
 
-  Variables Name Vals : ordType.
-  Variables (s : @wfSchema Name Vals).
+  Variables Vals : eqType.
+  Variables (s : @wfGraphQLSchema Vals).
   
-  Implicit Type queries : seq (@Query Name Vals).
-  Implicit Type query : @Query Name Vals.
+  Implicit Type queries : seq (@Query Vals).
+  Implicit Type query : @Query Vals.
   
   
   
@@ -59,7 +59,7 @@ Section NRGTNF.
           }.
 
  
-  Equations is_grounded2 (type_in_scope : Name) (query : @Query Name Vals) : bool :=
+  Equations is_grounded2 (type_in_scope : Name) (query : @Query Vals) : bool :=
     {
       is_grounded2 ty (NestedField f _ φ)
         with lookup_field_in_type s ty f :=
@@ -80,7 +80,7 @@ Section NRGTNF.
       is_grounded2 _ _ := true
     }
    where
-   are_grounded2 (type_in_scope : Name) (queries : seq (@Query Name Vals)) : bool :=
+   are_grounded2 (type_in_scope : Name) (queries : seq (@Query Vals)) : bool :=
      {
        are_grounded2 _ [::] := true;
        are_grounded2 ty (hd :: tl)
@@ -92,7 +92,7 @@ Section NRGTNF.
      }.
 
   
-  Equations are_similar (q1 q2 : @Query Name Vals) : bool :=
+  Equations are_similar (q1 q2 : @Query Vals) : bool :=
     {
       are_similar (InlineFragment t _) (InlineFragment t' _) := t == t';
       are_similar (InlineFragment _ _) _ := false;
@@ -100,7 +100,7 @@ Section NRGTNF.
       are_similar q1 q2 := ((qresponse_name q1 _) == (qresponse_name q2 _)) && ((qargs q1 _) == (qargs q2 _))
     }.
    
-  Equations? are_non_redundant (queries : seq (@Query Name Vals)) : bool
+  Equations? are_non_redundant (queries : seq (@Query Vals)) : bool
     by wf (queries_size queries) :=
     {
       are_non_redundant [::] := true;
@@ -124,15 +124,15 @@ Section NRGTNF.
   
 End NRGTNF.
 
-Arguments is_grounded [Name Vals].
-Arguments are_grounded_fields [Name Vals].
-Arguments are_grounded_inlines [Name Vals].
-Arguments are_grounded [Name Vals].
-Arguments is_grounded2 [Name Vals].
-Arguments are_grounded2 [Name Vals].
-Arguments are_non_redundant [Name Vals].
-Arguments is_non_redundant  [Name Vals].
+Arguments is_grounded [Vals].
+Arguments are_grounded_fields [Vals].
+Arguments are_grounded_inlines [Vals].
+Arguments are_grounded [Vals].
+Arguments is_grounded2 [Vals].
+Arguments are_grounded2 [Vals].
+Arguments are_non_redundant [Vals].
+Arguments is_non_redundant  [Vals].
 
-Arguments are_similar [Name Vals].
+Arguments are_similar [Vals].
 
-Arguments are_in_normal_form [Name Vals].
+Arguments are_in_normal_form [Vals].

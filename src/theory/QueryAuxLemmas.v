@@ -3,10 +3,12 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-From extructures Require Import ord.
+From CoqUtils Require Import string.
+(* From extructures Require Import ord. *)
 
 From Equations Require Import Equations.
 
+Require Import Base.
 Require Import Schema.
 Require Import SchemaAux.
 Require Import SchemaAuxLemmas.
@@ -22,16 +24,16 @@ Require Import Ssromega.
 
 Section Theory.
   Ltac apply_andP := apply/andP; split => //.
-  Transparent qname oqresponse_name qresponse_name.
+  Transparent oqresponse_name qresponse_name.
 
-  Variables Name Vals : ordType.
+  Variables Vals : eqType.
 
-  Implicit Type φ : seq (@Query Name Vals).
-  Implicit Type query : @Query Name Vals.
+  Implicit Type φ : seq (@Query Vals).
+  Implicit Type query : @Query Vals.
 
 
   Section DefPreds.
-    Variable (s : @wfSchema Name Vals).
+    Variable (s : @wfGraphQLSchema Vals).
     
     Lemma object_applies_to_itself ty :
       is_object_type s ty ->
@@ -93,7 +95,7 @@ Section Theory.
 
     
     
-    Lemma queries_size_0_nil (qs : seq (@Query Name Vals)) : queries_size qs == 0 -> qs = [::].
+    Lemma queries_size_0_nil (qs : seq (@Query Vals)) : queries_size qs == 0 -> qs = [::].
     Proof.
         by elim: qs => //=; case=> [f α | l f α | f α φ | l f α φ | t φ] qs IH /=; rewrite addn_eq0.
     Qed.
@@ -103,7 +105,7 @@ Section Theory.
 
   (* Section DefPreds. *)
     
-  (*   Variable (s : @wfSchema Name Vals). *)
+  (*   Variable (s : @wfSchema Vals). *)
     
   (*   Lemma is_definedE q (Hfield : q.(is_field)) ty : *)
   (*     is_defined s q Hfield ty -> *)
@@ -121,7 +123,7 @@ Section Theory.
   (* End DefPreds. *)
 
   Section Find.
-    Variable (s : @wfSchema Name Vals).
+    Variable (s : @wfGraphQLSchema Vals).
     
     Lemma found_queries_leq_size l O__t qs :
       queries_size (find_queries_with_label s l O__t qs) <= queries_size qs.
@@ -136,7 +138,7 @@ Section Theory.
       rewrite all_cat; apply_andP.
     Qed.
 
-    Lemma find_queries_with_label_cat l ty (qs1 qs2 : seq (@Query Name Vals)):
+    Lemma find_queries_with_label_cat l ty (qs1 qs2 : seq (@Query Vals)):
       find_queries_with_label s l ty (qs1 ++ qs2) = find_queries_with_label s l ty qs1 ++ find_queries_with_label s l ty qs2.
     Proof.
       funelim (find_queries_with_label s l ty qs1) => //=.
@@ -173,7 +175,7 @@ Section Theory.
         by rewrite queries_size_cat; ssromega.
     Qed.
 
-    Lemma find_map_inline_nil_func (f : Name -> seq (@Query Name Vals) -> seq Query) rname t ptys φ :
+    Lemma find_map_inline_nil_func (f : Name -> seq (@Query Vals) -> seq Query) rname t ptys φ :
       uniq ptys ->
       all (is_object_type s) ptys ->
       t \notin ptys ->
@@ -227,7 +229,7 @@ Section Theory.
     Qed.
 
     
-    Lemma find_all_f_equiv_to_sf_are_simple ty f α (φ : seq (@Query Name Vals)) :
+    Lemma find_all_f_equiv_to_sf_are_simple ty f α (φ : seq (@Query Vals)) :
       all (are_equivalent (SingleField f α)) (find_fields_with_response_name f φ) ->
       all (fun q => q.(is_simple_field_selection)) (find_queries_with_label s f ty φ).
     Proof.
@@ -309,7 +311,7 @@ Section Theory.
     Qed.
 
     
-    Lemma filter_queries_with_label_cat l (qs1 qs2 : seq (@Query Name Vals)) :
+    Lemma filter_queries_with_label_cat l (qs1 qs2 : seq (@Query Vals)) :
       filter_queries_with_label l (qs1 ++ qs2) = filter_queries_with_label l qs1 ++ filter_queries_with_label l qs2.
     Proof.
       elim: qs1  => //= hd tl IH.
@@ -319,7 +321,7 @@ Section Theory.
 
     
 
-    Lemma filter_all rname (φ : seq (@Query Name Vals)) :
+    Lemma filter_all rname (φ : seq (@Query Vals)) :
       all (has_response_name rname) φ ->
       filter_queries_with_label rname φ = [::].
     Proof.
@@ -339,13 +341,13 @@ Section Theory.
         by rewrite Heq IHqs.
     Qed.
 
-    Lemma filter_swap f1 f2 (φ : seq (@Query Name Vals)) :
+    Lemma filter_swap f1 f2 (φ : seq (@Query Vals)) :
       filter_queries_with_label f1 (filter_queries_with_label f2 φ) =
       filter_queries_with_label f2 (filter_queries_with_label f1 φ).
     Admitted.
 
     
-    Lemma filter_filter_absorb k (qs : seq (@Query Name Vals)) :
+    Lemma filter_filter_absorb k (qs : seq (@Query Vals)) :
       filter_queries_with_label k (filter_queries_with_label k qs) = filter_queries_with_label k qs.
     Admitted.
 
@@ -361,9 +363,9 @@ Section Theory.
 
    
 
-    Lemma filter_map_inline_func (f : Name -> seq (@Query Name Vals) -> seq Query) rname φ ptys :
+    Lemma filter_map_inline_func (f : Name -> seq (@Query Vals) -> seq Query) rname φ ptys :
       filter_queries_with_label rname [seq InlineFragment t (f t φ) | t <- ptys] =
-      [seq @InlineFragment Name Vals t (filter_queries_with_label rname (f t φ)) | t <- ptys].
+      [seq @InlineFragment Vals t (filter_queries_with_label rname (f t φ)) | t <- ptys].
     Proof.
         by elim: ptys => //= t ptys IH; simp filter_queries_with_label; rewrite IH.
     Qed.
@@ -389,7 +391,7 @@ Section Theory.
 
   Section Merging.
     
-    Lemma merge_selection_sets_cat (qs1 qs2 : seq (@Query Name Vals)) :
+    Lemma merge_selection_sets_cat (qs1 qs2 : seq (@Query Vals)) :
       merge_selection_sets (qs1 ++ qs2) = merge_selection_sets qs1 ++ merge_selection_sets qs2.
     Proof.
         by rewrite /merge_selection_sets map_cat flatten_cat.

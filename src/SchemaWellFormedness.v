@@ -197,7 +197,7 @@ Section WellFormedness.
           all (mem object_field.(fargs)) interface_field.(fargs) & 
           object_field.(return_type) <: interface_field.(return_type)].
     
-
+	
 
 
     

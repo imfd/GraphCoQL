@@ -3,8 +3,10 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 From Equations Require Import Equations.
-From extructures Require Import ord fmap fset.
 
+From CoqUtils Require Import string.
+
+Require Import Base.
 Require Import Schema.
 Require Import SchemaAux.
 Require Import SchemaWellFormedness.
@@ -16,35 +18,39 @@ Require Import SeqExtra.
 
 Require Import Ssromega.
 
-(* Require Import Arith. *)
 
 Section QueryAux.
 
   
-  Variables Name Vals : ordType.
+  Variable Vals : eqType.
 
-  Implicit Type queries : seq (@Query Name Vals).
-  Implicit Type query : @Query Name Vals.
+  Implicit Type queries : seq (@Query Vals).
+  Implicit Type query : @Query Vals.
 
 
   Section Base.
-    (** Boolean predicates to check what type the query is:
-      - Fields : Everything not an inline fragment
-      - Inline : An inline fragment 
-     **)
+    (** 
+        Checks whether the given query is a field selection.
+     *)
     Equations is_field query : bool :=
       {
         is_field (on _ { _ }) := false;
         is_field _ := true
       }.
 
+    (**
+       Checks whether the given query is an inline fragment.
+     *)
     Equations is_inline_fragment query : bool :=
       {
         is_inline_fragment (on _ { _ }) := true;
         is_inline_fragment _ := false
       }.
     
-   
+
+    (**
+       Checks whether the given query is labeled (ie. l:f or l:f { φ })
+     *)
     Definition is_labeled query : bool :=
       match query with
       | _ : _ [[ _ ]]
@@ -52,6 +58,9 @@ Section QueryAux.
       | _ => false
       end.
 
+    (**
+       Checks whether the given query has subqueries.
+     *)
     Definition has_subqueries query : bool :=
       match query with
       | _ [[ _ ]]
@@ -59,69 +68,14 @@ Section QueryAux.
       | _ => true
       end.
     
-    (** Extractors for queries **)
-    Equations qname query (Hfld : query.(is_field)) :  Name :=
-      {
-        qname (f [[ _ ]]) _ := f;
-        qname (_ : f [[ _ ]]) _ := f;
-        qname (f [[ _ ]] { _ }) _ := f;
-        qname (_ : f [[ _ ]] { _ }) _ := f;
-        qname (on _ { _ }) Hfld := _
-      }.
+    (** **** Extractors for queries *)
 
-    Equations oqname query : option Name :=
-      {
-        oqname (on _ { _ }) := None;
-        oqname q := Some (qname q _)
-      }.
-
-    
-    Equations qlabel query (Hlab : query.(is_labeled)) : Name :=
-      {
-        qlabel (label : _ [[ _ ]]) _ := label;
-        qlabel (label : _ [[ _ ]] { _ }) _ := label;
-        qlabel _ Hlab := _
-      }.
-
-    Equations oqlabel query : option Name :=
-      {
-        oqlabel (label : _ [[ _ ]]) := Some label;
-        oqlabel (label : _ [[ _ ]] { _ }) := Some label;
-        oqlabel _ := None
-      }.
-    
-    
-    Definition qsubqueries query : seq Query :=
-      match query with
-      | _ [[ _ ]] { φ }
-      | _ : _ [[ _ ]] { φ }
-      | on _ { φ } => φ
-      | _ => [::]
-      end.
-
-    
-    Equations qsubqueries' query (Hhas : query.(has_subqueries)) : seq (@Query Name Vals) :=
-      {
-        qsubqueries' query Hhas := query.(qsubqueries)
-      }.
-    
-    
-    Equations qargs query (Hfld : query.(is_field)) :  {fmap Name -> Vals} :=
-      {
-        qargs (_ [[ α ]]) _ := α;
-        qargs (_ : _ [[ α ]]) _ := α;
-        qargs (_ [[ α ]] { _ }) _ := α;
-        qargs (_ : _ [[ α ]] { _ }) _ := α;
-        qargs (on _ { _ }) Hfld := _
-      }.
-
-    Equations oqargs query : option {fmap Name -> Vals} :=
-      {
-        oqargs (on _ { _ }) := None;
-        oqargs q := Some (qargs q _)
-      }.
-
-    
+    (**
+       Get the response name of the given query. 
+       Inline fragment do not have a response name, therefore 
+       it is required that the given query is a field.
+     *)
+   
     Equations qresponse_name query (Hfld : query.(is_field)) :  Name :=
       {
         qresponse_name (f [[ _ ]]) _ := f;
@@ -131,42 +85,109 @@ Section QueryAux.
         qresponse_name (on _ { _ }) Hfld := _
       }.
 
+    (**
+       Get the response name of the given query or none if it 
+       is an inline fragment.
+     *)
     Equations oqresponse_name query : option Name :=
       {
         oqresponse_name (on _ { _ }) := None;
         oqresponse_name q := Some (qresponse_name q _)
       }.
 
-    
-    Equations has_response_name : Name -> @Query Name Vals -> bool :=
+    (**
+       Checks whether the given query has the given response name.
+       This is always false for inline fragments.
+     *)
+    Equations has_response_name : Name -> @Query Vals -> bool :=
       {
         has_response_name _ (on _ { _ }) := false;
         has_response_name rname q := (qresponse_name q _) == rname
       }.
 
-    Equations has_field_name : Name -> @Query Name Vals -> bool :=
+   
+
+    (**
+       Get the label of the given query.
+       It is required that the query is actually labeled.
+     *)
+    Equations qlabel query (Hlab : query.(is_labeled)) : Name :=
       {
-        has_field_name _ (on _ { _ }) := false;
-        has_field_name rname q := (qname q _) == rname
-      }.
-    
-    Equations have_same_field_name : @Query Name Vals -> @Query Name Vals -> bool :=
-      {
-        have_same_field_name (on _ { _ }) _ := false;
-        have_same_field_name _ (on _ { _ }) := false;
-        have_same_field_name q1 q2 := (qname q1 _) == (qname q2 _)
+        qlabel (label : _ [[ _ ]]) _ := label;
+        qlabel (label : _ [[ _ ]] { _ }) _ := label;
+        qlabel _ Hlab := _
       }.
 
-    Equations have_same_arguments : @Query Name Vals -> @Query Name Vals -> bool :=
+    (**
+       Get the label of the given query or none if
+       the query does not have a label.
+     *)
+    Equations oqlabel query : option Name :=
+      {
+        oqlabel (label : _ [[ _ ]]) := Some label;
+        oqlabel (label : _ [[ _ ]] { _ }) := Some label;
+        oqlabel _ := None
+      }.
+    
+    (**
+       Get the given query's subqueries.
+       If the query does not have subqueries, then it returns
+       an empty list.
+     *)
+    Definition qsubqueries query : seq Query :=
+      match query with
+      | _ [[ _ ]] { φ }
+      | _ : _ [[ _ ]] { φ }
+      | on _ { φ } => φ
+      | _ => [::]
+      end.
+
+    
+    Equations qsubqueries' query (Hhas : query.(has_subqueries)) : seq (@Query Vals) :=
+      {
+        qsubqueries' query Hhas := query.(qsubqueries)
+      }.
+    
+    (**
+       Get the given query's arguments.
+       It is required that the query is not an inline fragment.
+     *)
+    Equations qargs query (Hfld : query.(is_field)) :  seq (Name * Vals) :=
+      {
+        qargs (_ [[ α ]]) _ := α;
+        qargs (_ : _ [[ α ]]) _ := α;
+        qargs (_ [[ α ]] { _ }) _ := α;
+        qargs (_ : _ [[ α ]] { _ }) _ := α;
+        qargs (on _ { _ }) Hfld := _
+      }.
+
+
+    
+
+    (**
+       Checks whether two queries have the same response name.
+
+       It is always false if either is an inline fragment.
+     *)
+    Equations have_same_response_name : @Query Vals -> @Query Vals -> bool :=
+      {
+        have_same_response_name (on _ { _ }) _ := false;
+        have_same_response_name _ (on _ { _ }) := false;
+        have_same_response_name q1 q2 := (qresponse_name q1 _) == (qresponse_name q2 _)
+      }.
+
+    Equations have_same_arguments : @Query Vals -> @Query Vals -> bool :=
       {
         have_same_arguments (on _ { _ }) _ := false;
         have_same_arguments _ (on _ { _ }) := false;
         have_same_arguments q1 q2 := (qargs q1 _) == (qargs q2 _)
       }.
 
-    
-
-    Equations is_simple_field_selection : @Query Name Vals -> bool :=
+    (**
+       Checks whether the given query is a simple field selection.
+       Simple field selections are fields without subqueries.
+     *)
+    Equations is_simple_field_selection : @Query Vals -> bool :=
       {
         is_simple_field_selection (_ [[_]]) := true;
         is_simple_field_selection (_ : _ [[_]]) := true;
@@ -174,19 +195,28 @@ Section QueryAux.
       }.
 
     
-    
-    Equations is_nested_field_selection : @Query Name Vals -> bool :=
+    (**
+       Checks whether the given query is a nested field selection.
+       Nested field selections are fields with subqueries.
+     *)
+    Equations is_nested_field_selection : @Query Vals -> bool :=
       {
         is_nested_field_selection (_ [[_]] { _ }) := true;
         is_nested_field_selection (_ : _ [[_]] { _ }) := true;
         is_nested_field_selection _ := false
       }.
 
-    
-    Definition are_equivalent (q1 q2 : @Query Name Vals) : bool :=
+    (**
+       Checks whether two queries are equivalent.
+       This equivalence refers to whether both queries will
+       produce responses with the same name and if both 
+       share the same arguments.
+     *)
+    (* FIXME : Rename *)
+    Definition are_equivalent (q1 q2 : @Query Vals) : bool :=
       [&& (q1.(is_simple_field_selection) && (q2.(is_simple_field_selection)) ||
            q1.(is_nested_field_selection) && q2.(is_nested_field_selection)),
-       have_same_field_name q1 q2 & have_same_arguments q1 q2].
+       have_same_response_name q1 q2 & have_same_arguments q1 q2].
     
   End Base.
   
@@ -207,18 +237,20 @@ Section QueryAux.
         queries_size (hd :: tl) := query_size hd + queries_size tl
       }.
 
-    Equations max_query_size query : nat :=
-      {
-        max_query_size (NestedField _ _ φ) := (max_queries_size φ).+1;
-        max_query_size (NestedLabeledField _ _ _ φ) := (max_queries_size φ).+1;
-        max_query_size (InlineFragment _ φ) := (max_queries_size φ).+1;
-        max_query_size _ := 0
-      }
-    where max_queries_size queries : nat :=
-            {
-              max_queries_size [::] := 0;
-              max_queries_size (q :: φ) := max (max_query_size q) (max_queries_size φ)
-            }.
+
+    
+    (* Equations max_query_size query : nat := *)
+    (*   { *)
+    (*     max_query_size (NestedField _ _ φ) := (max_queries_size φ).+1; *)
+    (*     max_query_size (NestedLabeledField _ _ _ φ) := (max_queries_size φ).+1; *)
+    (*     max_query_size (InlineFragment _ φ) := (max_queries_size φ).+1; *)
+    (*     max_query_size _ := 0 *)
+    (*   } *)
+    (* where max_queries_size queries : nat := *)
+    (*         { *)
+    (*           max_queries_size [::] := 0; *)
+    (*           max_queries_size (q :: φ) := max (max_query_size q) (max_queries_size φ) *)
+    (*         }. *)
     
 
   End Size.
@@ -227,16 +259,24 @@ Section QueryAux.
   
   Section DefPreds.
     
-    Variable s : @wfSchema Name Vals.
+    Variable s : @wfGraphQLSchema Vals.
 
 
     
     (**
-     Checks whether the type guard in a fragment is valid wrt the
-     actual type of the data (Object type).
+     Checks whether a type is valid with respect to another type. 
+
+     This is used when checking that a fragment's type guard is 
+     valid with respect to the actual type of the data where the 
+     fragment is being evaluated (which corresponds to an object type).
+
+     fragment_type ∈ Ot 
+     fragment_type = object_type
+     [――――――――――――――――――――――――――]
+       fragment_type applies
 
     https://graphql.github.io/graphql-spec/June2018/#DoesFragmentTypeApply() 
-     **)
+     *)
     Definition does_fragment_type_apply object_type fragment_type :=
       if is_object_type s fragment_type then
         object_type == fragment_type
@@ -257,14 +297,14 @@ Section QueryAux.
 
   Section Find.
 
-    Variable (s : @wfSchema Name Vals).
+    Variable (s : @wfGraphQLSchema Vals).
     
     (** Find all queries with response name equal to given parameter.
         In case there is a fragment, it first checks that the fragments' guard 
         applies to the given object type, then it may proceed to collect in its
         subqueries **)
-    Equations? find_queries_with_label (label : Name) (object_type : @NamedType Name) (queries : seq (@Query Name Vals)) :
-      seq (@Query Name Vals) by wf (queries_size queries) :=
+    Equations? find_queries_with_label (label : Name) (object_type : Name) (queries : seq (@Query Vals)) :
+      seq (@Query Vals) by wf (queries_size queries) :=
       {
         find_queries_with_label _ _ [::] := [::];
 
@@ -290,8 +330,8 @@ Section QueryAux.
     (** Find all field selections with response name equal to the one given as parameter.
         It collects all, regardless of fragments' guards 
      **)
-    Equations? find_fields_with_response_name (rname : Name) (φ : seq (@Query Name Vals)) :
-      seq (@Query Name Vals) by wf (queries_size φ) :=
+    Equations? find_fields_with_response_name (rname : Name) (φ : seq (@Query Vals)) :
+      seq (@Query Vals) by wf (queries_size φ) :=
       {
         find_fields_with_response_name _ [::] := [::];
         
@@ -341,8 +381,8 @@ Section QueryAux.
 
   Section Filter.
     (** Filters all selections with response name equal to the one given as parameter **)
-    Equations? filter_queries_with_label (label : Name) (queries : seq (@Query Name Vals)) :
-      seq (@Query Name Vals) by wf (queries_size queries) :=
+    Equations? filter_queries_with_label (label : Name) (queries : seq (@Query Vals)) :
+      seq (@Query Vals) by wf (queries_size queries) :=
       {
         filter_queries_with_label _ [::] := [::];
 
@@ -378,36 +418,35 @@ End QueryAux.
 
 
 
-Arguments is_field [Name Vals].
-Arguments is_inline_fragment [Name Vals].
-Arguments is_labeled [Name Vals].
-Arguments has_subqueries [Name Vals].
-Arguments is_simple_field_selection [Name Vals].
-Arguments is_nested_field_selection [Name Vals].
+Arguments is_field [Vals].
+Arguments is_inline_fragment [Vals].
+Arguments is_labeled [Vals].
+Arguments has_subqueries [Vals].
+Arguments is_simple_field_selection [Vals].
+Arguments is_nested_field_selection [Vals].
 
-Arguments qname [Name Vals].
-Arguments oqname [Name Vals].
-Arguments qlabel [Name Vals].
-Arguments oqlabel [Name Vals].
-Arguments qargs [Name Vals].
-Arguments oqargs [Name Vals].
-Arguments qsubqueries [Name Vals].
-Arguments qsubqueries' [Name Vals].
-Arguments qresponse_name [Name Vals].
-Arguments oqresponse_name [Name Vals].
+Arguments qresponse_name [Vals].
+Arguments oqresponse_name [Vals].
+Arguments qlabel [Vals].
+Arguments oqlabel [Vals].
+Arguments qargs [Vals].
+(* Arguments oqargs [Vals]. *)
+Arguments qsubqueries [Vals].
+Arguments qsubqueries' [Vals].
+Arguments qresponse_name [Vals].
+Arguments oqresponse_name [Vals].
 
-Arguments query_size [Name Vals].
-Arguments queries_size [Name Vals].
-Arguments has_response_name [Name Vals].
-Arguments has_field_name [Name Vals].
-Arguments have_same_field_name [Name Vals].
-Arguments have_same_arguments [Name Vals].
-Arguments are_equivalent [Name Vals].
+Arguments query_size [Vals].
+Arguments queries_size [Vals].
+Arguments has_response_name [Vals].
+Arguments have_same_response_name [Vals].
+Arguments have_same_arguments [Vals].
+Arguments are_equivalent [Vals].
 
-Arguments does_fragment_type_apply [Name Vals].
-Arguments filter_queries_with_label [Name Vals].
+Arguments does_fragment_type_apply [Vals].
+Arguments filter_queries_with_label [Vals].
 
-Arguments find_queries_with_label [Name Vals].
-Arguments find_fields_with_response_name [Name Vals].
+Arguments find_queries_with_label [Vals].
+Arguments find_fields_with_response_name [Vals].
 
-Arguments merge_selection_sets [Name Vals].
+Arguments merge_selection_sets [Vals].

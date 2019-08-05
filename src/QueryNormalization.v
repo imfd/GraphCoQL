@@ -5,8 +5,8 @@ Set Asymmetric Patterns.
 
 From Equations Require Import Equations.
 
-From extructures Require Import ord.
 
+Require Import Base.
 Require Import Schema.
 Require Import SchemaAux.
 Require Import SchemaWellFormedness.
@@ -26,12 +26,12 @@ Require Import QueryTactics.
 
 Section QueryRewrite.
 
-  Variables Name Vals : ordType.
-  Implicit Type schema : @wfSchema Name Vals.
-  Implicit Type query : @Query Name Vals.
+  Variables Vals : eqType.
+  Implicit Type schema : @wfGraphQLSchema Vals.
+  Implicit Type query : @Query Vals.
 
 
-  Variable s : @wfSchema Name Vals.
+  Variable s : @wfGraphQLSchema Vals.
   
 
 
@@ -82,8 +82,8 @@ Section QueryRewrite.
 
   
   (* Supposed to be applied over an object type *)
-  Equations? reground (type_in_scope : @NamedType Name) (queries : seq (@Query Name Vals)) :
-    seq (@Query Name Vals) by wf (queries_size queries) :=
+  Equations? reground (type_in_scope : Name) (queries : seq (@Query Vals)) :
+    seq (@Query Vals) by wf (queries_size queries) :=
     {
       reground _ [::] := [::];
 
@@ -144,8 +144,8 @@ Section QueryRewrite.
     all: do [leq_queries_size].
   Qed.
 
-  Equations ground_queries (type_in_scope : @NamedType Name) (queries : seq (@Query Name Vals)) :
-    seq (@Query Name Vals) :=
+  Equations ground_queries (type_in_scope : Name) (queries : seq (@Query Vals)) :
+    seq (@Query Vals) :=
     {
       ground_queries ty qs
         with is_object_type s ty :=
@@ -159,5 +159,5 @@ Section QueryRewrite.
 End QueryRewrite.
 
 
-Arguments reground [Name Vals].
-Arguments ground_queries [Name Vals].
+Arguments reground [Vals].
+Arguments ground_queries [Vals].
