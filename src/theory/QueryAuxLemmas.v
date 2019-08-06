@@ -347,10 +347,13 @@ Section Theory.
     Admitted.
 
     
-    Lemma filter_filter_absorb k (qs : seq (@Query Vals)) :
-      filter_queries_with_label k (filter_queries_with_label k qs) = filter_queries_with_label k qs.
-    Admitted.
-
+    Lemma filter_filter_absorb rname (φ : seq (@Query Vals)) :
+      filter_queries_with_label rname (filter_queries_with_label rname φ) = filter_queries_with_label rname φ.
+    Proof.
+      funelim (filter_queries_with_label rname φ) => //=; simp filter_queries_with_label; do ? by rewrite Heq /= H.
+        by rewrite H H0.
+    Qed.
+    
     (* Lemma filter_preserves_definition rname qs ty : *)
     (*   are_defined qs ty -> *)
     (*   are_defined (filter_queries_with_label rname qs) ty. *)

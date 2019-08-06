@@ -26,23 +26,16 @@ Section Theory.
   Section Lookup.
     
 
-    (* Lemma lookup_in_schemaP (ty : Name) tdef : *)
-    (*   reflect (lookup_type s ty = Some tdef) *)
-    (*           ((ty, tdef) \in s.(type_definitions)). *)
-    (* Proof. *)
-    (*   apply: (iffP idP). *)
-    (*   - by move/getmP. *)
-    (*   - by rewrite /lookup_type; move/getmP. *)
-    (* Qed. *)
-
-    (* Lemma fields_E (tdef : TypeDefinition) : *)
-    (*   (tdef.(tdname), tdef) \in s.(type_definitions) -> *)
-    (*                             fields s tdef.(tdname) = tdef.(tfields). *)
-    (* Proof. *)
-    (*   move/lookup_in_schemaP => Hlook. *)
-    (*   rewrite /fields /tfields Hlook. *)
-    (*     by case: tdef Hlook.  *)
-    (* Qed. *)
+    
+    Lemma lookup_type_in_tdefs ty tdef :
+      lookup_type s ty = Some tdef -> tdef \in s.(type_definitions).
+    Proof.
+      rewrite /lookup_type.
+      elim: type_definitions => //= tdef' tdefs IH; case: ifP => /= [_ | _ Hgf].
+      - case=> ->; apply: mem_head.
+      - by apply: mem_tail; apply: IH.
+    Qed.
+   
 
     Lemma lookup_type_name_wf ty tdef :
       lookup_type s ty = Some tdef ->
@@ -302,10 +295,10 @@ Section Theory.
     
     
 
-    Lemma declares_in_implementation t ty :
-      (declares_implementation s t ty) <-> (t \in implementation s ty).
-    Proof.
-    Admitted.
+    (* Lemma declares_in_implementation t ty : *)
+    (*   (declares_implementation s t ty) <-> (t \in implementation s ty). *)
+    (* Proof. *)
+    (* Admitted. *)
 
     (* Lemma qimplements_interface_is_object (ity : string) tdef : *)
     (*   (tdef.(tdname), tdef) \in s.(type_definitions) -> *)
@@ -329,14 +322,8 @@ Section Theory.
       case: tdef Hlook => // o intfs flds Hlook Hin.
         by rewrite is_object_type_equation_1 Hlook.
     Qed.
-    
-    Lemma in_implementation_is_object ity ty :
-      ty \in implementation s ity ->
-             is_object_type s ty.
-    Proof.
-      move/declares_in_implementation.
-      apply: declares_implementation_is_object.
-    Qed.
+
+  
     
     (* Lemma implements_declares_implementation (ity : string) (tdef : TypeDefinition) : *)
     (*   (tdef.(tdname), tdef) \in s.(type_definitions) -> *)

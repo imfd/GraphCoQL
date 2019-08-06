@@ -5,9 +5,9 @@ Unset Printing Implicit Defensive.
 Set Asymmetric Patterns.
 
 From Equations Require Import Equations.
+From CoqUtils Require Import string.
 
-From extructures Require Import ord.
-
+Require Import Base. 
 Require Import Schema.
 Require Import SchemaAux.
 Require Import SchemaAuxLemmas.
@@ -44,9 +44,9 @@ Section Theory.
   Transparent qresponse_name.
 
     
-  Variables (Name Vals : ordType).
+  Variables (Vals : eqType).
   
-  Variable (s : @wfSchema Name Vals).
+  Variable (s : @wfGraphQLSchema Vals).
 
   Lemma reground_are_grounded2 ty φ :
     is_object_type s ty ->
@@ -62,7 +62,7 @@ Section Theory.
 
     - move=> fld ty f α β φ IHsub IH Hrty Hlook Hscope; rewrite Hscope /=; apply_and3P; last by apply: IH.
       simp is_grounded2; rewrite Hlook /=.
-      have := (@in_possible_types_is_object Name Vals s fld.(return_type)).
+      have := (@in_possible_types_is_object Vals s fld.(return_type)).
       elim: get_possible_types => //= t ptys IHptys Hinobj.
       rewrite Hrty /=; apply_and3P.
       simp is_grounded2; apply_andP.
@@ -75,7 +75,7 @@ Section Theory.
 
     - move=> fld ty f l α β φ IHsub IH Hrty Hlook Hscope; rewrite Hscope /=; apply_and3P; last by apply: IH.
       simp is_grounded2; rewrite Hlook /=.
-      have := (@in_possible_types_is_object Name Vals s fld.(return_type)).
+      have := (@in_possible_types_is_object Vals s fld.(return_type)).
       elim: get_possible_types => //= t ptys IHptys Hinobj.
       rewrite Hrty /=; apply_and3P.
       simp is_grounded2; apply_andP.
@@ -90,7 +90,7 @@ Section Theory.
     apply_funelim (ground_queries s ty φ) => /=; clear ty φ.
     - by move=> ty φ Hscope; apply: reground_are_grounded2.
     - move=> ty φ Hscope.
-      have := (@in_possible_types_is_object Name Vals s ty).
+      have := (@in_possible_types_is_object Vals s ty).
       elim: get_possible_types => //= t ptys IH Hinobj.
       rewrite Hscope /=; apply_and3P.
       * simp is_grounded2; apply_andP; [| apply: reground_are_grounded2]; by apply: Hinobj; apply: mem_head.
@@ -132,7 +132,7 @@ Section Theory.
   Qed.
   
   
-  Lemma inlining_preserves_non_redundancy (φ : seq (@Query Name Vals)) ptys :
+  Lemma inlining_preserves_non_redundancy (φ : seq (@Query Vals)) (ptys : seq Name) :
     are_non_redundant φ ->
     uniq ptys ->
     are_non_redundant [seq InlineFragment t φ | t <- ptys].
@@ -155,7 +155,7 @@ Section Theory.
     - intros; simp are_non_redundant; apply_and3P => /=; [ by apply: reground_preserves_not_similar | by apply: H | by apply: H0].
 
     - intros; simp are_non_redundant; apply_and3P => /=; [ by apply: reground_preserves_not_similar | | by apply: H0].
-      have  := (@in_possible_types_is_object Name Vals s f.(return_type)).
+      have  := (@in_possible_types_is_object Vals s f.(return_type)).
       have  := (uniq_get_possible_types s f.(return_type)).
       elim: get_possible_types => //= t ptys IH /andP [Hnin Huniq] Hinobj.
       simp are_non_redundant; apply_and3P => /=; last by apply: IH => //= t' Hin'; apply: Hinobj; apply: mem_tail.
@@ -166,7 +166,7 @@ Section Theory.
     - intros; simp are_non_redundant; apply_and3P => /=; [ by apply: reground_preserves_not_similar | by apply: H | by apply: H0].
 
     - intros; simp are_non_redundant; apply_and3P => /=; [ by apply: reground_preserves_not_similar | | by apply: H0].
-      have  := (@in_possible_types_is_object Name Vals s f.(return_type)).
+      have  := (@in_possible_types_is_object Vals s f.(return_type)).
       have  := (uniq_get_possible_types s f.(return_type)).
       elim: get_possible_types => //= t ptys IH /andP [Hnin Huniq] Hinobj.
       simp are_non_redundant; apply_and3P => /=; last by apply: IH => //= t' Hin'; apply: Hinobj; apply: mem_tail.
@@ -181,7 +181,7 @@ Section Theory.
   Proof.
     apply_funelim (ground_queries s ty φ) => //=; clear ty φ; first by intros; apply: reground_are_non_redundant.
     move=> ty φ Hscope.
-    have  := (@in_possible_types_is_object Name Vals s ty).
+    have  := (@in_possible_types_is_object Vals s ty).
     have  := (uniq_get_possible_types s ty).
     elim: get_possible_types => //= t ptys IH /andP [Hnin Huniq] Hinobj.
     simp are_non_redundant; apply_and3P => /=; last by apply: IH => //= t' Hin'; apply: Hinobj; apply: mem_tail.

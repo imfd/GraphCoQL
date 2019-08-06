@@ -2,9 +2,12 @@ From mathcomp Require Import all_ssreflect.
 Unset Printing Implicit Defensive.
 Set Asymmetric Patterns.
 
-From extructures Require Import ord fmap fset.
-From Equations Require Import Equations.
 
+From Equations Require Import Equations.
+From CoqUtils Require Import string.
+
+
+Require Import Base.
 Require Import Schema.
 Require Import SchemaAux.
 Require Import SchemaAuxLemmas.
@@ -31,14 +34,14 @@ Require Import NRGTNFLemmas.
 Require Import QueryNormalization.
 Require Import QueryNormalizationLemmas.
 
-Require Import QuerySemantic.
 
 Require Import SeqExtra.
 Require Import QueryTactics.
 
+Require Import QuerySemantic.
 
 Section Theory.
-  Transparent qresponse_name has_response_name qname.
+  Transparent qresponse_name has_response_name.
   
   Ltac apply_andP := apply/andP; split=> //.
   Ltac apply_and3P := apply/and3P; split=> //.
@@ -51,31 +54,31 @@ Section Theory.
     repeat
       match goal with
       | [ H : lookup_field_in_type _ _ _ = _ |- context [ lookup_field_in_type _ _ _] ] => rewrite H /=
-      | [ H : (fields _) _ = _ |- context [ (fields _) _] ] => rewrite H /=
+      | [ H : (field_seq_value nfields _) _ = _ |- context [ field_seq_value (nfields _) _] ] => rewrite H /=
 
       | [|- context [ lookup_field_in_type _ _ _] ] => lookup
-      | [|- context [ ?u.(fields) ] ] =>
+      | [|- context [ field_seq_value ?u.(nfields) ] ] =>
         let Hv := fresh "Hv" in
         let v := fresh "v" in
         let vs := fresh "vs" in
-        case Hv : (u.(fields) _) => [ [v | vs] |] /=
+        case Hv : (field_seq_value u.(nfields) _) => [ [v | vs] |] /=
       | [ H : does_fragment_type_apply _ _ _ = _ |- context [ does_fragment_type_apply _ _ _] ] => rewrite H /=
       | [ |- context [ _, _ ⊢ ⟦ _ ⟧ˢ in _ ] ] => simp execute_selection_set
       end.
 
 
-  Variables (Name Vals : ordType) (s : @wfSchema Name Vals) (g : conformedGraph s).
+  Variables (Vals : eqType) (s : @wfGraphQLSchema Vals) (g : conformedGraph s).
 
 
   
-  Lemma exec_frags_nil_func (f : Name -> seq (@Query Name Vals) -> seq Query) u ptys φ :
+  Lemma exec_frags_nil_func (f : Name -> seq (@Query Vals) -> seq Query) u ptys φ :
     uniq ptys ->
     all (is_object_type s) ptys ->
-    u.(type) \notin ptys ->
+    u.(ntype) \notin ptys ->
     s, g ⊢ ⟦ [seq InlineFragment t (f t φ) | t <- ptys] ⟧ˢ in u = [::].
   Proof.
     elim: ptys => //= t ptys IH /andP [Hnin Huniq] /andP [Hobj Hinobj] Hunin.
-    have /negbTE Hneq : u.(type) != t by move/memPn: Hunin => /(_ t (mem_head t ptys)); rewrite eq_sym.
+    have /negbTE Hneq : u.(ntype) != t by move/memPn: Hunin => /(_ t (mem_head t ptys)); rewrite eq_sym.
     exec; rewrite /does_fragment_type_apply Hobj Hneq /=.
     apply: IH => //=.
     move: Hunin; rewrite /negb; case: ifP => //=.
@@ -85,14 +88,14 @@ Section Theory.
   Lemma exec_frags_nil u ptys φ :
     uniq ptys ->
     all (is_object_type s) ptys ->
-    u.(type) \notin ptys ->
+    u.(ntype) \notin ptys ->
     s, g ⊢ ⟦ [seq InlineFragment t φ | t <- ptys] ⟧ˢ in u = [::].
   Proof.
       by apply: (exec_frags_nil_func (fun t qs => qs)).
   Qed.
   
   (* Lemma exec_frags_nil_get_types u ty φ : *)
-  (*   u.(type) \notin get_possible_types s ty -> *)
+  (*   u.(ntype) \notin get_possible_types s ty -> *)
   (*   ⟦ [seq InlineFragment t φ | t <- get_possible_types s ty] ⟧ˢ in u = [::]. *)
   (* Proof. *)
   (*     by move=> Hnin; apply: exec_frags_nil => //=; [apply: uniq_get_possible_types | apply/allP; apply: in_possible_types_is_object]. *)
@@ -100,11 +103,11 @@ Section Theory.
 
 
 
-  Lemma exec_cat_frags_func (f : Name -> seq (@Query Name Vals) -> seq Query) ptys u φ1 φ2 :
+  Lemma exec_cat_frags_func (f : Name -> seq (@Query Vals) -> seq Query) ptys u φ1 φ2 :
     (forall rname t φ, filter_queries_with_label rname (f t φ) = f t (filter_queries_with_label rname φ)) ->
     uniq ptys ->
     all (is_object_type s) ptys ->
-    u.(type) \notin ptys ->
+    u.(ntype) \notin ptys ->
     s, g ⊢ ⟦ φ1 ++ [seq InlineFragment t (f t φ2) | t <- ptys] ⟧ˢ in u = s, g ⊢ ⟦ φ1 ⟧ˢ in u.   
   Proof.
     move=> Hfilterswap.
@@ -148,14 +151,14 @@ Section Theory.
   Lemma exec_cat_frags ptys u φ1 φ2 :
     uniq ptys ->
     all (is_object_type s) ptys ->
-    u.(type) \notin ptys ->
+    u.(ntype) \notin ptys ->
     s, g ⊢ ⟦ φ1 ++ [seq InlineFragment t φ2 | t <- ptys] ⟧ˢ in u = s, g ⊢ ⟦ φ1 ⟧ˢ in u.                                                            
   Proof.
       by apply: (exec_cat_frags_func (fun t qs => qs)).
   Qed.
 
   Lemma exec_cat_frags_get_types ty u φ1 φ2 :
-    u.(type) \notin get_possible_types s ty ->
+    u.(ntype) \notin get_possible_types s ty ->
     s, g ⊢ ⟦ φ1 ++ [seq InlineFragment t φ2 | t <- get_possible_types s ty] ⟧ˢ in u =
                                                                           s, g ⊢ ⟦ φ1 ⟧ˢ in u.                                                                      
   Proof.
@@ -164,25 +167,25 @@ Section Theory.
   
 
   
-  Lemma exec_inlined_func (f : Name -> seq (@Query Name Vals) -> seq Query) ptys u φ :
+  Lemma exec_inlined_func (f : Name -> seq (@Query Vals) -> seq Query) ptys u φ :
     (forall rname t φ, filter_queries_with_label rname (f t φ) = f t (filter_queries_with_label rname φ)) ->
     uniq ptys ->
     all (is_object_type s) ptys ->
-    u.(type) \in ptys ->
-                 s, g ⊢ ⟦ [seq InlineFragment t (f t φ) | t <- ptys] ⟧ˢ in u =  s, g ⊢ ⟦ [:: InlineFragment u.(type) (f u.(type) φ) ] ⟧ˢ in u.
+    u.(ntype) \in ptys ->
+                 s, g ⊢ ⟦ [seq InlineFragment t (f t φ) | t <- ptys] ⟧ˢ in u =  s, g ⊢ ⟦ [:: InlineFragment u.(ntype) (f u.(ntype) φ) ] ⟧ˢ in u.
   Proof.
     move=> Hswap.
     elim: ptys => //= t ptys IH /andP [Hnin Huniq] /andP [Hobj Hinobj].
     rewrite inE => /orP [/eqP Heq | Hin].
     - rewrite -Heq in Hnin *; exec.
-      have -> /= : does_fragment_type_apply s u.(type) u.(type).
+      have -> /= : does_fragment_type_apply s u.(ntype) u.(ntype).
         by apply: object_applies_to_itself; rewrite Heq; apply: Hobj.
           by rewrite cats0; apply: exec_cat_frags_func.
           
     - rewrite {1}execute_selection_set_equation_6.
-      have -> /= : does_fragment_type_apply s u.(type) t = false.
+      have -> /= : does_fragment_type_apply s u.(ntype) t = false.
       rewrite /does_fragment_type_apply.
-      move/memPn: Hnin => /(_ u.(type) Hin) /negbTE.
+      move/memPn: Hnin => /(_ u.(ntype) Hin) /negbTE.
         by rewrite Hobj /=.
           by apply: IH.
   Qed.
@@ -190,8 +193,8 @@ Section Theory.
   Lemma exec_inlined ptys u φ :
     uniq ptys ->
     all (is_object_type s) ptys ->
-    u.(type) \in ptys ->
-                 s, g ⊢ ⟦ [seq InlineFragment t φ | t <- ptys] ⟧ˢ in u =  s, g ⊢ ⟦ [:: InlineFragment u.(type) φ ] ⟧ˢ in u.
+    u.(ntype) \in ptys ->
+                 s, g ⊢ ⟦ [seq InlineFragment t φ | t <- ptys] ⟧ˢ in u =  s, g ⊢ ⟦ [:: InlineFragment u.(ntype) φ ] ⟧ˢ in u.
   Proof.
       by apply: (exec_inlined_func (fun t qs => qs)).
   Qed.
@@ -201,9 +204,9 @@ Section Theory.
 
   Lemma reground_exec φ u :
     u \in g.(nodes) ->
-          s, g ⊢ ⟦ reground s u.(type) φ ⟧ˢ in u =  s, g ⊢ ⟦ φ ⟧ˢ in u.
+          s, g ⊢ ⟦ reground s u.(ntype) φ ⟧ˢ in u =  s, g ⊢ ⟦ φ ⟧ˢ in u.
   Proof.    
-    funelim (reground s u.(type) φ) => //=; do ? by exec.
+    funelim (reground s u.(ntype) φ) => //=; do ? by exec.
     all: do ? [by intros; exec; rewrite filter_reground_swap filter_filter_absorb // H].
     - move=> Huin; exec.
       case Hrty : f.(return_type) => [rty| rty] /=.
@@ -216,12 +219,12 @@ Section Theory.
         apply: ohead_in_nodes; last by apply: Hv.
         apply/allP.
           by apply: neighbours_are_in_nodes.
-          have Hvtype : v.(type) = rty.
+          have Hvtype : v.(ntype) = rty.
           rewrite Hrty /= in Heq.
           apply: (in_object_possible_types Heq).
-          have Hlook : lookup_field_in_type s u.(type) (Field response_name1 arguments1) = Some f by [].
+          have Hlook : lookup_field_in_type s u.(ntype) (Field response_name1 arguments1) = Some f by [].
           move/ohead_in: Hv => Hin.
-          move: (@neighbours_are_subtype_of_field Name Vals s g u (Field response_name1 arguments1) f Hlook v Hin).
+          move: (@neighbours_are_subtype_of_field Vals s g u (Field response_name1 arguments1) f Hlook v Hin).
             by rewrite Hrty.
               by apply: H => //; rewrite Hvtype.
               
@@ -233,10 +236,10 @@ Section Theory.
         rewrite Hrty /= in H.
         have Hvin : v \in g.(nodes).
         apply: neighbours_are_in_nodes; exact: Hin.
-        have Hvtype : v.(type) = rty.
+        have Hvtype : v.(ntype) = rty.
         rewrite Hrty in Heq; apply: (in_object_possible_types Heq).
-        have Hlook : lookup_field_in_type s u.(type) (Field response_name1 arguments1) = Some f by [].
-        move: (@neighbours_are_subtype_of_field Name Vals s g u (Field response_name1 arguments1) f Hlook v Hin).
+        have Hlook : lookup_field_in_type s u.(ntype) (Field response_name1 arguments1) = Some f by [].
+        move: (@neighbours_are_subtype_of_field Vals s g u (Field response_name1 arguments1) f Hlook v Hin).
           by rewrite Hrty /=. (* ?? *)
             by apply: H => //; rewrite Hvtype.
             
@@ -252,7 +255,7 @@ Section Theory.
         apply: ohead_in_nodes; last by apply: Hv.
           by apply/allP; apply: neighbours_are_in_nodes.
           have Hvobj := (node_in_graph_has_object_type Hvin).
-          have -> /= : does_fragment_type_apply s v.(type) v.(type) by apply: object_applies_to_itself.
+          have -> /= : does_fragment_type_apply s v.(ntype) v.(ntype) by apply: object_applies_to_itself.
           rewrite cats0.
             by apply: H.
             
@@ -261,7 +264,7 @@ Section Theory.
                   by apply/allP; apply: in_possible_types_is_object.
 
                   move/ohead_in: Hv => Hin.
-                  move: (@neighbours_are_subtype_of_field Name Vals s g u (Field response_name1 arguments1) f Heq0 v Hin).
+                  move: (@neighbours_are_subtype_of_field Vals s g u (Field response_name1 arguments1) f Heq0 v Hin).
                     by rewrite Hrty.
                     
       * rewrite filter_reground_swap filter_filter_absorb // H0 //; congr cons; congr pair; congr Array.
@@ -271,14 +274,14 @@ Section Theory.
         exec.
         have Hvin : v \in g.(nodes) by apply: neighbours_are_in_nodes; exact: Hin.
         have Hvobj := (node_in_graph_has_object_type Hvin).
-        have -> /= : does_fragment_type_apply s v.(type) v.(type) by apply: object_applies_to_itself.
+        have -> /= : does_fragment_type_apply s v.(ntype) v.(ntype) by apply: object_applies_to_itself.
         rewrite cats0.
           by apply: H.
             by apply: filter_reground_swap.
               by apply: uniq_get_possible_types.
                 by apply/allP; apply: in_possible_types_is_object.  
 
-                move: (@neighbours_are_subtype_of_field Name Vals s g u (Field response_name1 arguments1) f Heq0 v Hin).
+                move: (@neighbours_are_subtype_of_field Vals s g u (Field response_name1 arguments1) f Heq0 v Hin).
                   by rewrite Hrty.
                   
 
@@ -293,12 +296,12 @@ Section Theory.
         apply: ohead_in_nodes; last by apply: Hv.
         apply/allP.
           by apply: neighbours_are_in_nodes.
-          have Hvtype : v.(type) = rty.
+          have Hvtype : v.(ntype) = rty.
           rewrite Hrty /= in Heq.
           apply: (in_object_possible_types Heq).
-          have Hlook : lookup_field_in_type s u.(type) (Field response_name2 arguments2) = Some f by [].
+          have Hlook : lookup_field_in_type s u.(ntype) (Field response_name2 arguments2) = Some f by [].
           move/ohead_in: Hv => Hin.
-          move: (@neighbours_are_subtype_of_field Name Vals s g u (Field response_name2 arguments2) f Hlook v Hin).
+          move: (@neighbours_are_subtype_of_field Vals s g u (Field response_name2 arguments2) f Hlook v Hin).
             by rewrite Hrty.
               by apply: H => //; rewrite Hvtype.
               
@@ -310,10 +313,10 @@ Section Theory.
         rewrite Hrty /= in H.
         have Hvin : v \in g.(nodes).
         apply: neighbours_are_in_nodes; exact: Hin.
-        have Hvtype : v.(type) = rty.
+        have Hvtype : v.(ntype) = rty.
         rewrite Hrty in Heq; apply: (in_object_possible_types Heq).
-        have Hlook : lookup_field_in_type s u.(type) (Field response_name2 arguments2) = Some f by [].
-        move: (@neighbours_are_subtype_of_field Name Vals s g u (Field response_name2 arguments2) f Hlook v Hin).
+        have Hlook : lookup_field_in_type s u.(ntype) (Field response_name2 arguments2) = Some f by [].
+        move: (@neighbours_are_subtype_of_field Vals s g u (Field response_name2 arguments2) f Hlook v Hin).
           by rewrite Hrty /=. (* ?? *)
             by apply: H => //; rewrite Hvtype.
             
@@ -329,7 +332,7 @@ Section Theory.
         apply: ohead_in_nodes; last by apply: Hv.
           by apply/allP; apply: neighbours_are_in_nodes.
           have Hvobj := (node_in_graph_has_object_type Hvin).
-          have -> /= : does_fragment_type_apply s v.(type) v.(type) by apply: object_applies_to_itself.
+          have -> /= : does_fragment_type_apply s v.(ntype) v.(ntype) by apply: object_applies_to_itself.
           rewrite cats0.
             by apply: H.
             
@@ -338,7 +341,7 @@ Section Theory.
                   by apply/allP; apply: in_possible_types_is_object.
 
                   move/ohead_in: Hv => Hin.
-                  move: (@neighbours_are_subtype_of_field Name Vals s g u (Field response_name2 arguments2) f Heq0 v Hin).
+                  move: (@neighbours_are_subtype_of_field Vals s g u (Field response_name2 arguments2) f Heq0 v Hin).
                     by rewrite Hrty.
 
 
@@ -349,35 +352,35 @@ Section Theory.
         exec.
         have Hvin : v \in g.(nodes) by apply: neighbours_are_in_nodes; exact: Hin.
         have Hvobj := (node_in_graph_has_object_type Hvin).
-        have -> /= : does_fragment_type_apply s v.(type) v.(type) by apply: object_applies_to_itself.
+        have -> /= : does_fragment_type_apply s v.(ntype) v.(ntype) by apply: object_applies_to_itself.
         rewrite cats0.
           by apply: H.
             by apply: filter_reground_swap.
               by apply: uniq_get_possible_types.
                 by apply/allP; apply: in_possible_types_is_object.  
 
-                move: (@neighbours_are_subtype_of_field Name Vals s g u (Field response_name2 arguments2) f Heq0 v Hin).
+                move: (@neighbours_are_subtype_of_field Vals s g u (Field response_name2 arguments2) f Heq0 v Hin).
                   by rewrite Hrty.
   Qed.
 
   
   Theorem normalize_queries_exec ty φ u :
     u \in g.(nodes) ->
-          u.(type) \in get_possible_types s ty ->
+          u.(ntype) \in get_possible_types s ty ->
                        s, g ⊢ ⟦ ground_queries s ty φ ⟧ˢ in u = s, g ⊢ ⟦ φ ⟧ˢ in u.
   Proof.
     funelim (ground_queries s ty φ) => //= Huin Hin.
     - by have <- /= := (in_object_possible_types Heq Hin); apply: reground_exec.
     - have -> /= :
         s, g ⊢ ⟦ [seq InlineFragment t (reground s t queries) | t <- get_possible_types s type_in_scope] ⟧ˢ in u =
-        s, g ⊢ ⟦ [:: InlineFragment u.(type) (reground s u.(type) queries)] ⟧ˢ in u.
+        s, g ⊢ ⟦ [:: InlineFragment u.(ntype) (reground s u.(ntype) queries)] ⟧ˢ in u.
       apply: exec_inlined_func => //=.
         by apply: filter_reground_swap.
           by apply: uniq_get_possible_types.
             by apply/allP; apply: in_possible_types_is_object.
             
             exec.
-            have -> /= : does_fragment_type_apply s u.(type) u.(type)
+            have -> /= : does_fragment_type_apply s u.(ntype) u.(ntype)
               by apply: object_applies_to_itself; apply: (in_possible_types_is_object Hin).
             rewrite cats0.
               by apply: reground_exec.
@@ -428,7 +431,7 @@ Section Theory.
   (*   Lemma equiv_eval1 ty φ1 φ2 : *)
   (*     (forall t, t \in get_possible_types s ty -> *)
   (*                 t ⊢ φ1 ≡ φ2) -> *)
-  (*     forall u, u.(type) \in get_possible_types s ty -> *)
+  (*     forall u, u.(ntype) \in get_possible_types s ty -> *)
   (*                       ⟦ φ1 ⟧ˢ in u = ⟦ φ1 ⟧ˢ in u. *)
   (*   Proof. *)
   (*     move=> Heq u Hin. *)
@@ -469,7 +472,7 @@ Section Theory.
   (*       case Hlook : lookup_field_in_type => [fld|] //=; last rewrite (filter_not_similar_preserves_list (NestedField f α φ)) //. *)
   (*       case: fld Hlook => f' args; case=> ty Hlook /=.  *)
   (*     + case ohead => //= [v|]; rewrite (filter_not_similar_preserves_list (NestedField f α φ)) //. *)
-  (*       rewrite (find_not_similar_is_nil v.(type) (NestedField f α φ)) //; simp merge_selection_sets. *)
+  (*       rewrite (find_not_similar_is_nil v.(ntype) (NestedField f α φ)) //; simp merge_selection_sets. *)
   (*         by rewrite cats0 !IH //; rewrite -/(queries_size φ) in Hleq; ssromega. *)
   (*           by rewrite IH //; ssromega. *)
             
@@ -477,7 +480,7 @@ Section Theory.
   (*       congr cons; last by apply: IH => //; ssromega. *)
   (*       congr pair; congr Array. *)
   (*       apply/eq_in_map => v Hin. *)
-  (*       rewrite (find_not_similar_is_nil v.(type) (NestedField f α φ)) //; simp merge_selection_sets. *)
+  (*       rewrite (find_not_similar_is_nil v.(ntype) (NestedField f α φ)) //; simp merge_selection_sets. *)
   (*         by rewrite cats0 !IH //; rewrite -/(queries_size φ) in Hleq; ssromega. *)
   (*     + by rewrite IH //; ssromega. *)
         
@@ -487,7 +490,7 @@ Section Theory.
   (*         case Hlook : lookup_field_in_type => [fld|] //=; last rewrite (filter_not_similar_preserves_list (NestedLabeledField l f α φ)) //. *)
   (*         case: fld Hlook => f' args; case=> ty Hlook /=.  *)
   (*     + case ohead => //= [v|]; rewrite (filter_not_similar_preserves_list (NestedLabeledField l f α φ)) //. *)
-  (*       rewrite (find_not_similar_is_nil v.(type) (NestedLabeledField l f α φ)) //; simp merge_selection_sets. *)
+  (*       rewrite (find_not_similar_is_nil v.(ntype) (NestedLabeledField l f α φ)) //; simp merge_selection_sets. *)
   (*         by rewrite cats0 !IH //; rewrite -/(queries_size φ) in Hleq; ssromega. *)
   (*           by rewrite IH //; ssromega. *)
             
@@ -495,7 +498,7 @@ Section Theory.
   (*       congr cons; last by apply: IH => //; ssromega. *)
   (*       congr pair; congr Array. *)
   (*       apply/eq_in_map => v Hin. *)
-  (*       rewrite (find_not_similar_is_nil v.(type) (NestedLabeledField l f α φ)) //; simp merge_selection_sets. *)
+  (*       rewrite (find_not_similar_is_nil v.(ntype) (NestedLabeledField l f α φ)) //; simp merge_selection_sets. *)
   (*         by rewrite cats0 !IH //; rewrite -/(queries_size φ) in Hleq; ssromega. *)
   (*     + by rewrite IH //; ssromega.  *)
 

@@ -477,4 +477,4 @@ Arguments execute_selection_set [Vals].
 Delimit Scope query_eval with QEVAL.
 Open Scope query_eval.
 
-Notation "s , g ⊢ ⟦ φ ⟧ˢ 'in' u" := (execute_selection_set s  g u φ) (at level 30).
+Notation "s , g ⊢ ⟦ φ ⟧ˢ 'in' u" := (execute_selection_set s g u φ) (at level 30, g at next level, φ at next level).

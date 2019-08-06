@@ -5,6 +5,7 @@ Unset Printing Implicit Defensive.
 
 From CoqUtils Require Import string.
 
+Require Import Base.
 
 Section GraphQLGraph.
 
@@ -45,7 +46,7 @@ Section GraphQLGraph.
       Fields and values).
    *)
   Record node := Node {
-                    ntype : string;
+                    ntype : Name;
                     nfields : seq (fld * (Vals + seq Vals)%type)  (* Vals could include list values? *)
                   }.
 

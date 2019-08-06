@@ -317,8 +317,12 @@ Section WellFormedness.
 
     This checks whether a schema is well-formed. 
     1. The Query root operation is actually defined in the schema.
+
     2. The Query type is an Object type.
-    3. Every type definition is well-formed 
+
+    3. Type names are unique. 
+
+    4. Every type definition is well-formed.
 
     Observations:
 
@@ -332,7 +336,8 @@ Section WellFormedness.
     *)
     Definition is_wf_schema : bool :=
       [&& s.(query_type) \in s.(schema_names),      (* This is a bit redundant with the check about Query ∈ Ot *)
-          is_object_type s s.(query_type) &
+          is_object_type s s.(query_type),
+          uniq s.(schema_names) &
           all is_wf_type_def s.(type_definitions)].
 
   End Defs.

@@ -4,7 +4,6 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 From Equations Require Import Equations.
-From extructures Require Import ord.
 
 
 Require Import Query.
@@ -27,10 +26,10 @@ Section Theory.
   Ltac apply_andP := apply/andP; split=> //.
   Ltac apply_and3P := apply/and3P; split=> //.
 
-  Variables (Name Vals : ordType).
+  Variables (Vals : eqType).
 
   Section Ground.
-    Variable (s : @wfSchema Name Vals).
+    Variable (s : @wfGraphQLSchema Vals).
     
     Lemma are_grounded_fields_E qs : are_grounded_fields s qs = all (fun q => q.(is_field)) qs && all (is_grounded s) qs.
     Proof.
@@ -66,7 +65,7 @@ Section Theory.
         are_grounded2 s ty qs ->
         all (fun q => q.(is_field)) qs.
     Proof.
-      apply (is_grounded2_elim Name Vals s
+      apply (is_grounded2_elim Vals s
                (fun ty q b => true)
                (fun ty qs b =>
                   is_object_type s ty ->
@@ -82,7 +81,7 @@ Section Theory.
         are_grounded2 s ty queries ->
         are_grounded s queries.
     Proof.
-      apply (is_grounded_elim Name Vals s
+      apply (is_grounded_elim Vals s
                (fun q b =>
                   forall ty,
                     is_grounded2 s ty q ->
@@ -115,7 +114,7 @@ Section Theory.
       - move=> q qs IHq IHflds IHinls ty.
         case Hscope : is_object_type => //= /and3P [Htype Hg Hgs].
         * by rewrite Htype; apply_andP; [apply: (IHq ty) | apply: (IHflds ty)].
-        * have : forall (q : @Query Name Vals), q.(is_inline_fragment) -> q.(is_field) = false by case.
+        * have : forall (q : @Query Vals), q.(is_inline_fragment) -> q.(is_field) = false by case.
             by move/(_ q Htype) ->; apply_andP; [apply : (IHq ty) | apply: (IHinls ty)].
     Qed.
     
