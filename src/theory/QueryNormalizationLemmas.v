@@ -21,6 +21,7 @@ Require Import QueryConformance.
 
 
 Require Import NRGTNF.
+Require Import NRGTNFLemmas.
 Require Import QueryNormalization.
 
 Require Import Ssromega.
@@ -37,8 +38,8 @@ Section Theory.
   
   Ltac apply_andP := apply/andP; split=> //.
   Ltac apply_and3P := apply/and3P; split=> //.
-  Ltac all_cons := rewrite {1}/all -/(all _ _) => /andP; case.
-  Ltac query_conforms := simp query_conforms; try move/and5P; try apply/and5P.
+  (* Ltac all_cons := rewrite {1}/all -/(all _ _) => /andP; case. *)
+  (* Ltac query_conforms := simp query_conforms; try move/and5P; try apply/and5P. *)
 
 
   Transparent qresponse_name.
@@ -82,6 +83,11 @@ Section Theory.
         by apply: Hinobj; apply: mem_head.
           by apply: IHsub; apply: Hinobj; apply: mem_head.
             by apply: IHptys => t' Hin'; apply: Hinobj; apply: mem_tail.     
+  Qed.
+
+  Corollary normalize_are_grounded ty φ : is_object_type s ty -> are_grounded s (normalize s ty φ).
+  Proof.
+      by intros; apply: are_grounded2_are_grounded; apply: normalize_are_grounded2.
   Qed.
   
   Lemma ground_queries_are_grounded2 ty φ :
