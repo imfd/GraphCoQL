@@ -18,6 +18,7 @@ Require Import SchemaWFLemmas.
 Require Import Query.
 Require Import QueryAux.
 
+
 Require Import SeqExtra.
 Require Import Ssromega.
 
@@ -59,45 +60,45 @@ Section Theory.
         by rewrite (IH φ') addnA.
     Qed.
 
-    Lemma query_size_gtn_0 query :
-      0 < query_size query.
-    Proof.
-        by case: query.
-    Qed.
+    (* Lemma query_size_gtn_0 query : *)
+    (*   0 < query_size query. *)
+    (* Proof. *)
+    (*     by case: query. *)
+    (* Qed. *)
 
-    Lemma subqueries_lt_query query :
-      queries_size query.(qsubqueries) < query_size query.
-    Proof.
-        by case: query.
-    Qed.
+    (* Lemma subqueries_lt_query query : *)
+    (*   queries_size query.(qsubqueries) < query_size query. *)
+    (* Proof. *)
+    (*     by case: query. *)
+    (* Qed. *)
 
 
     
-    Lemma in_queries_lt query φ :
-      query \in φ ->
-            query_size query <= queries_size φ.
-    Proof.
-      elim: φ => //= q φ IH.
-      rewrite inE => /orP [/eqP -> | Hin].
-        by ssromega.
-          by move: (IH Hin) => Hlt; ssromega.
-    Qed.
+    (* Lemma in_queries_lt query φ : *)
+    (*   query \in φ -> *)
+    (*         query_size query <= queries_size φ. *)
+    (* Proof. *)
+    (*   elim: φ => //= q φ IH. *)
+    (*   rewrite inE => /orP [/eqP -> | Hin]. *)
+    (*     by ssromega. *)
+    (*       by move: (IH Hin) => Hlt; ssromega. *)
+    (* Qed. *)
 
-    Lemma in_subqueries_size_lt query1 query :
-      query1 \in query.(qsubqueries) ->
-             query_size query1 < query_size query.
-    Proof.
-      move=> Hin.
-      have Hlt := (subqueries_lt_query query).
-      have Hleq := (in_queries_lt Hin).
-      ssromega.
-    Qed.
+    (* Lemma in_subqueries_size_lt query1 query : *)
+    (*   query1 \in query.(qsubqueries) -> *)
+    (*          query_size query1 < query_size query. *)
+    (* Proof. *)
+    (*   move=> Hin. *)
+    (*   have Hlt := (subqueries_lt_query query). *)
+    (*   have Hleq := (in_queries_lt Hin). *)
+    (*   ssromega. *)
+    (* Qed. *)
 
     
     
     Lemma queries_size_0_nil (qs : seq (@Query Vals)) : queries_size qs == 0 -> qs = [::].
     Proof.
-        by elim: qs => //=; case=> [f α | l f α | f α φ | l f α φ | t φ] qs IH /=; rewrite addn_eq0.
+        by case: qs => //=; case.
     Qed.
     
   End Size.
@@ -128,15 +129,14 @@ Section Theory.
     Lemma found_queries_leq_size l O__t qs :
       queries_size (find_queries_with_label s l O__t qs) <= queries_size qs.
     Proof.
-      funelim (find_queries_with_label _ _ _ qs) => //=; simp query_size; rewrite ?queries_size_cat; ssromega.
+        by funelim (find_queries_with_label _ _ _ qs) => //=; simp query_size; rewrite ?queries_size_cat; ssromega.
     Qed.
 
-    Lemma found_queries_are_fields k O__t qs :
-      all (fun q => q.(is_field)) (find_queries_with_label s k O__t qs).
-    Proof.
-      funelim (find_queries_with_label s k O__t qs) => //=.
-      rewrite all_cat; apply_andP.
-    Qed.
+    (* Lemma found_queries_are_fields k O__t qs : *)
+    (*   all (fun q => q.(is_field)) (find_queries_with_label s k O__t qs). *)
+    (* Proof. *)
+    (*   by funelim (find_queries_with_label s k O__t qs) => //=; rewrite all_cat; apply_andP. *)
+    (* Qed. *)
 
     Lemma find_queries_with_label_cat l ty (qs1 qs2 : seq (@Query Vals)):
       find_queries_with_label s l ty (qs1 ++ qs2) = find_queries_with_label s l ty qs1 ++ find_queries_with_label s l ty qs2.
@@ -147,26 +147,26 @@ Section Theory.
     Qed.
 
     
-    Lemma found_queries_have_response_name rname O__t qs :
-      forall q, q \in find_queries_with_label s rname O__t qs ->
-                 q.(oqresponse_name) = Some rname.
-    Proof.
-      funelim (find_queries_with_label s rname O__t qs) => //= q; rewrite ?inE.
+    (* Lemma found_queries_have_response_name rname O__t qs : *)
+    (*   forall q, q \in find_queries_with_label s rname O__t qs -> *)
+    (*              q.(oqresponse_name) = Some rname. *)
+    (* Proof. *)
+    (*   funelim (find_queries_with_label s rname O__t qs) => //= q; rewrite ?inE. *)
 
-      all: do ? [move=> /orP [/eqP -> /= | Hin] ].
-      all: do ? [by simpl in Heq; move/eqP in Heq; congr Some].
-      all: do ?[by apply: H].    
-        by rewrite mem_cat => /orP [Hin1 | Hin2]; [apply: H | apply: H0].
-    Qed.
+    (*   all: do ? [move=> /orP [/eqP -> /= | Hin] ]. *)
+    (*   all: do ? [by simpl in Heq; move/eqP in Heq; congr Some]. *)
+    (*   all: do ?[by apply: H].     *)
+    (*     by rewrite mem_cat => /orP [Hin1 | Hin2]; [apply: H | apply: H0]. *)
+    (* Qed. *)
     
 
     
-    Lemma all_found_fields_are_fields k φ :
-      all (fun query => query.(is_field)) (find_fields_with_response_name k φ).                  
-    Proof.
-      funelim (find_fields_with_response_name k φ) => //=.
-        by rewrite all_cat; apply_andP.
-    Qed.
+    (* Lemma all_found_fields_are_fields k φ : *)
+    (*   all (fun query => query.(is_field)) (find_fields_with_response_name k φ).                   *)
+    (* Proof. *)
+    (*   funelim (find_fields_with_response_name k φ) => //=. *)
+    (*     by rewrite all_cat; apply_andP. *)
+    (* Qed. *)
 
     Lemma found_fields_leq_size k φ :
       queries_size (find_fields_with_response_name k φ) <= queries_size φ.
@@ -207,64 +207,64 @@ Section Theory.
           by move: Htnin; rewrite /negb; case: ifP => //=; case: ifP => //= Hcontr <- _; apply: mem_tail.
     Qed.
 
-    Lemma find_map_inline_nil_get_types rname t ty φ :
-      t \notin get_possible_types s ty ->
-      find_queries_with_label s rname t [seq InlineFragment t' φ | t' <- get_possible_types s ty] = [::].
-    Proof.
-        by move=> Hnin; apply: find_map_inline_nil => //=; [apply: uniq_get_possible_types | apply/allP; apply: in_possible_types_is_object].
-    Qed.
+    (* Lemma find_map_inline_nil_get_types rname t ty φ : *)
+    (*   t \notin get_possible_types s ty -> *)
+    (*   find_queries_with_label s rname t [seq InlineFragment t' φ | t' <- get_possible_types s ty] = [::]. *)
+    (* Proof. *)
+    (*     by move=> Hnin; apply: find_map_inline_nil => //=; [apply: uniq_get_possible_types | apply/allP; apply: in_possible_types_is_object]. *)
+    (* Qed. *)
 
     
-    Lemma find_all_q_equiv_to_sf_are_simple α f ty φ :
-      all (are_equivalent (SingleField f α)) (find_queries_with_label s f ty φ) ->
-      all (fun query => query.(is_simple_field_selection)) (find_queries_with_label s f ty φ).
-    Proof.
-      funelim (find_queries_with_label s f ty φ) => //=.
+    (* Lemma find_all_q_equiv_to_sf_are_simple α f ty φ : *)
+    (*   all (are_equivalent (SingleField f α)) (find_queries_with_label s f ty φ) -> *)
+    (*   all (fun query => query.(is_simple_field_selection)) (find_queries_with_label s f ty φ). *)
+    (* Proof. *)
+    (*   funelim (find_queries_with_label s f ty φ) => //=. *)
 
-      all: do ? by case/andP=> *; apply_andP; apply: (H α).
-      all: do ? by move=> *; apply: (H α).
+    (*   all: do ? by case/andP=> *; apply_andP; apply: (H α). *)
+    (*   all: do ? by move=> *; apply: (H α). *)
 
-        by rewrite 2!all_cat => /andP [Hall1 Hall2]; apply_andP; [apply: (H α) | apply: (H0 α)].
+    (*     by rewrite 2!all_cat => /andP [Hall1 Hall2]; apply_andP; [apply: (H α) | apply: (H0 α)]. *)
 
-    Qed.
+    (* Qed. *)
 
     
-    Lemma find_all_f_equiv_to_sf_are_simple ty f α (φ : seq (@Query Vals)) :
-      all (are_equivalent (SingleField f α)) (find_fields_with_response_name f φ) ->
-      all (fun q => q.(is_simple_field_selection)) (find_queries_with_label s f ty φ).
-    Proof.
-      funelim (find_queries_with_label s f ty φ) => //=.
+    (* Lemma find_all_f_equiv_to_sf_are_simple ty f α (φ : seq (@Query Vals)) : *)
+    (*   all (are_equivalent (SingleField f α)) (find_fields_with_response_name f φ) -> *)
+    (*   all (fun q => q.(is_simple_field_selection)) (find_queries_with_label s f ty φ). *)
+    (* Proof. *)
+    (*   funelim (find_queries_with_label s f ty φ) => //=. *)
 
-      all: do ?[by simp find_fields_with_response_name; rewrite Heq /= => /andP [Hequiv Hequivs]; apply_andP; apply: (H α)].
+    (*   all: do ?[by simp find_fields_with_response_name; rewrite Heq /= => /andP [Hequiv Hequivs]; apply_andP; apply: (H α)]. *)
 
-      all: do ? by simp find_fields_with_response_name; rewrite Heq /= => *; apply: (H α).
+    (*   all: do ? by simp find_fields_with_response_name; rewrite Heq /= => *; apply: (H α). *)
 
-      - by simp find_fields_with_response_name; rewrite 2!all_cat => /andP [Hequiv Hequivs]; apply_andP; [apply: (H α) | apply: (H0 α)].
-      - by simp find_fields_with_response_name; rewrite all_cat => /andP [Hequiv Hequivs]; apply: (H α).
+    (*   - by simp find_fields_with_response_name; rewrite 2!all_cat => /andP [Hequiv Hequivs]; apply_andP; [apply: (H α) | apply: (H0 α)]. *)
+    (*   - by simp find_fields_with_response_name; rewrite all_cat => /andP [Hequiv Hequivs]; apply: (H α). *)
         
-    Qed.
+    (* Qed. *)
 
 
 
-    Lemma find_queries_subseq_find_fields ty f φ :
-      subseq (find_queries_with_label s f ty φ) (find_fields_with_response_name f φ).
-    Proof.
-      funelim (find_queries_with_label s f ty φ) => //=.
-      all: do ?[simp find_fields_with_response_name; rewrite Heq /=; case: ifP => //=; by move/negbT/eqP].
+    (* Lemma find_queries_subseq_find_fields ty f φ : *)
+    (*   subseq (find_queries_with_label s f ty φ) (find_fields_with_response_name f φ). *)
+    (* Proof. *)
+    (*   funelim (find_queries_with_label s f ty φ) => //=. *)
+    (*   all: do ?[simp find_fields_with_response_name; rewrite Heq /=; case: ifP => //=; by move/negbT/eqP]. *)
 
-      all: do ? by simp find_fields_with_response_name; rewrite Heq /=.
+    (*   all: do ? by simp find_fields_with_response_name; rewrite Heq /=. *)
 
-        by simp find_fields_with_response_name; rewrite cat_subseq.
-        simp find_fields_with_response_name.
-        rewrite -[find_queries_with_label _ _ _ _]cat0s; rewrite cat_subseq //=.
-        apply: sub0seq.
-    Qed. 
+    (*     by simp find_fields_with_response_name; rewrite cat_subseq. *)
+    (*     simp find_fields_with_response_name. *)
+    (*     rewrite -[find_queries_with_label _ _ _ _]cat0s; rewrite cat_subseq //=. *)
+    (*     apply: sub0seq. *)
+    (* Qed.  *)
 
     
-    Lemma find_fields_cat rname φ1 φ2 :
-      find_fields_with_response_name rname (φ1 ++ φ2) =
-      find_fields_with_response_name rname φ1 ++ find_fields_with_response_name rname φ2.
-    Admitted.
+    (* Lemma find_fields_cat rname φ1 φ2 : *)
+    (*   find_fields_with_response_name rname (φ1 ++ φ2) = *)
+    (*   find_fields_with_response_name rname φ1 ++ find_fields_with_response_name rname φ2. *)
+    (* Admitted. *)
 
 
     Lemma find_filter_swap f1 f2 ty φ :
@@ -297,18 +297,18 @@ Section Theory.
       funelim (filter_queries_with_label l φ) => //=; do ?[simp query_size; ssromega]. 
     Qed.
 
-    Lemma filter_fields_spec l φ :
-      all (fun q => q.(is_field)) φ ->
-      filter_queries_with_label l φ = [seq q <- φ | match q with
-                                                   | SingleField f _
-                                                   | NestedField f _ _ => f != l
-                                                   | LabeledField l' _ _
-                                                   | NestedLabeledField l' _ _ _ => l' != l
-                                                   | _ => false
-                                                   end ].
-    Proof.
-        by funelim (filter_queries_with_label l φ) => //= /andP [Hf Hflds]; rewrite Heq H.
-    Qed.
+    (* Lemma filter_fields_spec l φ : *)
+    (*   all (fun q => q.(is_field)) φ -> *)
+    (*   filter_queries_with_label l φ = [seq q <- φ | match q with *)
+    (*                                                | SingleField f _ *)
+    (*                                                | NestedField f _ _ => f != l *)
+    (*                                                | LabeledField l' _ _ *)
+    (*                                                | NestedLabeledField l' _ _ _ => l' != l *)
+    (*                                                | _ => false *)
+    (*                                                end ]. *)
+    (* Proof. *)
+    (*     by funelim (filter_queries_with_label l φ) => //= /andP [Hf Hflds]; rewrite Heq H. *)
+    (* Qed. *)
 
     
     Lemma filter_queries_with_label_cat l (qs1 qs2 : seq (@Query Vals)) :
@@ -321,25 +321,25 @@ Section Theory.
 
     
 
-    Lemma filter_all rname (φ : seq (@Query Vals)) :
-      all (has_response_name rname) φ ->
-      filter_queries_with_label rname φ = [::].
-    Proof.
-        by elim: φ => //=; case=> //= [f' α | l f' α | f' α β | l f' α β] φ IH; simp has_response_name => /= /andP [/eqP Heq Hsame];
-                                                                                                         simp filter_queries_with_label => /=; 
-                                                                                                                                            rewrite Heq /=; case: eqP => //= _; apply: IH.
-    Qed.
+    (* Lemma filter_all rname (φ : seq (@Query Vals)) : *)
+    (*   all (has_response_name rname) φ -> *)
+    (*   filter_queries_with_label rname φ = [::]. *)
+    (* Proof. *)
+    (*     by elim: φ => //=; case=> //= [f' α | l f' α | f' α β | l f' α β] φ IH; simp has_response_name => /= /andP [/eqP Heq Hsame]; *)
+    (*                                                                                                      simp filter_queries_with_label => /=;  *)
+    (*                                                                                                                                         rewrite Heq /=; case: eqP => //= _; apply: IH. *)
+    (* Qed. *)
     
     
-    Lemma filter_frag (ptys : seq Name) f φ :
-      all (has_response_name f) φ ->
-      filter_queries_with_label f [seq InlineFragment t φ | t <- ptys] =
-      [seq InlineFragment t [::] | t <- ptys].
-    Proof.
-      move=> /filter_all Heq.
-      elim: ptys => //= q qs IHqs; simp filter_queries_with_label => /=.
-        by rewrite Heq IHqs.
-    Qed.
+    (* Lemma filter_frag (ptys : seq Name) f φ : *)
+    (*   all (has_response_name f) φ -> *)
+    (*   filter_queries_with_label f [seq InlineFragment t φ | t <- ptys] = *)
+    (*   [seq InlineFragment t [::] | t <- ptys]. *)
+    (* Proof. *)
+    (*   move=> /filter_all Heq. *)
+    (*   elim: ptys => //= q qs IHqs; simp filter_queries_with_label => /=. *)
+    (*     by rewrite Heq IHqs. *)
+    (* Qed. *)
 
     Lemma filter_swap rname1 rname2 (φ : seq (@Query Vals)) :
       filter_queries_with_label rname1 (filter_queries_with_label rname2 φ) =
@@ -411,12 +411,12 @@ Section Theory.
     Qed.
 
     
-    Lemma merge_simple_fields_is_empty φ :
-      all (fun query => query.(is_simple_field_selection)) φ ->
-      merge_selection_sets φ = [::].
-    Proof.
-        by elim: φ => //=; case.
-    Qed.
+    (* Lemma merge_simple_fields_is_empty φ : *)
+    (*   all (fun query => query.(is_simple_field_selection)) φ -> *)
+    (*   merge_selection_sets φ = [::]. *)
+    (* Proof. *)
+    (*     by elim: φ => //=; case. *)
+    (* Qed. *)
     
   End Merging.
 
