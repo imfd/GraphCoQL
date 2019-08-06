@@ -202,16 +202,16 @@ Section Theory.
   
 
 
-  Lemma reground_exec φ u :
+  Lemma normalize_exec φ u :
     u \in g.(nodes) ->
-          s, g ⊢ ⟦ reground s u.(ntype) φ ⟧ˢ in u =  s, g ⊢ ⟦ φ ⟧ˢ in u.
+          s, g ⊢ ⟦ normalize s u.(ntype) φ ⟧ˢ in u =  s, g ⊢ ⟦ φ ⟧ˢ in u.
   Proof.    
-    funelim (reground s u.(ntype) φ) => //=; do ? by exec.
-    all: do ? [by intros; exec; rewrite filter_reground_swap filter_filter_absorb // H].
+    funelim (normalize s u.(ntype) φ) => //=; do ? by exec.
+    all: do ? [by intros; exec; rewrite filter_normalize_swap filter_filter_absorb // H].
     - move=> Huin; exec.
       case Hrty : f.(return_type) => [rty| rty] /=.
       * case Hv : ohead => [v|] //=;
-                               rewrite filter_reground_swap filter_filter_absorb // H0 // -filter_reground_swap find_filter_nil.
+                               rewrite filter_normalize_swap filter_filter_absorb // H0 // -filter_normalize_swap find_filter_nil.
         simp merge_selection_sets => /=; rewrite cats0.
         rewrite Hrty /= in H.
         congr cons; congr pair; congr Response.Object.
@@ -229,9 +229,9 @@ Section Theory.
               by apply: H => //; rewrite Hvtype.
               
               
-      * rewrite filter_reground_swap filter_filter_absorb // H0 //; congr cons; congr pair; congr Array.
+      * rewrite filter_normalize_swap filter_filter_absorb // H0 //; congr cons; congr pair; congr Array.
         apply/eq_in_map => v Hin; congr Response.Object.
-        rewrite -filter_reground_swap find_filter_nil.
+        rewrite -filter_normalize_swap find_filter_nil.
         simp merge_selection_sets => /=; rewrite cats0.
         rewrite Hrty /= in H.
         have Hvin : v \in g.(nodes).
@@ -245,8 +245,8 @@ Section Theory.
             
     - move=> Huin; exec.
       case Hrty : f.(return_type) => [rty | rty] //=.
-      * case Hv : ohead => [v|] /=; rewrite filter_reground_swap filter_filter_absorb // H0 //.
-        rewrite -filter_reground_swap find_filter_nil.
+      * case Hv : ohead => [v|] /=; rewrite filter_normalize_swap filter_filter_absorb // H0 //.
+        rewrite -filter_normalize_swap find_filter_nil.
         simp merge_selection_sets => /=; rewrite cats0.
         congr cons; congr pair; congr Response.Object.
         rewrite exec_inlined_func //.
@@ -259,7 +259,7 @@ Section Theory.
           rewrite cats0.
             by apply: H.
             
-              by apply: filter_reground_swap.
+              by apply: filter_normalize_swap.
                 by apply: uniq_get_possible_types.
                   by apply/allP; apply: in_possible_types_is_object.
 
@@ -267,9 +267,9 @@ Section Theory.
                   move: (@neighbours_are_subtype_of_field Vals s g u (Field response_name1 arguments1) f Heq0 v Hin).
                     by rewrite Hrty.
                     
-      * rewrite filter_reground_swap filter_filter_absorb // H0 //; congr cons; congr pair; congr Array.
+      * rewrite filter_normalize_swap filter_filter_absorb // H0 //; congr cons; congr pair; congr Array.
         apply/eq_in_map => v Hin; congr Response.Object.
-        rewrite -filter_reground_swap find_filter_nil.
+        rewrite -filter_normalize_swap find_filter_nil.
         simp merge_selection_sets => /=; rewrite cats0 exec_inlined_func.
         exec.
         have Hvin : v \in g.(nodes) by apply: neighbours_are_in_nodes; exact: Hin.
@@ -277,7 +277,7 @@ Section Theory.
         have -> /= : does_fragment_type_apply s v.(ntype) v.(ntype) by apply: object_applies_to_itself.
         rewrite cats0.
           by apply: H.
-            by apply: filter_reground_swap.
+            by apply: filter_normalize_swap.
               by apply: uniq_get_possible_types.
                 by apply/allP; apply: in_possible_types_is_object.  
 
@@ -288,7 +288,7 @@ Section Theory.
     - move=> Huin; exec.
       case Hrty : f.(return_type) => [rty| rty] /=.
       * case Hv : ohead => [v|] //=;
-                               rewrite filter_reground_swap filter_filter_absorb // H0 // -filter_reground_swap find_filter_nil.
+                               rewrite filter_normalize_swap filter_filter_absorb // H0 // -filter_normalize_swap find_filter_nil.
         simp merge_selection_sets => /=; rewrite cats0.
         rewrite Hrty /= in H.
         congr cons; congr pair; congr Response.Object.
@@ -306,9 +306,9 @@ Section Theory.
               by apply: H => //; rewrite Hvtype.
               
               
-      * rewrite filter_reground_swap filter_filter_absorb // H0 //; congr cons; congr pair; congr Array.
+      * rewrite filter_normalize_swap filter_filter_absorb // H0 //; congr cons; congr pair; congr Array.
         apply/eq_in_map => v Hin; congr Response.Object.
-        rewrite -filter_reground_swap find_filter_nil.
+        rewrite -filter_normalize_swap find_filter_nil.
         simp merge_selection_sets => /=; rewrite cats0.
         rewrite Hrty /= in H.
         have Hvin : v \in g.(nodes).
@@ -322,8 +322,8 @@ Section Theory.
             
     - move=> Huin; exec.
       case Hrty : f.(return_type) => [rty | rty] //=.
-      * case Hv : ohead => [v|] /=; rewrite filter_reground_swap filter_filter_absorb // H0 //.
-        rewrite -filter_reground_swap find_filter_nil.
+      * case Hv : ohead => [v|] /=; rewrite filter_normalize_swap filter_filter_absorb // H0 //.
+        rewrite -filter_normalize_swap find_filter_nil.
         simp merge_selection_sets => /=; rewrite cats0.
         congr cons; congr pair; congr Response.Object.
         rewrite exec_inlined_func //.
@@ -336,7 +336,7 @@ Section Theory.
           rewrite cats0.
             by apply: H.
             
-              by apply: filter_reground_swap.
+              by apply: filter_normalize_swap.
                 by apply: uniq_get_possible_types.
                   by apply/allP; apply: in_possible_types_is_object.
 
@@ -345,9 +345,9 @@ Section Theory.
                     by rewrite Hrty.
 
 
-      * rewrite filter_reground_swap filter_filter_absorb // H0 //; congr cons; congr pair; congr Array.
+      * rewrite filter_normalize_swap filter_filter_absorb // H0 //; congr cons; congr pair; congr Array.
         apply/eq_in_map => v Hin; congr Response.Object.
-        rewrite -filter_reground_swap find_filter_nil.
+        rewrite -filter_normalize_swap find_filter_nil.
         simp merge_selection_sets => /=; rewrite cats0 exec_inlined_func.
         exec.
         have Hvin : v \in g.(nodes) by apply: neighbours_are_in_nodes; exact: Hin.
@@ -355,7 +355,7 @@ Section Theory.
         have -> /= : does_fragment_type_apply s v.(ntype) v.(ntype) by apply: object_applies_to_itself.
         rewrite cats0.
           by apply: H.
-            by apply: filter_reground_swap.
+            by apply: filter_normalize_swap.
               by apply: uniq_get_possible_types.
                 by apply/allP; apply: in_possible_types_is_object.  
 
@@ -370,12 +370,12 @@ Section Theory.
                        s, g ⊢ ⟦ ground_queries s ty φ ⟧ˢ in u = s, g ⊢ ⟦ φ ⟧ˢ in u.
   Proof.
     funelim (ground_queries s ty φ) => //= Huin Hin.
-    - by have <- /= := (in_object_possible_types Heq Hin); apply: reground_exec.
+    - by have <- /= := (in_object_possible_types Heq Hin); apply: normalize_exec.
     - have -> /= :
-        s, g ⊢ ⟦ [seq InlineFragment t (reground s t queries) | t <- get_possible_types s type_in_scope] ⟧ˢ in u =
-        s, g ⊢ ⟦ [:: InlineFragment u.(ntype) (reground s u.(ntype) queries)] ⟧ˢ in u.
+        s, g ⊢ ⟦ [seq InlineFragment t (normalize s t queries) | t <- get_possible_types s type_in_scope] ⟧ˢ in u =
+        s, g ⊢ ⟦ [:: InlineFragment u.(ntype) (normalize s u.(ntype) queries)] ⟧ˢ in u.
       apply: exec_inlined_func => //=.
-        by apply: filter_reground_swap.
+        by apply: filter_normalize_swap.
           by apply: uniq_get_possible_types.
             by apply/allP; apply: in_possible_types_is_object.
             
@@ -383,19 +383,19 @@ Section Theory.
             have -> /= : does_fragment_type_apply s u.(ntype) u.(ntype)
               by apply: object_applies_to_itself; apply: (in_possible_types_is_object Hin).
             rewrite cats0.
-              by apply: reground_exec.
+              by apply: normalize_exec.
   Qed.
 
 
   Lemma normalize_root_query_is_in_normal_form φ :
     queries_conform s s.(query_type) φ ->
-    NRGTNF.are_non_redundant (reground s s.(query_type) φ) /\
-    are_grounded s (reground s s.(query_type) φ).
+    NRGTNF.are_non_redundant (normalize s s.(query_type) φ) /\
+    are_grounded s (normalize s s.(query_type) φ).
   Proof.
     intros; split.
-    - by apply: reground_are_non_redundant; apply: query_has_object_type.
+    - by apply: normalize_are_non_redundant; apply: query_has_object_type.
     - apply: are_grounded2_are_grounded.
-        by apply: reground_are_grounded2; apply: query_has_object_type.
+        by apply: normalize_are_grounded2; apply: query_has_object_type.
   Qed.
   
   
