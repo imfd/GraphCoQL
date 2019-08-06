@@ -98,7 +98,7 @@ Section Theory.
   Qed.
 
   Lemma reground_preserves_not_similar q (Hfield : q.(is_field)) φ ty :
-    all (fun q' => ~~are_similar q' q) (reground s ty (filter_queries_with_label (qresponse_name q Hfield) φ)).
+    ~~has (fun q' => are_similar q' q) (reground s ty (filter_queries_with_label (qresponse_name q Hfield) φ)).
   Proof.
     move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
     elim: n φ => /= [| n IH] φ; first by rewrite leqn0 => /queries_size_0_nil ->.
@@ -107,24 +107,24 @@ Section Theory.
     - case: eqP => //= Heq.
         by apply: IH.
         simp reground; lookup; last by apply: IH.
-        apply_andP; last by rewrite filter_swap //; apply: IH; leq_queries_size.
+        apply/norP; split=> //; last by rewrite filter_swap //; apply: IH; leq_queries_size.
           by case_query q => //=; intros; simp are_similar => /=; apply/nandP; left; apply/eqP.
     - case: eqP => //= Heq.
         by apply: IH.
         simp reground; lookup; last by apply: IH.
-        apply_andP; last by rewrite filter_swap //; apply: IH; leq_queries_size.
+        apply/norP; split=> //; last by rewrite filter_swap //; apply: IH; leq_queries_size.
           by case_query q => //=; intros; simp are_similar => /=; apply/nandP; left; apply/eqP.
 
     - case: eqP => //= Heq.
         by apply: IH; leq_queries_size.
         simp reground; lookup; last by apply: IH; leq_queries_size.
-        case is_object_type => //=; apply_andP; do ? by rewrite filter_swap //; apply: IH; leq_queries_size.
+        case is_object_type => //=; apply/norP; split=> //; do ? by rewrite filter_swap //; apply: IH; leq_queries_size.
         all: do ?by case_query q => //=; intros; simp are_similar => /=; apply/nandP; left; apply/eqP.
 
     - case: eqP => //= Heq.
         by apply: IH; leq_queries_size.
         simp reground; lookup; last by apply: IH; leq_queries_size.
-        case is_object_type => //=; apply_andP; do ? by rewrite filter_swap //; apply: IH; leq_queries_size.
+        case is_object_type => //=; apply/norP; split; do ? by rewrite filter_swap //; apply: IH; leq_queries_size.
         all: do ?by case_query q => //=; intros; simp are_similar => /=; apply/nandP; left; apply/eqP.
 
     - simp reground; case does_fragment_type_apply => //=; last by apply: IH; leq_queries_size.
@@ -139,7 +139,7 @@ Section Theory.
   Proof.
     elim: ptys => //= t ptys IH Hnr /andP [Hnin Huniq].
     simp are_non_redundant; apply_and3P => /=; last by apply: IH.
-    apply/allP=> frag /mapP [t' Hin ->]; simp are_similar.
+    apply/hasPn=> frag /mapP [t' Hin ->]; simp are_similar.
       by move/memPn: Hnin => /(_ t' Hin).
   Qed.
   
@@ -159,7 +159,7 @@ Section Theory.
       have  := (uniq_get_possible_types s f.(return_type)).
       elim: get_possible_types => //= t ptys IH /andP [Hnin Huniq] Hinobj.
       simp are_non_redundant; apply_and3P => /=; last by apply: IH => //= t' Hin'; apply: Hinobj; apply: mem_tail.
-      apply/allP=> frag /mapP [t' Htin ->]; simp are_similar.
+      apply/hasPn=> frag /mapP [t' Htin ->]; simp are_similar.
         by move/memPn: Hnin => /(_ t' Htin).
           by apply: H; apply: Hinobj; apply: mem_head.
           
@@ -170,7 +170,7 @@ Section Theory.
       have  := (uniq_get_possible_types s f.(return_type)).
       elim: get_possible_types => //= t ptys IH /andP [Hnin Huniq] Hinobj.
       simp are_non_redundant; apply_and3P => /=; last by apply: IH => //= t' Hin'; apply: Hinobj; apply: mem_tail.
-      apply/allP=> frag /mapP [t' Htin ->]; simp are_similar.
+      apply/hasPn=> frag /mapP [t' Htin ->]; simp are_similar.
         by move/memPn: Hnin => /(_ t' Htin).
           by apply: H; apply: Hinobj; apply: mem_head.
   Qed.
@@ -185,7 +185,7 @@ Section Theory.
     have  := (uniq_get_possible_types s ty).
     elim: get_possible_types => //= t ptys IH /andP [Hnin Huniq] Hinobj.
     simp are_non_redundant; apply_and3P => /=; last by apply: IH => //= t' Hin'; apply: Hinobj; apply: mem_tail.
-    apply/allP=> frag /mapP [t' Htin ->]; simp are_similar.
+    apply/hasPn=> frag /mapP [t' Htin ->]; simp are_similar.
       by move/memPn: Hnin => /(_ t' Htin).
         by apply: reground_are_non_redundant; apply: Hinobj; apply: mem_head.
   Qed.

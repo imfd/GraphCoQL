@@ -44,17 +44,17 @@ Section NRGTNF.
   where are_grounded_fields queries : bool :=
           {
             are_grounded_fields [::] := true;
-            are_grounded_fields (q :: qs) := [&& q.(is_field), q.(is_grounded) & are_grounded_fields qs]
+            are_grounded_fields (q :: φ) := [&& q.(is_field), q.(is_grounded) & are_grounded_fields φ]
           }
   where are_grounded_inlines queries : bool :=
           {
             are_grounded_inlines [::] := true;
-            are_grounded_inlines (q :: qs) := [&& q.(is_inline_fragment), q.(is_grounded) & are_grounded_inlines qs]
+            are_grounded_inlines (q :: φ) := [&& q.(is_inline_fragment), q.(is_grounded) & are_grounded_inlines φ]
           }
   where are_grounded queries : bool :=
           {
             are_grounded [::] := true;
-            are_grounded (q :: qs) := q.(is_grounded) && if q.(is_field) then are_grounded_fields qs else are_grounded_inlines qs
+            are_grounded (q :: φ) := q.(is_grounded) && if q.(is_field) then are_grounded_fields φ else are_grounded_inlines φ
                                                                                                                               
           }.
 
@@ -105,13 +105,13 @@ Section NRGTNF.
     {
       are_non_redundant [::] := true;
       
-      are_non_redundant (hd :: tl) :=
-        [&& all (fun q => ~~are_similar q hd) tl,
-         are_non_redundant hd.(qsubqueries) &
-         are_non_redundant tl]
+      are_non_redundant (q :: φ) :=
+        [&& ~~has (fun q' => are_similar q' q) φ,
+         are_non_redundant q.(qsubqueries) &
+         are_non_redundant φ]
     }.                 
   Proof.
-    all: do [case: hd are_non_redundant; intros; simp query_size; ssromega].
+    all: do [case: q are_non_redundant; intros; simp query_size; ssromega].
   Qed.
   
   Definition is_non_redundant query :=
