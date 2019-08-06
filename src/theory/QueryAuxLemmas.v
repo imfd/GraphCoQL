@@ -341,11 +341,13 @@ Section Theory.
         by rewrite Heq IHqs.
     Qed.
 
-    Lemma filter_swap f1 f2 (φ : seq (@Query Vals)) :
-      filter_queries_with_label f1 (filter_queries_with_label f2 φ) =
-      filter_queries_with_label f2 (filter_queries_with_label f1 φ).
-    Admitted.
-
+    Lemma filter_swap rname1 rname2 (φ : seq (@Query Vals)) :
+      filter_queries_with_label rname1 (filter_queries_with_label rname2 φ) =
+      filter_queries_with_label rname2 (filter_queries_with_label rname1 φ).
+    Proof.
+      funelim (filter_queries_with_label rname1 φ) => //=; do ? by simp filter_queries_with_label; case: eqP => //= _; simp filter_queries_with_label; rewrite Heq /= H.
+      by simp filter_queries_with_label; rewrite H H0.
+    Qed.
     
     Lemma filter_filter_absorb rname (φ : seq (@Query Vals)) :
       filter_queries_with_label rname (filter_queries_with_label rname φ) = filter_queries_with_label rname φ.
