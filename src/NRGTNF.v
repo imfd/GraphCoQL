@@ -33,11 +33,11 @@ Section NRGTNF.
   
   Equations is_grounded query : bool  :=
     {
-      is_grounded (NestedField _ _ φ) := are_grounded φ;
+      is_grounded (_[[_]] { φ }) := are_grounded φ;
       
-      is_grounded (NestedLabeledField _ _ _ φ) := are_grounded φ;
+      is_grounded (_:_[[_]] { φ }) := are_grounded φ;
       
-      is_grounded (InlineFragment t φ) := (is_object_type s t) && are_grounded_fields φ; (* (all is_field φ) & all is_grounded φ *)
+      is_grounded (on t { φ }) := (is_object_type s t) && are_grounded_fields φ; (* (all is_field φ) & all is_grounded φ *)
       
       is_grounded  _ := true
     }
@@ -61,21 +61,21 @@ Section NRGTNF.
  
   Equations is_grounded2 (type_in_scope : Name) (query : @Query Vals) : bool :=
     {
-      is_grounded2 ty (NestedField f _ φ)
+      is_grounded2 ty (f[[_]] { φ })
         with lookup_field_in_type s ty f :=
         {
         | Some fld := are_grounded2 fld.(return_type) φ;
         | _ := false
         };
 
-      is_grounded2 ty (NestedLabeledField _ f _ φ)
+      is_grounded2 ty (_:f[[_]] { φ })
         with lookup_field_in_type s ty f :=
         {
         | Some fld := are_grounded2 fld.(return_type) φ;
         | _ := false
         };
 
-      is_grounded2 ty (InlineFragment t φ) := (is_object_type s t) && are_grounded2 t φ;
+      is_grounded2 ty (on t { φ }) := (is_object_type s t) && are_grounded2 t φ;
       
       is_grounded2 _ _ := true
     }
@@ -94,9 +94,9 @@ Section NRGTNF.
   
   Equations are_similar (q1 q2 : @Query Vals) : bool :=
     {
-      are_similar (InlineFragment t _) (InlineFragment t' _) := t == t';
-      are_similar (InlineFragment _ _) _ := false;
-      are_similar _ (InlineFragment _ _) := false;
+      are_similar (on t { _ }) (on t' { _ }) := t == t';
+      are_similar (on _ { _ }) _ := false;
+      are_similar _ (on _ { _ }) := false;
       are_similar q1 q2 := ((qresponse_name q1 _) == (qresponse_name q2 _)) && ((qargs q1 _) == (qargs q2 _))
     }.
    
