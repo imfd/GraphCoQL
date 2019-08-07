@@ -39,122 +39,76 @@ Section Theory.
 
     Variable (s : @wfGraphQLSchema Vals).
     
-    (* TODO: rename **)
-    Lemma object_spreads_E parent_type ty :
-      is_object_type s ty ->
-      is_fragment_spread_possible s parent_type ty ->
-      [\/ ty = parent_type,
-       ty \in implementation s parent_type |
-       ty \in union_members s parent_type].
-    Proof.
-      case: s=> sch Hty Hwf Hobj Hspread.
-      apply/in_possible_typesPwf=> //.
-      move: Hspread.
-      rewrite /is_fragment_spread_possible.
-      simp get_possible_types.
-      move/is_object_type_wfP: Hobj => [intfs [flds Hlook] ].
-      rewrite Hlook /=.
-        by case lookup_type => [t|] //=; case: t => //=; intros; apply: seq1I_N_nil.
-        
-    Qed.
-
-
+  
 
     
-    Lemma object_spreads_in_object_scope type_in_scope t ϕ :
+    (**
+       
+       https://graphql.github.io/graphql-spec/June2018/#sec-Object-Spreads-In-Object-Scope
+     *)
+    Lemma object_spreads_in_object_scope type_in_scope type_condition :
       is_object_type s type_in_scope ->
-      is_object_type s t ->
-      ϕ != [::] ->
-      queries_conform s t ϕ -> 
-      query_conforms s type_in_scope (InlineFragment t ϕ) <->
-      t = type_in_scope.
+      is_object_type s type_condition ->
+      is_fragment_spread_possible s type_in_scope type_condition <->
+      type_in_scope = type_condition.
     Proof.
+      intros; split.
+        
     Admitted.
     
 
+    (**
+       https://graphql.github.io/graphql-spec/June2018/#sec-Abstract-Spreads-in-Object-Scope
+     *)
+    Lemma interface_spreads_in_object_scope type_in_scope type_condition :
+      is_object_type s type_in_scope ->
+      is_interface_type s type_condition ->
+      is_fragment_spread_possible s type_in_scope type_condition <->
+      type_in_scope \in implementation s type_condition.
+    Proof.
+      intros; split.
+    Admitted.
+
+    (**
+       https://graphql.github.io/graphql-spec/June2018/#sec-Abstract-Spreads-in-Object-Scope
+     *)
+    Lemma union_spreads_in_object_scope type_in_scope type_condition :
+      is_object_type s type_in_scope ->
+      is_union_type s type_condition ->
+      is_fragment_spread_possible s type_in_scope type_condition <->
+      type_in_scope \in union_members s type_condition.
+    Proof.
+      intros; split.
+    Admitted.
     
-    Lemma interface_spreads_in_object_scope type_in_scope t ϕ :
-      is_object_type s type_in_scope ->
-      is_interface_type s t ->
-      query_conforms s type_in_scope (InlineFragment t ϕ) ->
-      type_in_scope \in implementation s t.
-    Proof.
-      move/is_object_type_wfP=> [intfs [flds Hlook] ].
-      move/is_interface_type_wfP=> [iflds Hlook'].
-      simp query_conforms=> /and3P [Hspread _ _].
-      move: Hspread; rewrite /is_fragment_spread_possible; simp get_possible_types; rewrite Hlook Hlook' /=.
-        by rewrite -seq1IC; apply: seq1I_N_nil.
-    Qed.
-
-    Lemma union_spreads_in_object_scope type_in_scope t ϕ :
-      is_object_type s type_in_scope ->
-      is_union_type s t ->
-      query_conforms s type_in_scope (InlineFragment t ϕ) ->
-      type_in_scope \in union_members s t.
-    Proof.
-      funelim (is_object_type s type_in_scope) => // _.
-      funelim (is_union_type s t) => // _.
-      simp query_conforms.
-      move/and3P=> [Hspread _ _].
-      move: Hspread; rewrite /is_fragment_spread_possible; simp get_possible_types; rewrite Heq Heq0 /=.
-      rewrite /SchemaAux.union_members Heq.
-        by rewrite -seq1IC; apply: seq1I_N_nil.
-    Qed.
-
-    
-    Lemma abstract_spreads_in_object_scope type_in_scope t ϕ :
-      is_object_type s type_in_scope ->
-      ϕ != [::] ->
-      queries_conform s t ϕ ->
-      (is_interface_type s t \/ is_union_type s t) ->
-      reflect (type_in_scope \in implementation s t \/ type_in_scope \in union_members s t)
-              (query_conforms s type_in_scope (InlineFragment t ϕ)).
-    Proof.
-      move=> Hobj Hne Hqsc Htype.
-      apply: (iffP idP).
-      - case: Htype => [Hint | Hunion].
-          by move/(interface_spreads_in_object_scope Hobj Hint); left.
-            by move/(union_spreads_in_object_scope Hobj Hunion); right.
-      - move: Hqsc; rewrite /queries_conform => /andP [Hall Hmerge].
-        move=> H.      
-        simp query_conforms; apply/and3P; split=> //.
-        * move/is_object_type_wfP: Hobj => [intfs [flds Holook] ].
-          case: H => [Himpl | Hmb]; 
-                      rewrite /is_fragment_spread_possible; simp get_possible_types.
-          move: (has_implementation_is_interface Himpl) => /is_interface_type_wfP [iflds Hilook].
-            by rewrite Holook Hilook /= -seq1IC seq1I Himpl.
-            
-            move: (in_union Hmb) => /is_union_type_wfP [mbs Hulook].
-            rewrite Holook Hulook /= -seq1IC seq1I.
-            rewrite /union_members Hulook in Hmb.
-              by rewrite Hmb.
-    Qed.
-
-    Lemma object_spreads_in_interface_scope type_in_scope t ϕ :
-      is_object_type s t ->
+ 
+    (**
+       https://graphql.github.io/graphql-spec/June2018/#sec-Object-Spreads-In-Abstract-Scope
+     *)
+    Lemma object_spreads_in_interface_scope type_in_scope type_condition :
       is_interface_type s type_in_scope ->
-      ϕ != [::] ->
-      queries_conform s t ϕ ->
-      reflect (t \in implementation s type_in_scope)
-              (query_conforms s type_in_scope (InlineFragment t ϕ)).
+      is_object_type s type_condition ->
+      is_fragment_spread_possible s type_in_scope type_condition <->
+      type_condition \in implementation s type_in_scope.
     Proof.
-      move=> Hobj Hintf Hne Hqsc.
-      apply: (iffP idP).
-      - simp query_conforms => /and3P [Hspread _ _].
-        move: (object_spreads_E Hobj Hspread) => [Heq | // | /in_union Hun].
-        * move: (is_object_type_interfaceN Hobj); rewrite Heq.
-            by rewrite /negb Hintf.
-        * by move: (is_interface_type_unionN Hintf); rewrite /negb Hun.
-      - move=> Himpl; simp query_conforms.
-        apply/and3P; split=> //=.
-        * rewrite /is_fragment_spread_possible.
-          move/get_possible_types_interfaceE: Hintf => ->.
-          move/get_possible_types_objectE: Hobj => ->.
-            by rewrite seq1I Himpl.
+      intros; split.
+    Admitted.
 
-              by move: Hqsc; rewrite /queries_conform => /andP [H1 H2].
-    Qed.
+    (**
+       https://graphql.github.io/graphql-spec/June2018/#sec-Object-Spreads-In-Abstract-Scope
+     *)
+    Lemma object_spreads_in_union_scope type_in_scope type_condition :
+      is_union_type s type_in_scope ->
+      is_object_type s type_condition ->
+      is_fragment_spread_possible s type_in_scope type_condition <->
+      type_condition \in union_members s type_in_scope.
+    Proof.
+      intros; split.
+    Admitted.
 
+
+    
+    
     
   End FragmentSpread.
 
