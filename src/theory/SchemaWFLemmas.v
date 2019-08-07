@@ -84,51 +84,51 @@ Section Theory.
     - by move=> [intfs [flds Hlook]]; simp is_object_type; rewrite Hlook.
   Qed.
 
-  Lemma is_interface_type_wfP ty :
-    reflect (exists flds, lookup_type s ty = Some (InterfaceTypeDefinition ty flds))
-            (is_interface_type s ty).
-  Proof.
-    apply: (iffP idP).
-    - funelim (is_interface_type s ty) => // _.
-        by exists fields0; rewrite Heq; move/lookup_type_name_wf: Heq => ->.
-    - move=> [flds Hlook].
-        by rewrite is_interface_type_equation_1 Hlook.
-  Qed.
+  (* Lemma is_interface_type_wfP ty : *)
+  (*   reflect (exists flds, lookup_type s ty = Some (InterfaceTypeDefinition ty flds)) *)
+  (*           (is_interface_type s ty). *)
+  (* Proof. *)
+  (*   apply: (iffP idP). *)
+  (*   - funelim (is_interface_type s ty) => // _. *)
+  (*       by exists fields0; rewrite Heq; move/lookup_type_name_wf: Heq => ->. *)
+  (*   - move=> [flds Hlook]. *)
+  (*       by rewrite is_interface_type_equation_1 Hlook. *)
+  (* Qed. *)
  
 
-  Lemma is_union_type_wfP ty :
-    reflect (exists mbs, lookup_type s ty = Some (UnionTypeDefinition ty mbs))
-            (is_union_type s ty).
-  Proof.
-    apply: (iffP idP).
-    - funelim (is_union_type s ty) => // _.
-        by exists union_members; rewrite Heq; move/lookup_type_name_wf: Heq => ->.
-    - move=> [mbs Hlook].
-        by rewrite is_union_type_equation_1 Hlook.
-  Qed.
+  (* Lemma is_union_type_wfP ty : *)
+  (*   reflect (exists mbs, lookup_type s ty = Some (UnionTypeDefinition ty mbs)) *)
+  (*           (is_union_type s ty). *)
+  (* Proof. *)
+  (*   apply: (iffP idP). *)
+  (*   - funelim (is_union_type s ty) => // _. *)
+  (*       by exists union_members; rewrite Heq; move/lookup_type_name_wf: Heq => ->. *)
+  (*   - move=> [mbs Hlook]. *)
+  (*       by rewrite is_union_type_equation_1 Hlook. *)
+  (* Qed. *)
 
     
-  Lemma declares_implementation_are_interfaces tdef (interface_type : string) :
-    declares_implementation s tdef interface_type ->
-    is_interface_type s interface_type.
-  Proof.
-    move=> Hdecl.
-    have /is_object_type_wfP [intfs [flds Hlook]] := (declares_implementation_is_object Hdecl).
-    move: Hdecl Hlook; wfschema s => Hdecl Hlook.
-    move: (Hok (ObjectTypeDefinition tdef intfs flds)).
-  (*   move=> /= /and5P [_ _ _ /allP Hintf _]. *)
-  (*   rewrite /declares_implementation in Hdecl. *)
-  (*   move/lookup_in_schemaP: Hlook => Hlook. *)
-  (*   rewrite Hlook in Hdecl. *)
-  (*   by apply: (Hintf interface_type Hdecl). *)
-  (* Qed. *)
-  Admitted.
+  (* Lemma declares_implementation_are_interfaces tdef (interface_type : string) : *)
+  (*   declares_implementation s tdef interface_type -> *)
+  (*   is_interface_type s interface_type. *)
+  (* Proof. *)
+  (*   move=> Hdecl. *)
+  (*   have /is_object_type_wfP [intfs [flds Hlook]] := (declares_implementation_is_object Hdecl). *)
+  (*   move: Hdecl Hlook; wfschema s => Hdecl Hlook. *)
+  (*   move: (Hok (ObjectTypeDefinition tdef intfs flds)). *)
+  (* (*   move=> /= /and5P [_ _ _ /allP Hintf _]. *) *)
+  (* (*   rewrite /declares_implementation in Hdecl. *) *)
+  (* (*   move/lookup_in_schemaP: Hlook => Hlook. *) *)
+  (* (*   rewrite Hlook in Hdecl. *) *)
+  (* (*   by apply: (Hintf interface_type Hdecl). *) *)
+  (* (* Qed. *) *)
+  (* Admitted. *)
   
-  Lemma has_implementation_is_interface ty t :
-    t \in implementation s ty ->
-    is_interface_type s ty.
-  Proof.  
-  Admitted.
+  (* Lemma has_implementation_is_interface ty t : *)
+  (*   t \in implementation s ty -> *)
+  (*   is_interface_type s ty. *)
+  (* Proof.   *)
+  (* Admitted. *)
 
       
   (* Lemma field_in_interface_in_object ty ti f : *)
@@ -209,34 +209,34 @@ Section Theory.
     by move/(_ ty Hin).
   Qed.
 
-   Lemma in_possible_typesPwf t ty :
-    is_object_type s t ->
-    reflect
-      ([\/ t = ty,
-        t \in implementation s ty |
-        t \in union_members s ty])
-      (t \in get_possible_types s ty).
-  Proof.
-    move=> Hobj.
-    apply: (iffP idP).
-    - apply_funelim (get_possible_types s ty) => //=.
-      * by move=> ty' o i flds _;  rewrite mem_seq1 => /eqP ->; constructor 1.
-      * by move=> ty' i flds /lookup_type_name_wf /= ->; constructor 2.
-      * by move=> ty' u mbs Hlook; rewrite /union_members Hlook; constructor 3.
+  (*  Lemma in_possible_typesPwf t ty : *)
+  (*   is_object_type s t -> *)
+  (*   reflect *)
+  (*     ([\/ t = ty, *)
+  (*       t \in implementation s ty | *)
+  (*       t \in union_members s ty]) *)
+  (*     (t \in get_possible_types s ty). *)
+  (* Proof. *)
+  (*   move=> Hobj. *)
+  (*   apply: (iffP idP). *)
+  (*   - apply_funelim (get_possible_types s ty) => //=. *)
+  (*     * by move=> ty' o i flds _;  rewrite mem_seq1 => /eqP ->; constructor 1. *)
+  (*     * by move=> ty' i flds /lookup_type_name_wf /= ->; constructor 2. *)
+  (*     * by move=> ty' u mbs Hlook; rewrite /union_members Hlook; constructor 3. *)
       
         
-    - move=> [<- | Hintfs | Hunion]; simp get_possible_types.
-      * move/is_object_type_wfP: Hobj => [intfs [flds Hlook]].
-          by rewrite Hlook /= mem_seq1; apply/eqP.
-      * (* move: (declares_in_implementation s t ty). *)
-  (*       case=> _ H. *)
-  (*       move: (H Hintfs) => /declares_implementation_are_interfaces. *)
-  (*       move/is_interface_type_wfP=> [flds Hlook]. *)
-  (*       by rewrite Hlook. *)
-  (*     - move: (in_union Hunion) => /is_union_type_wfP [mbs Hlook]. *)
-  (*       by rewrite /union_members Hlook in Hunion *. *)
-  (* Qed.  *)
-  Admitted.
+  (*   - move=> [<- | Hintfs | Hunion]; simp get_possible_types. *)
+  (*     * move/is_object_type_wfP: Hobj => [intfs [flds Hlook]]. *)
+  (*         by rewrite Hlook /= mem_seq1; apply/eqP. *)
+  (*     * (* move: (declares_in_implementation s t ty). *) *)
+  (* (*       case=> _ H. *) *)
+  (* (*       move: (H Hintfs) => /declares_implementation_are_interfaces. *) *)
+  (* (*       move/is_interface_type_wfP=> [flds Hlook]. *) *)
+  (* (*       by rewrite Hlook. *) *)
+  (* (*     - move: (in_union Hunion) => /is_union_type_wfP [mbs Hlook]. *) *)
+  (* (*       by rewrite /union_members Hlook in Hunion *. *) *)
+  (* (* Qed.  *) *)
+  (* Admitted. *)
 
 
   Lemma in_tdefs_get_first tdef tdefs :

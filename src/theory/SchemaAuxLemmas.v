@@ -276,18 +276,18 @@ Section Theory.
     Qed.
     
     
-    Lemma declares_implementationP ty ity :
-      reflect (exists2 tdef, lookup_type s ty = Some tdef & ity \in tdef.(tintfs))
-              (declares_implementation s ty ity).
-    Proof.
-      apply: (iffP idP).
-      - rewrite /declares_implementation.
-        case Hlook : lookup_type => [tdef|] //.
-          by exists tdef => // {Hlook}; case: tdef H => //.
-                    - move=> [tdef Hlook Hin].
-                      rewrite /declares_implementation Hlook.
-                        by move: (in_intfs Hin) => [n [flds ->]].
-    Qed.
+    (* Lemma declares_implementationP ty ity : *)
+    (*   reflect (exists2 tdef, lookup_type s ty = Some tdef & ity \in tdef.(tintfs)) *)
+    (*           (declares_implementation s ty ity). *)
+    (* Proof. *)
+    (*   apply: (iffP idP). *)
+    (*   - rewrite /declares_implementation. *)
+    (*     case Hlook : lookup_type => [tdef|] //. *)
+    (*       by exists tdef => // {Hlook}; case: tdef H => //. *)
+    (*                 - move=> [tdef Hlook Hin]. *)
+    (*                   rewrite /declares_implementation Hlook. *)
+    (*                     by move: (in_intfs Hin) => [n [flds ->]]. *)
+    (* Qed. *)
 
    
 
