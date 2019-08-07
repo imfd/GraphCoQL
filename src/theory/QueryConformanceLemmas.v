@@ -112,7 +112,16 @@ Section Theory.
     
   End FragmentSpread.
 
-  Section QueryConformance.
+  
+End Theory.
+
+
+
+
+
+(* Unused lemmas *)
+
+
 
     (* Variable (s : @wfSchema Name Vals). *)
     
@@ -319,7 +328,3 @@ Section Theory.
     (* Admitted. *)
 
     
-  End QueryConformance.
-
-  
-End Theory.

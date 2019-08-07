@@ -38,8 +38,6 @@ Section Theory.
   
   Ltac apply_andP := apply/andP; split=> //.
   Ltac apply_and3P := apply/and3P; split=> //.
-  (* Ltac all_cons := rewrite {1}/all -/(all _ _) => /andP; case. *)
-  (* Ltac query_conforms := simp query_conforms; try move/and5P; try apply/and5P. *)
 
 
   Transparent qresponse_name.
@@ -138,16 +136,6 @@ Section Theory.
   Qed.
   
   
-  (* Lemma inlining_preserves_non_redundancy (φ : seq (@Query Vals)) (ptys : seq Name) : *)
-  (*   are_non_redundant φ -> *)
-  (*   uniq ptys -> *)
-  (*   are_non_redundant [seq InlineFragment t φ | t <- ptys]. *)
-  (* Proof. *)
-  (*   elim: ptys => //= t ptys IH Hnr /andP [Hnin Huniq]. *)
-  (*   simp are_non_redundant; apply_and3P => /=; last by apply: IH. *)
-  (*   apply/hasPn=> frag /mapP [t' Hin ->]; simp are_similar. *)
-  (*     by move/memPn: Hnin => /(_ t' Hin). *)
-  (* Qed. *)
   
   Lemma normalize_are_non_redundant ty φ :
     is_object_type s ty ->
@@ -242,3 +230,17 @@ Section Theory.
   
 
 End Theory.
+
+
+
+
+(* Lemma inlining_preserves_non_redundancy (φ : seq (@Query Vals)) (ptys : seq Name) : *)
+  (*   are_non_redundant φ -> *)
+  (*   uniq ptys -> *)
+  (*   are_non_redundant [seq InlineFragment t φ | t <- ptys]. *)
+  (* Proof. *)
+  (*   elim: ptys => //= t ptys IH Hnr /andP [Hnin Huniq]. *)
+  (*   simp are_non_redundant; apply_and3P => /=; last by apply: IH. *)
+  (*   apply/hasPn=> frag /mapP [t' Hin ->]; simp are_similar. *)
+  (*     by move/memPn: Hnin => /(_ t' Hin). *)
+  (* Qed. *)

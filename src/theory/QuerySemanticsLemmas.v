@@ -93,15 +93,7 @@ Section Theory.
   Proof.
       by apply: (exec_frags_nil_func (fun t qs => qs)).
   Qed.
-  
-  (* Lemma exec_frags_nil_get_types u ty φ : *)
-  (*   u.(ntype) \notin get_possible_types s ty -> *)
-  (*   ⟦ [seq InlineFragment t φ | t <- get_possible_types s ty] ⟧ˢ in u = [::]. *)
-  (* Proof. *)
-  (*     by move=> Hnin; apply: exec_frags_nil => //=; [apply: uniq_get_possible_types | apply/allP; apply: in_possible_types_is_object]. *)
-  (* Qed. *)
-
-
+ 
 
   Lemma exec_cat_frags_func (f : Name -> seq (@Query Vals) -> seq Query) ptys u φ1 φ2 :
     (forall rname t φ, filter_queries_with_label rname (f t φ) = f t (filter_queries_with_label rname φ)) ->
@@ -413,6 +405,17 @@ Section Theory.
 
 
 
+End Theory.
+
+
+
+
+
+
+
+(* Unused lemmas *)
+
+
 
   (* Section Equiv. *)
     
@@ -518,4 +521,3 @@ Section Theory.
   (* Qed. *)
   
 
-End Theory.
