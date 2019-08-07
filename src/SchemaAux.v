@@ -266,6 +266,10 @@ Section SchemaAux.
      2. Interface : Possible types are all types that declare implementation of this interface.
      3. Union : Possible types are all members of the union.
 
+     ---- 
+     See also:
+
+     https://graphql.github.io/graphql-spec/June2018/#GetPossibleTypes()
      **)
     Equations get_possible_types (ty : Name) : seq Name :=
       {
