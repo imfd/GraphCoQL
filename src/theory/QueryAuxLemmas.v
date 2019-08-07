@@ -4,7 +4,6 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 From CoqUtils Require Import string.
-(* From extructures Require Import ord. *)
 
 From Equations Require Import Equations.
 
@@ -267,18 +266,25 @@ Section Theory.
     (* Admitted. *)
 
 
-    Lemma find_filter_swap f1 f2 ty φ :
-      f1 == f2 = false ->
-      find_queries_with_label s f1 ty (filter_queries_with_label f2 φ) = (find_queries_with_label s f1 ty φ).
+    Lemma find_filter_swap rname1 rname2 ty φ :
+      rname1 == rname2 = false ->
+      find_queries_with_label s rname1 ty (filter_queries_with_label rname2 φ) = (find_queries_with_label s rname1 ty φ).
     Proof.
-      elim: φ => //=; case=> [f α | l f α | f α β | l f α β | t β] φ IH Hneq; simp filter_queries_with_label; simp find_queries_with_label => /=.
-    Admitted.
+      move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
+      elim: n φ => /= [| n IH] φ; first by rewrite leqn0 => /queries_size_0_nil ->.
+      case: φ => //=; case=> [f α | l f α | f α β | l f α β | t β] φ; simp query_size => Hleq Hneq; simp filter_queries_with_label; simp find_queries_with_label => /=; last first.
 
-    Lemma find_absorb f ty φ :
-      find_queries_with_label s f ty (find_queries_with_label s f ty φ) = find_queries_with_label s f ty φ.
-    Admitted.
+      - by case does_fragment_type_apply => /=; [congr cat|]; apply: IH => //; ssromega.
 
-     Lemma find_filter_nil rname O__t φ :
+        all: do [case: eqP => /= [-> | Hfneq];
+                             [ by rewrite eq_sym Hneq /=; apply: IH => //; ssromega
+                             | by case: eqP => //= [/eqP Heq | /eqP-/negbTE Hfneq'];
+                                              simp find_queries_with_label => /=; rewrite ?Heq ?Hfneq' /= IH //; ssromega ] ].
+    Qed.
+          
+
+
+    Lemma find_filter_nil rname O__t φ :
       find_queries_with_label s rname O__t (filter_queries_with_label rname φ) = [::].
     Proof.
       funelim (filter_queries_with_label rname φ) => //=; do ? by simp find_queries_with_label; move/negbTE in Heq; rewrite Heq /=.
