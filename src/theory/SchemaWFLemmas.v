@@ -299,14 +299,14 @@ Section Theory.
         by move/in_union_is_object.
   Qed.
   
-  Lemma get_possible_types_interfaceE ty :
-    is_interface_type s ty ->
-    get_possible_types s ty = implementation s ty.
-  Proof.
-    move/is_interface_type_E=> [i [flds Hlook]].
-    simp get_possible_types; rewrite Hlook.
-    by move/lookup_type_name_wf: Hlook => ->.
-  Qed.
+  (* Lemma get_possible_types_interfaceE ty : *)
+  (*   is_interface_type s ty -> *)
+  (*   get_possible_types s ty = implementation s ty. *)
+  (* Proof. *)
+  (*   move/is_interface_type_E=> [i [flds Hlook]]. *)
+  (*   simp get_possible_types; rewrite Hlook. *)
+  (*   by move/lookup_type_name_wf: Hlook => ->. *)
+  (* Qed. *)
 
    (* Lemma is_subtype_obj_eq ty ty' : *)
    (*   is_object_type s ty' -> *)
