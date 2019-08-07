@@ -13,56 +13,89 @@ Require Import Base.
 
 Section Query.
 
+  (**
+     Represents any possible value used in a Query (arguments). 
+     The only requirement is that it must have a decidable procedure 
+     for equality.
+   *)
   Variables Vals : eqType.
 
   (** Unsetting because the automatically generated induction principle 
-      is not good enough. *)
+      is not good enough.
+   *)
   Unset Elimination Schemes.
 
   (** ** Query 
-
+      
+      A Query corresponds to an atomic selection in a GraphQL query. 
+      It can either be a field selection or an inline fragment.
+      
+      A query can be seen as a tree, where fields without subqueries would 
+      represent the leaves of the tree, while fields and inline fragments with 
+      subqueries represent inner nodes.
 
   ----
   **** Observations
-  1. Naming : In the spec, an atomic query is referred as "Selection" and 
+
+  1. Type naming : In the spec, an atomic query is referred as a "Selection" and 
      the collective as "Selection Sets". Here we preferred to give the 
-     name "Query" to an atomic selection instead.
-  1. Directives : Currently not implemented.
-  2. Syntax : According to the spec, the "opt" keyword means 
+     name "Query" to an atomic selection instead and a list of Query will 
+     be referred as queries.
+
+  2. Directives : Currently not implemented.
+
+  3. Syntax : According to the spec, the "opt" keyword means 
      there are two constructors; one with the element and one without. 
      For arguments we just decided to use a list, and represent the optional 
      via the empty list.
-  3. J&O : Jorge and Olaf put the list of queries at the same level as the 
-     "atomic" selections. We consider them separately, because allowing 
-     both at the same level would permit weirdly shaped trees which would have 
-     to be flattened eventually (eg. the first element of a list of queries 
-     could be another list, with nested lists inside, etc.).
 
-  https://graphql.github.io/graphql-spec/June2018/#sec-Selection-Sets 
+  4. J&O : Jorge and Olaf put the list of queries at the same level as the 
+     atomic selections. This differs from the spec and from our implementation, 
+     where we consider them separately. Allowing both at the same level would
+     permit any shape of query tree to be generated (eg. the first element of a list of queries 
+     could be another list, with nested lists inside, etc.). This would 
+     require to be flatten the queries eventually to check for conformance or other properties.
+
+  5. Fragment spread : Currently not implemented. As pointed out in J&O, fragment spreads are a 
+     convenience over inline fragments, therefore we prefer not to include them for the moment.
+
+  6. Variables : Currently not implemented. Similarly to fragment spreads, we prefer to not
+     include them for the moment.
+
+  ----
+  **** See also
+     
+     https://graphql.github.io/graphql-spec/June2018/#Selection      
+
+     https://graphql.github.io/graphql-spec/June2018/#sec-Selection-Sets 
   *)
   Inductive Query : Type :=
-  | SingleField (response_name : Name)
+  | SingleField (name : Name)
                 (arguments : seq (Name * Vals))
                 
-  | LabeledField (label : Name)
-                 (response_name : Name)
+  | LabeledField (alias : Name)
+                 (name : Name)
                  (arguments : seq (Name * Vals))
                  
-  | NestedField (response_name : Name)
+  | NestedField (name : Name)
                 (arguments : seq (Name * Vals))
                 (subqueries : seq Query)
                 
-  | NestedLabeledField (label : Name)
-                       (response_name : Name)
+  | NestedLabeledField (alias : Name)
+                       (name : Name)
                        (arguments : seq (Name * Vals))
                        (subqueries : seq Query)
 
   | InlineFragment (type_condition : Name)
                    (subqueries : seq Query).
 
+  
   Set Elimination Schemes.
 
-  
+
+  (**
+     Defining the induction principles for Query.
+   *)
   Definition Query_rect (P : Query -> Type)
              (Pl : seq Query -> Type)
              (IH_SF : forall n α, P (SingleField n α))
@@ -118,7 +151,20 @@ Section Query.
 
 
 
+  (**
+     Declaring functions to establish isomorphism of Query to GenTree, allowing us 
+     to later prove that Query has a decidable equality procedure.
+     
+     We could define our own procedure but this way we may also benefit from other properties
+     defined for GenTree already.
+   *)
+  (* Maybe not... we are not really using anything else *)
   
+  (**
+     tree_of_query : Query -> GenTree.tree (option Name * Name * List (Name * Vals))
+
+     Converts a Query into a tree.
+   *)
   Fixpoint tree_of_query query : GenTree.tree (option Name * Name * seq (Name * Vals)):=
     match query with
     | SingleField f α => GenTree.Node 0 [:: GenTree.Leaf  (None, f, α)]
@@ -129,7 +175,13 @@ Section Query.
     end.
 
 
+  (**
+     get_subqueries : List (option Query) -> List Query 
 
+     Retrieves elements of a list of options which are not None.
+
+     This could be generalised.
+   *)
   Fixpoint get_subqueries (queries : seq (option Query)) : seq Query :=
     match queries with
       | [::] => [::]
@@ -137,6 +189,13 @@ Section Query.
       | (None :: tl) => get_subqueries tl
     end.
 
+  (**
+     query_of_tree : GenTree.tree -> option Query 
+
+     Converts a tree into a Query.
+
+     If the tree cannot be converted then it returns None.
+   *)
   Fixpoint query_of_tree tree : option Query :=
     match tree with
     | (GenTree.Node 0 [:: GenTree.Leaf  (None, f, α)]) => Some (SingleField f α)
@@ -155,6 +214,10 @@ Section Query.
     end.
 
 
+  (**
+     Proving cancelling lemma, used to establish isomorphism between Query 
+     and GenTree, which can be used to establish that Query is in eqType.
+   *)
   Lemma tree_of_queryK : pcancel tree_of_query query_of_tree.
   Proof.
     move=> q.
@@ -175,7 +238,9 @@ Section Query.
   Qed.
 
   
-
+  (**
+     Defining query_eqType.
+   *)
   Canonical query_eqType := EqType Query (PcanEqMixin tree_of_queryK).
 
 
@@ -192,9 +257,14 @@ Arguments NestedField [Vals].
 Arguments NestedLabeledField [Vals].
 Arguments InlineFragment [Vals].
 
+
+(**
+   Notations follow closely to the ones used in J&O.
+ *)
 Delimit Scope query_scope with QUERY.
 Open Scope query_scope.
 
+(* Maybe we could add formatting *)
 
 Notation "f [[ α ]]" := (SingleField f α) (at level 20, α at next level) : query_scope.
 Notation "l : f [[ α ]]" := (LabeledField l f α) (at level 20, f at next level, α at next level)  : query_scope.
