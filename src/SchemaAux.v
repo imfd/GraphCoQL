@@ -4,8 +4,8 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 From Equations Require Import Equations.
-From extructures Require Import ord fset fmap.
-
+From CoqUtils Require Import string.
+Require Import Base.
 
 Require Import Schema.
 Require Import SeqExtra.
@@ -14,39 +14,11 @@ Require Import SeqExtra.
 Section SchemaAux.
 
 
-  Variable Name : ordType.
-
-  Section ArgDefExtractors.
-
-    Implicit Type (arg : @FieldArgumentDefinition Name).
-    
-    (** Extractors for a FieldArgument **)
-    Definition argname arg := let: FieldArgument n _ := arg in n.
-    Definition argtype arg := let: FieldArgument _ t := arg in t.
-
-  End ArgDefExtractors.
-
-  Section FieldDefExtractors.
-
-    Implicit Type fld : @FieldDefinition Name.
-    
-    (** Extractors for a Field **)
-    Definition fname fld := let: Field f _ _ := fld in f.
-    Definition fargs fld := let: Field _ args _ := fld in args.
-    Definition return_type fld := let: Field _ _ ty := fld in ty.
-
-
-    (** Get all unduplicated argument names from a field **)
-    Definition field_arg_names (fld : FieldDefinition) : {fset Name} := fset [seq arg.(argname) | arg <- fld.(fargs)].
-    
-
-  End FieldDefExtractors.
-
   Section TypeDefExtractors.
-
-    Implicit Type tdef : @TypeDefinition Name.
     
-    (** Extractors for a type definition **)
+    (** Extractors for type definitions **)
+
+    (** Get type definition's name **)
     Definition tdname tdef : Name :=
       match tdef with
       | Scalar name
@@ -56,7 +28,7 @@ Section SchemaAux.
       | Enum name { _ } => name
       end.
 
-
+    (** Get type definition's field **)
     Definition tfields tdef : seq FieldDefinition :=
       match tdef with 
       | Object _ implements _ { flds }
@@ -64,51 +36,67 @@ Section SchemaAux.
       | _ => [::]
       end.
 
-    Definition tintfs tdef : {fset NamedType} :=
+    (** Get type definition's declared interfaces **)
+    Definition tintfs tdef : seq Name :=
       match tdef with
       | Object _ implements intfs { _ } => intfs
-      | _ => fset0
+      | _ => [::]
       end.
 
-    Definition tmbs tdef : {fset NamedType} :=
+    (** Get type definition's members (only valid for union type) **)
+    Definition tmbs tdef : seq Name :=
       match tdef with
       | Union _ { mbs }=> mbs
-      | _ => fset0
+      | _ => [::]
       end.
 
-    Definition tenums tdef : {fset (@EnumValue Name)} :=
+    (** Get type definition's members (only valid for enum type) **) 
+    Definition tenums tdef : seq EnumValue :=
       match tdef with
       | Enum _ { enums } => enums
-      | _ => fset0
+      | _ => [::]
       end.
 
     
-    (** Get all field names from a type definition **)
-    Definition tdef_field_names (tdef : @TypeDefinition Name) : {fset Name} := fset [seq fld.(fname) | fld <- tdef.(tfields)].
+    (* (** Get all unduplicated field names from a type definition **) *)
+    (* Definition tdef_field_names (tdef : TypeDefinition) : seq Name := undup [seq fld.(fname) | fld <- tdef.(tfields)]. *)
 
 
   End TypeDefExtractors.
   
 
-  Variable schema : @schema Name.
-
 
 
   (** Checks whether the given type definition has the given name **)
-  Definition has_name (name : @NamedType Name) (tdef : TypeDefinition) : bool :=
+  Definition has_name (name : Name) (tdef : TypeDefinition) : bool :=
     name == tdef.(tdname).
   
 
   
-  Definition lookup_type (ty : Name) := schema.(type_definitions) ty.
+  Variable schema : graphQLSchema.
+
+  (* (** Finds the first type definitions that has the given name **) *)
+  (* Equations find_tdef_with_name (tdefs : seq TypeDefinition) (ty : Name) : option TypeDefinition := *)
+  (*   { *)
+  (*     find_tdef_with_name [::] _ := None; *)
+  (*     find_tdef_with_name (tdef :: tdefs) ty *)
+  (*       with tdef.(tdname) == ty := *)
+  (*       { *)
+  (*       | true := Some tdef; *)
+  (*       | _ := find_tdef_with_name tdefs ty *)
+  (*       } *)
+  (*   }. *)
+  
+  Definition lookup_type (ty : Name) :=
+    get_first (fun tdef => tdef.(tdname) == ty) schema.(type_definitions).
 
   
   
   Section TypePredicates.
     
     (** Checks whether the given type is defined as a Scalar in the Schema **)
-    Definition is_scalar_type (ty : NamedType) : bool :=
-      match (lookup_type ty) with
+    Definition is_scalar_type (ty : Name) : bool :=
+      match lookup_type ty with
       | Some (Scalar _) => true
       | _ => false
       end.
@@ -116,7 +104,7 @@ Section SchemaAux.
 
     
     (** Checks whether the given type is defined as an Object in the Schema **)
-    Equations is_object_type (ty : @NamedType Name) : bool :=
+    Equations is_object_type (ty : Name) : bool :=
       is_object_type ty with lookup_type ty :=
         {
         | Some (Object _ implements _ { _ }) := true;
@@ -126,7 +114,7 @@ Section SchemaAux.
 
 
     (** Checks whether the given type is defined as an Interface in the Schema **)
-    Equations is_interface_type (ty : @NamedType Name) : bool :=
+    Equations is_interface_type (ty : Name) : bool :=
       is_interface_type ty with lookup_type ty :=
         {
         | Some (Interface _ { _ }) := true;
@@ -136,7 +124,7 @@ Section SchemaAux.
     
     
     (** Checks whether the given type is defined as a Union in the Schema **)
-    Equations is_union_type (ty : @NamedType Name) : bool :=
+    Equations is_union_type (ty : Name) : bool :=
       is_union_type ty with lookup_type ty :=
         {
         | Some (Union _ { _ }) := true;
@@ -145,26 +133,26 @@ Section SchemaAux.
 
     
     (** Checks whether the given type is defined as an Enum in the Schema **)
-    Definition is_enum_type (ty : NamedType) : bool :=
-      match (lookup_type ty) with
+    Definition is_enum_type (ty : Name) : bool :=
+      match lookup_type ty with
       | Some (Enum _ { _ }) => true
       | _ => false
       end.
 
     (** Checks whether the given type is a list type (does not care for the wrapped type) **)
-    Definition is_list_type (ty : @type Name) : bool :=
+    Definition is_list_type (ty : type) : bool :=
       match ty with
       | [ ty' ] => true
       | _ => false
       end.
 
-    Definition is_abstract_type (ty : NamedType) : bool :=
+    Definition is_abstract_type (ty : Name) : bool :=
       is_interface_type ty ||  is_union_type ty.
 
-    Definition is_composite_type (ty : NamedType) : bool :=
+    Definition is_composite_type (ty : Name) : bool :=
       [|| is_object_type ty, is_interface_type ty | is_union_type ty].
 
-    Definition is_leaf_type (ty : NamedType) : bool :=
+    Definition is_leaf_type (ty : Name) : bool :=
       is_scalar_type ty || is_enum_type ty.
     
   End TypePredicates.
@@ -173,7 +161,7 @@ Section SchemaAux.
   
 
   (** Get all type definitions' names from a schema **)
-  Definition schema_names : {fset Name} := fset [seq tdef.(tdname) | tdef <- codomm (schema.(type_definitions))]. 
+  Definition schema_names : seq Name := [seq tdef.(tdname) | tdef <- schema.(type_definitions)]. 
 
 
   (** Check whether a given name is declared in the schema, as a type definition **)
@@ -192,7 +180,7 @@ Section SchemaAux.
      Gets the first field definition from a given type that matches the given field name. 
      If the type is not declared in the Schema or the field does not belong to the type, then it returns None.
      **)
-    Definition lookup_field_in_type (ty : NamedType) (fname : Name) : option FieldDefinition :=
+    Definition lookup_field_in_type (ty : Name) (fname : Name) : option FieldDefinition :=
       if lookup_type ty is Some tdef then
         get_first (has_field_name fname) tdef.(tfields)
       else
@@ -205,7 +193,7 @@ Section SchemaAux.
       If the type is not declared in the Schema or the field does not belong to the type, then it returns None.
 
      **)
-    Definition lookup_field_type (ty : NamedType) (fname : Name)  : option type :=
+    Definition lookup_field_type (ty : Name) (fname : Name)  : option type :=
       match lookup_field_in_type ty fname with
       | Some fld => Some fld.(return_type)
       | None => None
@@ -216,14 +204,14 @@ Section SchemaAux.
      given type and field. If the argument is not defined then it returns None.
      If the field is not declared in that type, then it returns None.
      **)
-    Definition lookup_argument_in_type_and_field (ty : NamedType) (fname aname : Name) : option FieldArgumentDefinition :=
+    Definition lookup_argument_in_type_and_field (ty : Name) (fname aname : Name) : option FieldArgumentDefinition :=
       match lookup_field_in_type ty fname with
       | Some (Field fname args _) => get_first (fun arg => arg.(argname) == aname) args
       | _ => None
       end.
 
     (** Get list of fields declared in an Object or Interface type definition **)
-    Definition fields (ty : NamedType) : seq FieldDefinition :=
+    Definition fields (ty : Name) : seq FieldDefinition :=
       match lookup_type ty with
       | Some (Object _ implements _ { flds })
       | Some (Interface _ { flds }) => flds
@@ -239,17 +227,17 @@ Section SchemaAux.
      Get the union's types' names.
      If the type is not declared as Union in the Schema, then returns None.
      **)
-    Definition union_members (ty : NamedType) : {fset NamedType} :=
+    Definition union_members (ty : Name) : seq Name :=
       match lookup_type ty with
       | Some (Union _ { mbs }) => mbs
-      | _ => fset0
+      | _ => [::]
       end.
 
     
     (**
      Checks whether the given type declares implementation of another type.
      **)
-    Definition declares_implementation (ty ty' : NamedType) : bool :=
+    Definition declares_implementation (ty ty' : Name) : bool :=
       match lookup_type ty with
       | Some (Object _ implements intfs { _ }) => ty' \in intfs
       | _ => false
@@ -257,7 +245,7 @@ Section SchemaAux.
 
 
     
-    Definition implements_interface (iname : NamedType) (tdef : @TypeDefinition Name) : bool :=
+    Definition implements_interface (iname : Name) (tdef : TypeDefinition) : bool :=
       iname \in tdef.(tintfs).
 
 
@@ -265,8 +253,8 @@ Section SchemaAux.
     
     
 
-    Definition implementation (ty : NamedType) : seq NamedType :=
-      undup [seq tdef.(tdname) | tdef <- codomm schema.(type_definitions) & implements_interface ty tdef].
+    Definition implementation (ty : Name) : seq Name :=
+      undup [seq tdef.(tdname) | tdef <- schema.(type_definitions) & implements_interface ty tdef].
 
     
     (**
@@ -279,7 +267,7 @@ Section SchemaAux.
      3. Union : Possible types are all members of the union.
 
      **)
-    Equations get_possible_types (ty : @NamedType Name) : seq (@NamedType Name) :=
+    Equations get_possible_types (ty : Name) : seq Name :=
       {
         get_possible_types ty with lookup_type ty :=
           {
@@ -300,10 +288,3 @@ Section SchemaAux.
 End SchemaAux.
 
 
-Arguments lookup_type [Name].
-Arguments is_enum_type [Name].
-
-
-Arguments lookup_field_in_type [Name].
-Arguments lookup_field_type [Name].
-Arguments union_members [Name].

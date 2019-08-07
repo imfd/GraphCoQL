@@ -4,34 +4,21 @@ Unset Printing Implicit Defensive.
 Set Asymmetric Patterns.
 
 From Equations Require Import Equations.
-From extructures Require Import ord.
-
-
-Require Import treeordtype.
+From CoqUtils Require Import string.
 
 Require Import SeqExtra.
-
-
-Section Label.
-(** Tag to discriminate between a tree with labels in its edges 
-     or without them.  **)
-  Inductive L :=
-  | Labeled: L
-  | Unlabeled : L.
-
-  Derive NoConfusion for L.
-End Label.
+Require Import Base.
 
 
 Section Response.
 
-  Context {A B : eqType}.
+  Context {A : eqType}.
   
   Unset Elimination Schemes.
 
   Inductive ResponseNode : Type :=
   | Leaf : A -> ResponseNode
-  | Object : seq (B * ResponseNode) -> ResponseNode
+  | Object : seq (Name * ResponseNode) -> ResponseNode
   | Array : seq ResponseNode -> ResponseNode.
 
   
@@ -139,7 +126,7 @@ Section Response.
       rsize (Object rt) := (lrsize rt).+1;
       rsize (Array rt) := (list_size rsize rt).+1
     }
-  where lrsize (r : seq (B * ResponseNode)) : nat :=
+  where lrsize (r : seq (Name * ResponseNode)) : nat :=
           {
             lrsize [::] := 0;
             lrsize (hd :: tl) := rsize hd.2 + lrsize tl
@@ -154,7 +141,7 @@ Section Response.
 
             is_non_redundant (Array rt) := all is_non_redundant rt
           }
-  where are_non_redundant (responses : seq (B * ResponseNode)) : bool  :=
+  where are_non_redundant (responses : seq (Name * ResponseNode)) : bool  :=
     {
       are_non_redundant [::] := true;
 
@@ -171,7 +158,7 @@ End Response.
 
 Section GraphQLResponse.
   
-  Context {Name Vals : ordType}.
+  Variable (Vals : eqType).
   
   Inductive Value : Type :=
   | Null : Value
@@ -187,10 +174,18 @@ Section GraphQLResponse.
 
   Canonical value_eqType := EqType Value (CanEqMixin option_of_valueK).
   
-  Definition GraphQLResponse := seq (Name * (@ResponseNode value_eqType Name)).
+  Definition GraphQLResponse := seq (Name * (@ResponseNode Vals)).
 
 End GraphQLResponse.
 
+Arguments ResponseNode [A].
+Arguments Leaf [A].
+Arguments Object [A].
+Arguments Array [A].
+
+Arguments Value [Vals].
+Arguments Null [Vals].
+Arguments SingleValue [Vals].
 
 Delimit Scope response_scope with RESP.
 Open Scope response_scope.

@@ -6,42 +6,62 @@ Unset Printing Implicit Defensive.
 
 Set Asymmetric Patterns.
 
-From extructures Require Import ord fmap.
+From CoqUtils Require Import string.
 
-
-Require Import treeordtype.
-
-Delimit Scope query_scope with QUERY.
-Open Scope query_scope.
+Require Import Base.
 
 
 Section Query.
 
-  Variables Name Vals : ordType.
+  Variables Vals : eqType.
 
+  (** Unsetting because the automatically generated induction principle 
+      is not good enough. *)
   Unset Elimination Schemes.
-  
+
+  (** ** Query 
+
+
+  ----
+  **** Observations
+  1. Naming : In the spec, an atomic query is referred as "Selection" and 
+     the collective as "Selection Sets". Here we preferred to give the 
+     name "Query" to an atomic selection instead.
+  1. Directives : Currently not implemented.
+  2. Syntax : According to the spec, the "opt" keyword means 
+     there are two constructors; one with the element and one without. 
+     For arguments we just decided to use a list, and represent the optional 
+     via the empty list.
+  3. J&O : Jorge and Olaf put the list of queries at the same level as the 
+     "atomic" selections. We consider them separately, because allowing 
+     both at the same level would permit weirdly shaped trees which would have 
+     to be flattened eventually (eg. the first element of a list of queries 
+     could be another list, with nested lists inside, etc.).
+
+  https://graphql.github.io/graphql-spec/June2018/#sec-Selection-Sets 
+  *)
   Inductive Query : Type :=
   | SingleField (response_name : Name)
-                (arguments : {fmap Name -> Vals})
+                (arguments : seq (Name * Vals))
                 
   | LabeledField (label : Name)
                  (response_name : Name)
-                 (arguments : {fmap Name -> Vals})
+                 (arguments : seq (Name * Vals))
                  
   | NestedField (response_name : Name)
-                (arguments : {fmap Name -> Vals})
+                (arguments : seq (Name * Vals))
                 (subqueries : seq Query)
                 
   | NestedLabeledField (label : Name)
                        (response_name : Name)
-                       (arguments : {fmap Name -> Vals})
+                       (arguments : seq (Name * Vals))
                        (subqueries : seq Query)
 
   | InlineFragment (type_condition : Name)
                    (subqueries : seq Query).
 
   Set Elimination Schemes.
+
   
   Definition Query_rect (P : Query -> Type)
              (Pl : seq Query -> Type)
@@ -99,13 +119,13 @@ Section Query.
 
 
   
-  Fixpoint tree_of_query query : GenTree.tree (option Name * Name * {fmap Name -> Vals}):=
+  Fixpoint tree_of_query query : GenTree.tree (option Name * Name * seq (Name * Vals)):=
     match query with
     | SingleField f α => GenTree.Node 0 [:: GenTree.Leaf  (None, f, α)]
     | LabeledField l f α => GenTree.Node 1 [:: GenTree.Leaf (Some l, f, α)]
-    | NestedField f α φ => GenTree.Node 2  (GenTree.Leaf (@None Name, f, α) :: [seq (tree_of_query subquery) | subquery <- φ])
+    | NestedField f α φ => GenTree.Node 2  (GenTree.Leaf (None, f, α) :: [seq (tree_of_query subquery) | subquery <- φ])
     | NestedLabeledField l f α φ => GenTree.Node 3 (GenTree.Leaf (Some l, f, α) :: [seq (tree_of_query subquery) | subquery <- φ])
-    | InlineFragment t φ => GenTree.Node 4 (GenTree.Leaf (None, t, emptym) :: [seq (tree_of_query subquery) | subquery <- φ])
+    | InlineFragment t φ => GenTree.Node 4 (GenTree.Leaf (None, t, [::]) :: [seq (tree_of_query subquery) | subquery <- φ])
     end.
 
 
@@ -157,8 +177,6 @@ Section Query.
   
 
   Canonical query_eqType := EqType Query (PcanEqMixin tree_of_queryK).
-  Canonical query_choiceType := ChoiceType Query (PcanChoiceMixin tree_of_queryK).
-  Canonical query_ordType := OrdType Query (PcanOrdMixin tree_of_queryK).
 
 
 
@@ -167,12 +185,12 @@ Section Query.
     
 End Query.
 
-Arguments Query [Name Vals].
-Arguments SingleField [Name Vals].
-Arguments LabeledField [Name Vals].
-Arguments NestedField [Name Vals].
-Arguments NestedLabeledField [Name Vals].
-Arguments InlineFragment [Name Vals].
+Arguments Query [Vals].
+Arguments SingleField [Vals].
+Arguments LabeledField [Vals].
+Arguments NestedField [Vals].
+Arguments NestedLabeledField [Vals].
+Arguments InlineFragment [Vals].
 
 Delimit Scope query_scope with QUERY.
 Open Scope query_scope.

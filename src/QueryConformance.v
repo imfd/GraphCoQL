@@ -4,8 +4,9 @@ Unset Printing Implicit Defensive.
 
 From Equations Require Import Equations.
 
-From extructures Require Import ord fset fmap.
+From CoqUtils Require Import string.
 
+Require Import Base.
 Require Import Schema.
 Require Import SchemaAux.
 Require Import Query.
@@ -19,15 +20,14 @@ Require Import Ssromega.
 
 Section QueryConformance.
 
-  Variables Name Vals : ordType.
+  Variables Vals : eqType.
   
   
-  Implicit Type queries : seq (@Query Name Vals).
-  Implicit Type query : @Query Name Vals.
-  Implicit Type type : @type Name.
+  Implicit Type queries : seq (@Query Vals).
+  Implicit Type query : @Query Vals.
 
 
-  Variable s : @wfSchema Name Vals.
+  Variable s : @wfGraphQLSchema Vals.
  
  
   
@@ -43,7 +43,7 @@ Section QueryConformance.
   Definition argument_conforms (args : seq FieldArgumentDefinition) (arg : Name * Vals) : bool :=
     let: (argname, value) := arg in
     has (fun argdef => let: FieldArgument name ty := argdef in
-                    (name == argname) && s.(hasType) ty value) args.
+                    (name == argname) && s.(has_type) ty value) args.
   
 
   (** Checks whether a set of arguments (described as a partial mapping between names and values)
@@ -51,7 +51,7 @@ Section QueryConformance.
 
       See also [arguments_conforms].
    **)
-  Definition arguments_conform (args : seq.seq FieldArgumentDefinition) (α : {fmap Name -> Vals}) : bool :=
+  Definition arguments_conform (args : seq.seq FieldArgumentDefinition) (α : seq (Name * Vals)) : bool :=
     all (argument_conforms args) α.
      
 
@@ -78,9 +78,9 @@ Section QueryConformance.
 
 
  
- Equations are_compatible_types : @type Name -> @type Name -> bool :=
+ Equations are_compatible_types : type -> type -> bool :=
    {
-     are_compatible_types (NT rty) (NT rty')
+     are_compatible_types (NamedType rty) (NamedType rty')
        with (is_scalar_type s rty || is_enum_type s rty) :=
        {
        | true := rty == rty';
@@ -90,7 +90,7 @@ Section QueryConformance.
      are_compatible_types _ _ := false
    }.
 
- Equations has_compatible_type (ty : Name) (rty : @type Name) query : bool :=
+ Equations has_compatible_type (ty : Name) (rty : type) query : bool :=
    {
      has_compatible_type ty rty (SingleField f _)
        with lookup_field_in_type s ty f :=
@@ -122,11 +122,7 @@ Section QueryConformance.
      has_compatible_type _ _ (InlineFragment _ _) := false
    }.
 
- (* Equations can't generate the graph *)
- (* This approach considers two field selections invalid, even if one of them
-    will never be evaluated. For instance:
-      https://tinyurl.com/y39tojbq
-  *)
+
  Equations? have_compatible_response_shapes (ty : Name) queries : bool by wf (queries_size queries) :=
    {
      have_compatible_response_shapes _ [::] := true ;
@@ -354,11 +350,11 @@ Section QueryConformance.
  
 End QueryConformance.
 
-Arguments argument_conforms [Name Vals].
-Arguments arguments_conform [Name Vals].
+Arguments argument_conforms [Vals].
+Arguments arguments_conform [Vals].
 
-Arguments is_fragment_spread_possible [Name Vals].
-Arguments have_compatible_response_shapes [Name Vals].
-Arguments is_field_merging_possible [Name Vals].
-Arguments query_conforms [Name Vals].
-Arguments queries_conform [Name Vals].
+Arguments is_fragment_spread_possible [Vals].
+Arguments have_compatible_response_shapes [Vals].
+Arguments is_field_merging_possible [Vals].
+Arguments query_conforms [Vals].
+Arguments queries_conform [Vals].

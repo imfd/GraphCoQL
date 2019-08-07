@@ -3,100 +3,16 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-From extructures Require Import ord fset fmap.
-
-Require Import treeordtype.
-
-
-Delimit Scope schema_scope with SCHEMA.
-Open Scope schema_scope.
+From CoqUtils Require Import string.
+Require Import Base.
 
 Section Schema.
 
-  (**
-     Names for everything, from operations, fields, arguments, types, etc.
-
-     https://facebook.github.io/graphql/June2018/#sec-Names **)
-  Variable Name : ordType.
-
-  
-  (**
-     Same as names, except that it can't be true, false or null. 
-     Right now it is just the same as Name.
-
-     https://facebook.github.io/graphql/June2018/#EnumValue **)
-  Definition EnumValue := Name.
-
-
-  
-  Section Types.
-
-    (** 
-        Basically the same as a name.    
-    
-        https://facebook.github.io/graphql/June2018/#NamedType **)
-    Definition NamedType := Name.
-
-    
-    (** Types of data expected by query variables.
-
-        NonNull types are omitted in this current version.
-
-        https://facebook.github.io/graphql/June2018/#sec-Type-References **)
-    Inductive type : Type :=
-    | NT : NamedType -> type
-    | ListType : type -> type.
-
-
-
-  
-    (** Get a type's wrapped name.
-        Corresponds to a named type's actual name or the name used in a list type
-
-        https://facebook.github.io/graphql/June2018/#sec-Type-References
-        https://facebook.github.io/graphql/June2018/#sec-Wrapping-Types **)
-    Fixpoint tname (ty : type) : NamedType :=
-      match ty with
-      | NT name => name
-      | ListType ty' => tname ty'
-      end.
-
-    Coercion tname : type >-> Ord.sort.
-
-    (** Packing and unpacking of a type, needed for canonical instances **)
-    Fixpoint tree_of_type (ty : type) : GenTree.tree Name :=
-      match ty with
-      | NT n => GenTree.Node 0 [:: GenTree.Leaf n]
-      | ListType ty' => GenTree.Node 1 [:: tree_of_type ty']
-      end.
-      
-    Fixpoint type_of_tree (t : GenTree.tree Name) : option type :=
-      match t with
-      | GenTree.Node 0 [:: GenTree.Leaf n] => Some (NT n)
-      | GenTree.Node 1 [:: t'] => if (type_of_tree t') is Some ty then
-                                   Some (ListType ty)
-                                 else
-                                   None
-      | _ => None
-      end.
-
-
-    (** Cancelation lemma for types **)
-    Lemma pcan_tree_of_type : pcancel tree_of_type type_of_tree.
-    Proof. by elim=> [| t /= ->]. Qed.
-    
-    Canonical type_eqType := EqType type (PcanEqMixin pcan_tree_of_type).
-    Canonical type_choiceType := ChoiceType type (PcanChoiceMixin pcan_tree_of_type).
-    Canonical type_ordType := OrdType type (PcanOrdMixin pcan_tree_of_type).
-    
-  End Types.
-
-
-
+ 
   Section TypeSystem.
 
     
-    (** Argument for a field.
+    (** *** Argument for a field.
 
         In the specification it is named "InputValue" (InputValueDefinition) but 
         it is not very descriptive of what it is. Besides, it is constantly refered 
@@ -104,11 +20,15 @@ Section Schema.
         arguments so it may sound redundant to name it like this but I feel like it is
         more descriptive and reinforces this notion). 
 
-        https://facebook.github.io/graphql/June2018/#sec-Field-Arguments **)
-    Inductive FieldArgumentDefinition := FieldArgument (argname : Name) (argtype : type).
+        https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
+     **)
+    Structure FieldArgumentDefinition := FieldArgument {
+                                            argname : Name;
+                                            argtype : type
+                                          }.
 
-     
 
+       
     (** Packing and unpacking of a field argument, needed for canonical instances **)
     Definition prod_of_arg (arg : FieldArgumentDefinition) := let: FieldArgument n t := arg in (n, t).
     Definition arg_of_prod (p : prod Name type) := let: (n, t) := p in FieldArgument n t.
@@ -118,22 +38,26 @@ Section Schema.
   
     Canonical arg_eqType := EqType FieldArgumentDefinition (CanEqMixin prod_of_argK).
     Canonical arg_choiceType := ChoiceType FieldArgumentDefinition (CanChoiceMixin prod_of_argK).
-    Canonical arg_ordType := OrdType FieldArgumentDefinition (CanOrdMixin prod_of_argK).
+
 
 
     
-    (** Field of an object or interface in the schema. 
+    (** *** Field of an object or interface in the schema. 
         Represents a leaf or an edge between nodes of the underlying tree structure.
 
-        https://facebook.github.io/graphql/June2018/#FieldDefinition **)
-    Inductive FieldDefinition := Field (field_name : Name)
-                                      (args : {fset FieldArgumentDefinition})
-                                      (return_type : type).
+        https://graphql.github.io/graphql-spec/June2018/#FieldsDefinition
+     **)
+    Structure FieldDefinition := Field {
+                                    fname : Name;
+                                    fargs : seq FieldArgumentDefinition;
+                                    return_type : type
+                                  }.
 
-   
+
+    
     (** Packing and unpacking of a field, needed for canonical instances **)
     Definition prod_of_field (f : FieldDefinition) := let: Field n args t := f in (n, args, t).
-    Definition field_of_prod (p : Name * {fset FieldArgumentDefinition} * type)  := let: (n, args, t) := p in Field n args t.
+    Definition field_of_prod (p : Name * (seq FieldArgumentDefinition) * type)  := let: (n, args, t) := p in Field n args t.
 
     (** Cancelation lemma for a field **)
     Lemma prod_of_fieldK : cancel prod_of_field field_of_prod. Proof. by case. Qed.
@@ -141,53 +65,54 @@ Section Schema.
     
     Canonical field_eqType := EqType FieldDefinition (CanEqMixin prod_of_fieldK).
     Canonical field_choiceType := ChoiceType FieldDefinition (CanChoiceMixin prod_of_fieldK).
-    Canonical field_ordType := OrdType FieldDefinition (CanOrdMixin prod_of_fieldK).
 
+ 
 
     
   
-    (** Possible type definitions one can make in a GraphQL service. Some observations:
+    (** *** Type Definition 
 
-        1. Objects' interfaces: Objects *may* declare one or more implemented interfaces. This is 
-        is implemented as a list of <type>, which can be empty or not. As it is, an
-        object may declare an interface as a list type (eg. "type A implements [B]"), therefore
-        in the wf property there is a check that restricts this declaration to a 
-        named type.
+        Possible type definitions one can make in a GraphQL service.
+
+        Some observations:
+
+        1. Objects and Union types are defined with "NamedType" in the list of implemented
+           interfaces and members, respectively. Because NamedType is defined only as a Name,
+           we directly use this instead (https://graphql.github.io/graphql-spec/June2018/#NamedType).
 
         2. Fields: Objects and interfaces must declare at least one field but the current
-        definition allows an empty list of fields. In the wf property it is checked that
-        this list is not empty.
+           definition allows an empty list of fields. In the wf property it is checked that
+           this list is not empty.
 
-        3. InputObjects: Currently not included to simplify the formalization.
+        3. InputObjects: Currently not included in the formalization.
 
 
-        https://facebook.github.io/graphql/June2018/#TypeDefinition
+        https://graphql.github.io/graphql-spec/June2018/#TypeDefinition
      **)
 
     Inductive TypeDefinition : Type :=
     | ScalarTypeDefinition (scalar_name : Name)
                            
     | ObjectTypeDefinition (object_name : Name)
-                           (interfaces : {fset NamedType})
+                           (interfaces : seq Name)
                            (fields : seq FieldDefinition)
                            
     | InterfaceTypeDefinition (interface_name : Name)
                               (fields : seq FieldDefinition)
                               
     | UnionTypeDefinition (union_name : Name)
-                          (union_members : {fset NamedType})
+                          (union_members : seq Name)
                           
     | EnumTypeDefinition (enum_name : Name)
-                         (enum_members : {fset EnumValue}).
+                         (enum_members : seq EnumValue).
     
 
   
 
-
-    
+  
     (** Packing and unpacking of a type definition, needed for canonical instances **)
-    Notation tdefRep := (Name + (Name * {fset NamedType} * seq FieldDefinition) + (Name * seq FieldDefinition) +
-                        (Name * {fset NamedType}) + (Name * {fset EnumValue}))%type.
+    Notation tdefRep := (Name + (Name * (seq Name) * seq FieldDefinition) + (Name * seq FieldDefinition) +
+                        (Name * (seq Name)) + (Name * (seq EnumValue)))%type.
 
     
     Definition tdef_rep tdef : tdefRep :=
@@ -215,46 +140,52 @@ Section Schema.
     
     Canonical tdef_eqType := EqType TypeDefinition (CanEqMixin tdef_repK).
     Canonical tdef_choiceType := ChoiceType TypeDefinition (CanChoiceMixin tdef_repK).
-    Canonical tdef_ordType := OrdType TypeDefinition (CanOrdMixin tdef_repK).
+
     
     
       
-    (** 
-        The Schema corresponds to the type system - the collective types defined and a
-        reference to the Query type (the entry point for queries).
+    (** *** Schema Definition 
 
-        This differs from the Schema mentioned in the specification. I believe there is
-        some naming clashes when they refer to a Schema:
+        There is some name clashing when the spec refers to a schema, by which it can
+        refer to:
+        1.- The type system of the GraphQL service.
+        2.- The root operation types (Query, Mutation, Subscription).
+        3.- Both.
  
-        A GraphQL service’s collective type system capabilities are referred to as
-        that service’s “schema”. A schema is defined in terms of the types and 
-        directives it supports as well as the root operation types for each kind of
-        operation: query, mutation, and subscription [...]
+        As per the spec:
+       
+        > A GraphQL service’s collective type system capabilities are referred to as
+          that service’s “schema”. A schema is defined in terms of the types and 
+          directives it supports as well as the root operation types for each kind of
+          operation: query, mutation, and subscription [...]
 
-        This description matches the definition given in this file, but one can also define 
-        a "schema", which only describes the types for the operations: query, mutation and suscription.
-   **)
-    Inductive schema := Schema (query_type : NamedType)
-                              (type_definitions : {fmap Name -> TypeDefinition}).
+        In this formalisation we take this latter approach, in which a schema is both 
+        the root operations as well as the types defined. Some observations:
+        
+        1. Only the Query type is included as root operation (Mutation and Subscription are not).
+        
+        
+        https://graphql.github.io/graphql-spec/June2018/#sec-Schema
+    *)
+    Structure graphQLSchema := GraphQLSchema {
+                                  query_type : Name;
+                                  type_definitions : seq TypeDefinition
+                                }.
+    
+    (* Definition fun_of_schema sch := fun p => sch.(type_definitions) p. *)
 
-    (** Extractors for a schema **)
-    Definition query_type sch := let: Schema q _ := sch in q.
-    Definition type_definitions sch := let: Schema _ tdefs := sch in tdefs.
-
-    Definition fun_of_schema sch := fun p => p \in sch.(type_definitions).
-
-    Coercion fun_of_schema : schema >-> Funclass.
+    (* Coercion fun_of_schema : graphQLSchema >-> Funclass. *)
 
     (** Packing and unpacking of a schema **)
-    Definition prod_of_schema (s : schema) := let: Schema q tdefs := s in (q, tdefs).
-    Definition schema_of_prod p := let: (q, tdefs) := p in Schema q tdefs.
+    Definition prod_of_schema (s : graphQLSchema) := let: GraphQLSchema q tdefs := s in (q, tdefs).
+    Definition schema_of_prod p := let: (q, tdefs) := p in GraphQLSchema q tdefs.
 
     (** Cancelation lemma for a schema **)
     Lemma prod_of_schemaK : cancel prod_of_schema schema_of_prod.  Proof. by case. Qed.
  
-    Canonical schema_eqType := EqType schema (CanEqMixin prod_of_schemaK).
-    Canonical schema_choiceType := ChoiceType schema (CanChoiceMixin prod_of_schemaK).
-    Canonical schema_ordType := OrdType schema (CanOrdMixin prod_of_schemaK).
+    Canonical schema_eqType := EqType graphQLSchema (CanEqMixin prod_of_schemaK).
+    Canonical schema_choiceType := ChoiceType graphQLSchema (CanChoiceMixin prod_of_schemaK).
+
 
     
   End TypeSystem.
@@ -262,30 +193,12 @@ Section Schema.
     
 End Schema.
 
-(*
 
-Notation "'scalar' S" := (ScalarTypeDefinition S) (at level 0) : schema_scope.
-Notation "'object' O '{' flds '}'" := (ObjectTypeDefinition O [::] flds) : schema_scope.
-Notation "'object' O 'implements' I '{' flds '}'" := (ObjectTypeDefinition O I flds) : schema_scope.
-Notation "'interface' I '{' flds '}'" := (InterfaceTypeDefinition I flds) : schema_scope.
-Notation "'union' U '{' mbs '}'" := (UnionTypeDefinition U mbs) : schema_scope.
-Notation "'enum' E '{' evs '}'" := (EnumTypeDefinition E evs) : schema_scope.
-
- *)
-Arguments NamedType [Name].
-Arguments type [Name].
-Arguments FieldArgumentDefinition [Name].
-Arguments FieldDefinition [Name].
-Arguments TypeDefinition [Name].
-Arguments Schema [Name].
-
-Arguments tname [Name].
 
 
 Delimit Scope schema_scope with SCHEMA.
 Open Scope schema_scope.
 
-Notation "[ name ]" := (ListType name).
 Notation "argname : ty" := (FieldArgument argname ty) : schema_scope.
 Notation "fname '(' args ')' ':' ty" := (Field fname args ty) (at level 50) : schema_scope.
 

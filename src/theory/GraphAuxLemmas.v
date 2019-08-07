@@ -3,16 +3,15 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-From extructures Require Import ord fset fmap.
 
 Require Import Graph.
 Require Import GraphAux.
 Require Import SeqExtra.
 
 Section Theory.
-  Variables (F Vals : ordType).
-  Variable (graph :  @graphQLGraph F Vals).
-  Implicit Type edge : @node F Vals * @fld F Vals * @node F Vals.
+  Variables (Vals : eqType).
+  Variable (graph :  @graphQLGraph Vals).
+  Implicit Type edge : @node Vals * @fld Vals * @node Vals.
 
   
 

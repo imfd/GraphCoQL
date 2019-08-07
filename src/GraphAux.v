@@ -1,9 +1,8 @@
 From mathcomp Require Import all_ssreflect.
-Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-From extructures Require Import ord fset fmap.
+
 
 Require Import Graph.
 
@@ -11,13 +10,12 @@ Require Import Graph.
 
 Section GraphAux.
 
-  Variables (F Vals : ordType).
-  Variable (graph :  @graphQLGraph F Vals).
-  Implicit Type edge : @node F Vals * @fld F Vals * @node F Vals.
+  Variables (Vals : eqType).
+  Variable (graph :  @graphQLGraph Vals).
+  Implicit Type edge : @node Vals * @fld Vals * @node Vals.
 
   
-  Open Scope fset.
-
+  
   (** Extractors for an edge **)
 
 
@@ -63,3 +61,12 @@ Section GraphAux.
   
 
 End GraphAux.
+
+Arguments etarget [Vals].
+Arguments esource [Vals].
+Arguments efield [Vals].
+Arguments enodes [Vals].
+Arguments nodes [Vals].
+Arguments neighbours [Vals].
+Arguments neighbours_with_field [Vals].
+Arguments is_field_unique_for_src_node [Vals].

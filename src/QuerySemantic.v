@@ -2,10 +2,11 @@ From mathcomp Require Import all_ssreflect.
 Unset Printing Implicit Defensive.
 Set Asymmetric Patterns.
 
-From extructures Require Import ord fmap fset.
+
 From Equations Require Import Equations.
+From CoqUtils Require Import string.
 
-
+Require Import Base.
 Require Import Schema.
 Require Import SchemaAux.
 Require Import SchemaWellFormedness.
@@ -27,47 +28,47 @@ Require Import QueryTactics.
 
 Section QuerySemantic.
 
-  Variables N Name Vals : ordType.
+  Variables Vals : eqType.
   
   
-  Variable s : @wfSchema Name Vals.
-  Variable g : @conformedGraph Name Vals s.
+  Variable s : @wfGraphQLSchema Vals.
+  Variable g : @conformedGraph Vals s.
   
-  Implicit Type u : @node Name Vals.
-  Implicit Type query : @Query Name Vals.
-  Implicit Type queries : seq (@Query Name Vals).
+  Implicit Type u : @node Vals.
+  Implicit Type query : @Query Vals.
+  Implicit Type queries : seq (@Query Vals).
 
  
 
   Reserved Notation "⟦ φ ⟧ˢ 'in' u" (at level 40).
   
-  Equations? execute_selection_set u (queries : seq (@Query Name Vals)) :
+  Equations? execute_selection_set u (queries : seq (@Query Vals)) :
     
     seq (Name * ResponseNode) by wf (queries_size queries) :=
     {
       ⟦ [::] ⟧ˢ in _ := [::];
       
       ⟦ f[[α]] :: φ ⟧ˢ in u
-        with lookup_field_in_type s u.(type) f :=
+        with lookup_field_in_type s u.(ntype) f :=
         {
         | Some _
-            with u.(fields) (Field f α) :=
+            with field_seq_value u.(nfields) (Field f α) :=
             {
             | Some (inl value) => (f, Leaf (SingleValue value)) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
-            | Some (inr values) => (f, Array (map (Leaf \o SingleValue) values)) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
+            | Some (inr values) => (f, Array (map (fun value => Leaf (SingleValue value)) values)) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
             | None => (f, Leaf Null) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u  (* Should throw error? *)
             };
         | _ := ⟦ φ ⟧ˢ in u (* Should throw error *)
         };
       
       ⟦ l:f[[α]] :: φ ⟧ˢ in u
-        with lookup_field_in_type s u.(type) f :=
+        with lookup_field_in_type s u.(ntype) f :=
         {
         | Some _
-            with u.(fields) (Field f α) :=
+            with field_seq_value u.(nfields) (Field f α) :=
             {
             | Some (inl value) => (l, Leaf (SingleValue value)) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
-            | Some (inr values) => (l, Array (map (Leaf \o SingleValue) values)) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
+            | Some (inr values) => (l, Array (map (fun value => Leaf (SingleValue value)) values)) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
             | None => (l, Leaf Null) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u (* Should throw error? *)
             };
 
@@ -76,17 +77,17 @@ Section QuerySemantic.
 
       
       ⟦ f[[α]] { β } :: φ ⟧ˢ in u 
-        with lookup_field_in_type s u.(type) f :=
+        with lookup_field_in_type s u.(ntype) f :=
         {
         | Some fld
             with fld.(return_type) :=
             {
-            | [ _ ] := (f, Array [seq {- (⟦ β ++ merge_selection_sets (find_queries_with_label s f u.(type) φ) ⟧ˢ in v) -} | v <- neighbours_with_field g u (Field f α)])
+            | [ _ ] := (f, Array [seq {- (⟦ β ++ merge_selection_sets (find_queries_with_label s f u.(ntype) φ) ⟧ˢ in v) -} | v <- neighbours_with_field g u (Field f α)])
                               :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
-            | NT _
+            | NamedType _
                 with ohead (neighbours_with_field g u (Field f α)) :=
                 {
-                | Some v => (f, {- (⟦ β ++ merge_selection_sets (find_queries_with_label s f u.(type) φ) ⟧ˢ in v) -}) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
+                | Some v => (f, {- (⟦ β ++ merge_selection_sets (find_queries_with_label s f u.(ntype) φ) ⟧ˢ in v) -}) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
                 
                 | _ =>  (f, Leaf Null) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u
                 }
@@ -96,17 +97,17 @@ Section QuerySemantic.
         };
 
       ⟦ l:f[[α]] { β } :: φ ⟧ˢ in u
-        with lookup_field_in_type s u.(type) f :=
+        with lookup_field_in_type s u.(ntype) f :=
         {
         | Some fld
             with fld.(return_type) :=
             {
-            | [ _ ] := (l, Array [seq {- (⟦ β ++ merge_selection_sets (find_queries_with_label s l u.(type) φ) ⟧ˢ in v) -} | v <- neighbours_with_field g u (Field f α)])
+            | [ _ ] := (l, Array [seq {- (⟦ β ++ merge_selection_sets (find_queries_with_label s l u.(ntype) φ) ⟧ˢ in v) -} | v <- neighbours_with_field g u (Field f α)])
                               :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
-            | NT _
+            | NamedType _
                 with ohead (neighbours_with_field g u (Field f α)) :=
                 {
-                | Some v => (l, {- (⟦ β ++ merge_selection_sets (find_queries_with_label s l u.(type) φ) ⟧ˢ in v) -}) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
+                | Some v => (l, {- (⟦ β ++ merge_selection_sets (find_queries_with_label s l u.(ntype) φ) ⟧ˢ in v) -}) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
                 
                 | _ =>  (l, Leaf Null) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u
                 }
@@ -116,7 +117,7 @@ Section QuerySemantic.
         };
 
        ⟦ on t { β } :: φ ⟧ˢ in u
-        with does_fragment_type_apply s u.(type) t :=
+        with does_fragment_type_apply s u.(ntype) t :=
         {
         | true := ⟦ β ++ φ ⟧ˢ in u;
         | _ := ⟦ φ ⟧ˢ in u
@@ -144,26 +145,26 @@ Section QuerySemantic.
       execute_selection_set2 _ [::] := [::];
 
       execute_selection_set2 u (SingleField f α :: qs)
-        with lookup_field_in_type s u.(type) f :=
+        with lookup_field_in_type s u.(ntype) f :=
         {
         | Some _ 
-            with u.(fields) (Field f α) :=
+            with field_seq_value u.(nfields) (Field f α) :=
             {
             | Some (inl value) => (f, Leaf (SingleValue value)) :: ⦃ qs in u ⦄;
-            | Some (inr values) => (f, Array (map (Leaf \o SingleValue) values)) :: ⦃ qs in u ⦄;
+            | Some (inr values) => (f, Array (map (fun value => Leaf (SingleValue value)) values)) :: ⦃ qs in u ⦄;
             | None => (f, Leaf Null) :: ⦃ qs in u ⦄
             };
         | _ := ⦃ qs in u ⦄ (* Error *)
         };
       
       execute_selection_set2 u (LabeledField l f α :: qs)
-        with lookup_field_in_type s u.(type) f :=
+        with lookup_field_in_type s u.(ntype) f :=
         {
         | Some _ 
-            with u.(fields) (Field f α) :=
+            with field_seq_value u.(nfields) (Field f α) :=
             {
             | Some (inl value) => (l, Leaf (SingleValue value)) :: ⦃ qs in u ⦄;
-            | Some (inr values) => (l, Array (map (Leaf \o SingleValue) values)) :: ⦃ qs in u ⦄;
+            | Some (inr values) => (l, Array (map (fun value => Leaf (SingleValue value)) values)) :: ⦃ qs in u ⦄;
             | None => (l, Leaf Null) :: ⦃ qs in u ⦄
             };
         | _ := ⦃ qs in u ⦄ (* Error *)
@@ -171,14 +172,14 @@ Section QuerySemantic.
 
       
       execute_selection_set2 u (NestedField f α φ :: qs)
-        with lookup_field_in_type s u.(type) f :=
+        with lookup_field_in_type s u.(ntype) f :=
         {
         | Some fld
             with fld.(return_type) :=
             {
             | ListType _ => (f, Array [seq {- ⦃ φ in v ⦄ -} | v <- neighbours_with_field g u (Field f α)]) :: ⦃ qs in u ⦄;
         
-            | NT ty
+            | NamedType ty
                 with ohead (neighbours_with_field g u (Field f α)) :=
                 {
                 | Some v => (f, {- ⦃ φ in v ⦄ -}) :: ⦃ qs in u ⦄;
@@ -190,14 +191,14 @@ Section QuerySemantic.
         | None => ⦃ qs in u ⦄ (* Error *)
         };
     execute_selection_set2 u (NestedLabeledField l f α φ :: qs)
-        with lookup_field_in_type s u.(type) f :=
+        with lookup_field_in_type s u.(ntype) f :=
         {
         | Some fld
             with fld.(return_type) :=
             {
             | ListType _ => (l, Array [seq {- ⦃ φ in v ⦄ -} | v <- neighbours_with_field g u (Field f α)]) :: ⦃ qs in u ⦄;
         
-            | NT ty
+            | NamedType ty
                 with ohead (neighbours_with_field g u (Field f α)) :=
                 {
                 | Some v => (l, {- ⦃ φ in v ⦄ -}) :: ⦃ qs in u ⦄;
@@ -211,7 +212,7 @@ Section QuerySemantic.
 
        
         execute_selection_set2 u (InlineFragment t φ :: qs)
-        with does_fragment_type_apply s u.(type) t :=
+        with does_fragment_type_apply s u.(ntype) t :=
         {
         | true := ⦃ φ ++ qs in u ⦄;
         | _ := ⦃ qs in u ⦄
@@ -233,10 +234,10 @@ Section QuerySemantic.
         
   
 
-  Equations resolve_field_value u (field_name : Name) (argument_values : {fmap Name -> Vals}) : option ((Vals + seq Vals) + (@node Name Vals) + seq (@node Name Vals)) :=
+  Equations resolve_field_value u (field_name : Name) (argument_values : seq (Name * Vals)) : option ((Vals + seq Vals) + (@node Vals) + seq (@node Vals)) :=
     {
       resolve_field_value u f α
-        with u.(fields) (Field f α) :=
+        with field_seq_value u.(nfields) (Field f α) :=
         {
         | Some value := Some (inl (inl value));
         | _ with neighbours_with_field g u (Field f α) :=
@@ -250,20 +251,20 @@ Section QuerySemantic.
 
 
   (* Equations' bug ? *)
-  (* Equations? execute_selection_set3 u (queries : seq (@Query Name Vals)) : *)
+  (* Equations? execute_selection_set3 u (queries : seq (@Query Vals)) : *)
   (*   seq (Name * ResponseNode) by wf (queries_size queries) := *)
   (*   { *)
   (*     execute_selection_set3 _ [::] := [::]; *)
       
   (*     execute_selection_set3 u (InlineFragment t φ :: qs) *)
-  (*       with does_fragment_type_apply s u.(type) t := *)
+  (*       with does_fragment_type_apply s u.(ntype) t := *)
   (*       { *)
   (*       | true := execute_selection_set u (φ ++ qs); *)
   (*       | _ := execute_selection_set u qs *)
   (*       }; *)
 
   (*     execute_selection_set3 u (q :: qs) *)
-  (*       with lookup_field_type s u.(type) (qname q _) := *)
+  (*       with lookup_field_type s u.(ntype) (qname q _) := *)
   (*       { *)
   (*       | Some (ListType ty) := ((qresponse_name q _), complete_value (resolve_field_value u (qname q _) (qargs q _))) *)
   (*                        :: execute_selection_set3 u (filter_queries_with_label (qresponse_name q _) qs) *)
@@ -279,7 +280,7 @@ Section QuerySemantic.
   (*                    complete_value _ := Leaf Null *)
   (*                  }; *)
 
-  (*       | Some (NT ty) := ((qresponse_name q _), complete_value (resolve_field_value u (qname q _) (qargs q _))) *)
+  (*       | Some (NamedType ty) := ((qresponse_name q _), complete_value (resolve_field_value u (qname q _) (qargs q _))) *)
   (*                        :: execute_selection_set3 u (filter_queries_with_label (qresponse_name q _) qs) *)
 
   (*          where complete_value (result : option ((Vals + seq Vals) + (@node Name Vals) + seq (@node Name Vals))) : ResponseNode := *)
@@ -290,7 +291,7 @@ Section QuerySemantic.
   (*                      with value := *)
   (*                      { *)
   (*                      | inl v := Leaf (SingleValue v); *)
-  (*                      | inr vs := Array (map (Leaf \o SingleValue) vs) *)
+  (*                      | inr vs := Array (map (fun value => Leaf (SingleValue value)) vs) *)
   (*                      }; *)
 
   (*                    complete_value (Some (inl (inr v))) := Object (execute_selection_set v (q.(qsubqueries) ++ merge_selection_sets (find_queries_with_label s v.(type) (qresponse_name q _) qs))); *)
@@ -315,7 +316,7 @@ Section QuerySemantic.
 
   Reserved Notation "ty '⊢' φ '≡' φ'" (at level 80). 
          
-  Equations? Equiv  (ty : Name) (φ1 φ2 : seq (@Query Name Vals)) : bool by wf (queries_size φ1 + queries_size φ2) :=
+  Equations? Equiv  (ty : Name) (φ1 φ2 : seq (@Query Vals)) : bool by wf (queries_size φ1 + queries_size φ2) :=
     {
       _ ⊢ [::] ≡ [::] := true;
 
@@ -471,9 +472,9 @@ Section QuerySemantic.
         
 End QuerySemantic.
 
-Arguments execute_selection_set [Name Vals].
+Arguments execute_selection_set [Vals].
 
 Delimit Scope query_eval with QEVAL.
 Open Scope query_eval.
 
-Notation "s , g ⊢ ⟦ φ ⟧ˢ 'in' u" := (execute_selection_set s  g u φ) (at level 30).
+Notation "s , g ⊢ ⟦ φ ⟧ˢ 'in' u" := (execute_selection_set s g u φ) (at level 30, g at next level, φ at next level).
