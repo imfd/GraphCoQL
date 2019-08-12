@@ -217,6 +217,20 @@ Section QueryAux.
     
 
     (**
+       have_same_name : Query → Query → Bool 
+
+       Checks whether two queries have the same field name.
+
+       It is always false if either is an inline fragment.
+     *)
+    Equations have_same_name : @Query Vals -> @Query Vals -> bool :=
+      {
+        have_same_name (on _ { _ }) _ := false;
+        have_same_name _ (on _ { _ }) := false;
+        have_same_name q1 q2 := (qname q1 _) == (qname q2 _)
+      }.
+    
+    (**
        have_same_response_name : Query → Query → Bool 
 
        Checks whether two queries have the same response name.
@@ -285,7 +299,7 @@ Section QueryAux.
     Definition are_equivalent (q1 q2 : @Query Vals) : bool :=
       [&& (q1.(is_simple_field_selection) && (q2.(is_simple_field_selection)) ||
            q1.(is_nested_field_selection) && q2.(is_nested_field_selection)),
-       have_same_response_name q1 q2 & have_same_arguments q1 q2].
+       have_same_name q1 q2 & have_same_arguments q1 q2].
     
   End Base.
   
@@ -717,6 +731,7 @@ Arguments queries_size [Vals].
 Arguments queries_size_aux [Vals].
 
 Arguments has_response_name [Vals].
+Arguments have_same_name [Vals].
 Arguments have_same_response_name [Vals].
 Arguments have_same_arguments [Vals].
 Arguments are_equivalent [Vals].
