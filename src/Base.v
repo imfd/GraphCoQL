@@ -5,9 +5,12 @@ Unset Printing Implicit Defensive.
 
 From CoqUtils Require Import string.
 
-Section Base.
 
-   Definition Name := string.
+
+Delimit Scope gql_scope with GQL.
+Open Scope gql_scope.
+
+   Notation Name := string.
   
   (**
      Same as names, except that it can't be true, false or null. 
@@ -15,7 +18,11 @@ Section Base.
 
      https://facebook.github.io/graphql/June2018/#EnumValue 
    *)
-  Definition EnumValue := string.
+
+  Notation EnumValue := string.
+
+  
+Section Base.
 
    
   Section Types.
@@ -84,7 +91,5 @@ Section Base.
 
 End Base.
 
-Delimit Scope gql_scope with GQL.
-Open Scope gql_scope.
 
 Notation "[ name ]" := (ListType name).

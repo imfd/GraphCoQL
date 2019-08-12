@@ -314,6 +314,11 @@ Section QueryAux.
         queries_size (q :: φ) := query_size q + queries_size φ
       }.
 
+    (**
+
+     *)
+    Definition queries_size_aux (queries : seq (Name * Query)) :=
+      queries_size [seq nq.2 | nq <- queries].
 
   End Size.
   
@@ -505,6 +510,55 @@ Section QueryAux.
       all: do [by simp query_size; ssromega].
     Qed.
 
+    (**
+
+     *)
+    Equations? find_pairs_with_response_name (rname : Name) (φ : seq (Name * @Query Vals)) :
+      seq (Name * @Query Vals) by wf (queries_size_aux φ) :=
+      {
+        find_pairs_with_response_name _ [::] := [::];
+        
+        find_pairs_with_response_name rname ((ty, f[[α]]) :: qs)
+          with f == rname :=
+          {
+          | true := (ty, f[[α]]) :: find_pairs_with_response_name rname qs;
+          | _ := find_pairs_with_response_name rname qs
+          };
+        
+        find_pairs_with_response_name rname ((ty, l:f[[α]]) :: qs)
+          with l == rname :=
+          {
+          | true := (ty, l:f[[α]]) :: find_pairs_with_response_name rname qs;
+          | _ := find_pairs_with_response_name rname qs
+          };
+
+        
+        find_pairs_with_response_name rname ((ty, f[[α]] { φ }) :: qs)
+          with f == rname :=
+          {
+          | true := (ty, f[[α]] { φ }) :: find_pairs_with_response_name rname qs;
+          | _ := find_pairs_with_response_name rname qs
+          };
+        
+        find_pairs_with_response_name rname ((ty, l:f[[α]] { φ }) :: qs)
+          with l == rname :=
+          {
+          | true := (ty, l:f[[α]] { φ }) :: find_pairs_with_response_name rname qs;
+          | _ := find_pairs_with_response_name rname qs
+          };
+        
+        find_pairs_with_response_name rname ((_, on t { φ }) :: qs) :=
+          find_pairs_with_response_name rname [seq (t, q) | q <- φ] ++ find_pairs_with_response_name rname qs
+      }.
+    Proof.
+      all: do ? [by rewrite /queries_size_aux /=; simp query_size; ssromega].
+      rewrite /queries_size_aux /=; simp query_size.
+      have -> : forall xs y, [seq x.2 | x <- [seq (y, q) | q <- xs] ] = xs.
+        by intros; elim: xs => //= x xs ->.
+        by ssromega.
+    Qed.
+
+
     
 
 
@@ -545,20 +599,43 @@ Section QueryAux.
       {
         filter_queries_with_label _ [::] := [::];
 
-        filter_queries_with_label l (on t { φ } :: qs) :=
-          on t { filter_queries_with_label l φ } :: filter_queries_with_label l qs;
+        filter_queries_with_label l (on t { β } :: φ) :=
+          on t { filter_queries_with_label l β } :: filter_queries_with_label l φ;
 
-        filter_queries_with_label l (q :: qs)
+        filter_queries_with_label l (q :: φ)
           with (qresponse_name q _) != l :=
           {
-          | true := q :: filter_queries_with_label l qs;
-          | _ := filter_queries_with_label l qs
+          | true := q :: filter_queries_with_label l φ;
+          | _ := filter_queries_with_label l φ
           }     
 
       }.
     all: do ?[simp query_size; ssromega].
     Qed.
 
+
+    (**
+
+     *)
+     Equations? filter_pairs_with_response_name (response_name : Name) (queries : seq (Name * @Query Vals)) :
+      seq (Name * @Query Vals) by wf (queries_size_aux queries) :=
+      {
+        filter_pairs_with_response_name _ [::] := [::];
+
+        filter_pairs_with_response_name l ((ty, on t { β }) :: φ) :=
+          (ty, on t { filter_queries_with_label l β }) :: filter_pairs_with_response_name l φ;
+
+        filter_pairs_with_response_name l ((ty, q) :: φ)
+          with (qresponse_name q _) != l :=
+          {
+          | true := (ty, q) :: filter_pairs_with_response_name l φ;
+          | _ := filter_pairs_with_response_name l φ
+          }     
+
+      }.
+     Proof.
+       all: do ? [by rewrite /queries_size_aux /=; simp query_size; ssromega].
+    Qed.
     
     
 
@@ -579,7 +656,36 @@ Section QueryAux.
        https://graphql.github.io/graphql-spec/June2018/#MergeSelectionSets()
      *)
     Definition merge_selection_sets queries := flatten [seq q.(qsubqueries) | q <- queries].
+
+
+    Variable (s : @wfGraphQLSchema Vals).
     
+    (**
+
+     *)
+    Equations merge_pairs_selection_sets (nq : seq (Name * @Query Vals)) : seq (Name * @Query Vals) :=
+      {
+        merge_pairs_selection_sets [::] := [::];
+
+        merge_pairs_selection_sets ((ty, f[[ _ ]] { β }) :: φ)
+          with lookup_field_in_type s ty f :=
+          {
+          | Some fld := [seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets φ;
+          | _ := merge_pairs_selection_sets φ
+          };
+
+        merge_pairs_selection_sets ((ty, _:f[[ _ ]] { β }) :: φ)
+          with lookup_field_in_type s ty f :=
+          {
+          | Some fld := [seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets φ;
+          | _ := merge_pairs_selection_sets φ
+          };
+
+        merge_pairs_selection_sets ((_, on t { β }) :: φ) :=
+          [seq (t, q) | q <- β] ++ merge_pairs_selection_sets φ;
+        
+        merge_pairs_selection_sets (nq :: φ) := merge_pairs_selection_sets φ
+      }.
 
     
   End Merging.
@@ -608,6 +714,8 @@ Arguments oqresponse_name [Vals].
 
 Arguments query_size [Vals].
 Arguments queries_size [Vals].
+Arguments queries_size_aux [Vals].
+
 Arguments has_response_name [Vals].
 Arguments have_same_response_name [Vals].
 Arguments have_same_arguments [Vals].
@@ -615,8 +723,11 @@ Arguments are_equivalent [Vals].
 
 Arguments does_fragment_type_apply [Vals].
 Arguments filter_queries_with_label [Vals].
+Arguments filter_pairs_with_response_name [Vals].
 
 Arguments find_queries_with_label [Vals].
 Arguments find_fields_with_response_name [Vals].
+Arguments find_pairs_with_response_name [Vals].
 
 Arguments merge_selection_sets [Vals].
+Arguments merge_pairs_selection_sets [Vals].

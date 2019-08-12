@@ -32,6 +32,7 @@ Require Import Ssromega.
   Ltac leq_queries_size :=
     repeat match goal with
            | [|- context [ query_size _]] => simp query_size => /=
+           | [|- context [ queries_size_aux _ ]] => rewrite /queries_size_aux /=
            | [|- context [ queries_size (_ ++ _)]] => rewrite queries_size_cat
            | [|- context [ queries_size (merge_selection_sets (find_queries_with_label ?s ?rname ?ty ?qs)) ]] =>
              let Hfleq := fresh in
@@ -48,7 +49,10 @@ Require Import Ssromega.
            | [|- context [queries_size (merge_selection_sets ?qs)]] =>
               let Hfleq := fresh in
               have Hfleq := (merged_selections_leq qs); ssromega                            
-         
+
+           | [|- context [queries_size [seq nq.2 | nq <- filter_pairs_with_response_name _ _]]] =>
+             rewrite filter_pairs_spec /=
+
            | [|- context [queries_size (filter_queries_with_label ?rname ?qs)]] =>
              let Hfleq := fresh in
              have Hfleq := (filter_queries_with_label_leq_size rname qs); ssromega

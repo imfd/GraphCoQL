@@ -185,36 +185,36 @@ Section QueryConformance.
     https://graphql.github.io/graphql-spec/June2018/#SameResponseShape()
 
   *)
- Equations has_compatible_type (type_in_context : Name) (return_type : type) query : bool :=
+ Equations has_compatible_type (return_type : type) (nq : Name * @Query Vals) : bool :=
    {
-     has_compatible_type ty rty (SingleField f _)
+     has_compatible_type rty (ty, f[[ _ ]])
        with lookup_field_in_type s ty f :=
        {
        | Some fld := are_compatible_types fld.(return_type) rty;
        | _ := false
        };
-     has_compatible_type ty rty (LabeledField _ f _)
-       with lookup_field_in_type s ty f :=
-       {
-       | Some fld := are_compatible_types fld.(return_type) rty;
-       | _ := false
-       };
-     
-     has_compatible_type ty rty (NestedField f _ _)
+     has_compatible_type rty (ty, _:f[[ _ ]])
        with lookup_field_in_type s ty f :=
        {
        | Some fld := are_compatible_types fld.(return_type) rty;
        | _ := false
        };
      
-     has_compatible_type ty rty (NestedLabeledField _ f _ _)
+     has_compatible_type rty (ty, f[[ _ ]] { _ })
+       with lookup_field_in_type s ty f :=
+       {
+       | Some fld := are_compatible_types fld.(return_type) rty;
+       | _ := false
+       };
+     
+     has_compatible_type rty (ty, _:f[[ _ ]] { _ })
        with lookup_field_in_type s ty f :=
        {
        | Some fld := are_compatible_types fld.(return_type) rty;
        | _ := false
        };
 
-     has_compatible_type _ _ (InlineFragment _ _) := false
+     has_compatible_type _ (_, on _ { _ }) := false
    }.
 
 
@@ -262,65 +262,84 @@ Section QueryConformance.
 
   *)
  (* I am pretty sure about claim (2) but we should confirm it somehow.. right xd? *)
- Equations? have_compatible_response_shapes (type_in_scope : Name) queries : bool by wf (queries_size queries) :=
+ (* Equations is not able to build the graph *)
+ Equations(noind) have_compatible_response_shapes (* (type_in_scope : Name) *) (queries : seq (Name * @Query Vals)) :
+   bool by wf (queries_size_aux queries) :=
    {
-     have_compatible_response_shapes _ [::] := true ;
+     have_compatible_response_shapes [::] := true ;
 
-     have_compatible_response_shapes ty (f[[ _ ]] :: φ)
+     have_compatible_response_shapes ((ty, f[[ _ ]]) :: φ)
        with lookup_field_in_type s ty f :=
        {
-       | Some fld := all (has_compatible_type ty fld.(return_type)) (find_fields_with_response_name f φ)
-                        && have_compatible_response_shapes ty (filter_queries_with_label f φ);
-       | _ := false
+       | Some fld := all (has_compatible_type fld.(return_type)) (find_pairs_with_response_name f φ)
+                        && have_compatible_response_shapes (filter_pairs_with_response_name f φ);
+       
+       | _ := have_compatible_response_shapes φ
        };
 
-     have_compatible_response_shapes ty (l:f[[ _ ]] :: φ)
+     have_compatible_response_shapes ((ty, l:f[[ _ ]]) :: φ)
        with lookup_field_in_type s ty f :=
        {
-       | Some fld := all (has_compatible_type ty fld.(return_type)) (find_fields_with_response_name l φ)
-                         && have_compatible_response_shapes ty (filter_queries_with_label l φ);
-       | _ := false
+       | Some fld := all (has_compatible_type fld.(return_type)) (find_pairs_with_response_name l φ)
+                        && have_compatible_response_shapes (filter_pairs_with_response_name l φ);
+       
+       | _ := have_compatible_response_shapes φ
        };
 
-      have_compatible_response_shapes ty (f[[ _ ]] { β } :: φ)
+      have_compatible_response_shapes ((ty, f[[ _ ]] { β }) :: φ)
        with lookup_field_in_type s ty f :=
        {
-       | Some fld := let similar_queries := find_fields_with_response_name f φ in
-                    [&& all (has_compatible_type ty fld.(return_type)) similar_queries,
-                     have_compatible_response_shapes fld.(return_type) (β ++ merge_selection_sets similar_queries) &
-                     have_compatible_response_shapes ty (filter_queries_with_label f φ)];
+       | Some fld := let similar_queries := find_pairs_with_response_name f φ in
+                    [&& all (has_compatible_type fld.(return_type)) similar_queries,
+                     have_compatible_response_shapes ([seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
+                     have_compatible_response_shapes (filter_pairs_with_response_name f φ)];
                      
                         
-       | _ := false
+       | _ := have_compatible_response_shapes φ
        };
       
-      have_compatible_response_shapes ty (l:f[[ _ ]] { β } :: φ)
+      have_compatible_response_shapes ((ty, l:f[[ _ ]] { β }) :: φ)
        with lookup_field_in_type s ty f :=
        {
-       | Some fld := let similar_queries := find_fields_with_response_name l φ in
-                    [&& all (has_compatible_type ty fld.(return_type)) similar_queries,
-                     have_compatible_response_shapes fld.(return_type) (β ++ merge_selection_sets similar_queries) &
-                     have_compatible_response_shapes ty (filter_queries_with_label f φ)];
+       | Some fld := let similar_queries := find_pairs_with_response_name l φ in
+                    [&& all (has_compatible_type fld.(return_type)) similar_queries,
+                     have_compatible_response_shapes ([seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
+                     have_compatible_response_shapes (filter_pairs_with_response_name f φ)];
                      
                         
-       | _ := false
+       | _ := have_compatible_response_shapes φ
        };
 
       
-      have_compatible_response_shapes ty (on t { β } :: φ) := have_compatible_response_shapes ty (β ++ φ)
+      have_compatible_response_shapes ((ty, on t { β }) :: φ) := have_compatible_response_shapes ([seq (t, q) | q <- β] ++ φ)
                                                                                                       
    }.
- Proof.
-   all: do [rewrite ?/similar_queries; leq_queries_size].
- Qed.
- (* Equations is not able to build the graph *)
+ Solve Obligations with intros; leq_queries_size.
  Next Obligation.
-   move: {2}(queries_size _) (leqnn (queries_size queries)) => n.
-   elim: n queries type_in_scope => /= [| n IH] queries type_in_scope ; first by rewrite leqn0 => /queries_size_0_nil ->; constructor.
-   case: queries => //= [| q queries]; first by constructor.
-   case_query q; simp query_size => Hleq;
-   simp have_compatible_response_shapes; constructor; do ? [lookup => /=; constructor]; apply: IH; leq_queries_size.
- Defined.
+   rewrite /queries_size_aux /= map_cat queries_size_cat; simp query_size.
+   have -> : forall xs y, [seq x.2 | x <- [seq (y, q) | q <- xs] ] = xs by intros; elim: xs => //= x xs ->.
+   have Hmleq := (merge_pair_selections_leq s (find_pairs_with_response_name f φ)).
+   rewrite /queries_size_aux in Hmleq *.
+   have Hfleq : queries_size [seq nq.2 | nq <- find_pairs_with_response_name f φ] <=
+                queries_size [seq nq.2 | nq <- φ].
+     by rewrite find_pairs_spec; apply: found_fields_leq_size.
+       by ssromega.
+ Qed.
+ Next Obligation.
+   rewrite /queries_size_aux /= map_cat queries_size_cat; simp query_size.
+   have -> : forall xs y, [seq x.2 | x <- [seq (y, q) | q <- xs] ] = xs by intros; elim: xs => //= x xs ->.
+   have Hmleq := (merge_pair_selections_leq s (find_pairs_with_response_name l φ)).
+   rewrite /queries_size_aux in Hmleq *.
+   have Hfleq : queries_size [seq nq.2 | nq <- find_pairs_with_response_name l φ] <=
+                queries_size [seq nq.2 | nq <- φ].
+     by rewrite find_pairs_spec; apply: found_fields_leq_size.
+       by ssromega.
+ Qed.
+ Next Obligation.
+   rewrite /queries_size_aux /= map_cat queries_size_cat; simp query_size.
+   have -> : forall xs y, [seq x.2 | x <- [seq (y, q) | q <- xs] ] = xs by intros; elim: xs => //= x xs ->.       
+   by ssromega.
+ Qed.
 
 
 
@@ -605,7 +624,7 @@ Section QueryConformance.
    *)
   Definition queries_conform (ty : Name) queries : bool :=
     [&& all (query_conforms ty) queries,
-        have_compatible_response_shapes ty queries &
+        have_compatible_response_shapes [seq (ty, q) | q <- queries] &
         is_field_merging_possible ty queries].
     
   

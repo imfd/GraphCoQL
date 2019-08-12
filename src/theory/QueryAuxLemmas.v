@@ -64,7 +64,12 @@ Section Theory.
     Proof.
         by case: qs => //=; case.
     Qed.
-    
+
+    Lemma queries_size_aux_0_nil (nq : seq (Name * @Query Vals)) : queries_size_aux nq == 0 -> nq = [::].
+    Proof.
+        by case: nq => //=; case=> ty; case.
+    Qed.
+      
   End Size.
 
 
@@ -150,6 +155,24 @@ Section Theory.
       funelim (filter_queries_with_label rname φ) => //=; do ? by simp find_queries_with_label; move/negbTE in Heq; rewrite Heq /=.
         by simp find_queries_with_label; case: does_fragment_type_apply => //=; rewrite H H0 /=.
     Qed.
+
+
+    Lemma find_pairs_spec rname (nq : seq (Name * @Query Vals)) :
+      [seq q.2 | q <- find_pairs_with_response_name rname nq] = find_fields_with_response_name rname [seq q.2 | q <- nq].
+    Proof.
+      move: {2}(queries_size_aux _) (leqnn (queries_size_aux nq)) => n.
+      rewrite /queries_size_aux.
+      elim: n nq => /= [| n IH] nq; first by rewrite leqn0 => /queries_size_aux_0_nil ->.
+      case: nq => //=; case=> /= ty; case=> [f α | l f α | f α β | l f α β | t β] nq;
+                                           rewrite /queries_size_aux /=; simp query_size => Hleq;
+                                           simp find_pairs_with_response_name;
+                                           simp find_fields_with_response_name => /=; do ? case: eqP => //= _; rewrite ?IH //; do ? ssromega.
+      rewrite map_cat; congr cat; rewrite IH //=; do ? ssromega.
+        by have -> : forall xs y, [seq x.2 | x <- [seq (y, q) | q <- xs] ] = xs by intros; elim: xs => //= x xs ->.
+      have -> : forall xs y, [seq x.2 | x <- [seq (y, q) | q <- xs] ] = xs by intros; elim: xs => //= x xs ->.
+      by ssromega.
+    Qed.
+
     
   End Find.
 
@@ -202,7 +225,18 @@ Section Theory.
         by elim: ptys => //= t ptys IH; simp filter_queries_with_label; rewrite IH.
     Qed.
 
-    
+
+    Lemma filter_pairs_spec rname (nq : seq (Name * @Query Vals)) :
+      [seq q.2 | q <- filter_pairs_with_response_name rname nq] = filter_queries_with_label rname [seq q.2 | q <- nq].
+    Proof.
+      elim: nq => //= q nq IH.
+        by case: q => ty; case=> //= [f α | l f α | f α β | l f α β | t β];
+                                 simp filter_pairs_with_response_name;
+                                 simp filter_queries_with_label => /=; do ? case: eqP => //= _; rewrite IH.
+    Qed.
+      
+      
+      
   End Filter.
 
   Section Merging.
@@ -222,6 +256,17 @@ Section Theory.
     Qed.
 
 
+    Variable (s : @wfGraphQLSchema Vals).
+
+    Lemma merge_pair_selections_leq (nq : seq (Name * @Query Vals)) :
+      queries_size_aux (merge_pairs_selection_sets s nq) <= queries_size_aux nq.
+    Proof.
+      rewrite /queries_size_aux; funelim (merge_pairs_selection_sets s nq) => //=; simp query_size; do ? ssromega;
+      have Hpeq : forall xs y, [seq x.2 | x <- [seq (y, q) | q <- xs] ] = xs by intros; elim: xs => //= x xs ->.
+      all: do ? [by rewrite map_cat queries_size_cat Hpeq; ssromega].
+    Qed.
+
+    
   End Merging.
 
 End Theory.
