@@ -29,7 +29,15 @@ Section QueryAux.
 
 
   Section Base.
+
+    (** **** General boolean predicates for Query
+       
+     *)
+
+    
     (** 
+        is_field : Query → Bool 
+
         Checks whether the given query is a field selection.
      *)
     Equations is_field query : bool :=
@@ -39,6 +47,8 @@ Section QueryAux.
       }.
 
     (**
+       is_inline_fragment : Query → Bool 
+
        Checks whether the given query is an inline fragment.
      *)
     Equations is_inline_fragment query : bool :=
@@ -49,9 +59,11 @@ Section QueryAux.
     
 
     (**
-       Checks whether the given query is labeled (ie. l:f or l:f { φ })
+       is_aliased : Query → Bool
+
+       Checks whether the given query is aliased (ie. l:f or l:f { φ })
      *)
-    Definition is_labeled query : bool :=
+    Definition is_aliased query : bool :=
       match query with
       | _ : _ [[ _ ]]
       | _ : _ [[ _ ]] { _ } => true
@@ -59,6 +71,8 @@ Section QueryAux.
       end.
 
     (**
+       has_subqueries : Query → Bool
+
        Checks whether the given query has subqueries.
      *)
     Definition has_subqueries query : bool :=
@@ -70,25 +84,81 @@ Section QueryAux.
     
     (** **** Extractors for queries *)
 
+
     (**
-       Get the response name of the given query. 
-       Inline fragment do not have a response name, therefore 
+       qname : ∀ query, query.is_field → Name
+
+       Gets the name of the given query. 
+       
+       Inline fragments do not have a name, therefore 
        it is required that the given query is a field.
      *)
-   
+    (* Not actually using this def *)
+    Equations qname query (Hfield : query.(is_field)) : Name :=
+      {
+        qname (name[[ _ ]]) _ := name;
+        qname (_:name[[ _ ]]) _ := name;
+        qname (name[[ _ ]] { _ }) _ := name;
+        qname (_:name[[ _ ]] { _ }) _ := name;
+        qname (on _ { _ }) Hfld := _
+      }.
+        
+    (**
+       qalias : ∀ query, query.is_aliased → Name
+
+       Gets the alias of the given query.
+
+       It is required that the query is actually aliased.
+     *)
+    (* Not actually using this def *)
+    Equations qalias query (Halias : query.(is_aliased)) : Name :=
+      {
+        qalias (alias : _ [[ _ ]]) _ := alias;
+        qalias (alias : _ [[ _ ]] { _ }) _ := alias;
+        qalias _ Halias := _
+      }.
+    
+    (**
+       oqalias : Query → option Name 
+
+       Gets the alias of the given query or none if
+       the query does not have a label.
+     *)
+    (* Not actually using this def *)
+    Equations oqalias query : option Name :=
+      {
+        oqalias (label : _ [[ _ ]]) := Some label;
+        oqalias (label : _ [[ _ ]] { _ }) := Some label;
+        oqalias _ := None
+      }.
+    
+    (**
+       qresponse_name : ∀ query, query.is_field → Name 
+
+       Gets the response name of the given query.
+       
+       For aliased fields this corresponds to their alias, while for 
+       non-aliased fields it corresponds to their name.
+
+       Inline fragment do not have a response name, therefore 
+       it is required that the given query is a field.
+     *)   
     Equations qresponse_name query (Hfld : query.(is_field)) :  Name :=
       {
-        qresponse_name (f [[ _ ]]) _ := f;
-        qresponse_name (l : _ [[ _ ]]) _ := l;
-        qresponse_name (f [[ _ ]] { _ }) _ := f;
-        qresponse_name (l : _ [[ _ ]] { _ }) _ := l;
+        qresponse_name (name [[ _ ]]) _ := name;
+        qresponse_name (alias : _ [[ _ ]]) _ := alias;
+        qresponse_name (name [[ _ ]] { _ }) _ := name;
+        qresponse_name (alias : _ [[ _ ]] { _ }) _ := alias;
         qresponse_name (on _ { _ }) Hfld := _
       }.
 
     (**
-       Get the response name of the given query or none if it 
+       oqresponse_name : Query → option Name
+    
+       Gets the response name of the given query or none if it 
        is an inline fragment.
      *)
+    (* Not actually using this def *)
     Equations oqresponse_name query : option Name :=
       {
         oqresponse_name (on _ { _ }) := None;
@@ -96,43 +166,26 @@ Section QueryAux.
       }.
 
     (**
+       has_response_name : Name → Query → Bool 
+
        Checks whether the given query has the given response name.
+
        This is always false for inline fragments.
      *)
+    (* Not actually using this def *)
     Equations has_response_name : Name -> @Query Vals -> bool :=
       {
         has_response_name _ (on _ { _ }) := false;
         has_response_name rname q := (qresponse_name q _) == rname
       }.
 
-   
-
-    (**
-       Get the label of the given query.
-       It is required that the query is actually labeled.
-     *)
-    Equations qlabel query (Hlab : query.(is_labeled)) : Name :=
-      {
-        qlabel (label : _ [[ _ ]]) _ := label;
-        qlabel (label : _ [[ _ ]] { _ }) _ := label;
-        qlabel _ Hlab := _
-      }.
-
-    (**
-       Get the label of the given query or none if
-       the query does not have a label.
-     *)
-    Equations oqlabel query : option Name :=
-      {
-        oqlabel (label : _ [[ _ ]]) := Some label;
-        oqlabel (label : _ [[ _ ]] { _ }) := Some label;
-        oqlabel _ := None
-      }.
     
     (**
-       Get the given query's subqueries.
-       If the query does not have subqueries, then it returns
-       an empty list.
+       qsubqueries : Query → List Query
+
+       Gets the given query's subqueries.
+
+       For field selections without subqueries, it returns an empty list.
      *)
     Definition qsubqueries query : seq Query :=
       match query with
@@ -143,14 +196,13 @@ Section QueryAux.
       end.
 
     
-    Equations qsubqueries' query (Hhas : query.(has_subqueries)) : seq (@Query Vals) :=
-      {
-        qsubqueries' query Hhas := query.(qsubqueries)
-      }.
-    
     (**
-       Get the given query's arguments.
-       It is required that the query is not an inline fragment.
+       qargs : ∀ query, query.is_field → List (Name * Vals) 
+
+       Gets the given query's arguments.
+
+       Inline fragment do not have arguments, therefore 
+       it is required that the given query is a field.
      *)
     Equations qargs query (Hfld : query.(is_field)) :  seq (Name * Vals) :=
       {
@@ -165,6 +217,8 @@ Section QueryAux.
     
 
     (**
+       have_same_response_name : Query → Query → Bool 
+
        Checks whether two queries have the same response name.
 
        It is always false if either is an inline fragment.
@@ -176,6 +230,13 @@ Section QueryAux.
         have_same_response_name q1 q2 := (qresponse_name q1 _) == (qresponse_name q2 _)
       }.
 
+    (**
+       have_same_arguments : Query → Query → Bool
+       
+       Checks whether two queries have the same arguments.
+
+       It is always false if either is an inline fragment.
+     *)
     Equations have_same_arguments : @Query Vals -> @Query Vals -> bool :=
       {
         have_same_arguments (on _ { _ }) _ := false;
@@ -184,10 +245,11 @@ Section QueryAux.
       }.
 
     (**
-       Checks whether the given query is a simple field selection.
-       Simple field selections are fields without subqueries.
+       is_simple_field_selection : Query → Bool 
+
+       Checks whether the given query is either a [SingleField] or [LabeledField].
      *)
-    Equations is_simple_field_selection : @Query Vals -> bool :=
+    Equations is_simple_field_selection query : bool :=
       {
         is_simple_field_selection (_ [[_]]) := true;
         is_simple_field_selection (_ : _ [[_]]) := true;
@@ -196,10 +258,11 @@ Section QueryAux.
 
     
     (**
-       Checks whether the given query is a nested field selection.
-       Nested field selections are fields with subqueries.
+       is_nested_field_selection : Query → Bool 
+
+       Checks whether the given query is either a [NestedField] or [LabeledNestedField].
      *)
-    Equations is_nested_field_selection : @Query Vals -> bool :=
+    Equations is_nested_field_selection query : bool :=
       {
         is_nested_field_selection (_ [[_]] { _ }) := true;
         is_nested_field_selection (_ : _ [[_]] { _ }) := true;
@@ -207,10 +270,16 @@ Section QueryAux.
       }.
 
     (**
+       are_equivalent : Query → Query → Bool 
+
        Checks whether two queries are equivalent.
+
        This equivalence refers to whether both queries will
        produce responses with the same name and if both 
        share the same arguments.
+
+       ---- 
+       See also : [is_field_merging_possible] (QueryConformance)
      *)
     (* FIXME : Rename *)
     Definition are_equivalent (q1 q2 : @Query Vals) : bool :=
@@ -221,12 +290,20 @@ Section QueryAux.
   End Base.
   
   Section Size.
+
+    (** **** Functions related to size of Queries
+     *)
     
-    (** Get the query's size, according to Jorge and Olaf's version **)
+    (**
+       query_size : Query → Nat 
+       queries_size : List Query → Nat 
+
+       Get the query's size, according to Jorge and Olaf's definition.
+     *)
     Equations query_size query : nat :=
       {
         query_size (_ [[_]] { φ }) := 1 + queries_size φ;
-        query_size (_ : _ [[_]] { φ }) := 1 + (queries_size φ);
+        query_size (_ : _ [[_]] { φ }) := 1 + queries_size φ;
         query_size (on _ { φ }) := 1 + (queries_size φ);
         query_size _ := 1
       }
@@ -234,24 +311,9 @@ Section QueryAux.
     queries_size queries : nat :=
       {
         queries_size [::] := 0;
-        queries_size (hd :: tl) := query_size hd + queries_size tl
+        queries_size (q :: φ) := query_size q + queries_size φ
       }.
 
-
-    
-    (* Equations max_query_size query : nat := *)
-    (*   { *)
-    (*     max_query_size (NestedField _ _ φ) := (max_queries_size φ).+1; *)
-    (*     max_query_size (NestedLabeledField _ _ _ φ) := (max_queries_size φ).+1; *)
-    (*     max_query_size (InlineFragment _ φ) := (max_queries_size φ).+1; *)
-    (*     max_query_size _ := 0 *)
-    (*   } *)
-    (* where max_queries_size queries : nat := *)
-    (*         { *)
-    (*           max_queries_size [::] := 0; *)
-    (*           max_queries_size (q :: φ) := max (max_query_size q) (max_queries_size φ) *)
-    (*         }. *)
-    
 
   End Size.
   
@@ -261,20 +323,38 @@ Section QueryAux.
     
     Variable s : @wfGraphQLSchema Vals.
 
-
+    (** **** Other type of boolean predicates
+     *)
     
-    (**
-     Checks whether a type is valid with respect to another type. 
+    (**       
+       does_fragment_type_apply : Name → Name → Bool 
 
-     This is used when checking that a fragment's type guard is 
-     valid with respect to the actual type of the data where the 
-     fragment is being evaluated (which corresponds to an object type).
+       Checks whether a type is valid with respect to another type. 
 
-     fragment_type ∈ Ot 
-     fragment_type = object_type
-     [――――――――――――――――――――――――――]
-       fragment_type applies
+       This is used when checking that a fragment's type condition is 
+       valid with respect to the actual type of the data where the 
+       fragment is being evaluated (which corresponds to an object type).
 
+           fragment_type ∈ Ot             #<br>#
+       fragment_type = object_type        #<br>#
+      [――――――――――――――――――――――――――]        #<br>#
+        fragment_type applies
+
+
+                  fragment_type ∈ It                    #<br>#
+       object_type ∈ implementation fragment_type       #<br>#
+      [――――――――――――――――――――――――――――――――――――――――――]      #<br>#
+               fragment_type applies
+
+
+                  fragment_type ∈ Ut                    #<br>#
+       object_type ∈ union_members fragment_type        #<br>#
+      [――――――――――――――――――――――――――――――――――――――――――]      #<br>#
+               fragment_type applies
+
+    ----
+    See also
+    
     https://graphql.github.io/graphql-spec/June2018/#DoesFragmentTypeApply() 
      *)
     Definition does_fragment_type_apply object_type fragment_type :=
@@ -297,12 +377,44 @@ Section QueryAux.
 
   Section Find.
 
+    (** **** Functions related to finding queries that satisfy a predicate.
+     *)
+    
     Variable (s : @wfGraphQLSchema Vals).
     
-    (** Find all queries with response name equal to given parameter.
-        In case there is a fragment, it first checks that the fragments' guard 
-        applies to the given object type, then it may proceed to collect in its
-        subqueries **)
+    (**
+       find_queries_with_label : Name → Name → List Query → List Query 
+
+       Find all queries with response name equal to the given parameter.
+       In case there is a fragment, it first checks that the fragment's type condition 
+       applies to the given object type, then it may proceed to find more queries in its
+       subqueries.
+
+       This function can be related to the _CollectFields_ function defined in the specification.
+       The CollectFields function returns a map of names to list of queries, effectively collecting 
+       every possible _valid_ field (there is also a check for inline fragments - see subpoint "e"
+       of the CollectFields definition) in a list of queries.
+
+       In our case, instead of generating a map of every possible field and name, we take 
+       the first element of a list and try to find every other possible query that is related 
+       (has the same response name). Once we get all queries with a given response name, 
+       we proceed to perform other operations over that collection. This is similar to how 
+       J&O defined their _collect_ function.
+       
+       This choice is mostly to facilitate reasoning over the semantics.
+
+       ---- 
+       See also 
+        
+        - [execute_selection_set]
+
+        https://graphql.github.io/graphql-spec/June2018/#sec-Executing-Selection-Sets
+
+        https://graphql.github.io/graphql-spec/June2018/#sec-Field-Collection
+        
+        https://graphql.github.io/graphql-spec/June2018/#CollectFields()
+     *)
+    (* FIXME : Rename to something that makes sense - find_fields_with_response_name ? *)
     Equations? find_queries_with_label (label : Name) (object_type : Name) (queries : seq (@Query Vals)) :
       seq (@Query Vals) by wf (queries_size queries) :=
       {
@@ -327,9 +439,30 @@ Section QueryAux.
 
     
 
-    (** Find all field selections with response name equal to the one given as parameter.
-        It collects all, regardless of fragments' guards 
+    (** 
+        find_fields_with_response_name : Name → List Query → List Query 
+
+        Find all field selections with response name equal to the one given as parameter.
+        It collects every field, regardless of fragment's type condition. This differs 
+        with [find_queries_with_label], where the type condition _is_ important.
+
+        This function is used when checking the conformance of queries, in particular when
+        checking that field merging is possible. In this process, you have to check every possible 
+        field with a given response name and validate they are mergeable (further discussion 
+        on this can be found at [is_field_merging_possible].
+
+        Not using fold mostly because of the nested recursion appearing in inline fragments. 
+
+        ---- 
+        See also 
+
+        https://graphql.github.io/graphql-spec/June2018/#sec-Field-Selection-Merging
+
+        https://graphql.github.io/graphql-spec/June2018/#FieldsInSetCanMerge()
+
+        https://github.com/graphql/graphql-spec/issues/367
      **)
+    (* FIXME : Rename considering previous def *)
     Equations? find_fields_with_response_name (rname : Name) (φ : seq (@Query Vals)) :
       seq (@Query Vals) by wf (queries_size φ) :=
       {
@@ -380,7 +513,33 @@ Section QueryAux.
   
 
   Section Filter.
-    (** Filters all selections with response name equal to the one given as parameter **)
+    (** **** Functions related to filtering queries according to some predicate
+     *)
+    
+    (** 
+        filter_queries_with_label : Name → List Query → List Query 
+        
+        Filters all fields with response name equal to the one given as parameter.
+        This also filters inline fragments' subqueries.
+
+        This definition follows a similar approach as the one in [find_queries_with_label], 
+        considering how collection and evaluation is done in the spec. Similarly, we 
+        preferred this approach to ease reasoning over the semantics. 
+
+        This is similar to how J&O defined their _collect_ function.
+
+        ----
+        See also:
+        
+        - [execute_selection_set]
+
+        https://graphql.github.io/graphql-spec/June2018/#sec-Executing-Selection-Sets
+
+        https://graphql.github.io/graphql-spec/June2018/#sec-Field-Collection
+        
+        https://graphql.github.io/graphql-spec/June2018/#CollectFields()
+        
+     *)
     Equations? filter_queries_with_label (label : Name) (queries : seq (@Query Vals)) :
       seq (@Query Vals) by wf (queries_size queries) :=
       {
@@ -407,6 +566,18 @@ Section QueryAux.
   End Filter.
 
   Section Merging.
+
+    (** **** Functions related to merging queries.
+     *)
+
+    (**
+       merge_selection_sets : List Query → List Query 
+
+       Concatenates the subqueries of every query in the given list.
+
+       ---- 
+       https://graphql.github.io/graphql-spec/June2018/#MergeSelectionSets()
+     *)
     Definition merge_selection_sets queries := flatten [seq q.(qsubqueries) | q <- queries].
     
 
@@ -420,19 +591,18 @@ End QueryAux.
 
 Arguments is_field [Vals].
 Arguments is_inline_fragment [Vals].
-Arguments is_labeled [Vals].
+Arguments is_aliased [Vals].
 Arguments has_subqueries [Vals].
 Arguments is_simple_field_selection [Vals].
 Arguments is_nested_field_selection [Vals].
 
 Arguments qresponse_name [Vals].
 Arguments oqresponse_name [Vals].
-Arguments qlabel [Vals].
-Arguments oqlabel [Vals].
+Arguments qalias [Vals].
+Arguments oqalias [Vals].
 Arguments qargs [Vals].
-(* Arguments oqargs [Vals]. *)
+
 Arguments qsubqueries [Vals].
-Arguments qsubqueries' [Vals].
 Arguments qresponse_name [Vals].
 Arguments oqresponse_name [Vals].
 
