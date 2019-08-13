@@ -500,6 +500,7 @@ Section GraphQLSpecExamples.
   Let StringScalar := Scalar "String".
   Let BooleanScalar := Scalar "Boolean".
   Let IntScalar := Scalar "Int".
+  Let FloatScalar := Scalar "Float".
 
 
   Let QueryType := Object "Query" implements [::] {
@@ -566,7 +567,7 @@ Section GraphQLSpecExamples.
   Let HumanOrAlienUnion := Union "HumanOrAlien" { [:: "Human"; "Alien"] }.
   
 
-  Let schema := GraphQLSchema "Query" [:: StringScalar; BooleanScalar; IntScalar;
+  Let schema := GraphQLSchema "Query" [:: StringScalar; BooleanScalar; IntScalar; FloatScalar;
                                  QueryType;
                                  DogCommandEnum; DogType;
                                    SentientInterface; PetInterface;
@@ -574,227 +575,808 @@ Section GraphQLSpecExamples.
                                        CatCommandEnum; CatType;
                                          CatOrDogUnion; DogOrHumanUnion; HumanOrAlienUnion].
 
-  Lemma schwf : schema.(is_wf_schema).
+  Let schwf : schema.(is_wf_schema).
   Proof. by []. Qed.
 
   Let wf_schema : @wfGraphQLSchema string_eqType   := WFGraphQLSchema (fun n v => true) schwf.
 
-  Let example102 : seq (@Query string_eqType) :=  [::
-                                                    on "Dog" {
+  Section FieldValidation.
+    (**
+       https://graphql.github.io/graphql-spec/June2018/#sec-Validation.Fields
+     *)
+
+    (**
+       https://graphql.github.io/graphql-spec/June2018/#sec-Field-Selections-on-Objects-Interfaces-and-Unions-Types
+     *)
+    Let example102 : seq (@Query string_eqType) :=  [::
+                                                      on "Dog" {
+                                                        [::
+                                                           "meowVolume" [[ [::] ]]
+                                                        ]
+                                                      }
+                                                   ].
+    
+    Let example102' :  seq (@Query string_eqType) := [::
+                                                       on "Dog" {
+                                                         [::
+                                                            "barkVolume" : "kawVolume" [[ [::] ]]
+                                                         ]
+                                                       }
+                                                    ].
+
+    (**
+     This is not exactly the same as in the spec, but in that example they are checking 
+     defined fragment spreads, not inline fragments.
+     *)
+    Example e102 : ~~ (queries_conform wf_schema "Dog" example102 || queries_conform wf_schema "Dog" example102').
+    Proof. by []. Qed.
+
+
+    Let example103 : seq (@Query string_eqType) := [::
+                                                     (* on "Pet" { *)
+                                                     (* [:: *)
+                                                     "name" [[ [::] ]]
+                                                     (* ] *)
+                                                     (* } *)
+                                                  ].
+
+    
+    Example e103 : queries_conform wf_schema "Pet" example103.
+    Proof. by []. Qed.
+
+    
+
+    Let example104 : seq (@Query string_eqType) := [::
+                                                     (* on "Pet" { *)
+                                                     (* [:: *)
+                                                     "nickname" [[ [::] ]]
+                                                     (* ] *)
+                                                     (* } *)
+                                                  ].
+
+    Example e104 : ~~ queries_conform wf_schema "Pet" example104.
+    Proof. by []. Qed.
+
+    Example e104' : all (fun implementor => queries_conform wf_schema implementor example104) (get_possible_types wf_schema "Pet").
+    Proof.
+        by [].
+    Qed.
+    
+
+    Let example105 : seq (@Query string_eqType) := [::
+                                                     (* on "CatOrDog" { *)
+                                                     (* [:: *)
+                                                     on "Pet" {
+                                                       [::
+                                                          "name" [[ [::] ]]
+                                                       ]
+                                                     };
+                                                     on "Dog" {
+                                                          [::
+                                                             "barkVolume" [[ [::] ]]
+                                                          ]
+                                                        }
+                                                        (* ] *)
+                                                        (* } *)
+                                                  ].
+
+    Example e105 : queries_conform wf_schema "CatOrDog" example105.
+    Proof. by []. Qed.
+
+    Let example106 : seq (@Query string_eqType) := [::
+                                                     "name" [[ [::] ]];
+                                                     "barkVolume" [[ [::] ]]
+                                                  ].
+
+    Example e106 : ~~ queries_conform wf_schema "CatOrDog" example106.
+    Proof. by []. Qed.
+
+    
+
+    Section FieldSelectionMerging.
+
+      Let example107_1 : seq (@Query string_eqType) := [::
+                                                         "name" [[ [::] ]];
+                                                         "name" [[ [::] ]]
+                                                      ].
+      Let example107_2 : seq (@Query string_eqType) := [::
+                                                         "otherName" : "name" [[ [::] ]];
+                                                         "otherName" : "name" [[ [::] ]]
+                                                      ].
+
+      Example e107_1 : is_field_merging_possible wf_schema "Dog" example107_1.
+      Proof.
+          by [].
+      Qed.
+
+      Example e107_2 : is_field_merging_possible wf_schema "Dog" example107_2.
+      Proof.
+          by [].
+      Qed.
+
+
+      Let example108 : seq (@Query string_eqType) := [::
+                                                       "name" : "nickname" [[ [::] ]];
+                                                       "name" [[ [::] ]]
+                                                    ].
+
+      Example e108 : ~~ is_field_merging_possible wf_schema "Dog" example108.
+      Proof.
+          by [].
+      Qed.
+
+      Let example109 := [::
+                          "doesKnowCommand" [[ [:: pair "dogCommand" "SIT"] ]];
+                          "doesKnowCommand" [[ [:: pair "dogCommand" "SIT"] ]]
+                       ].
+
+      Example e109 : is_field_merging_possible wf_schema "Dog" example109.
+      Proof.
+          by [].
+      Qed.
+      
+      (**
+       Omitting examples with variables since they are not implemented. 
+       *)
+      Let example110_1 := [::
+                            "doesKnowCommand" [[ [:: pair "dogCommand" "SIT"] ]];
+                            "doesKnowCommand" [[ [:: pair "dogCommand" "HEEL"] ]]
+                         ].
+      
+      Let example110_2 := [::
+                            "doesKnowCommand" [[ [:: pair "dogCommand" "SIT"] ]];
+                            "doesKnowCommand" [[ [::] ]]
+                         ].
+
+      Example e110_1 : ~~ is_field_merging_possible wf_schema "Dog" example110_1.
+      Proof.
+          by [].
+      Qed.
+      
+      Example e110_2 : ~~ is_field_merging_possible wf_schema "Dog" example110_2.
+      Proof.
+          by [].
+      Qed.
+
+
+      Let example111_1 : seq (@Query string_eqType) := [::
+                                                         on "Dog" {
+                                                           [::
+                                                              "volume": "barkVolume" [[ [::] ]]
+                                                           ]
+                                                         };
+                                                         
+                                                         on "Cat" {
+                                                              [::
+                                                                 "volume": "meowVolume" [[ [::] ]]
+                                                              ]
+                                                            }
+                                                      ].
+
+      Example e111_1 : is_field_merging_possible wf_schema "Pet" example111_1.
+      Proof.
+          by [].
+      Qed.
+
+      Let example111_2 : seq (@Query string_eqType) := [::
+                                                         on "Dog" {
+                                                           [::
+                                                              "doesKnowCommand" [[ [:: pair "dogCommand" "SIT"] ]]
+                                                           ]
+                                                         };
+                                                         
+                                                         on "Cat" {
+                                                              [::
+                                                                 "doesKnowCommand" [[ [:: pair "catCommand" "JUMP"] ]]
+                                                              ]
+                                                            }
+                                                      ].
+
+      Example e111_2 : is_field_merging_possible wf_schema "Pet" example111_2.
+      Proof.
+          by [].
+      Qed.
+      
+
+      Let example112 : seq (@Query string_eqType) := [::
+                                                       on "Dog" {
+                                                         [::
+                                                            "someValue": "nickname" [[ [::] ]]
+                                                         ]
+                                                       };
+                                                       
+                                                       on "Cat" {
+                                                            [::
+                                                               "someValue": "meowVolume" [[ [::] ]]
+                                                            ]
+                                                          }
+                                                    ].
+
+      Example e112 : ~~ have_compatible_response_shapes wf_schema [seq pair "Pet" q | q <- example112].
+      Proof.
+          by [].
+      Qed.
+
+      Example e112' : ~~ queries_conform wf_schema "Pet" example112.
+      Proof.
+          by [].
+      Qed.
+      
+      
+    End FieldSelectionMerging.
+
+
+    Section LeafFieldSelections.
+      (**
+       https://graphql.github.io/graphql-spec/June2018/#sec-Leaf-Field-Selections
+       *)
+
+      Let example113 : seq (@Query string_eqType) := [::
+                                                       "barkVolume" [[ [::] ]]
+                                                    ].
+      
+      Example e113 : queries_conform wf_schema "Dog" example113.
+      Proof.
+          by [].
+      Qed.
+
+      Let example114 : seq (@Query string_eqType) :=
+        [::
+           "barkVolume" [[ [::] ]] {
+             [::
+                "sinceWhen" [[ [::] ]]
+             ]
+           }
+        ].
+
+      Example e114 : ~~ queries_conform wf_schema "Dog" example114.
+      Proof.
+          by [].
+      Qed.
+
+
+      (**
+       Example 115 uses schema extension, which is not implemented but we can manage around it.
+       *)
+      Let ExtendedQueryType := Object "ExtendedQuery" implements [::] {
+                                       [::
+                                          (Schema.Field "dog" [::] "Dog");
+                                          (Schema.Field "human" [::] "Human");
+                                          (Schema.Field "pet" [::] "Pet");
+                                          (Schema.Field "catOrDog" [::] "CatOrDog")
+                                       ]
+                                     }.
+      (* For some reason this gets stuck trying to compute wf... ? *)
+      (* Let extended_schema := GraphQLSchema "ExtendedQuery" *)
+      (*                                     (ExtendedQueryType :: schema.(type_definitions)). *)
+
+      Let extended_schema := GraphQLSchema "ExtendedQuery"
+                                          [:: StringScalar; BooleanScalar; IntScalar; FloatScalar;
+                                             ExtendedQueryType;
+                                             DogCommandEnum; DogType;
+                                               SentientInterface; PetInterface;
+                                                 AlienType; HumanType;
+                                                   CatCommandEnum; CatType;
+                                                     CatOrDogUnion; DogOrHumanUnion; HumanOrAlienUnion].
+
+      Let extended_schwf : extended_schema.(is_wf_schema).
+      Proof. by []. Qed.
+
+      Let extended_wf_schema : @wfGraphQLSchema string_eqType   := WFGraphQLSchema (fun n v => true) extended_schwf.
+
+      Let example116_1 : seq (@Query string_eqType) :=
+        [::
+           "human" [[ [::] ]]
+        ].
+
+      Example e116_1 : ~~queries_conform extended_wf_schema "ExtendedQuery" example116_1.
+      Proof.
+          by [].
+      Qed.
+
+      Let example116_2 : seq (@Query string_eqType) :=
+        [::
+           "pet" [[ [::] ]]
+        ].
+
+      Example e116_2 : ~~queries_conform extended_wf_schema "ExtendedQuery" example116_2.
+      Proof.
+          by [].
+      Qed.
+
+      Let example116_3 : seq (@Query string_eqType) :=
+        [::
+           "catOrDog" [[ [::] ]]
+        ].
+
+      Example e116_3 : ~~queries_conform extended_wf_schema "ExtendedQuery" example116_3.
+      Proof.
+          by [].
+      Qed.
+      
+    End LeafFieldSelections.
+
+  End FieldValidation.
+
+
+  Section ValidArguments.
+    (**
+       https://graphql.github.io/graphql-spec/June2018/#sec-Argument-Names
+     *)
+
+    Let example117_1 : seq (@Query string_eqType) :=
+      [::
+         "doesKnowCommand" [[ [:: pair "dogCommand" "SIT"] ]]
+      ].
+
+    Example e117_1 : queries_conform wf_schema "Dog" example117_1.
+    Proof.
+        by [].
+    Qed.
+
+    (**
+       Not including the directive @include since directives are not implemented.
+     *)
+    Let example117_2 : seq (@Query string_eqType) :=
+      [::
+         "isHousetrained" [[ [:: pair "atOtherHomes" "true" ] ]]
+      ].
+
+    Example e117_2 : queries_conform wf_schema "Dog" example117_2.
+    Proof.
+      by [].
+    Qed.
+
+
+    Let example_118 : seq (@Query string_eqType) :=
+      [::
+         "doesKnowCommand" [[ [:: pair "command" "CLEAN_UP_HOUSE" ] ]]
+      ].
+
+    Example e118 : ~~queries_conform wf_schema "Dog" example_118.
+    Proof.
+        by [].
+    Qed.
+
+    (**
+       Example 119 is not included since it checks the directive @include
+       and directives are not implemented.
+     *)
+
+
+    Let ArgumentsType := Object "Arguments" implements [::] {
+                                 [::
+                                    (Schema.Field "multipleReqs" [::
+                                                                    FieldArgument "x" "Int";
+                                                                    FieldArgument "y" "Int"
+                                                                 ]
+                                                  "Int");
+                                    (Schema.Field "booleanArgField" [::
+                                                                       FieldArgument "booleanArg" "Boolean"
+                                                                    ]
+                                                  "Boolean");
+                                    (Schema.Field "floatArgField" [::
+                                                                     FieldArgument "floatArg" "Float"
+                                                                  ]
+                                                  "Float");
+                                    (Schema.Field "intArgField" [::
+                                                                   FieldArgument "intArg" "Int"
+                                                                ]
+                                                  "Int");
+                                    (* (Schema.Field "nonNullBooleanArgField" *)
+                                    (*               [:: *)
+                                    (*                  FieldArgument "nonNullBooleanArg" "Boolean" *)
+                                    (*               ] *)
+                                    (*               "Boolean"); *)
+
+                                    (Schema.Field "booleanListArgField"
+                                                  [::
+                                                     FieldArgument "booleanListArg" [ "Boolean" ]
+                                                  ]
+                                                  [ "Boolean" ])
+
+                                      (* (Schema.Field "optionalNonNullBooleanArgField" *)
+                                      (*               [:: *)
+                                      (*                  FieldArgument "optionalNonNullBooleanArgField" "Boolean" *)
+                                      (*               ] *)
+                                      (*               "Boolean") *)
+                                      
+                                                                              
+                                 ]
+                               }.
+
+    Let ExtendedQueryType := Object "ExtendedQuery" implements [::] {
+                                     [::
+                                        (Schema.Field "dog" [::] "Dog");
+                                        (Schema.Field "arguments" [::] "Arguments")
+
+                                     ]
+                                   }.
+
+    Let extended_schema := GraphQLSchema "ExtendedQuery"
+                                        [:: StringScalar; BooleanScalar; IntScalar; FloatScalar;
+                                           ExtendedQueryType;
+                                           DogCommandEnum; DogType;
+                                           SentientInterface; PetInterface;
+                                           AlienType; HumanType;
+                                           CatCommandEnum; CatType;
+                                           CatOrDogUnion; DogOrHumanUnion; HumanOrAlienUnion;
+                                           ArgumentsType
+                                        ].
+
+    Let extended_schwf : extended_schema.(is_wf_schema).
+    Proof.
+      (* For some reason just computing gets stuck - using by [] *)
+      rewrite /is_wf_schema /= ?andbT.
+      rewrite /is_wf_field /= andbT.
+      simp is_valid_field_type.
+    Qed.
+
+    Let extended_wf_schema : @wfGraphQLSchema string_eqType   := WFGraphQLSchema (fun n v => true) extended_schwf.
+
+    Let example121_1 : seq (@Query string_eqType) :=
+      [::
+         "multipleReqs" [[ [:: (pair "x" "1"); (pair "y" "2")] ]]
+      ].
+
+    Example e121_1 : queries_conform extended_wf_schema "Arguments" example121_1.
+    Proof.
+        by [].
+    Qed.
+
+    Let example121_2 : seq (@Query string_eqType) :=
+      [::
+         "multipleReqs" [[ [:: (pair "y" "1"); (pair "x" "2")] ]]
+      ].
+
+    Example e121_2 : queries_conform extended_wf_schema "Arguments" example121_2.
+    Proof.
+        by [].
+    Qed.
+
+    (**
+       Examples 122 - 125 are meant for required arguments, which is not implemented.
+       We omit them here.
+     *)
+
+  End ValidArguments.
+
+  Section Fragments.
+    (**
+       https://graphql.github.io/graphql-spec/June2018/#sec-Validation.Fragments
+     *)
+
+    (**
+       Examples 126 & 127 use defined fragments, which is not implemented.
+       We omit them here.
+     *)
+
+
+    (**
+       The spec checks whether the type condition on a fragment exists. 
+       We check this indirectly when checking if the fragments spread.
+       If a fragment does not exist in the schema, it will never spread.
+     *)
+    Let example128 : seq (@Query string_eqType) :=
+      [::
+         on "Dog" {
+           [::
+              "name" [[ [::] ]]
+           ]
+         }
+      ].
+
+    Example e128 : queries_conform wf_schema "Dog" example128 &&
+                   queries_conform wf_schema "Pet" example128.                
+    Proof.
+        by [].
+    Qed.
+
+
+    Let example129 : seq (@Query string_eqType) :=
+      [::
+         on "NotInSchema" {
+           [::
+              "name" [[ [::] ]]
+           ]
+         }
+      ].
+
+    Example e129 : ~~queries_conform wf_schema "Dog" example129.
+    Proof.
+        by [].
+    Qed.
+
+    Example e129' : all (fun name => ~~queries_conform wf_schema name example129) wf_schema.(schema_names).
+    Proof.
+        by [].
+    Qed.
+
+    Let example130_1 : @Query string_eqType := on "Dog" {
+                                                   [::
+                                                      "name" [[ [::] ]]
+                                                   ]
+                                                 }.
+    Example e130_1 : query_conforms wf_schema "Dog" example130_1 &&
+                     query_conforms wf_schema "Pet" example130_1.
+    Proof.
+        by [].
+    Qed.
+
+    Let example130_2 : @Query string_eqType := on "Pet" {
+                                                   [::
+                                                      "name" [[ [::] ]]
+                                                   ]
+                                                 }.
+    Example e130_2 : query_conforms wf_schema "Dog" example130_2 &&
+                     query_conforms wf_schema "Pet" example130_2.
+    Proof.
+        by [].
+    Qed.
+
+     Let example130_3 : @Query string_eqType := on "CatOrDog" {
+                                                    [::
+                                                       on "Dog" {
+                                                         [::
+                                                            "name" [[ [::] ]]
+                                                         ]
+                                                       }
+                                                    ]
+                                                 }.
+    Example e130_3 : query_conforms wf_schema "CatOrDog" example130_3.
+    Proof.
+        by [].
+    Qed.
+
+    Let example131_1 : (@Query string_eqType) := on "Int" {
+                                                     [::
+                                                        "something" [[ [::] ]]
+                                                     ]
+                                                   }.
+
+    Example e131_1 : all (fun name => ~~query_conforms wf_schema name example131_1) wf_schema.(schema_names).
+    Proof.
+        by [].
+    Qed.
+
+    Let example131_2 : (@Query string_eqType) := on "Dog" {
+                                                     [::
+                                                        on "Boolean" {
+                                                          [::
+                                                             "somethingElse" [[ [::] ]]
+                                                          ]
+                                                        }
+                                                     ]
+                                                   }.
+
+    Example e131_2 : all (fun name => ~~query_conforms wf_schema name example131_2) wf_schema.(schema_names).
+    Proof.
+        by [].
+    Qed.
+
+
+    (**
+       Example 132-136 refer to fragment definitions. We don't implement 
+       that so we omit those examples.
+
+       https://graphql.github.io/graphql-spec/June2018/#example-9e1e3
+       https://graphql.github.io/graphql-spec/June2018/#example-28421
+       https://graphql.github.io/graphql-spec/June2018/#example-9ceb4
+       https://graphql.github.io/graphql-spec/June2018/#example-08734
+       https://graphql.github.io/graphql-spec/June2018/#example-6bbad
+     *)
+
+
+
+    (**
+       https://graphql.github.io/graphql-spec/June2018/#sec-Object-Spreads-In-Object-Scope
+     *)
+    Let example137 : @Query string_eqType := on "Dog" {
+                                                 [::
+                                                    "barkVolume" [[ [::] ]]
+                                                 ]
+                                               }.
+    Example e137' : is_fragment_spread_possible wf_schema "Dog" "Dog".
+    Proof.
+        by [].
+    Qed.
+    
+    Example e137 : query_conforms wf_schema "Dog" example137.
+    Proof.
+        by [].
+    Qed.
+
+    Let example138 : @Query string_eqType := on "Cat" {
+                                                 [::
+                                                    "meowVolume" [[ [::] ]]
+                                                 ]
+                                               }.
+     
+    Example e138' : ~~ is_fragment_spread_possible wf_schema "Cat" "Dog".
+    Proof.
+        by [].
+    Qed.
+
+    Example e138 : ~~ query_conforms wf_schema "Dog" example138.
+    Proof.
+        by [].
+    Qed.
+
+    
+    (**
+       https://graphql.github.io/graphql-spec/June2018/#sec-Abstract-Spreads-in-Object-Scope
+     *)
+    Let example139 : @Query string_eqType := on "Pet" {
+                                                 [::
+                                                    "name" [[ [::] ]]
+                                                 ]
+                                                }.
+
+    
+    Example e139' : is_fragment_spread_possible wf_schema "Pet" "Dog".
+    Proof.
+        by [].
+    Qed.
+    
+    Example e139 : query_conforms wf_schema "Dog" example139.
+    Proof.
+        by [].
+    Qed.
+
+    Let example140 : @Query string_eqType := on "CatOrDog" {
+                                                 [::
+                                                    on "Cat" {
                                                       [::
                                                          "meowVolume" [[ [::] ]]
                                                       ]
                                                     }
-                                                 ].
-  
-  Let example102' :  seq (@Query string_eqType) := [::
-                                                     on "Dog" {
-                                                       [::
-                                                          "barkVolume" : "kawVolume" [[ [::] ]]
-                                                       ]
-                                                     }
-                                                  ].
-
-  (**
-     This is not exactly the same as in the spec, but in that example they are checking 
-     defined fragment spreads, not inline fragments.
-   *)
-  Example e102 : ~~ (queries_conform wf_schema "Dog" example102 || queries_conform wf_schema "Dog" example102').
-  Proof. by []. Qed.
-
-
-  Let example103 : seq (@Query string_eqType) := [::
-                                                   (* on "Pet" { *)
-                                                     (* [:: *)
-                                                        "name" [[ [::] ]]
-                                                     (* ] *)
-                                                   (* } *)
-                                                ].
-
-  
-  Example e103 : queries_conform wf_schema "Pet" example103.
-  Proof. by []. Qed.
-
-  
-
-  Let example104 : seq (@Query string_eqType) := [::
-                                                   (* on "Pet" { *)
-                                                     (* [:: *)
-                                                        "nickname" [[ [::] ]]
-                                                     (* ] *)
-                                                   (* } *)
-                                                ].
-
-  Example e104 : ~~ queries_conform wf_schema "Pet" example104.
-  Proof. by []. Qed.
-
-  Example e104' : all (fun implementor => queries_conform wf_schema implementor example104) (get_possible_types wf_schema "Pet").
-  Proof.
-      by [].
-  Qed.
+                                                 ]
+                                               }.
     
-
-  Let example105 : seq (@Query string_eqType) := [::
-                                                   (* on "CatOrDog" { *)
-                                                     (* [:: *)
-                                                        on "Pet" {
-                                                          [::
-                                                             "name" [[ [::] ]]
-                                                          ]
-                                                        };
-                                                        on "Dog" {
-                                                             [::
-                                                                "barkVolume" [[ [::] ]]
-                                                             ]
-                                                           }
-                                                     (* ] *)
-                                                   (* } *)
-                                                ].
-
-  Example e105 : queries_conform wf_schema "CatOrDog" example105.
-  Proof. by []. Qed.
-
-  Let example106 : seq (@Query string_eqType) := [::
-                                                   "name" [[ [::] ]];
-                                                   "barkVolume" [[ [::] ]]
-                                                ].
-
-  Example e106 : ~~ queries_conform wf_schema "CatOrDog" example106.
-  Proof. by []. Qed.
-
-
-
-  Section FieldSelectionMerging.
-
-    Let example107_1 : seq (@Query string_eqType) := [::
-                                                     "name" [[ [::] ]];
-                                                     "name" [[ [::] ]]
-                                                  ].
-    Let example107_2 : seq (@Query string_eqType) := [::
-                                                     "otherName" : "name" [[ [::] ]];
-                                                     "otherName" : "name" [[ [::] ]]
-                                                  ].
-
-    Example e107_1 : is_field_merging_possible wf_schema "Dog" example107_1.
-    Proof.
-        by [].
-    Qed.
-
-    Example e107_2 : is_field_merging_possible wf_schema "Dog" example107_2.
-    Proof.
-        by [].
-    Qed.
-
-
-    Let example108 : seq (@Query string_eqType) := [::
-                                                     "name" : "nickname" [[ [::] ]];
-                                                     "name" [[ [::] ]]
-                                                  ].
-
-    Example e108 : ~~ is_field_merging_possible wf_schema "Dog" example108.
-    Proof.
-        by [].
-    Qed.
-
-    Let example109 := [::
-                        "doesKnowCommand" [[ [:: pair "dogCommand" "SIT"] ]];
-                        "doesKnowCommand" [[ [:: pair "dogCommand" "SIT"] ]]
-                     ].
-
-    Example e109 : is_field_merging_possible wf_schema "Dog" example109.
+    Example e140' : is_fragment_spread_possible wf_schema "CatOrDog" "Dog".
     Proof.
         by [].
     Qed.
     
+    Example e140 : query_conforms wf_schema "Dog" example140.
+    Proof.
+        by [].
+    Qed.
+
+
     (**
-       Omitting examples with variables since they are not implemented. 
+       https://graphql.github.io/graphql-spec/June2018/#sec-Object-Spreads-In-Abstract-Scope
      *)
-    Let example110_1 := [::
-                        "doesKnowCommand" [[ [:: pair "dogCommand" "SIT"] ]];
-                        "doesKnowCommand" [[ [:: pair "dogCommand" "HEEL"] ]]
-                       ].
-    
-    Let example110_2 := [::
-                        "doesKnowCommand" [[ [:: pair "dogCommand" "SIT"] ]];
-                        "doesKnowCommand" [[ [::] ]]
-                       ].
+    Let example141_1 : seq (@Query string_eqType) :=
+      [::
+         "name" [[ [::] ]];
+         on "Dog" {
+              [::
+                 "barkVolume" [[ [::] ]]
+              ]
+            }
+      ].
 
-    Example e110_1 : ~~ is_field_merging_possible wf_schema "Dog" example110_1.
-    Proof.
-        by [].
-    Qed.
-    
-    Example e110_2 : ~~ is_field_merging_possible wf_schema "Dog" example110_2.
-    Proof.
-        by [].
-    Qed.
-
-
-    Let example111_1 : seq (@Query string_eqType) := [::
-                          on "Dog" {
-                            [::
-                               "volume": "barkVolume" [[ [::] ]]
-                            ]
-                          };
-                          
-                          on "Cat" {
-                               [::
-                                  "volume": "meowVolume" [[ [::] ]]
-                               ]
-                             }
-                       ].
-
-    Example e111_1 : is_field_merging_possible wf_schema "Pet" example111_1.
-    Proof.
-        by [].
-    Qed.
-
-    Let example111_2 : seq (@Query string_eqType) := [::
-                          on "Dog" {
-                            [::
-                               "doesKnowCommand" [[ [:: pair "dogCommand" "SIT"] ]]
-                            ]
-                          };
-                          
-                          on "Cat" {
-                               [::
-                                  "doesKnowCommand" [[ [:: pair "catCommand" "JUMP"] ]]
-                               ]
-                             }
-                       ].
-
-    Example e111_2 : is_field_merging_possible wf_schema "Pet" example111_2.
-    Proof.
-        by [].
-    Qed.
-    
-
-     Let example112 : seq (@Query string_eqType) := [::
-                          on "Dog" {
-                            [::
-                               "someValue": "nickname" [[ [::] ]]
-                            ]
-                          };
-                          
-                          on "Cat" {
-                               [::
-                                  "someValue": "meowVolume" [[ [::] ]]
-                               ]
-                             }
-                       ].
-
-    Example e112 : ~~ have_compatible_response_shapes wf_schema [seq pair "Pet" q | q <- example112].
-    Proof.
-        by [].
-    Qed.
-
-    Example e112' : ~~ queries_conform wf_schema "Pet" example112.
+    Example e141_1' : is_fragment_spread_possible wf_schema "Dog" "Pet".
     Proof.
         by [].
     Qed.
 
     
+    Example e141_1 : queries_conform wf_schema "Pet" example141_1.
+    Proof.
+        by [].
+    Qed.
+
+    Let example141_2 : seq (@Query string_eqType) :=
+      [::
+         on "Cat" {
+           [::
+              "meowVolume" [[ [::] ]]
+           ]
+         }
+      ].
+
+    Example e141_2' : is_fragment_spread_possible wf_schema "Cat" "CatOrDog".
+    Proof.
+        by [].
+    Qed.
     
-  End FieldSelectionMerging.
-  
+    Example e141_2 : queries_conform wf_schema "CatOrDog" example141_2.
+    Proof.
+        by [].
+    Qed.
+    
+    
+    Let example142_1 : @Query string_eqType := on "Dog" {
+                                                 [::
+                                                    "barkVolume" [[ [::] ]]
+                                                 ]
+                                                 }.
+
+    Example e142_1' : ~~ is_fragment_spread_possible wf_schema "Dog" "Sentient".
+    Proof.
+        by [].
+    Qed.
+
+    Example e142_1 : ~~ query_conforms wf_schema "Sentient" example142_1.
+    Proof.
+        by [].
+    Qed.
+
+    
+    Let example142_2 : @Query string_eqType := on "Cat" {
+                                                 [::
+                                                    "meowVolume" [[ [::] ]]
+                                                 ]
+                                                 }.
+
+    Example e142_2' : ~~ is_fragment_spread_possible wf_schema "Cat" "HumanOrAlien".
+    Proof.
+        by [].
+    Qed.
+    
+    Example e142_2 : ~~ query_conforms wf_schema "HumanOrAlien" example142_2.
+    Proof.
+        by [].
+    Qed.
+
+
+    (**
+       https://graphql.github.io/graphql-spec/June2018/#sec-Abstract-Spreads-in-Abstract-Scope
+     *)
+    Let example143 : seq (@Query string_eqType) :=
+      [::
+         on "DogOrHuman" {
+           [::
+              on "Dog" {
+                [::
+                   "barkVolume" [[ [::] ]]
+                ]
+              }
+           ]
+         }
+      ].
+
+    Example e143' : is_fragment_spread_possible wf_schema "DogOrHuman" "Pet".
+    Proof.
+        by [].
+    Qed.
+
+    Example e143 : queries_conform wf_schema "Pet" example143.
+    Proof.
+        by [].
+    Qed.
+
+    Let example144 : @Query string_eqType := on "Sentient" {
+                                                 [::
+                                                    "name" [[ [::] ]]
+                                                 ]
+                                               }.
+
+    Example e144' : ~~ is_fragment_spread_possible wf_schema "Sentient" "Pet".
+    Proof.
+        by [].
+    Qed.
+
+    Example e144 : ~~ query_conforms wf_schema "Pet" example144.
+    Proof.
+        by [].
+    Qed.
+    
+    
+    
+  End Fragments.
+
+  Section ValuesValidation.
+    (**
+       Not adding examples of value validation.
+
+       https://graphql.github.io/graphql-spec/June2018/#sec-Values
+     *)
+  End ValuesValidation.
+
+    
+    
+    
 End GraphQLSpecExamples.
