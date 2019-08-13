@@ -4,26 +4,45 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-From extructures Require Import ord fset fmap.
-
-From Coq Require Import String Ascii List.
 From CoqUtils Require Import string.
 
 From Equations Require Import Equations.
+From CoqUtils Require Import string.
 
 
+Require Import Base.
 Require Import Schema.
 Require Import SchemaAux.
+
 Require Import SchemaWellFormedness.
+
+
 Require Import Graph.
 Require Import GraphAux.
+
 Require Import GraphConformance.
+
+
 Require Import Query.
+Require Import QueryAux.
+
 Require Import QueryConformance.
-Require Import QuerySemantic.
+
+
+Require Import Response.
+
 Require Import NRGTNF.
 
 
+Require Import QueryNormalization.
+
+
+Require Import SeqExtra.
+Require Import QueryTactics.
+
+Require Import QuerySemantic.
+
+Open Scope string_scope.
 
 (** This file includes some examples of schemas, graphs and queries. 
     The base schema is the one used in [Hartig & Pérez, 2017];
@@ -32,141 +51,162 @@ Require Import NRGTNF.
     while the other sections may vary.
  **)
 Section Example.
-
-  Local Open Scope string_scope.
+ 
+  Coercion namedType_of_string (s : string) := NamedType s.
   
+  Let IDType := Scalar "ID".
+  Let StringType := Scalar "String".
+  Let FloatType := Scalar "Float".
 
-  Delimit Scope schema_scope with schema.
-  Open Scope schema_scope.
-  
-  Notation "'type' O 'implements' I {{ F }}" := (ObjectTypeDefinition O I F) (at level 0, no associativity) : schema_scope.
-
-  Notation "'interface' I {{ F }}" := (InterfaceTypeDefinition I F) (at level 0, no associativity) : schema_scope.
-
-  Notation "'enum' E { EV }" := (EnumTypeDefinition E EV) (at level 0, E at next level,  EV at level 0) : schema_scope.
-
-  Notation "'union' U 'of' Uv" := (UnionTypeDefinition U Uv) (at level 0, no associativity) : schema_scope.
-
-  Notation "'scalar' S" := (ScalarTypeDefinition S) (at level 60).
-  
-  Notation "f : t" := (Schema.Field f [::] t).
-
-  Notation "'[[' s ']]'" := (ListType s) (at level 0, s at next level).
 
   
-  Coercion namedType_of_string (s : string) := NT s.
-  
-  Let IDType := scalar "ID".
-  Let StringType := scalar "String".
-  Let FloatType := scalar "Float".
+  Let StarshipType := Object "Starship" implements [::] {
+                              [:: Schema.Field "id" [::] "ID";
+                                  Schema.Field "name" [::] "String";
+                                  Schema.Field "length" [::] "Float"
+                              ]
+                            }.
 
-  Let StarshipType := (ObjectTypeDefinition "Starship" [::]
-                                           [:: ("id" : "ID");
-                                              ("name" : "String");
-                                              ("length" : "Float")
-                     ]).
-
-  Let CharacterType := interface "Character" {{[::
-                                                 ("id" : "ID");
-                                                 ("name" : "String");
-                                                 ("friends" : [["Character"]])]
-                                            }}.
+  Let CharacterType := Interface "Character" {
+                                  [::
+                                     Schema.Field "id" [::] "ID" ;
+                                     Schema.Field "name" [::] "String";
+                                     Schema.Field "friends" [::] [ "Character" ]
+                                    ]
+                                  }.
 
   
-  Let DroidType := type "Droid" implements [:: "Character"] {{[::
-                                                                            ("id" : "ID");
-                                                                            ("name" : "String");
-                                                                            ("friends" : [["Character"]]);
-                                                                            ("primaryFunction" : "String")
-                                                                              
-                                                                       ]}}.
+  Let DroidType := Object "Droid" implements [:: "Character"] {
+                           [::
+                              Schema.Field "id" [::] "ID" ;
+                              Schema.Field "name" [::] "String";
+                              Schema.Field "friends" [::] [ "Character" ];
+                              Schema.Field "primaryFunction" [::] "String"
+                           ]
+                         }.
   
   
-  Let HumanType := type "Human" implements [:: "Character"] {{[::
-                                                                            ("id" : "ID");
-                                                                            ("name" : "String");
-                                                                            ("friends" : [["Character"]]);
-                                                                            ("starships" : [["Starship"]])
-                                                                              
-                                                                       ]}}.
+  Let HumanType := Object "Human" implements [:: "Character"] {
+                           [::
+                              Schema.Field "id" [::] "ID" ;
+                              Schema.Field "name" [::] "String";
+                              Schema.Field "friends" [::] [ "Character" ];
+                              Schema.Field "starships" [::] [ "Starship" ]
+                           ]
+                         }.
 
-  Let EpisodeType := enum "Episode" { [:: "NEWHOPE" ; "EMPIRE" ; "JEDI" ] }.
-
-
-  Let SearchResultType := union "SearchResult" of [:: "Human" ; "Droid" ; "Starship"].
+  Let EpisodeType := Enum "Episode" { [:: "NEWHOPE" ; "EMPIRE" ; "JEDI" ] }.
 
 
-  Let QueryType := type "Query" implements [::] {{ [::
-                                                     (Schema.Field "hero" [:: (FieldArgument "episode" "Episode")] "Character");
-                                                     (Schema.Field "search" [:: (FieldArgument "text" "String")] [["SearchResult"]])]
-                                               }}.
-
-  Let schema  := Schema "Query"  [:: IDType; StringType; FloatType;  StarshipType;  CharacterType; DroidType; HumanType; EpisodeType; SearchResultType; QueryType].
+  Let SearchResultType := Union "SearchResult" { [:: "Human" ; "Droid" ; "Starship"] }.
 
 
-  Lemma sdf : is_schema_wf schema.
+  Let QueryType := Object "Query" implements [::] {
+                           [::
+                              Schema.Field "hero" [:: FieldArgument "episode" "Episode"] "Character";
+                              Schema.Field "search" [:: FieldArgument "text" "String"] [ "SearchResult" ]
+                           ]
+                         }.
+
+  Let schema  := GraphQLSchema "Query"  [:: IDType; StringType; FloatType;  StarshipType;  CharacterType; DroidType; HumanType; EpisodeType; SearchResultType; QueryType].
+
+
+  Lemma sdf : schema.(is_wf_schema).
   Proof. by []. Qed.
   
 
 
 
-  Let wf_schema : @wfSchema string_ordType string_ordType   := WFSchema (fun n v => true) sdf.
+  Let wf_schema : @wfGraphQLSchema string_eqType := WFGraphQLSchema (fun n v => true) sdf.
   
   Section HP.
 
 
+    (* Close Scope query_eval. *)
     
-    Let edges : {fset node * fld * node} :=
-      fset [:: (Graph.Node 0 "Query" emptym ,
-                Graph.Field "search" [fmap ("text", "L")],
-                Graph.Node 4 "Starship" [fmap (Graph.Field "id" emptym, (inl "3000"));
-                                           (Graph.Field "name" emptym, (inl "Falcon")); 
-                                           (Graph.Field "length" emptym, (inl "34.37"))]);
-              (Graph.Node 0 "Query" emptym,
-               Graph.Field "search" [fmap ("text", "L")],
-               Graph.Node 1 "Human" [fmap (Graph.Field "id" emptym, (inl "1000"));
-                                       (Graph.Field "name" emptym, (inl "Luke"))]);
-              (Graph.Node 0 "Query" emptym,
-               Graph.Field "hero" [fmap ("episode", "EMPIRE")],
-               Graph.Node 1 "Human" [fmap (Graph.Field "id" emptym, (inl "1000"));
-                                       (Graph.Field "name" emptym, (inl "Luke"))]);
-              (Graph.Node 0 "Query" emptym,
-               Graph.Field "hero" [fmap ("episode", "NEWHOPE")],
-               Graph.Node 2 "Droid" [fmap  (Graph.Field "id" emptym, (inl "2001"));
-                                       (Graph.Field "name" emptym, (inl "R2-D2"));
-                                       (Graph.Field "primaryFunction" emptym, (inl "Astromech"))]);
-              (Node 1 "Human" [fmap (Graph.Field "id" emptym, (inl "1000"));
-                                 (Graph.Field "name" emptym, (inl "Luke"))],
-               Graph.Field "friends" emptym,
-               Graph.Node 2 "Droid" [fmap  (Graph.Field "id" emptym, (inl "2001"));
-                                       (Graph.Field "name" emptym, (inl "R2-D2"));
-                                       (Graph.Field "primaryFunction" emptym, (inl "Astromech"))]);
-              (Node 2 "Droid" [fmap  (Graph.Field "id" emptym, (inl "2001"));
-                                 (Graph.Field "name" emptym, (inl "R2-D2"));
-                                 (Graph.Field "primaryFunction" emptym, (inl "Astromech"))],
-               Graph.Field "friends" emptym,
-               Graph.Node 1 "Human" [fmap (Graph.Field "id" emptym, (inl "1000"));
-                                       (Graph.Field "name" emptym, (inl "Luke"))]);
-              (Graph.Node 1 "Human" [fmap (Graph.Field "id" emptym, (inl "1000"));
-                                       (Graph.Field "name" emptym, (inl "Luke"))],
-               Graph.Field "friends" emptym,
-               Graph.Node 3 "Human" [fmap (Graph.Field "id" emptym, (inl "1002"));
-                                       (Graph.Field "name" emptym, (inl "Han"))]);
-              (Graph.Node 3 "Human" [fmap (Graph.Field "id" emptym, (inl "1002"));
-                                       (Graph.Field "name" emptym, (inl "Han"))],
-               Graph.Field "friends" emptym,
-               Graph.Node 1 "Human" [fmap (Graph.Field "id" emptym, (inl "1000"));
-                                       (Graph.Field "name" emptym, (inl "Luke"))]);
-              (Graph.Node 3 "Human" [fmap (Graph.Field "id" emptym, (inl "1002"));
-                                       (Graph.Field "name" emptym, (inl "Han"))],
-               Graph.Field "starships" emptym,
-               Graph.Node 4 "Starship" [fmap (Graph.Field "id" emptym, (inl "3000"));
-                                          (Graph.Field "name" emptym, (inl "Falcon")); 
-                                          (Graph.Field "length" emptym, (inl "34.37"))])
-           ].
+    Let edges : seq (node * fld * node) :=
+      [::
+         pair (pair (Node "Query" [::])
+                    (Graph.Field "search" [:: (pair "text" "L")]))
+         (Node "Starship" [::
+                             (pair (Graph.Field "id" [::])  (inl "3000"));
+                             (pair (Graph.Field "name" [::]) (inl "Falcon")); 
+                             (pair (Graph.Field "length" [::]) (inl "34.37"))
+         ]);
+         pair (pair (Node "Query" [::])
+                    (Graph.Field "search" [:: (pair "text" "L")]))
+              (Node "Human" [::
+                               pair (Graph.Field "id" [::]) (inl "1000");
+                               pair (Graph.Field "name" [::]) (inl "Luke")
+              ]);
+         pair (pair (Node "Query" [::])
+                    (Graph.Field "hero" [:: pair "episode" "EMPIRE"]))
+              (Node "Human" [::
+                               pair (Graph.Field "id" [::]) (inl "1000");
+                               pair (Graph.Field "name" [::]) (inl "Luke")
+              ]);
+         pair (pair (Node "Query" [::])
+                    (Graph.Field "hero" [:: pair "episode" "NEWHOPE"]))
+              (Node "Droid" [::
+                               (pair (Graph.Field "id" [::]) (inl "2001"));
+                               (pair (Graph.Field "name" [::]) (inl "R2-D2"));
+                               (pair (Graph.Field "primaryFunction" [::]) (inl "Astromech"))
+              ]);
+         
+         pair (pair (Node "Human" [::
+                                     pair (Graph.Field "id" [::]) (inl "1000");
+                                     pair (Graph.Field "name" [::]) (inl "Luke")
+                    ])
+                    (Graph.Field "friends" [::]))
+              (Node "Droid" [::
+                               (pair (Graph.Field "id" [::]) (inl "2001"));
+                               (pair (Graph.Field "name" [::]) (inl "R2-D2"));
+                               (pair (Graph.Field "primaryFunction" [::]) (inl "Astromech"))
+              ]);
+
+         pair (pair (Node "Droid" [::
+                                     (pair (Graph.Field "id" [::]) (inl "2001"));
+                                     (pair (Graph.Field "name" [::]) (inl "R2-D2"));
+                                     (pair (Graph.Field "primaryFunction" [::]) (inl "Astromech"))
+                    ])
+                    (Graph.Field "friends" [::]))
+              (Node "Human" [::
+                               pair (Graph.Field "id" [::]) (inl "1000");
+                               pair (Graph.Field "name" [::]) (inl "Luke")
+              ]);
+         
+         pair (pair (Node "Human" [::
+                                     pair (Graph.Field "id" [::]) (inl "1000");
+                                     pair (Graph.Field "name" [::]) (inl "Luke")
+                    ])
+                    (Graph.Field "friends" [::]))
+              (Node "Human" [::
+                               pair (Graph.Field "id" [::]) (inl "1002");
+                               pair (Graph.Field "name" [::]) (inl "Han")
+              ]);
+         
+         pair (pair (Node "Human" [::
+                                     pair (Graph.Field "id" [::]) (inl "1002");
+                                     pair (Graph.Field "name" [::]) (inl "Han")
+                    ])
+                    (Graph.Field "friends" [::]))
+              (Node "Human" [::
+                               pair (Graph.Field "id" [::]) (inl "1000");
+                               pair (Graph.Field "name" [::]) (inl "Luke")
+              ]);
+         
+         pair (pair (Node "Human" [::
+                                     pair (Graph.Field "id" [::]) (inl "1002");
+                                     pair (Graph.Field "name" [::]) (inl "Han")
+                    ])
+                    (Graph.Field "starships" [::]))
+              (Node "Starship" [:: (pair (Graph.Field "id" [::]) (inl "3000"));
+                                  (pair (Graph.Field "name" [::]) (inl "Falcon")); 
+                                  (pair (Graph.Field "length" [::]) (inl "34.37"))])
+      ].
     
     
-    Let r : @node nat_ordType string_ordType string_ordType := Graph.Node 0 "Query" emptym.
+    Let r : @node string_eqType := Node "Query" [::].
     
     
     Let g := GraphQLGraph r edges.
@@ -176,18 +216,19 @@ Section Example.
     Proof.    by [].  Qed.
 
     
-    Lemma ec : edges_conform wf_schema edges.
+    Lemma ec : edges_conform wf_schema g.
     Proof.
-        by rewrite /edges_conform /edges [fset]unlock.
+      by [].
     Qed.
 
     Lemma fc : fields_conform wf_schema g.
     Proof.
-        by rewrite /fields_conform /graph_s_nodes /= /edges [fset]unlock /=. Qed.
-
+        by [].
+    Qed.
+    
     Lemma nhot : nodes_have_object_type wf_schema g.
     Proof.
-        by rewrite /nodes_have_object_type /graph_s_nodes /= /edges [fset]unlock.
+      by [].
     Qed.
     
 
@@ -196,220 +237,128 @@ Section Example.
 
     
     Let q :=
-      (SingleQuery
-         (NestedField "hero" [fmap ("episode", "EMPIRE")]
-            (SelectionSet
-               (SingleField "name" emptym)
-               (SingleQuery
-                  (NestedField "friends" emptym
-                      (SelectionSet
-                         (InlineFragment "Human"
-                            (SelectionSet
-                               (LabeledField "humanFriend" "name" emptym)
-                               (SingleQuery
-                                  (NestedField "starships" emptym
-                                               (SelectionSet
-                                                  (LabeledField "starship" "name" emptym)
-                                                  (SingleQuery (SingleField "length" emptym))
-                                               )
-                                  )
-                               )
-                            )
-                         )
-                         (SingleQuery
-                            (InlineFragment "Droid"
-                                (SelectionSet
-                                   (LabeledField "droidFriend" "name" emptym)
-                                   (SingleQuery (SingleField "primaryFunction" emptym))
-                                )
-                            )
-                         )
-                      )
-                  )
-               )
-            )
-         )
-      ).
+      [::
+         "hero" [[ [:: (pair "episode" "EMPIRE") ] ]] {
+           [::
+              "name" [[ [::] ]] ;
+              "friends" [[ [::] ]] {
+                          [::
+                             on "Human" {
+                               [::
+                                  "humanFriend" : "name" [[ [::] ]] ;
+                                  "starships" [[ [::] ]] {
+                                                [::
+                                                   "starship" : "name" [[ [::] ]] ;
+                                                   "length" [[ [::] ]]
+                                                ]
+                                              }
+                               ]
+                             } ;
+                             
+                             on "Droid" {
+                                  [::
+                                     "droidFriend" : "name" [[ [::] ]] ;
+                                     "primaryFunction" [[ [::] ]]
+                                  ]
+                                }
+                          ]
+                        }
+           ]
+         }
+      ].
 
-  (*
-  Lemma qc : SelectionConforms wf_schema q wf_schema.(query_type).
+
+    (* Transparent find_fields_with_response_name have_compatible_response_shapes. *)
+  Lemma qbc : queries_conform  wf_schema wf_schema.(query_type) q.
   Proof.
-    rewrite /q /query_type /=.
-    apply: NestedFieldConforms.
-      by rewrite /lookup_field_in_type /=.
       by [].
-    apply: SelectionSetConforms.
-    apply: FieldConforms.  
-      by rewrite /lookup_field_in_type /=.
-      by [].
-    apply: NestedFieldConforms.
-      by rewrite /lookup_field_in_type /=.
-      by [].
-    apply: SelectionSetConforms; rewrite /name_of_type /=.
-
-    apply: InlineFragmentConforms "Human" _ _.
-      by [].
-      by exists "Human".
-      apply: SelectionSetConforms.
-      apply: LabeledFieldConforms.
-        by rewrite /lookup_field_in_type /=.
-        by [].
-      apply: NestedFieldConforms.
-        by rewrite /lookup_field_in_type /=.
-        by [].
-      apply: SelectionSetConforms.
-      apply: LabeledFieldConforms.
-        by rewrite /lookup_field_in_type /=.
-        by [].
-      apply: FieldConforms.
-        by rewrite /lookup_field_in_type /=.
-        by [].
-    apply: InlineFragmentConforms.
-      by [].
-      by exists "Droid".
-      apply: SelectionSetConforms.
-      apply: LabeledFieldConforms.
-         by rewrite /lookup_field_in_type /=.
-         by [].
-      apply: FieldConforms.
-         by rewrite /lookup_field_in_type /=.
-         by [].
-  Qed.  *)
-  
-  Lemma qbc : query_set_conforms wf_schema q wf_schema.(query_type).
-  Proof. by []. Qed.
-
-
-
-  Let conformed_query := ConformedQuery qbc. 
+  Qed.
+        
 
 
 
 
   Let query_response :=
-    (Results
-       [::
-          (NestedResult "hero"
-                        (Results
-                           [::
-                              (SingleResult "name" "Luke");
-                              (NestedListResult "friends"
+    [::
+       (pair "hero"
+             {-
+                [::
+                   (pair "name" (Leaf (SingleValue "Luke")));
+                   (pair "friends"
+                         (Array
+                            [::
+                               {-
+                                [::
+                                   (pair "droidFriend" (Leaf (SingleValue "R2-D2")));
+                                   (pair "primaryFunction" (Leaf (SingleValue "Astromech")))
+                                ]
+                                -};
+                               {-
+                                [::
+                                   (pair "humanFriend" (Leaf (SingleValue "Han")));
+                                   (pair "starships"
+                                         (Array
+                                            [::
+                                               {-
                                                 [::
-                                                   (Results
-                                                      [::
-                                                         (SingleResult "droidFriend" "R2-D2");
-                                                         (SingleResult "primaryFunction" "Astromech")
-                                                      ]
-                                                   );
-                                                   (Results
-                                                      [::
-                                                         (SingleResult "humanFriend" "Han");
-                                                         (NestedListResult "starships"
-                                                                           [::
-                                                                              (Results
-                                                                                [::
-                                                                                   (SingleResult "starship" "Falcon");
-                                                                                   (SingleResult "length" "34.37")
-                                                                                ]
-                                                                              )
-                                                                           ]
-                                                         )
-                                                      ]
-                                                   )
-                                                ]  
-                              )
-                           ]
-                        )
-          )
-       ]
-    ).
+                                                   (pair "starship" (Leaf (SingleValue "Falcon")));
+                                                   (pair "length" (Leaf (SingleValue "34.37")))
+                                                ]
+                                                -}
+                                            ]
+                                         )
+                                   )
+                                ]
+                                -}
+                            ]
+                         )
+                   )
+                ]
+             -}
+       )
+    ].
      
 
 
                 
-    Example ev_query_eq_response :  (eval_query_set wf_graph conformed_query) = query_response.
-    Proof.
-      rewrite /eval_query_set /eval /=.
-      rewrite /get_target_nodes_with_field /=.
-      rewrite /edges [fset]unlock /=. program_simpl. Qed.
+  Example ev_query_eq_response :  (execute_selection_set wf_schema wf_graph wf_graph.(root) q) = query_response.
+  Proof.
+      by [].
+  Qed.
 
     
 
-    Let q' := (SingleQuery
-                (NestedField "hero" [fmap ("episode", "EMPIRE")]
-                   (SelectionSet
-                      (SingleField "name" emptym)
-                      (SelectionSet
-                         (SingleField "name" emptym)
-                         (SelectionSet
-                            (SingleField "id" emptym)
-                            (SingleQuery
-                               (SingleField "name" emptym)
-                            )
-                         )
-                      )
-                   )
+    Let q' := [::
+                ("hero" [[ [:: (pair "episode" "EMPIRE") ] ]] {
+                          [::
+                             ("name" [[ [::] ]]);
+                             ("name" [[ [::] ]]);
+                             ("id" [[ [::] ]]);
+                             ("name" [[ [::] ]])
+                          ]
+                        }
                 )
-             ).
-
+             ].
+    
              
-     Lemma qbc' : query_set_conforms wf_schema q' wf_schema.(query_type).
+     Lemma qbc' : queries_conform wf_schema wf_schema.(query_type) q'.
      Proof. by []. Qed.
   
 
 
-    Let conformed_query' := ConformedQuery qbc'. 
-
-    Goal (eval_query_set wf_graph conformed_query') = (Results [:: (NestedResult "hero" (Results [:: (SingleResult "name" "Luke"); (SingleResult "id" "1000")]))]).
-      rewrite /eval_query_set /eval /=.
-      rewrite /get_target_nodes_with_field /=.
-      rewrite /edges [fset]unlock /=.
-      program_simpl.
-    Qed.
+     Goal (wf_schema, wf_graph ⊢  ⟦ q' ⟧ˢ in wf_graph.(root) =
+            [::
+               (pair "hero" {-
+                             [::
+                                (pair "name" (Leaf (SingleValue "Luke")));
+                                (pair "id" (Leaf (SingleValue "1000")))
+                             ]
+                             -}
+               )
+          ]).
+         by [].
+     Qed.
     
-    Example ex7 :
-      let r := [::
-                 (SingleResult "name" "Luke");
-                 (NestedListResult "friends"
-                                   [::
-                                      (Results [:: (SingleResult "id" "2001")]);
-                                      (Results [:: (SingleResult "id" "1002")])
-                                   ]
-                 );
-                 (NestedListResult "friends"
-                                   [::
-                                      (Results [::
-                                                       (SingleResult "id" "2001");
-                                                       (SingleResult "name" "R2-D2")
-                                      ]);
-                                      (Results [::
-                                                       (SingleResult "id" "1002");
-                                                       (SingleResult "name" "Han")
-                                      ])
-                                   ]
-                 )
-              ]
-      in
-      let expected := [::
-                        (SingleResult "name" "Luke");
-                        (NestedListResult "friends"
-                                   [::
-                                      (Results [::
-                                                       (SingleResult "id" "2001");
-                                                       (SingleResult "name" "R2-D2")
-                                      ]);
-                                      (Results [::
-                                                       (SingleResult "id" "1002");
-                                                       (SingleResult "name" "Han")
-                                      ])
-                                   ]
-                        )
-                     ]
-      in
-      collect r = expected.
-    intros.
-    program_simpl.
-    Qed.
     
   End HP.
   
@@ -417,12 +366,12 @@ Section Example.
   Section WrongGraph.
     (** Some examples of graph's not conforming to the schema **)
 
-    Let r : @node nat_ordType string_ordType string_ordType := Graph.Node 0 "Query" emptym.
+    Let r : @node string_eqType := Node "Query" [::].
         
     (** Root node does not have same type as query type **)
-    Let edges1 : {fset @node nat_ordType string_ordType string_ordType * @fld string_ordType string_ordType  * @node nat_ordType string_ordType string_ordType } := fset0.
+    Let edges1 : seq (@node string_eqType * @fld string_eqType * @node string_eqType) := [::].
     
-    Let r1 : @node nat_ordType string_ordType string_ordType := Graph.Node 0 "Human" emptym.
+    Let r1 : @node string_eqType := Graph.Node "Human" [::].
     
     Let g := GraphQLGraph r1 edges1.
 
@@ -434,71 +383,105 @@ Section Example.
     
     (** Arguments are incorrect **)
 
-    Let edges2 : {fset @node nat_ordType string_ordType string_ordType * fld * node} :=
-      fset  [:: (Graph.Node 0 "Query" emptym ,
-                 Graph.Field "search" [fmap ("wrong_Arg", "L")],          (* <--- Wrong name for argument *)
-                 Graph.Node 4 "Starship" [fmap (Graph.Field "id" emptym, (inl "3000"));
-                                            (Graph.Field "name" emptym, (inl "Falcon")); 
-                                            (Graph.Field "length" emptym, (inl "34.37"))])].
+    Let edges2 : seq (@node string_eqType * @fld string_eqType * @node string_eqType) :=
+      [:: (pair
+             (pair
+                (Node "Query" [::])
+
+                (Graph.Field "search" [:: pair "wrong_Arg" "L"]))          (* <--- Wrong name for argument *)
+
+                (Node "Starship" [::
+                                   (pair (Graph.Field  "id" [::]) (inl "3000"));
+                                   (pair (Graph.Field "name" [::]) (inl "Falcon")); 
+                                   (pair (Graph.Field "length" [::]) (inl "34.37"))
+                                 ]
+                )
+          )
+      ].
 
     
     Let g2 := GraphQLGraph r edges2.
     
-    Example eNc : ~ edges_conform wf_schema edges2.
-    Proof. by rewrite /edges_conform /edges2 [fset]unlock. Qed. 
+    Example eNc : ~ edges_conform wf_schema g2.
+    Proof. by [].
+    Qed.
     
     
     (** Types are incorrect **)
     
-    Let edges3 : {fset @node nat_ordType string_ordType string_ordType * @fld string_ordType string_ordType * node} :=
-      fset  [:: (Node 1 "Human" [fmap (Graph.Field "id" emptym, (inl "1000"));
-                                   (Graph.Field "name" emptym, (inl "Luke"))],
-                 Graph.Field "friends" emptym,
-                 Graph.Node 2 "Starship" [fmap  (Graph.Field "id" emptym, (inl "2001"));
-                                            (Graph.Field "name" emptym, (inl "R2-D2"));
-                                            (Graph.Field "primaryFunction" emptym, (inl "Astromech"))])].
+    Let edges3 : seq (@node string_eqType * @fld string_eqType * @node string_eqType) :=
+      [:: pair
+          (pair (Node "Human" [::
+                                 (pair (Graph.Field "id" [::]) (inl "1000"));
+                                 (pair (Graph.Field "name" [::]) (inl "Luke"))
+                              ]
+                )
+                (Graph.Field "friends" [::])
+          )
+          (Node "Starship" [::
+                             (pair (Graph.Field "id" [::]) (inl "2001"));
+                             (pair (Graph.Field "name" [::]) (inl "R2-D2"));
+                             (pair (Graph.Field "primaryFunction" [::]) (inl "Astromech"))
+                           ]
+          )
+      ].
     
-    Let r3 : @node nat_ordType string_ordType string_ordType := Graph.Node 0 "Query" emptym.
+    Let r3 : @node string_eqType := Node "Query" [::].
     
     Let g3 := GraphQLGraph r edges3.
     
-    Example eNc3 : ~ edges_conform wf_schema edges3.
-    Proof. by rewrite /edges_conform /edges3 [fset]unlock. Qed.
+    Example eNc3 : ~ edges_conform wf_schema g3.
+    Proof. by [].
+    Qed.
 
 
 
 
-    Let edges4 : {fset @node nat_ordType string_ordType string_ordType * fld * node} :=
-      fset  [:: (Graph.Node 0 "Query" emptym ,
-                 Graph.Field "search" [fmap ("wrong_Arg", "L")],          
-                 Graph.Node 4 "Other" [fmap (Graph.Field "id" emptym, (inl "3000")); (* <--- Type is not in union *)
-                                         (Graph.Field "name" emptym, (inl "Falcon")); 
-                                         (Graph.Field "length" emptym, (inl "34.37"))])].
+    Let edges4 : seq (@node string_eqType * @fld string_eqType * @node string_eqType) :=
+      [:: pair
+          (pair (Node "Query" [::])
+                (Graph.Field "search" [:: (pair "wrong_Arg" "L")])
+          )
+          (Node "Other" [::
+                           (pair (Graph.Field "id" [::]) (inl "3000")); (* <--- Type is not in union *)
+                           (pair (Graph.Field "name" [::]) (inl "Falcon")); 
+                           (pair (Graph.Field "length" [::]) (inl "34.37"))
+                        ]
+          )
+      ].
 
-    Let r4 : @node nat_ordType string_ordType string_ordType := Graph.Node 0 "Query" emptym.
+    Let r4 : @node string_eqType := Node "Query" [::].
 
     Let g4 := GraphQLGraph r edges4.
     
-    Example eNc4 : ~ edges_conform wf_schema edges4.
-    Proof. by rewrite /edges_conform /edges4 [fset]unlock. Qed.
+    Example eNc4 : ~ edges_conform wf_schema g4.
+    Proof. by [].
+    Qed.
 
 
 
     (** Field's are incorrect **)
 
-     Let edges5 : {fset @node nat_ordType string_ordType string_ordType * fld * node} :=
-      fset  [:: (Graph.Node 0 "Query" emptym ,
-                 Graph.Field "search" [fmap ("wrong_Arg", "L")],          
-                 Graph.Node 4 "Starship" [fmap (Graph.Field "id" emptym, (inl "3000"));
-                                         (Graph.Field "name" [fmap ("wrong", "arg")], (inl "Falcon")); (* <--- invalid argument in field*) 
-                                         (Graph.Field "length" emptym, (inl "34.37"))])].
+     Let edges5 : seq (@node string_eqType * @fld string_eqType * @node string_eqType) :=
+       [:: pair
+           (pair (Node "Query" [::])
+                 (Graph.Field "search" [:: (pair "wrong_Arg" "L")])
+           )
+           (Node "Starship" [::
+                               (pair (Graph.Field "id" [::]) (inl "3000"));
+                               (pair (Graph.Field "name" [:: (pair "wrong" "arg")]) (inl "Falcon")); (* <--- invalid argument in field*) 
+                               (pair (Graph.Field "length" [::]) (inl "34.37"))
+                            ]
+           )
+       ].
 
     
     Let g5 := GraphQLGraph r edges5.
 
     
     Example fNc : ~ fields_conform wf_schema g5.
-    Proof. rewrite /fields_conform /graph_s_nodes /= /edges5 [fset]unlock //=. Qed.
+    Proof. by [].
+    Qed.
     
   End WrongGraph.
 
@@ -507,84 +490,84 @@ End Example.
 
 
 Section GraphQLSpecExamples.
+  (**
+     Examples from section Validation in the specification.
+
+     https://graphql.github.io/graphql-spec/June2018/#sec-Validation
+
+   *)
+  
+  Let StringScalar := Scalar "String".
+  Let BooleanScalar := Scalar "Boolean".
+  Let IntScalar := Scalar "Int".
+  Let FloatScalar := Scalar "Float".
 
 
-  Local Open Scope string_scope.
+  Let QueryType := Object "Query" implements [::] {
+                         [::
+                            (Schema.Field "dog" [::] "Dog")
+                         ]
+                       }.
+  
+  Let DogCommandEnum := Enum "DogCommand" { [:: "SIT"; "DOWN"; "HEEL"] }.
+
+  Let DogType := Object "Dog" implements [:: "Pet"] {
+                         [::
+                            (Schema.Field "name" [::] "String");
+                            (Schema.Field "nickname" [::] "String");
+                            (Schema.Field "barkVolume" [::] "Int");
+                            (Schema.Field "doesKnowCommand" [:: (FieldArgument "dogCommand" "DogCommand")] "Boolean");
+                            (Schema.Field "isHousetrained" [:: (FieldArgument "atOtherHomes" "Boolean")] "Boolean");
+                            (Schema.Field "owner" [::] "Human")
+                         ]
+                       }.
+
+  Let SentientInterface := Interface "Sentient" {
+                                      [::
+                                         (Schema.Field "name" [::] "String")
+                                      ]
+                                    }.
+  
+  Let PetInterface := Interface "Pet" {
+                                 [::
+                                    (Schema.Field "name" [::] "String")
+                                 ]
+                               }.
+
+
+
+  Let AlienType := Object "Alien" implements [:: "Sentient"] {
+                           [::
+                              (Schema.Field "name" [::] "String");
+                              (Schema.Field "homePlanet" [::] "String")
+                           ]
+                         }.
+
+  Let HumanType := Object "Human" implements [:: "Sentient"] {
+                           [::
+                              (Schema.Field "name" [::] "String")
+                           ]
+                         }.
+
+  Let CatCommandEnum := Enum "CatCommand" {[:: "JUMP" ]}.
+
+  Let CatType := Object "Cat" implements [:: "Pet" ] {
+                         [::
+                            (Schema.Field "name" [::] "String");
+                            (Schema.Field "nickname" [::] "String");
+                            (Schema.Field "doesKnowCommand" [:: (FieldArgument "catCommand" "CatCommand")] "Boolean");
+                            (Schema.Field "meowVolume" [::] "Int")
+                         ]
+                       }.
+
+  Let CatOrDogUnion := Union "CatOrDog" { [:: "Cat"; "Dog"] }.
+
+  Let DogOrHumanUnion := Union "DogOrHuman" { [:: "Dog"; "Human"] }.
+
+  Let HumanOrAlienUnion := Union "HumanOrAlien" { [:: "Human"; "Alien"] }.
   
 
-  Delimit Scope schema_scope with schema.
-  Open Scope schema_scope.
-  
-  Notation "'type' O 'implements' I { F }" := (ObjectTypeDefinition O I F) (at level 0, O at next level, I at next level, F at next level, no associativity) : schema_scope.
-
-  Notation "'interface' I { F }" := (InterfaceTypeDefinition I F) (at level 0, I at next level, F at next level, no associativity) : schema_scope.
-
-  Notation "'enum' E { EV }" := (EnumTypeDefinition E EV) (at level 0, E at next level,  EV at level 0) : schema_scope.
-
-  Notation "'union' U 'of' Uv" := (UnionTypeDefinition U Uv) (at level 0, no associativity) : schema_scope.
-
-  Notation "'scalar' S" := (ScalarTypeDefinition S) (at level 60).
-  
-  Notation "f : t" := (Schema.Field f [::] t).
-
-  Notation "'[' s ']'" := (ListType s) (at level 0, s at next level).
-  
-  
-  Let StringScalar := scalar "String".
-  Let BooleanScalar := scalar "Boolean".
-  Let IntScalar := scalar "Int".
-
-
-  Let QueryType := type "Query" implements [::] {[::
-                                                   ("dog" : "Dog")
-                                               ]}.
-  
-  Let DogCommandEnum := enum "DogCommand" {[:: "SIT"; "DOWN"; "HEEL"]}.
-
-  Let DogType := type "Dog" implements [:: (NamedType "Pet")] {[::
-                                                     ("name" : "String");
-                                                     ("nickname" : "String");
-                                                     ("barkVolume" : "Int");
-                                                     (Schema.Field "doesKnowCommand" [:: (FieldArgument "dogCommand" "DogCommand")] "Boolean");
-                                                     (Schema.Field "isHousetrained" [:: (FieldArgument "atOtherHomes" "Boolean")] "Boolean");
-                                                     ("owner" : "Human")
-                                                             ]}.
-
-  Let SentientInterface := interface "Sentient" {[::
-                                                   ("name" : "String")
-                                               ]}.
-  Let PetInterface := interface "Pet" {[::
-                                    ("name" : "String")
-                                ]}.
-
-
-
-  Let AlienType := type "Alien" implements [:: (NamedType "Sentient")] {[::
-                                                                          ("name" : "String");
-                                                                          ("homePlanet" : "String")
-                                                                       ]}.
-
-  Let HumanType := type "Human" implements [:: (NamedType "Sentient")] {[::
-                                                                          ("name" : "String")
-                                                                      ]}.
-
-  Let CatCommandEnum := enum "CatCommand" {[:: "JUMP" ]}.
-
-  Let CatType := type "Cat" implements [:: (NamedType "Pet")] {[::
-                                                                 ("name" : "String");
-                                                                 ("nickname" : "String");
-                                                                 (Schema.Field "doesKnowCommand" [:: (FieldArgument "catCommand" "CatCommand")] "Boolean");
-                                                                 ("meowVolume" : "Int")
-                                                             ]}.
-
-  Let CatOrDogUnion := union "CatOrDog" of [:: (NamedType "Cat"); (NamedType "Dog")].
-
-  Let DogOrHumanUnion := union "DogOrHuman" of [:: (NamedType "Dog"); (NamedType "Human")].
-
-  Let HumanOrAlienUnion := union "HumanOrAlien" of [:: (NamedType "Human"); (NamedType "Alien")].
-  
-
-  Let schema := Schema "Query" [:: StringScalar; BooleanScalar; IntScalar;
+  Let schema := GraphQLSchema "Query" [:: StringScalar; BooleanScalar; IntScalar; FloatScalar;
                                  QueryType;
                                  DogCommandEnum; DogType;
                                    SentientInterface; PetInterface;
@@ -592,50 +575,808 @@ Section GraphQLSpecExamples.
                                        CatCommandEnum; CatType;
                                          CatOrDogUnion; DogOrHumanUnion; HumanOrAlienUnion].
 
-  Lemma schwf : is_schema_wf schema.
+  Let schwf : schema.(is_wf_schema).
   Proof. by []. Qed.
 
-  Let wf_schema : @wfSchema string_ordType string_ordType   := WFSchema (fun n v => true) schwf.
+  Let wf_schema : @wfGraphQLSchema string_eqType   := WFGraphQLSchema (fun n v => true) schwf.
 
-  Let example102 : @Query string_ordType string_ordType := (InlineFragment "Dog" (SingleField "meowVolume" emptym)).
-  Let example102' :  @Query string_ordType string_ordType := (InlineFragment "Dog" (LabeledField "barkVolume" "kawVolume" emptym)).
+  Section FieldValidation.
+    (**
+       https://graphql.github.io/graphql-spec/June2018/#sec-Validation.Fields
+     *)
 
-  Example e102 : ~ selection_conforms wf_schema example102 "Dog" /\ (~ selection_conforms wf_schema example102' "Dog").
-  Proof. by []. Qed.
+    (**
+       https://graphql.github.io/graphql-spec/June2018/#sec-Field-Selections-on-Objects-Interfaces-and-Unions-Types
+     *)
+    Let example102 : seq (@Query string_eqType) :=  [::
+                                                      on "Dog" {
+                                                        [::
+                                                           "meowVolume" [[ [::] ]]
+                                                        ]
+                                                      }
+                                                   ].
+    
+    Let example102' :  seq (@Query string_eqType) := [::
+                                                       on "Dog" {
+                                                         [::
+                                                            "barkVolume" : "kawVolume" [[ [::] ]]
+                                                         ]
+                                                       }
+                                                    ].
 
-  Example e102' :  ~ selection_conforms wf_schema example102 "Query" /\ (~ selection_conforms wf_schema example102' "Query").
-  Proof. by []. Qed.
+    (**
+     This is not exactly the same as in the spec, but in that example they are checking 
+     defined fragment spreads, not inline fragments.
+     *)
+    Example e102 : ~~ (queries_conform wf_schema "Dog" example102 || queries_conform wf_schema "Dog" example102').
+    Proof. by []. Qed.
 
 
-  Let example103 : @Query string_ordType string_ordType := (InlineFragment "Pet" (SingleField "name" emptym)).
+    Let example103 : seq (@Query string_eqType) := [::
+                                                     (* on "Pet" { *)
+                                                     (* [:: *)
+                                                     "name" [[ [::] ]]
+                                                     (* ] *)
+                                                     (* } *)
+                                                  ].
 
-  Example e103 : selection_conforms wf_schema example103 "Dog".
-  Proof. by []. Qed.
+    
+    Example e103 : queries_conform wf_schema "Pet" example103.
+    Proof. by []. Qed.
 
-  Example e103' : ~ selection_conforms wf_schema example103 "Query".
-  Proof. by []. Qed.
+    
+
+    Let example104 : seq (@Query string_eqType) := [::
+                                                     (* on "Pet" { *)
+                                                     (* [:: *)
+                                                     "nickname" [[ [::] ]]
+                                                     (* ] *)
+                                                     (* } *)
+                                                  ].
+
+    Example e104 : ~~ queries_conform wf_schema "Pet" example104.
+    Proof. by []. Qed.
+
+    Example e104' : all (fun implementor => queries_conform wf_schema implementor example104) (get_possible_types wf_schema "Pet").
+    Proof.
+        by [].
+    Qed.
+    
+
+    Let example105 : seq (@Query string_eqType) := [::
+                                                     (* on "CatOrDog" { *)
+                                                     (* [:: *)
+                                                     on "Pet" {
+                                                       [::
+                                                          "name" [[ [::] ]]
+                                                       ]
+                                                     };
+                                                     on "Dog" {
+                                                          [::
+                                                             "barkVolume" [[ [::] ]]
+                                                          ]
+                                                        }
+                                                        (* ] *)
+                                                        (* } *)
+                                                  ].
+
+    Example e105 : queries_conform wf_schema "CatOrDog" example105.
+    Proof. by []. Qed.
+
+    Let example106 : seq (@Query string_eqType) := [::
+                                                     "name" [[ [::] ]];
+                                                     "barkVolume" [[ [::] ]]
+                                                  ].
+
+    Example e106 : ~~ queries_conform wf_schema "CatOrDog" example106.
+    Proof. by []. Qed.
+
+    
+
+    Section FieldSelectionMerging.
+
+      Let example107_1 : seq (@Query string_eqType) := [::
+                                                         "name" [[ [::] ]];
+                                                         "name" [[ [::] ]]
+                                                      ].
+      Let example107_2 : seq (@Query string_eqType) := [::
+                                                         "otherName" : "name" [[ [::] ]];
+                                                         "otherName" : "name" [[ [::] ]]
+                                                      ].
+
+      Example e107_1 : is_field_merging_possible wf_schema "Dog" example107_1.
+      Proof.
+          by [].
+      Qed.
+
+      Example e107_2 : is_field_merging_possible wf_schema "Dog" example107_2.
+      Proof.
+          by [].
+      Qed.
 
 
-  Let example104 : @Query string_ordType string_ordType := (InlineFragment "Pet" (SingleField "nickname" emptym)).
+      Let example108 : seq (@Query string_eqType) := [::
+                                                       "name" : "nickname" [[ [::] ]];
+                                                       "name" [[ [::] ]]
+                                                    ].
 
-  Example e104 : ~ selection_conforms wf_schema example104 "Dog".
-  Proof. by []. Qed.
+      Example e108 : ~~ is_field_merging_possible wf_schema "Dog" example108.
+      Proof.
+          by [].
+      Qed.
+
+      Let example109 := [::
+                          "doesKnowCommand" [[ [:: pair "dogCommand" "SIT"] ]];
+                          "doesKnowCommand" [[ [:: pair "dogCommand" "SIT"] ]]
+                       ].
+
+      Example e109 : is_field_merging_possible wf_schema "Dog" example109.
+      Proof.
+          by [].
+      Qed.
+      
+      (**
+       Omitting examples with variables since they are not implemented. 
+       *)
+      Let example110_1 := [::
+                            "doesKnowCommand" [[ [:: pair "dogCommand" "SIT"] ]];
+                            "doesKnowCommand" [[ [:: pair "dogCommand" "HEEL"] ]]
+                         ].
+      
+      Let example110_2 := [::
+                            "doesKnowCommand" [[ [:: pair "dogCommand" "SIT"] ]];
+                            "doesKnowCommand" [[ [::] ]]
+                         ].
+
+      Example e110_1 : ~~ is_field_merging_possible wf_schema "Dog" example110_1.
+      Proof.
+          by [].
+      Qed.
+      
+      Example e110_2 : ~~ is_field_merging_possible wf_schema "Dog" example110_2.
+      Proof.
+          by [].
+      Qed.
 
 
-  Let example105 : @Query string_ordType string_ordType :=
-    (InlineFragment "CatOrDog" (SelectionSet
-                                  (InlineFragment "Pet" (SingleField "name" emptym))
-                                  (InlineFragment "Dog" (SingleField "barkVolume" emptym)))).
+      Let example111_1 : seq (@Query string_eqType) := [::
+                                                         on "Dog" {
+                                                           [::
+                                                              "volume": "barkVolume" [[ [::] ]]
+                                                           ]
+                                                         };
+                                                         
+                                                         on "Cat" {
+                                                              [::
+                                                                 "volume": "meowVolume" [[ [::] ]]
+                                                              ]
+                                                            }
+                                                      ].
 
-  Example e105 : selection_conforms wf_schema example105 "CatOrDog".
-  Proof. by []. Qed.
+      Example e111_1 : is_field_merging_possible wf_schema "Pet" example111_1.
+      Proof.
+          by [].
+      Qed.
 
-  Let example106 : @Query string_ordType string_ordType :=
-    (InlineFragment "CatOrDog" (SelectionSet
-                                  (SingleField "name" emptym)
-                                  (SingleField "barkVolume" emptym))).
+      Let example111_2 : seq (@Query string_eqType) := [::
+                                                         on "Dog" {
+                                                           [::
+                                                              "doesKnowCommand" [[ [:: pair "dogCommand" "SIT"] ]]
+                                                           ]
+                                                         };
+                                                         
+                                                         on "Cat" {
+                                                              [::
+                                                                 "doesKnowCommand" [[ [:: pair "catCommand" "JUMP"] ]]
+                                                              ]
+                                                            }
+                                                      ].
 
-  Example e106 : ~ selection_conforms wf_schema example106 "CatOrDog".
-  Proof. by []. Qed.
-  
+      Example e111_2 : is_field_merging_possible wf_schema "Pet" example111_2.
+      Proof.
+          by [].
+      Qed.
+      
+
+      Let example112 : seq (@Query string_eqType) := [::
+                                                       on "Dog" {
+                                                         [::
+                                                            "someValue": "nickname" [[ [::] ]]
+                                                         ]
+                                                       };
+                                                       
+                                                       on "Cat" {
+                                                            [::
+                                                               "someValue": "meowVolume" [[ [::] ]]
+                                                            ]
+                                                          }
+                                                    ].
+
+      Example e112 : ~~ have_compatible_response_shapes wf_schema [seq pair "Pet" q | q <- example112].
+      Proof.
+          by [].
+      Qed.
+
+      Example e112' : ~~ queries_conform wf_schema "Pet" example112.
+      Proof.
+          by [].
+      Qed.
+      
+      
+    End FieldSelectionMerging.
+
+
+    Section LeafFieldSelections.
+      (**
+       https://graphql.github.io/graphql-spec/June2018/#sec-Leaf-Field-Selections
+       *)
+
+      Let example113 : seq (@Query string_eqType) := [::
+                                                       "barkVolume" [[ [::] ]]
+                                                    ].
+      
+      Example e113 : queries_conform wf_schema "Dog" example113.
+      Proof.
+          by [].
+      Qed.
+
+      Let example114 : seq (@Query string_eqType) :=
+        [::
+           "barkVolume" [[ [::] ]] {
+             [::
+                "sinceWhen" [[ [::] ]]
+             ]
+           }
+        ].
+
+      Example e114 : ~~ queries_conform wf_schema "Dog" example114.
+      Proof.
+          by [].
+      Qed.
+
+
+      (**
+       Example 115 uses schema extension, which is not implemented but we can manage around it.
+       *)
+      Let ExtendedQueryType := Object "ExtendedQuery" implements [::] {
+                                       [::
+                                          (Schema.Field "dog" [::] "Dog");
+                                          (Schema.Field "human" [::] "Human");
+                                          (Schema.Field "pet" [::] "Pet");
+                                          (Schema.Field "catOrDog" [::] "CatOrDog")
+                                       ]
+                                     }.
+      (* For some reason this gets stuck trying to compute wf... ? *)
+      (* Let extended_schema := GraphQLSchema "ExtendedQuery" *)
+      (*                                     (ExtendedQueryType :: schema.(type_definitions)). *)
+
+      Let extended_schema := GraphQLSchema "ExtendedQuery"
+                                          [:: StringScalar; BooleanScalar; IntScalar; FloatScalar;
+                                             ExtendedQueryType;
+                                             DogCommandEnum; DogType;
+                                               SentientInterface; PetInterface;
+                                                 AlienType; HumanType;
+                                                   CatCommandEnum; CatType;
+                                                     CatOrDogUnion; DogOrHumanUnion; HumanOrAlienUnion].
+
+      Let extended_schwf : extended_schema.(is_wf_schema).
+      Proof. by []. Qed.
+
+      Let extended_wf_schema : @wfGraphQLSchema string_eqType   := WFGraphQLSchema (fun n v => true) extended_schwf.
+
+      Let example116_1 : seq (@Query string_eqType) :=
+        [::
+           "human" [[ [::] ]]
+        ].
+
+      Example e116_1 : ~~queries_conform extended_wf_schema "ExtendedQuery" example116_1.
+      Proof.
+          by [].
+      Qed.
+
+      Let example116_2 : seq (@Query string_eqType) :=
+        [::
+           "pet" [[ [::] ]]
+        ].
+
+      Example e116_2 : ~~queries_conform extended_wf_schema "ExtendedQuery" example116_2.
+      Proof.
+          by [].
+      Qed.
+
+      Let example116_3 : seq (@Query string_eqType) :=
+        [::
+           "catOrDog" [[ [::] ]]
+        ].
+
+      Example e116_3 : ~~queries_conform extended_wf_schema "ExtendedQuery" example116_3.
+      Proof.
+          by [].
+      Qed.
+      
+    End LeafFieldSelections.
+
+  End FieldValidation.
+
+
+  Section ValidArguments.
+    (**
+       https://graphql.github.io/graphql-spec/June2018/#sec-Argument-Names
+     *)
+
+    Let example117_1 : seq (@Query string_eqType) :=
+      [::
+         "doesKnowCommand" [[ [:: pair "dogCommand" "SIT"] ]]
+      ].
+
+    Example e117_1 : queries_conform wf_schema "Dog" example117_1.
+    Proof.
+        by [].
+    Qed.
+
+    (**
+       Not including the directive @include since directives are not implemented.
+     *)
+    Let example117_2 : seq (@Query string_eqType) :=
+      [::
+         "isHousetrained" [[ [:: pair "atOtherHomes" "true" ] ]]
+      ].
+
+    Example e117_2 : queries_conform wf_schema "Dog" example117_2.
+    Proof.
+      by [].
+    Qed.
+
+
+    Let example_118 : seq (@Query string_eqType) :=
+      [::
+         "doesKnowCommand" [[ [:: pair "command" "CLEAN_UP_HOUSE" ] ]]
+      ].
+
+    Example e118 : ~~queries_conform wf_schema "Dog" example_118.
+    Proof.
+        by [].
+    Qed.
+
+    (**
+       Example 119 is not included since it checks the directive @include
+       and directives are not implemented.
+     *)
+
+
+    Let ArgumentsType := Object "Arguments" implements [::] {
+                                 [::
+                                    (Schema.Field "multipleReqs" [::
+                                                                    FieldArgument "x" "Int";
+                                                                    FieldArgument "y" "Int"
+                                                                 ]
+                                                  "Int");
+                                    (Schema.Field "booleanArgField" [::
+                                                                       FieldArgument "booleanArg" "Boolean"
+                                                                    ]
+                                                  "Boolean");
+                                    (Schema.Field "floatArgField" [::
+                                                                     FieldArgument "floatArg" "Float"
+                                                                  ]
+                                                  "Float");
+                                    (Schema.Field "intArgField" [::
+                                                                   FieldArgument "intArg" "Int"
+                                                                ]
+                                                  "Int");
+                                    (* (Schema.Field "nonNullBooleanArgField" *)
+                                    (*               [:: *)
+                                    (*                  FieldArgument "nonNullBooleanArg" "Boolean" *)
+                                    (*               ] *)
+                                    (*               "Boolean"); *)
+
+                                    (Schema.Field "booleanListArgField"
+                                                  [::
+                                                     FieldArgument "booleanListArg" [ "Boolean" ]
+                                                  ]
+                                                  [ "Boolean" ])
+
+                                      (* (Schema.Field "optionalNonNullBooleanArgField" *)
+                                      (*               [:: *)
+                                      (*                  FieldArgument "optionalNonNullBooleanArgField" "Boolean" *)
+                                      (*               ] *)
+                                      (*               "Boolean") *)
+                                      
+                                                                              
+                                 ]
+                               }.
+
+    Let ExtendedQueryType := Object "ExtendedQuery" implements [::] {
+                                     [::
+                                        (Schema.Field "dog" [::] "Dog");
+                                        (Schema.Field "arguments" [::] "Arguments")
+
+                                     ]
+                                   }.
+
+    Let extended_schema := GraphQLSchema "ExtendedQuery"
+                                        [:: StringScalar; BooleanScalar; IntScalar; FloatScalar;
+                                           ExtendedQueryType;
+                                           DogCommandEnum; DogType;
+                                           SentientInterface; PetInterface;
+                                           AlienType; HumanType;
+                                           CatCommandEnum; CatType;
+                                           CatOrDogUnion; DogOrHumanUnion; HumanOrAlienUnion;
+                                           ArgumentsType
+                                        ].
+
+    Let extended_schwf : extended_schema.(is_wf_schema).
+    Proof.
+      (* For some reason just computing gets stuck - using by [] *)
+      rewrite /is_wf_schema /= ?andbT.
+      rewrite /is_wf_field /= andbT.
+      simp is_valid_field_type.
+    Qed.
+
+    Let extended_wf_schema : @wfGraphQLSchema string_eqType   := WFGraphQLSchema (fun n v => true) extended_schwf.
+
+    Let example121_1 : seq (@Query string_eqType) :=
+      [::
+         "multipleReqs" [[ [:: (pair "x" "1"); (pair "y" "2")] ]]
+      ].
+
+    Example e121_1 : queries_conform extended_wf_schema "Arguments" example121_1.
+    Proof.
+        by [].
+    Qed.
+
+    Let example121_2 : seq (@Query string_eqType) :=
+      [::
+         "multipleReqs" [[ [:: (pair "y" "1"); (pair "x" "2")] ]]
+      ].
+
+    Example e121_2 : queries_conform extended_wf_schema "Arguments" example121_2.
+    Proof.
+        by [].
+    Qed.
+
+    (**
+       Examples 122 - 125 are meant for required arguments, which is not implemented.
+       We omit them here.
+     *)
+
+  End ValidArguments.
+
+  Section Fragments.
+    (**
+       https://graphql.github.io/graphql-spec/June2018/#sec-Validation.Fragments
+     *)
+
+    (**
+       Examples 126 & 127 use defined fragments, which is not implemented.
+       We omit them here.
+     *)
+
+
+    (**
+       The spec checks whether the type condition on a fragment exists. 
+       We check this indirectly when checking if the fragments spread.
+       If a fragment does not exist in the schema, it will never spread.
+     *)
+    Let example128 : seq (@Query string_eqType) :=
+      [::
+         on "Dog" {
+           [::
+              "name" [[ [::] ]]
+           ]
+         }
+      ].
+
+    Example e128 : queries_conform wf_schema "Dog" example128 &&
+                   queries_conform wf_schema "Pet" example128.                
+    Proof.
+        by [].
+    Qed.
+
+
+    Let example129 : seq (@Query string_eqType) :=
+      [::
+         on "NotInSchema" {
+           [::
+              "name" [[ [::] ]]
+           ]
+         }
+      ].
+
+    Example e129 : ~~queries_conform wf_schema "Dog" example129.
+    Proof.
+        by [].
+    Qed.
+
+    Example e129' : all (fun name => ~~queries_conform wf_schema name example129) wf_schema.(schema_names).
+    Proof.
+        by [].
+    Qed.
+
+    Let example130_1 : @Query string_eqType := on "Dog" {
+                                                   [::
+                                                      "name" [[ [::] ]]
+                                                   ]
+                                                 }.
+    Example e130_1 : query_conforms wf_schema "Dog" example130_1 &&
+                     query_conforms wf_schema "Pet" example130_1.
+    Proof.
+        by [].
+    Qed.
+
+    Let example130_2 : @Query string_eqType := on "Pet" {
+                                                   [::
+                                                      "name" [[ [::] ]]
+                                                   ]
+                                                 }.
+    Example e130_2 : query_conforms wf_schema "Dog" example130_2 &&
+                     query_conforms wf_schema "Pet" example130_2.
+    Proof.
+        by [].
+    Qed.
+
+     Let example130_3 : @Query string_eqType := on "CatOrDog" {
+                                                    [::
+                                                       on "Dog" {
+                                                         [::
+                                                            "name" [[ [::] ]]
+                                                         ]
+                                                       }
+                                                    ]
+                                                 }.
+    Example e130_3 : query_conforms wf_schema "CatOrDog" example130_3.
+    Proof.
+        by [].
+    Qed.
+
+    Let example131_1 : (@Query string_eqType) := on "Int" {
+                                                     [::
+                                                        "something" [[ [::] ]]
+                                                     ]
+                                                   }.
+
+    Example e131_1 : all (fun name => ~~query_conforms wf_schema name example131_1) wf_schema.(schema_names).
+    Proof.
+        by [].
+    Qed.
+
+    Let example131_2 : (@Query string_eqType) := on "Dog" {
+                                                     [::
+                                                        on "Boolean" {
+                                                          [::
+                                                             "somethingElse" [[ [::] ]]
+                                                          ]
+                                                        }
+                                                     ]
+                                                   }.
+
+    Example e131_2 : all (fun name => ~~query_conforms wf_schema name example131_2) wf_schema.(schema_names).
+    Proof.
+        by [].
+    Qed.
+
+
+    (**
+       Example 132-136 refer to fragment definitions. We don't implement 
+       that so we omit those examples.
+
+       https://graphql.github.io/graphql-spec/June2018/#example-9e1e3
+       https://graphql.github.io/graphql-spec/June2018/#example-28421
+       https://graphql.github.io/graphql-spec/June2018/#example-9ceb4
+       https://graphql.github.io/graphql-spec/June2018/#example-08734
+       https://graphql.github.io/graphql-spec/June2018/#example-6bbad
+     *)
+
+
+
+    (**
+       https://graphql.github.io/graphql-spec/June2018/#sec-Object-Spreads-In-Object-Scope
+     *)
+    Let example137 : @Query string_eqType := on "Dog" {
+                                                 [::
+                                                    "barkVolume" [[ [::] ]]
+                                                 ]
+                                               }.
+    Example e137' : is_fragment_spread_possible wf_schema "Dog" "Dog".
+    Proof.
+        by [].
+    Qed.
+    
+    Example e137 : query_conforms wf_schema "Dog" example137.
+    Proof.
+        by [].
+    Qed.
+
+    Let example138 : @Query string_eqType := on "Cat" {
+                                                 [::
+                                                    "meowVolume" [[ [::] ]]
+                                                 ]
+                                               }.
+     
+    Example e138' : ~~ is_fragment_spread_possible wf_schema "Cat" "Dog".
+    Proof.
+        by [].
+    Qed.
+
+    Example e138 : ~~ query_conforms wf_schema "Dog" example138.
+    Proof.
+        by [].
+    Qed.
+
+    
+    (**
+       https://graphql.github.io/graphql-spec/June2018/#sec-Abstract-Spreads-in-Object-Scope
+     *)
+    Let example139 : @Query string_eqType := on "Pet" {
+                                                 [::
+                                                    "name" [[ [::] ]]
+                                                 ]
+                                                }.
+
+    
+    Example e139' : is_fragment_spread_possible wf_schema "Pet" "Dog".
+    Proof.
+        by [].
+    Qed.
+    
+    Example e139 : query_conforms wf_schema "Dog" example139.
+    Proof.
+        by [].
+    Qed.
+
+    Let example140 : @Query string_eqType := on "CatOrDog" {
+                                                 [::
+                                                    on "Cat" {
+                                                      [::
+                                                         "meowVolume" [[ [::] ]]
+                                                      ]
+                                                    }
+                                                 ]
+                                               }.
+    
+    Example e140' : is_fragment_spread_possible wf_schema "CatOrDog" "Dog".
+    Proof.
+        by [].
+    Qed.
+    
+    Example e140 : query_conforms wf_schema "Dog" example140.
+    Proof.
+        by [].
+    Qed.
+
+
+    (**
+       https://graphql.github.io/graphql-spec/June2018/#sec-Object-Spreads-In-Abstract-Scope
+     *)
+    Let example141_1 : seq (@Query string_eqType) :=
+      [::
+         "name" [[ [::] ]];
+         on "Dog" {
+              [::
+                 "barkVolume" [[ [::] ]]
+              ]
+            }
+      ].
+
+    Example e141_1' : is_fragment_spread_possible wf_schema "Dog" "Pet".
+    Proof.
+        by [].
+    Qed.
+
+    
+    Example e141_1 : queries_conform wf_schema "Pet" example141_1.
+    Proof.
+        by [].
+    Qed.
+
+    Let example141_2 : seq (@Query string_eqType) :=
+      [::
+         on "Cat" {
+           [::
+              "meowVolume" [[ [::] ]]
+           ]
+         }
+      ].
+
+    Example e141_2' : is_fragment_spread_possible wf_schema "Cat" "CatOrDog".
+    Proof.
+        by [].
+    Qed.
+    
+    Example e141_2 : queries_conform wf_schema "CatOrDog" example141_2.
+    Proof.
+        by [].
+    Qed.
+    
+    
+    Let example142_1 : @Query string_eqType := on "Dog" {
+                                                 [::
+                                                    "barkVolume" [[ [::] ]]
+                                                 ]
+                                                 }.
+
+    Example e142_1' : ~~ is_fragment_spread_possible wf_schema "Dog" "Sentient".
+    Proof.
+        by [].
+    Qed.
+
+    Example e142_1 : ~~ query_conforms wf_schema "Sentient" example142_1.
+    Proof.
+        by [].
+    Qed.
+
+    
+    Let example142_2 : @Query string_eqType := on "Cat" {
+                                                 [::
+                                                    "meowVolume" [[ [::] ]]
+                                                 ]
+                                                 }.
+
+    Example e142_2' : ~~ is_fragment_spread_possible wf_schema "Cat" "HumanOrAlien".
+    Proof.
+        by [].
+    Qed.
+    
+    Example e142_2 : ~~ query_conforms wf_schema "HumanOrAlien" example142_2.
+    Proof.
+        by [].
+    Qed.
+
+
+    (**
+       https://graphql.github.io/graphql-spec/June2018/#sec-Abstract-Spreads-in-Abstract-Scope
+     *)
+    Let example143 : seq (@Query string_eqType) :=
+      [::
+         on "DogOrHuman" {
+           [::
+              on "Dog" {
+                [::
+                   "barkVolume" [[ [::] ]]
+                ]
+              }
+           ]
+         }
+      ].
+
+    Example e143' : is_fragment_spread_possible wf_schema "DogOrHuman" "Pet".
+    Proof.
+        by [].
+    Qed.
+
+    Example e143 : queries_conform wf_schema "Pet" example143.
+    Proof.
+        by [].
+    Qed.
+
+    Let example144 : @Query string_eqType := on "Sentient" {
+                                                 [::
+                                                    "name" [[ [::] ]]
+                                                 ]
+                                               }.
+
+    Example e144' : ~~ is_fragment_spread_possible wf_schema "Sentient" "Pet".
+    Proof.
+        by [].
+    Qed.
+
+    Example e144 : ~~ query_conforms wf_schema "Pet" example144.
+    Proof.
+        by [].
+    Qed.
+    
+    
+    
+  End Fragments.
+
+  Section ValuesValidation.
+    (**
+       Not adding examples of value validation.
+
+       https://graphql.github.io/graphql-spec/June2018/#sec-Values
+     *)
+  End ValuesValidation.
+
+    
+    
+    
 End GraphQLSpecExamples.
