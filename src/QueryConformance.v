@@ -163,14 +163,16 @@ Section QueryConformance.
 
 
  (**
-    has_compatible_type : Name → Type → Query → Bool 
+    has_compatible_type : Type → Name * Query → Bool 
 
     Checks whether a given query has a return type compatible to the 
     one given as parameter. This is posteriorly used to check whether
     two queries have compatible response shapes. 
 
-    The first parameter corresponds to the type in context where the 
-    query might live.
+    The pair (Name * Query) corresponds to the query with the type in context 
+    where that query might live. This basically corresponds to the query 
+    with its environment. Another structure could be used to represent this
+    but for the moment we prefered a pair.
 
     Inline fragments do not have a return type, therefore this always 
     returns false for these cases.
@@ -219,16 +221,21 @@ Section QueryConformance.
 
 
  (**
-    have_compatible_response_shapes : Name → List Query → Bool 
+    have_compatible_response_shapes : List (Name * Query) → Bool 
 
     Checks whether a list of queries have compatible return types.
 
     The spec works directly with a list of queries that share a given 
     response name, but in this case we work with any list of queries, 
-    which might not share response names.
+    which might not share response names. Also, the spec refers to 
+    the fields' parent types, but does not include them as parameters 
+    or indicates an environment where that info is stored. Because of
+    this, we work with a list of pairings, encapsulating each field 
+    with its corresponding type in context where it might live.
 
-    Due to this, we first collect queries which share the response name 
-    ([find_fields_with_response_name] and [filter_queries_with_label])
+    Due to the first difference (queries might have different response names)
+    we first collect queries which do share a response name 
+    ([find_pairs_with_response_name] and [filter_pairs_with_response_name])
     and proceed to check that their types are compatible to the return 
     type of the first query found. 
 
@@ -237,8 +244,6 @@ Section QueryConformance.
     it seems more adequate to say that their shapes are compatible rather than
     the same. 
 
-    The first parameter corresponds to the type in context where the queries 
-    might live.
 
     ---- 
     **** Observations
@@ -262,7 +267,8 @@ Section QueryConformance.
 
   *)
  (* I am pretty sure about claim (2) but we should confirm it somehow.. right xd? *)
- (* Equations is not able to build the graph *)
+ (* Equations is not able to build the graph - We can do it manually but leaving it 
+  as is for the moment. *)
  Equations(noind) have_compatible_response_shapes (* (type_in_scope : Name) *) (queries : seq (Name * @Query Vals)) :
    bool by wf (queries_size_aux queries) :=
    {
@@ -387,9 +393,13 @@ Section QueryConformance.
 
     ---- 
     See also:
+
     - [are_equivalent]
+
     - [find_queries_with_label]
+
     - [find_fields_with_response_name]
+
     - [have_compatible_response_shapes]
 
     https://graphql.github.io/graphql-spec/June2018/#sec-Field-Selection-Merging
@@ -486,7 +496,7 @@ Section QueryConformance.
  Proof.
    all: do ? [rewrite ?/similar_queries; leq_queries_size].
  Qed.
- (* Equations can't build the graph *)
+ (* Equations can't build the graph - We do it manually. *)
  Next Obligation.
    move: {2}(queries_size _) (leqnn (queries_size queries)) => n.
    elim: n type_in_scope queries => /= [| n IH] type_in_scope queries; first by rewrite leqn0 => /queries_size_0_nil ->; constructor.
@@ -609,7 +619,8 @@ Section QueryConformance.
 
      - ∀ query ∈ queries, query conforms to type in scope.
 
-     - queries have compatible response shapes.
+     - queries have compatible response shapes : When checking this, we first 
+       wrap each query with the given type in context.
 
      - field merging is possible.
 
