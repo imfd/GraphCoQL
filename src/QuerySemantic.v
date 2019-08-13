@@ -41,7 +41,113 @@ Section QuerySemantic.
  
 
   Reserved Notation "⟦ φ ⟧ˢ 'in' u" (at level 40).
-  
+
+  (**
+     execute_selection_set : Node → List Query → List (Name * ResponseNode)
+
+     Evaluates the list of queries and returns a list of named response nodes.
+     
+     This definition follows closely what is defined in the semantics of J&O, 
+     particularly regarding the use of the underlying graph model. What this 
+     means in concrete is :
+     
+     1. Simple field selection : Simple fields represent accessing a node's
+        properties.
+
+     2. Nested field selection : Nested fields represent traversals from one 
+        node to a neighbouring node. 
+
+       
+     The main difference with their semantics is that the field collection is 
+     carried at the queries level, instead of collecting the responses. This
+     field collection attempts to be the closest possible to how it is defined 
+     in the specification.
+     
+     One of the main difference with the specification is that they collect fields at 
+     the beginning of the process, generating a mapping between response names 
+     and every query that has that name. Over that list they proceed to evaluate 
+     and later evaluate subqueries when it is appropriate.
+    
+     In our approach, we perform everything in a single pass, without the pre-grouping
+     step. When a field is going to be evaluated, we may collect similar fields
+     in the tail of the list (to extract their subqueries) and then filter them, 
+     in order to not reevaluate them.
+
+     Another important difference, which relates to the use of the graph model, 
+     is that list types with more than one level of nesting are taken as if 
+     they had only one level of nesting.
+     
+     Example: 
+              my_nested_field : [[[MyType]]]
+             
+             is taken as if it were simply:
+             
+             my_nested_field : [MyType]
+
+     
+     The reason behind this is that in the setting of J&O and their graph model, 
+     it is not clear what a nested list type represent in the graph. A one-level 
+     nesting represents a traversal to all neighbouring nodes with an edge labeled 
+     with the current field. It is not clear what a n-nested list would represent;
+     is the first step a traversal to a blank node ? Is each edge labeled as well ?
+     etc.
+     
+     We chose to implement this semantics which partially satisfies both the specification and 
+     J&O work, knowing that it is not the actual semantics. One can understand this 
+     approach as a particular instance of a GraphQL system, where we are restricted 
+     to list types having only one level of nesting.
+
+     Finally, another difference is that we are not currently handling errors.
+
+
+
+     ⟦ [] ⟧ᵘ := [] 
+                                ⎧
+     ⟦ f[α] :: φ_1 ... φ_n ⟧ᵘ = ⎨   (f : u.fields (f[α])) :: ⟦ filter f (φ_1 ... φ_n) ⟧ᵘ
+                                |      if (lookup (f) =  f (Args) : rty) ∧ u.fields (f[α]) = value (value ∈ Vals + List Vals)
+                                |
+                                |   (f : null) :: ⟦ filter f (φ_1 ... φ_n) ⟧ᵘ
+                                |      if (lookup (f) =  f (Args) : rty) ∧ u.fields (f[α]) = ⊥
+                                |
+                                |   ⟦ φ_1 ... φ_n ⟧ᵘ 
+                                |      if (lookup (f) = ⊥)
+                                ⎩
+
+                                
+                                                ⎧
+     ⟦ f[α] { β_1 ... β_k } :: φ_1 ... φ_n ⟧ᵘ = ⎨   (f : [ { ⟦ merge (collect f (φ_1 ... φ_n)) ⟧ᵛ¹ } ... { ⟦ merge (collect f (φ_1 ... φ_n)) ⟧ᵛʲ} ]) :: ⟦ filter f (φ_1 ... φ_n) ⟧ᵘ
+                                                |      if (lookup (f) =  f (Args) : rty) ∧ rty ∈ Lt ∧ (v_1 ... v_j) = {v_i | (u, f[α], v_i) ∈ graph.edges}
+                                                |
+                                                |   (f : { ⟦ merge (collect f (φ_1 ... φ_n)) ⟧ᵛ }) :: ⟦ filter f (φ_1 ... φ_n) ⟧ᵘ
+                                                |      if (lookup (f) = f (Args) : rty) ∧ rty ∉ Lt ∧ (u, f[α], v) ∈ graph.edges
+                                                |
+                                                |   (f : null) :: ⟦ filter f (φ_1 ... φ_n) ⟧ᵘ
+                                                |      if (lookup (f) =  f (Args) : rty) ∧ rty ∉ Lt ∧ ∄ v, (u, f[α], v) ∈ graph.edges
+                                                |
+                                                |   ⟦ φ_1 ... φ_n ⟧ᵘ 
+                                                |      if (lookup (f) = ⊥)
+                                                ⎩
+
+                                                
+                                                ⎧
+     ⟦ on t { β_1 ... β_k } :: φ_1 ... φ_n ⟧ᵘ = ⎨    ⟦ β_1 ... β_k ++ φ_1 ... φ_n ⟧ᵘ             if (does_fragment_type_apply u.type t)
+                                                |
+                                                |
+                                                |    ⟦ φ_1 ... φ_n ⟧ᵘ                            ~
+                                                ⎩
+     ---- 
+     See also:
+
+     https://graphql.github.io/graphql-spec/June2018/#sec-Executing-Selection-Sets
+
+     https://graphql.github.io/graphql-spec/June2018/#CollectFields()
+
+     https://graphql.github.io/graphql-spec/June2018/#ExecuteField()
+
+     https://graphql.github.io/graphql-spec/June2018/#sec-Value-Resolution
+
+     https://graphql.github.io/graphql-spec/June2018/#ResolveFieldValue()
+   *)
   Equations? execute_selection_set u (queries : seq (@Query Vals)) :
     
     seq (Name * ResponseNode) by wf (queries_size queries) :=
@@ -137,89 +243,97 @@ Section QuerySemantic.
 
   
 
-  Reserved Notation "⦃ queries 'in' u ⦄" (at level 50).
-  
+  Reserved Notation "≪ queries ≫ 'in' u" (at level 50).
+
+  (**
+     execute_selection_set2 : Node → List Query → List (Name * ResponseNode)
+
+     Evaluates a list of queries, assuming they are in normal form (grounded and non-redundant).
+
+     This corresponds to the definition given by J&O.
+   *)
+  (* TODO : Rename ! *)
   Equations? execute_selection_set2 u queries :
     seq (Name * ResponseNode) by wf (queries_size queries) :=
     {
-      execute_selection_set2 _ [::] := [::];
+      ≪ [::] ≫ in _ := [::];
 
-      execute_selection_set2 u (SingleField f α :: qs)
+      ≪ f[[α]] :: φ ≫ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some _ 
             with field_seq_value u.(nfields) (Field f α) :=
             {
-            | Some (inl value) => (f, Leaf (SingleValue value)) :: ⦃ qs in u ⦄;
-            | Some (inr values) => (f, Array (map (fun value => Leaf (SingleValue value)) values)) :: ⦃ qs in u ⦄;
-            | None => (f, Leaf Null) :: ⦃ qs in u ⦄
+            | Some (inl value) => (f, Leaf (SingleValue value)) :: ≪ φ ≫ in u;
+            | Some (inr values) => (f, Array (map (fun value => Leaf (SingleValue value)) values)) :: ≪ φ ≫ in u;
+            | None => (f, Leaf Null) :: ≪ φ ≫ in u
             };
-        | _ := ⦃ qs in u ⦄ (* Error *)
+        | _ := ≪ φ ≫ in u (* Error *)
         };
       
-      execute_selection_set2 u (LabeledField l f α :: qs)
+      ≪ l:f[[α]] :: φ ≫ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some _ 
             with field_seq_value u.(nfields) (Field f α) :=
             {
-            | Some (inl value) => (l, Leaf (SingleValue value)) :: ⦃ qs in u ⦄;
-            | Some (inr values) => (l, Array (map (fun value => Leaf (SingleValue value)) values)) :: ⦃ qs in u ⦄;
-            | None => (l, Leaf Null) :: ⦃ qs in u ⦄
+            | Some (inl value) => (l, Leaf (SingleValue value)) :: ≪ φ ≫ in u;
+            | Some (inr values) => (l, Array (map (fun value => Leaf (SingleValue value)) values)) :: ≪ φ ≫ in u;
+            | None => (l, Leaf Null) :: ≪ φ ≫ in u
             };
-        | _ := ⦃ qs in u ⦄ (* Error *)
+        | _ := ≪ φ ≫ in u (* Error *)
         };
 
       
-      execute_selection_set2 u (NestedField f α φ :: qs)
+      ≪ f[[α]] { β } :: φ ≫ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some fld
             with fld.(return_type) :=
             {
-            | ListType _ => (f, Array [seq {- ⦃ φ in v ⦄ -} | v <- neighbours_with_field g u (Field f α)]) :: ⦃ qs in u ⦄;
+            | ListType _ => (f, Array [seq {- ≪ β ≫ in v -} | v <- neighbours_with_field g u (Field f α)]) :: ≪ φ ≫ in u;
         
             | NamedType ty
                 with ohead (neighbours_with_field g u (Field f α)) :=
                 {
-                | Some v => (f, {- ⦃ φ in v ⦄ -}) :: ⦃ qs in u ⦄;
+                | Some v => (f, {- ≪ β ≫ in v -}) :: ≪ φ ≫ in u;
                 
-                | _ =>  (f, Leaf Null) :: ⦃ qs in u ⦄
+                | _ =>  (f, Leaf Null) :: ≪ φ ≫ in u
                 }
             };
 
-        | None => ⦃ qs in u ⦄ (* Error *)
+        | None => ≪ φ ≫ in u (* Error *)
         };
-    execute_selection_set2 u (NestedLabeledField l f α φ :: qs)
+    ≪ l:f[[α]] { β } :: φ ≫ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some fld
             with fld.(return_type) :=
             {
-            | ListType _ => (l, Array [seq {- ⦃ φ in v ⦄ -} | v <- neighbours_with_field g u (Field f α)]) :: ⦃ qs in u ⦄;
+            | ListType _ => (l, Array [seq {- ≪ β ≫ in v -} | v <- neighbours_with_field g u (Field f α)]) :: ≪ φ ≫ in u;
         
             | NamedType ty
                 with ohead (neighbours_with_field g u (Field f α)) :=
                 {
-                | Some v => (l, {- ⦃ φ in v ⦄ -}) :: ⦃ qs in u ⦄;
+                | Some v => (l, {- ≪ φ ≫ in v -}) :: ≪ φ ≫ in u;
                 
-                | _ =>  (l, Leaf Null) :: ⦃ qs in u ⦄
+                | _ =>  (l, Leaf Null) :: ≪ φ ≫ in u
                 }
             };
 
-        | None => ⦃ qs in u ⦄ (* Error *)
+        | None => ≪ φ ≫ in u (* Error *)
         };
 
        
-        execute_selection_set2 u (InlineFragment t φ :: qs)
+        ≪ on t { β } :: φ ≫ in u
         with does_fragment_type_apply s u.(ntype) t :=
         {
-        | true := ⦃ φ ++ qs in u ⦄;
-        | _ := ⦃ qs in u ⦄
+        | true := ≪ β ++ φ ≫ in u;
+        | _ := ≪ φ ≫ in u
         }
 
     }
-  where "⦃ queries 'in' u ⦄" := (execute_selection_set2 u queries).
+  where "≪ queries ≫ 'in' u" := (execute_selection_set2 u queries).
   Proof.
     all: do [leq_queries_size].
   Qed.
@@ -233,7 +347,17 @@ Section QuerySemantic.
 
         
   
+  (**
+     resolve_field_value : Node → Name → List (Name * Vals) ↪ Vals + List Vals 
 
+     Attempt at replicating the specification's definition of _ResolveFieldValue_ 
+     instantiated to the graph setting.
+
+     ---- 
+     See also:
+
+     https://graphql.github.io/graphql-spec/June2018/#ResolveFieldValue()
+   *)
   Equations resolve_field_value u (field_name : Name) (argument_values : seq (Name * Vals)) : option ((Vals + seq Vals) + (@node Vals) + seq (@node Vals)) :=
     {
       resolve_field_value u f α
@@ -477,4 +601,5 @@ Arguments execute_selection_set [Vals].
 Delimit Scope query_eval with QEVAL.
 Open Scope query_eval.
 
+(* This notation collides with the pairs notation (_ , _) ...  *)
 Notation "s , g ⊢ ⟦ φ ⟧ˢ 'in' u" := (execute_selection_set s g u φ) (at level 30, g at next level, φ at next level) : query_eval.
