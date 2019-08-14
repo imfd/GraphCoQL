@@ -32,7 +32,9 @@ Section Theory.
     Variable (s : @wfGraphQLSchema Vals).
     
    
-    
+    (**
+       This lemma states that the predicate [are_grounded2] distributes over list concatenation.
+     *)
     Lemma are_grounded2_cat ty qs1 qs2 :
       are_grounded2 s ty (qs1 ++ qs2) = are_grounded2 s ty qs1 && are_grounded2 s ty qs2 .
     Proof.
@@ -42,6 +44,9 @@ Section Theory.
     Qed.
 
 
+    (**
+       This lemma states that [are_grounded2] implies [are_grounded].
+     *)
     Lemma are_grounded2_are_grounded :
       forall queries ty,
         are_grounded2 s ty queries ->

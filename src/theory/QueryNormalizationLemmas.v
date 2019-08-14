@@ -47,6 +47,11 @@ Section Theory.
   
   Variable (s : @wfGraphQLSchema Vals).
 
+  (**
+     This lemma states that the result of [normalize] are 
+     in ground form v2.0, whenever the type used to normalize is
+     an Object type.
+   *)
   Lemma normalize_are_grounded2 ty φ :
     is_object_type s ty ->
     are_grounded2 s ty (normalize s ty φ).
@@ -83,11 +88,20 @@ Section Theory.
             by apply: IHptys => t' Hin'; apply: Hinobj; apply: mem_tail.     
   Qed.
 
+
+  (**
+     This corollary states that the result of [normalize] are grounded.
+   *)
   Corollary normalize_are_grounded ty φ : is_object_type s ty -> are_grounded s (normalize s ty φ).
   Proof.
       by intros; apply: are_grounded2_are_grounded; apply: normalize_are_grounded2.
   Qed.
-  
+
+
+  (**
+     This lemma states that the result of [ground_queries] are 
+     in ground form v2.0, regardless of the type used to normalize.
+   *)
   Lemma ground_queries_are_grounded2 ty φ :
     are_grounded2 s ty (ground_queries s ty φ).
   Proof.
@@ -101,6 +115,10 @@ Section Theory.
       * by apply: IH => t' Hin; apply: Hinobj; apply: mem_tail.
   Qed.
 
+
+  (**
+     This lemma states that 
+   *)
   Lemma normalize_preserves_not_similar q (Hfield : q.(is_field)) φ ty :
     ~~has (fun q' => are_similar q' q) (normalize s ty (filter_queries_with_label (qresponse_name q Hfield) φ)).
   Proof.
@@ -136,7 +154,11 @@ Section Theory.
   Qed.
   
   
-  
+  (**
+     This lemma states that the result of [normalize] are
+     non-redundant, whenever the type used to normalize 
+     is an Object type.
+   *)
   Lemma normalize_are_non_redundant ty φ :
     is_object_type s ty ->
     are_non_redundant (normalize s ty φ).
@@ -170,6 +192,10 @@ Section Theory.
   Qed.
   
 
+  (**
+     This lemma states that the result of [ground_queries] are
+     non-redundant, regardless of the type used to normalize.
+   *)
   Lemma ground_queries_are_non_redundant ty φ :
     are_non_redundant (ground_queries s ty φ).
   Proof.
@@ -185,6 +211,10 @@ Section Theory.
   Qed.
 
 
+  (**
+     This lemma states that the order of filtering queries by response name 
+     and normalizing does not affect the result.
+   *)
   Lemma filter_normalize_swap rname ty φ :
     filter_queries_with_label rname (normalize s ty φ) = normalize s ty (filter_queries_with_label rname φ).
   Proof.

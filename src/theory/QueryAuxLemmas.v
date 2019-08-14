@@ -35,36 +35,54 @@ Section Theory.
 
   Section DefPreds.
     Variable (s : @wfGraphQLSchema Vals).
-    
+
+    (**
+       This lemma states that an Object type [ty] always 
+       applies to itself (See also [does_fragment_type_apply]).
+     *)
     Lemma object_applies_to_itself ty :
       is_object_type s ty ->
       does_fragment_type_apply s ty ty.
     Proof.
         by rewrite /does_fragment_type_apply => ->.
     Qed.
+    
   End DefPreds.
   
   Section Size.
-    
+
+    (**
+       Equality lemma for queries_size without Equations. 
+       It shows equality to the [sumn] function defined in SSreflect.
+     *)
     Lemma queries_size_sumn φ :
       queries_size φ = sumn [seq query_size q | q <- φ].
     Proof.
         by elim: φ => //= q φ IH; case: q => /= *; simp query_size; rewrite IH.
     Qed.
     
-    
+    (**
+       This lemma states that [queries_size] distributes over list concatenation.
+     *)
     Lemma queries_size_cat φ φ' :
       queries_size (φ ++ φ') = queries_size φ + queries_size φ'.
     Proof.
       elim: φ φ' => //= hd tl IH φ'.
         by rewrite (IH φ') addnA.
-    Qed.    
+    Qed.
+
     
+    (**
+       This lemma states that if [queries_size] is 0, that means the list is empty.
+     *)
     Lemma queries_size_0_nil (qs : seq (@Query Vals)) : queries_size qs == 0 -> qs = [::].
     Proof.
         by case: qs => //=; case.
     Qed.
 
+    (**
+       This lemma states that if [queries_size_aux] is 0, that means the list is empty.
+     *)
     Lemma queries_size_aux_0_nil (nq : seq (Name * @Query Vals)) : queries_size_aux nq == 0 -> nq = [::].
     Proof.
         by case: nq => //=; case=> ty; case.
@@ -75,13 +93,20 @@ Section Theory.
 
   Section Find.
     Variable (s : @wfGraphQLSchema Vals).
-    
+
+    (**
+       This lemma states that the size of the queries found via [find_queries_with_label] is
+       less or equal to the original queries list.
+     *)
     Lemma found_queries_leq_size l O__t qs :
       queries_size (find_queries_with_label s l O__t qs) <= queries_size qs.
     Proof.
         by funelim (find_queries_with_label _ _ _ qs) => //=; simp query_size; rewrite ?queries_size_cat; ssromega.
     Qed.
 
+    (**
+       This lemma states that that [find_queries_with_label] distributes over list concatenation.
+     *)
     Lemma find_queries_with_label_cat l ty (qs1 qs2 : seq (@Query Vals)):
       find_queries_with_label s l ty (qs1 ++ qs2) = find_queries_with_label s l ty qs1 ++ find_queries_with_label s l ty qs2.
     Proof.
@@ -91,6 +116,10 @@ Section Theory.
     Qed.
 
 
+    (**
+       This lemma states that the size of the queries found via [find_fields_with_response_name] is
+       less or equal to the original queries list.
+     *)
     Lemma found_fields_leq_size k φ :
       queries_size (find_fields_with_response_name k φ) <= queries_size φ.
     Proof.
@@ -98,6 +127,9 @@ Section Theory.
         by rewrite queries_size_cat; ssromega.
     Qed.
 
+    (**
+       This lemma states that
+     *)
     Lemma find_map_inline_nil_func (f : Name -> seq (@Query Vals) -> seq Query) rname t ptys φ :
       uniq ptys ->
       all (is_object_type s) ptys ->
@@ -130,7 +162,11 @@ Section Theory.
           by move: Htnin; rewrite /negb; case: ifP => //=; case: ifP => //= Hcontr <- _; apply: mem_tail.
     Qed.
 
-
+    (**
+       This lemma states that if two response names are not equal, then you 
+       can swap the order of filtering and finding queries with each respective response name,
+       because they do not interfere between each other.
+     *)
     Lemma find_filter_swap rname1 rname2 ty φ :
       rname1 == rname2 = false ->
       find_queries_with_label s rname1 ty (filter_queries_with_label rname2 φ) = (find_queries_with_label s rname1 ty φ).
@@ -148,7 +184,10 @@ Section Theory.
     Qed.
           
 
-
+    (**
+       This lemma states that if you try to find queries with a given response name after 
+       you filtered those queries, then the result is empty.
+     *)
     Lemma find_filter_nil rname O__t φ :
       find_queries_with_label s rname O__t (filter_queries_with_label rname φ) = [::].
     Proof.
@@ -157,6 +196,11 @@ Section Theory.
     Qed.
 
 
+    (**
+       This lemma states that projecting the second element of each element obtained
+       with [find_pairs_with_response_name] is the same as first projecting the second element 
+       and then applying [find_fields_with_response_name].
+     *)
     Lemma find_pairs_spec rname (nq : seq (Name * @Query Vals)) :
       [seq q.2 | q <- find_pairs_with_response_name rname nq] = find_fields_with_response_name rname [seq q.2 | q <- nq].
     Proof.
@@ -179,14 +223,20 @@ Section Theory.
   Section Filter.
     Hint Resolve found_queries_leq_size.
 
-    
+    (**
+       This lemma states that the size of filtered queries is less or 
+       equal than the size of the original list of queries.
+     *)
     Lemma filter_queries_with_label_leq_size l φ :
       queries_size (filter_queries_with_label l φ) <= queries_size φ.
     Proof.
       funelim (filter_queries_with_label l φ) => //=; do ?[simp query_size; ssromega]. 
     Qed.
 
-    
+
+    (**
+       This lemma states that [filter_queries_with_label] distributes over list concatenation.
+     *)
     Lemma filter_queries_with_label_cat l (qs1 qs2 : seq (@Query Vals)) :
       filter_queries_with_label l (qs1 ++ qs2) = filter_queries_with_label l qs1 ++ filter_queries_with_label l qs2.
     Proof.
@@ -195,6 +245,10 @@ Section Theory.
         by rewrite IH.
     Qed.
 
+
+    (**
+       This lemma states that the order of filtering with two response names does not affect the result.
+     *)
     Lemma filter_swap rname1 rname2 (φ : seq (@Query Vals)) :
       filter_queries_with_label rname1 (filter_queries_with_label rname2 φ) =
       filter_queries_with_label rname2 (filter_queries_with_label rname1 φ).
@@ -202,7 +256,11 @@ Section Theory.
       funelim (filter_queries_with_label rname1 φ) => //=; do ? by simp filter_queries_with_label; case: eqP => //= _; simp filter_queries_with_label; rewrite Heq /= H.
       by simp filter_queries_with_label; rewrite H H0.
     Qed.
-    
+
+    (**
+       This lemma states that filtering twice with the same response name is the same 
+       as filtering once.
+     *)
     Lemma filter_filter_absorb rname (φ : seq (@Query Vals)) :
       filter_queries_with_label rname (filter_queries_with_label rname φ) = filter_queries_with_label rname φ.
     Proof.
@@ -211,13 +269,19 @@ Section Theory.
     Qed.
      
 
+    (**
+       This lemma states that
+     *)
     Lemma filter_map_inline_func (f : Name -> seq (@Query Vals) -> seq Query) rname φ ptys :
       filter_queries_with_label rname [seq InlineFragment t (f t φ) | t <- ptys] =
       [seq @InlineFragment Vals t (filter_queries_with_label rname (f t φ)) | t <- ptys].
     Proof.
         by elim: ptys => //= t ptys IH; simp filter_queries_with_label; rewrite IH.
     Qed.
-    
+
+    (**
+       This lemma states that
+     *)
     Lemma filter_map_inline rname φ ptys :
       filter_queries_with_label rname [seq InlineFragment t φ | t <- ptys] =
       [seq InlineFragment t (filter_queries_with_label rname φ) | t <- ptys].
@@ -226,6 +290,9 @@ Section Theory.
     Qed.
 
 
+    (**
+       This lemma states that
+     *)
     Lemma filter_pairs_spec rname (nq : seq (Name * @Query Vals)) :
       [seq q.2 | q <- filter_pairs_with_response_name rname nq] = filter_queries_with_label rname [seq q.2 | q <- nq].
     Proof.
@@ -240,14 +307,20 @@ Section Theory.
   End Filter.
 
   Section Merging.
-    
+
+    (**
+       This lemma states that [merge_selection_sets] distributes over list concatenation.
+     *)
     Lemma merge_selection_sets_cat (qs1 qs2 : seq (@Query Vals)) :
       merge_selection_sets (qs1 ++ qs2) = merge_selection_sets qs1 ++ merge_selection_sets qs2.
     Proof.
         by rewrite /merge_selection_sets map_cat flatten_cat.
     Qed.
     
-
+    (**
+       This lemma states that the size of queries obtained via [merge_selection_sets]
+       is less or equal than the size of the original list of queries.
+     *)
     Lemma merged_selections_leq φ :
       queries_size (merge_selection_sets φ) <= queries_size φ.
     Proof.
@@ -258,6 +331,10 @@ Section Theory.
 
     Variable (s : @wfGraphQLSchema Vals).
 
+     (**
+       This lemma states that the size of queries obtained via [merge_pairs_selection_sets]
+       is less or equal than the size of the original list of queries.
+     *)
     Lemma merge_pair_selections_leq (nq : seq (Name * @Query Vals)) :
       queries_size_aux (merge_pairs_selection_sets s nq) <= queries_size_aux nq.
     Proof.
