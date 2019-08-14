@@ -38,3 +38,8 @@ doc/html/*
 
 # autosave files from emacs
 \#*
+
+
+logo
+
+.markdown-preview.html

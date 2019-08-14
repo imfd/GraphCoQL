@@ -8,7 +8,6 @@
 -R ./src GraphCoQL
 
 ./src/Ssromega.v
-./src/CpdtTactics.v
 ./src/SeqExtra.v
 
 ./src/Base.v
