@@ -78,13 +78,13 @@ Section Schema.
 
         1. Objects and Union types are defined with "NamedType" in the list of implemented
            interfaces and members, respectively. Because NamedType is defined only as a Name,
-           we directly use this instead (https://graphql.github.io/graphql-spec/June2018/#NamedType).
+           we directly use this instead (https://graphql.github.io/graphql-spec/June2018/#NamedType). #<br>#
 
         2. Fields: Objects and interfaces must declare at least one field but the current
            definition allows an empty list of fields. In the wf property it is checked that
-           this list is not empty.
+           this list is not empty.                                                                    #<br>#
 
-        3. InputObjects: Currently not included in the formalization.
+        3. InputObjects: Currently not included in the formalization.                                 #<br>#
 
 
         https://graphql.github.io/graphql-spec/June2018/#TypeDefinition
@@ -205,6 +205,7 @@ Notation "fname '(' args ')' ':' ty" := (Field fname args ty) (at level 50) : sc
 
 Notation "'Scalar' scalar_name" := (ScalarTypeDefinition scalar_name) (at level 0) : schema_scope.
 
+(* Using 'type', as in the spec, clashes with the actual type called 'type'... So I preferred Object instead *)
 Notation "'Object' object_name 'implements' interfaces '{' fields '}'" :=
   (ObjectTypeDefinition object_name interfaces fields)
     (object_name at next level, interfaces at next level, fields at next level) : schema_scope.
