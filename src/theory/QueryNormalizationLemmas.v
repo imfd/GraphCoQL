@@ -99,13 +99,13 @@ Section Theory.
 
 
   (**
-     This lemma states that the result of [ground_queries] are 
+     This lemma states that the result of [normalize_queries] are 
      in ground form v2.0, regardless of the type used to normalize.
    *)
-  Lemma ground_queries_are_grounded2 ty φ :
-    are_grounded2 s ty (ground_queries s ty φ).
+  Lemma normalize_queries_are_grounded2 ty φ :
+    are_grounded2 s ty (normalize_queries s ty φ).
   Proof.
-    apply_funelim (ground_queries s ty φ) => /=; clear ty φ.
+    apply_funelim (normalize_queries s ty φ) => /=; clear ty φ.
     - by move=> ty φ Hscope; apply: normalize_are_grounded2.
     - move=> ty φ Hscope.
       have := (@in_possible_types_is_object Vals s ty).
@@ -193,13 +193,13 @@ Section Theory.
   
 
   (**
-     This lemma states that the result of [ground_queries] are
+     This lemma states that the result of [normalize_queries] are
      non-redundant, regardless of the type used to normalize.
    *)
-  Lemma ground_queries_are_non_redundant ty φ :
-    are_non_redundant (ground_queries s ty φ).
+  Lemma normalize_queries_are_non_redundant ty φ :
+    are_non_redundant (normalize_queries s ty φ).
   Proof.
-    apply_funelim (ground_queries s ty φ) => //=; clear ty φ; first by intros; apply: normalize_are_non_redundant.
+    apply_funelim (normalize_queries s ty φ) => //=; clear ty φ; first by intros; apply: normalize_are_non_redundant.
     move=> ty φ Hscope.
     have  := (@in_possible_types_is_object Vals s ty).
     have  := (uniq_get_possible_types s ty).

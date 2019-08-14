@@ -193,7 +193,10 @@ Section Theory.
 
   
 
-
+  (**
+     This lemma states that normalizing a query with the same type as 
+     the node where it is being evaluated, preserves its semantics.
+   *)
   Lemma normalize_exec φ u :
     u \in g.(nodes) ->
           s, g ⊢ ⟦ normalize s u.(ntype) φ ⟧ˢ in u =  s, g ⊢ ⟦ φ ⟧ˢ in u.
@@ -355,13 +358,19 @@ Section Theory.
                   by rewrite Hrty.
   Qed.
 
-  
+
+
+  (**
+     This theorem states that [normalize_queries] preserves the semantics of the query,
+     if the node's type where the query is executed is subtype of the type used 
+     to normalize.
+   *)
   Theorem normalize_queries_exec ty φ u :
     u \in g.(nodes) ->
           u.(ntype) \in get_possible_types s ty ->
-                       s, g ⊢ ⟦ ground_queries s ty φ ⟧ˢ in u = s, g ⊢ ⟦ φ ⟧ˢ in u.
+                       s, g ⊢ ⟦ normalize_queries s ty φ ⟧ˢ in u = s, g ⊢ ⟦ φ ⟧ˢ in u.
   Proof.
-    funelim (ground_queries s ty φ) => //= Huin Hin.
+    funelim (normalize_queries s ty φ) => //= Huin Hin.
     - by have <- /= := (in_object_possible_types Heq Hin); apply: normalize_exec.
     - have -> /= :
         s, g ⊢ ⟦ [seq InlineFragment t (normalize s t queries) | t <- get_possible_types s type_in_scope] ⟧ˢ in u =
@@ -379,6 +388,11 @@ Section Theory.
   Qed.
 
 
+  (**
+     This lemma states that if a query conforms to the Query type, then 
+     normalizing results in a query in normal form.
+   *)
+  (* Conformance is not really needed... *)
   Lemma normalize_root_query_is_in_normal_form φ :
     queries_conform s s.(query_type) φ ->
     NRGTNF.are_non_redundant (normalize s s.(query_type) φ) /\
@@ -390,10 +404,14 @@ Section Theory.
         by apply: normalize_are_grounded2; apply: query_has_object_type.
   Qed.
   
-  
+  (**
+     This theorem states that if a query conforms to the Query type, 
+     then normalizing it with the Query type preserves its semantics,
+     whenever evaluated on the root node of the graph.
+   *)
   Theorem exec_normalize_from_root φ :
     queries_conform s s.(query_type) φ ->
-    s, g ⊢ ⟦ ground_queries s s.(query_type) φ ⟧ˢ in g.(root) = s, g ⊢ ⟦ φ ⟧ˢ in g.(root).
+    s, g ⊢ ⟦ normalize_queries s s.(query_type) φ ⟧ˢ in g.(root) = s, g ⊢ ⟦ φ ⟧ˢ in g.(root).
   Proof.
     intros; apply: normalize_queries_exec.
     - by apply: root_in_nodes.

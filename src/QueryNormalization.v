@@ -59,7 +59,7 @@ Section QueryRewrite.
 
 
      This definition assumes that the given type in scope is actually an Object type.
-     The following definition, [ground_queries], does not make an assumption about
+     The following definition, [normalize_queries], does not make an assumption about
      the type in scope, but still relies on this normalization function.
      
      - ty : Type in scope (Object type).
@@ -181,7 +181,7 @@ Section QueryRewrite.
 
 
   (**
-     ground_queries : Name → List Query → List Query 
+     normalize_queries : Name → List Query → List Query 
 
      Normalizes a list of queries.
      
@@ -192,17 +192,18 @@ Section QueryRewrite.
      (minus itself).
 
                                         ⎧
-     ground_queries ty (φ_1 ... φ_n) := ⎨ normalize ty (φ_1 ... φ_n)                                                    if (ty ∈ Ot)
+     normalize_queries ty (φ_1 ... φ_n) := ⎨ normalize ty (φ_1 ... φ_n)                                                    if (ty ∈ Ot)
                                         |
                                         | map (λ t => on t { normalize t (φ_1 ... φ_n) }) (get_possible_types ty)       ~
                                         ⎩
 
 
    *)
-  Equations ground_queries (type_in_scope : Name) (queries : seq (@Query Vals)) :
+  (* TODO : Rename ! *)
+  Equations normalize_queries (type_in_scope : Name) (queries : seq (@Query Vals)) :
     seq (@Query Vals) :=
     {
-      ground_queries ty qs
+      normalize_queries ty qs
         with is_object_type s ty :=
         {
               | true := normalize ty qs;
@@ -215,4 +216,4 @@ End QueryRewrite.
 
 
 Arguments normalize [Vals].
-Arguments ground_queries [Vals].
+Arguments normalize_queries [Vals].
