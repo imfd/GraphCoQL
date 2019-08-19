@@ -5,7 +5,9 @@ Unset Printing Implicit Defensive.
 Set Asymmetric Patterns.
 
 From Equations Require Import Equations.
-From CoqUtils Require Import string.
+
+Require Import String.
+Require Import QString.
 
 Require Import Base. 
 Require Import Schema.
@@ -29,17 +31,12 @@ Require Import Ssromega.
 Require Import SeqExtra.
 
 Require Import QueryTactics.
+Require Import GeneralTactics.
 
 
 Section Theory.
   
-  Ltac orL := apply/orP; left.
-  Ltac orR := apply/orP; right.
-  
-  Ltac apply_andP := apply/andP; split=> //.
-  Ltac apply_and3P := apply/and3P; split=> //.
-
-
+ 
   Transparent qresponse_name.
 
     

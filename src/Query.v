@@ -6,7 +6,9 @@ Unset Printing Implicit Defensive.
 
 Set Asymmetric Patterns.
 
-From CoqUtils Require Import string.
+
+Require Import String.
+Require Import QString.
 
 Require Import Base.
 

@@ -4,8 +4,9 @@ Set Asymmetric Patterns.
 
 
 From Equations Require Import Equations.
-From CoqUtils Require Import string.
 
+Require Import String.
+Require Import QString.
 
 Require Import Base.
 Require Import Schema.
@@ -37,16 +38,12 @@ Require Import QueryNormalizationLemmas.
 
 Require Import SeqExtra.
 Require Import QueryTactics.
+Require Import GeneralTactics.
 
 Require Import QuerySemantic.
 
 Section Theory.
   Transparent qresponse_name has_response_name.
-  
-  Ltac apply_andP := apply/andP; split=> //.
-  Ltac apply_and3P := apply/and3P; split=> //.
-  
-  
   
 
   
@@ -54,7 +51,7 @@ Section Theory.
     repeat
       match goal with
       | [ H : lookup_field_in_type _ _ _ = _ |- context [ lookup_field_in_type _ _ _] ] => rewrite H /=
-      | [ H : (field_seq_value nfields _) _ = _ |- context [ field_seq_value (nfields _) _] ] => rewrite H /=
+      | [ H : (field_seq_value (nfields _) _) = _ |- context [ field_seq_value (nfields _) _] ] => rewrite H /=
 
       | [|- context [ lookup_field_in_type _ _ _] ] => lookup
       | [|- context [ field_seq_value ?u.(nfields) ] ] =>

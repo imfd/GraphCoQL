@@ -3,7 +3,9 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-From CoqUtils Require Import string.
+
+Require Import String.
+Require Import QString.
 
 Require Import Base.
 

@@ -8,6 +8,9 @@ From Equations Require Import Equations.
 
 Require Import Query.
 Require Import QueryAux.
+Require Import QueryAuxLemmas.
+Require Import QueryTactics.
+
 Require Import SchemaWellFormedness.
 
 Require Import Schema.
@@ -21,10 +24,11 @@ Require Import Ssromega.
 
 Require Import NRGTNF.
 
+Require Import GeneralTactics.
+
+
 Section Theory.
 
-  Ltac apply_andP := apply/andP; split=> //.
-  Ltac apply_and3P := apply/and3P; split=> //.
 
   Variables (Vals : eqType).
 
