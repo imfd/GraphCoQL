@@ -22,11 +22,29 @@ Require Import QueryAux.
 Require Import SeqExtra.
 Require Import Ssromega.
 
+Require Import GeneralTactics.
+
+
+
+(**
+   This tactic breaks down a query and introduces its contents.
+ *)
+Ltac case_query q :=
+  repeat match goal with
+         | [H : context [q] |- _] => move: H
+         | [|- _] =>
+           let l := fresh "l" in
+           let f := fresh "f" in
+           let α := fresh "α" in
+           let β := fresh "β" in
+           let t := fresh "t" in
+           case: q => [f α | l f α | f α β | l f α β | t β]
+         end.
 
 Section Theory.
   
   Ltac apply_andP := apply/andP; split => //.
-  Transparent oqresponse_name qresponse_name.
+  Transparent oqresponse_name qresponse_name is_field.
 
   Variables Vals : eqType.
 
@@ -90,6 +108,7 @@ Section Theory.
     Qed.
       
   End Size.
+
 
 
   Section Find.
@@ -174,7 +193,7 @@ Section Theory.
     Proof.
       move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
       elim: n φ => /= [| n IH] φ; first by rewrite leqn0 => /queries_size_0_nil ->.
-      case: φ => //=; case=> [f α | l f α | f α β | l f α β | t β] φ; simp query_size => Hleq Hneq; simp filter_queries_with_label; simp find_queries_with_label => /=; last first.
+      case: φ => //= q φ; case_query q; simp query_size => Hleq Hneq; simp filter_queries_with_label; simp find_queries_with_label => /=; last first.
 
       - by case does_fragment_type_apply => /=; [congr cat|]; apply: IH => //; ssromega.
 
@@ -189,14 +208,58 @@ Section Theory.
        This lemma states that if you try to find queries with a given response name after 
        you filtered those queries, then the result is empty.
      *)
-    Lemma find_filter_nil rname O__t φ :
+    Lemma find_queries_filter_nil rname O__t φ :
       find_queries_with_label s rname O__t (filter_queries_with_label rname φ) = [::].
     Proof.
       funelim (filter_queries_with_label rname φ) => //=; do ? by simp find_queries_with_label; move/negbTE in Heq; rewrite Heq /=.
         by simp find_queries_with_label; case: does_fragment_type_apply => //=; rewrite H H0 /=.
     Qed.
 
+    
+    (**
+       This lemma states that if you try to find every field with a given response name after 
+       you filtered those queries, then the result is empty.
+     *)
+    Lemma find_fields_filter_nil rname φ :
+      find_fields_with_response_name rname (filter_queries_with_label rname φ) = [::].
+    Proof.
+      funelim (filter_queries_with_label rname φ) => //=; do ? by simp find_fields_with_response_name; move/negbTE in Heq; rewrite Heq /=.
+        by simp find_fields_with_response_name; rewrite H H0 /=.
+    Qed.
 
+
+    (**
+       This lemma states that queries found via [find_queries_with_label] is a subsequence of 
+       the fields found via [find_fields_with_response_name].
+     *)
+    Lemma find_queries_subseq_find_fields ty f φ :
+      subseq (find_queries_with_label s f ty φ) (find_fields_with_response_name f φ).
+    Proof.
+      funelim (find_queries_with_label s f ty φ) => //=.
+      all: do ?[simp find_fields_with_response_name; rewrite Heq /=; case: ifP => //=; by move/negbT/eqP].
+
+      all: do ? by simp find_fields_with_response_name; rewrite Heq /=.
+
+      - by simp find_fields_with_response_name; rewrite cat_subseq.
+      - simp find_fields_with_response_name.
+        rewrite -[find_queries_with_label _ _ _ _]cat0s; rewrite cat_subseq //=.
+          by apply: sub0seq.
+    Qed.
+
+    (**
+       This lemma states that if no field is found via [find_fields_with_response_name] then
+       no field will be found via [find_queries_with_label] (because the latter is a subsequence of the former).
+     *)
+    Lemma find_queries_nil_if_find_fields_nil ty rname φ :
+      find_fields_with_response_name rname φ = [::] ->
+      find_queries_with_label s rname ty φ = [::].
+    Proof.
+      move=> Hnil.
+      have := (find_queries_subseq_find_fields ty rname φ).
+        by rewrite Hnil subseq0 => /eqP ->.
+    Qed.
+      
+    
     (**
        This lemma states that projecting the second element of each element obtained
        with [find_pairs_with_response_name] is the same as first projecting the second element 
@@ -208,15 +271,55 @@ Section Theory.
       move: {2}(queries_size_aux _) (leqnn (queries_size_aux nq)) => n.
       rewrite /queries_size_aux.
       elim: n nq => /= [| n IH] nq; first by rewrite leqn0 => /queries_size_aux_0_nil ->.
-      case: nq => //=; case=> /= ty; case=> [f α | l f α | f α β | l f α β | t β] nq;
-                                           rewrite /queries_size_aux /=; simp query_size => Hleq;
-                                           simp find_pairs_with_response_name;
-                                           simp find_fields_with_response_name => /=; do ? case: eqP => //= _; rewrite ?IH //; do ? ssromega.
+      case: nq => //=; case=> /= ty q φ; case_query q;
+                              rewrite /queries_size_aux /=; simp query_size => Hleq;
+                              simp find_pairs_with_response_name;
+                              simp find_fields_with_response_name => /=; do ? case: eqP => //= _; rewrite ?IH //; do ? ssromega.
       rewrite map_cat; congr cat; rewrite IH //=; do ? ssromega.
         by have -> : forall xs y, [seq x.2 | x <- [seq (y, q) | q <- xs] ] = xs by intros; elim: xs => //= x xs ->.
       have -> : forall xs y, [seq x.2 | x <- [seq (y, q) | q <- xs] ] = xs by intros; elim: xs => //= x xs ->.
       by ssromega.
     Qed.
+
+
+    (**
+       This lemma states that inlining queries with type conditions and then searching for
+       fragments with a type condition that was not in the original list of type conditions
+       results in a empty list.
+
+       See also:
+       - [normalize_are_non_redundant]
+       - [normalize_queries_are_non_redundant]
+     *)
+    Lemma find_fragment_inlined_nil_func t ptys (f : Name -> seq (@Query Vals) -> seq (@Query Vals)) φ :
+      t \notin ptys ->
+      find_fragment_with_type_condition t [seq InlineFragment t' (f t' φ) | t' <- ptys] = [::].
+    Proof.
+      elim: ptys => //= t' ptys IH.
+      rewrite inE; bcase; simp find_fragment_with_type_condition.
+        by move/negbTE in Hb1; rewrite Hb1 /=; apply: IH.
+    Qed.
+
+    (**
+       This lemma states that if every inline fragment in a list 
+       of inline fragments does not apply to a type [ty], then 
+       [find_queries_with_label] will result in an empty list
+       if [ty] is used to search.
+
+       See also :
+       - [exec_grounded_inlines_nil]
+     *)
+    Lemma find_fragment_not_applies_is_nil rname ty φ :
+      all (fun q => q.(is_inline_fragment)) φ ->
+      all (fun q => match q with
+                 | on (t) {(_)} => ~~ does_fragment_type_apply s ty t
+                 | _ => true
+                 end) φ ->
+      find_queries_with_label s rname ty φ = [::].
+    Proof.
+      funelim (find_queries_with_label s rname ty φ) => //=; bcase; [by rewrite Heq in Hb0 | by apply: H].
+    Qed.
+      
 
     
   End Find.
@@ -224,6 +327,7 @@ Section Theory.
   Section Filter.
     Hint Resolve found_queries_leq_size.
 
+      
     (**
        This lemma states that the size of filtered queries is less or 
        equal than the size of the original list of queries.
@@ -291,6 +395,100 @@ Section Theory.
     Qed.
 
 
+   
+    
+
+    (**
+       This lemma states that if there is no field with response name [rname],
+       then filtering a list of fields by that response name will have no effect.
+
+       This is not valid if there is an inline fragment, because filtering may 
+       remove some of its subqueries.
+
+       See also:
+       - [exec_equivalence]
+     *)
+    Lemma filter_find_fields_nil_is_nil rname φ :
+      all (fun q => q.(is_field)) φ ->
+      find_fields_with_response_name rname φ = [::] ->
+      filter_queries_with_label rname φ = φ.
+    Proof.
+      funelim (filter_queries_with_label rname φ) => //; simp find_fields_with_response_name.
+      all: do ? [by move/negbTE in Heq; rewrite Heq /=; intros; rewrite H].
+      all: do ? [by move/negbFE in Heq; rewrite Heq /=;intros; rewrite H].
+    Qed.                                                                                                 
+     
+    (**
+       This lemma states that filtering inline fragments via response name 
+       preserves the fact that they are all inline fragments.
+
+       See also:
+       - [exec_grounded_inlines_nil]
+     *)
+    Lemma filter_preserves_inlines rname φ :
+      all (fun q => q.(is_inline_fragment)) φ ->
+      all (fun q => q.(is_inline_fragment)) (filter_queries_with_label rname φ).
+    Proof.
+        by funelim (filter_queries_with_label rname φ) => //=.
+    Qed.
+
+    Variable (s : @wfGraphQLSchema Vals).
+
+    (**
+       This lemma states that if any inline fragment in a list [φ] does 
+       not apply to a type [ty], then filtering that list will preserve 
+       the fact that inline fragments do not apply to [ty].
+
+       See also:
+       - [exec_grounded_inlines_nil]
+     *)
+    Lemma filter_preserves_fragment_not_applies ty rname φ :
+      all (fun q : Query => match q with
+                             | on (t) {(_)} => ~~ does_fragment_type_apply s ty t
+                             | _ => true
+                         end) φ ->
+      all (fun q : Query => match q with
+                             | on (t) {(_)} => ~~ does_fragment_type_apply s ty t
+                             | _ => true
+                             end) (filter_queries_with_label rname φ).
+    Proof.
+      funelim (filter_queries_with_label rname φ) => //=; bcase; do ? by intros; apply: H.
+        by apply_andP; apply: H0.
+    Qed.
+
+     (**
+       This lemma states that if there is no field with response name [rname1], 
+       then filtering will preserve the fact that there is no query with 
+       response name [rname1].
+
+       See also:
+       - [filter_preserves_non_redundancy]
+     *)
+    Lemma filter_preserves_find_fields_nil rname1 rname2 φ :
+      find_fields_with_response_name rname1 φ = [::] ->
+      find_fields_with_response_name rname1 (filter_queries_with_label rname2 φ) = [::].
+    Proof.
+      funelim (filter_queries_with_label rname2 φ) => //=; simp find_fields_with_response_name.
+      move/cat_nil=> [Hnil1 Hnil2]; rewrite H // H0 //.
+      all: do [by case: eqP => //= _; apply: H].
+    Qed.
+      
+      
+    (**
+       This lemma states that if no inline fragment matches the type condition [t] then 
+       [filter_queries_with_label] won't have any effect on this.
+
+       See also:                  
+       - [filter_preserves_non_redundancy]
+     *)
+    Lemma filter_preserves_find_frags_nil rname ty φ :
+      find_fragment_with_type_condition ty φ = [::] ->
+      find_fragment_with_type_condition ty (filter_queries_with_label rname φ) = [::].
+    Proof.
+      funelim (filter_queries_with_label rname φ) => //=; simp find_fragment_with_type_condition.
+        by case: eqP => //= _; apply: H0.
+    Qed.
+      
     (**
        This lemma states that
      *)
@@ -481,19 +679,7 @@ End Theory.
 
 
 
-    (* Lemma find_queries_subseq_find_fields ty f φ : *)
-    (*   subseq (find_queries_with_label s f ty φ) (find_fields_with_response_name f φ). *)
-    (* Proof. *)
-    (*   funelim (find_queries_with_label s f ty φ) => //=. *)
-    (*   all: do ?[simp find_fields_with_response_name; rewrite Heq /=; case: ifP => //=; by move/negbT/eqP]. *)
-
-    (*   all: do ? by simp find_fields_with_response_name; rewrite Heq /=. *)
-
-    (*     by simp find_fields_with_response_name; rewrite cat_subseq. *)
-    (*     simp find_fields_with_response_name. *)
-    (*     rewrite -[find_queries_with_label _ _ _ _]cat0s; rewrite cat_subseq //=. *)
-    (*     apply: sub0seq. *)
-    (* Qed.  *)
+   
 
     
     (* Lemma find_fields_cat rname φ1 φ2 : *)

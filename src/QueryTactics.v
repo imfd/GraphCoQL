@@ -9,26 +9,16 @@ Require Import SchemaAux.
 Require Import QueryAux.
 Require Import QueryAuxLemmas.
 Require Import Ssromega.
-  
-  Ltac case_query q :=
-    repeat match goal with
-           | [H : context [q] |- _] => move: H
-           | [|- _] =>
-             let l := fresh "l" in
-             let f := fresh "f" in
-             let α := fresh "α" in
-             let β := fresh "β" in
-             let t := fresh "t" in
-             case: q => [f α | l f α | f α β | l f α β | t β]
-           end.
-    
-  
-  Ltac kill_neq :=
-    match goal with
-    | [H : ?x <> ?y |- context [_ != _]] => idtac "ok"
-    end.
 
-  
+
+
+
+
+
+  (**
+     This tactic tries to solve statements that involve inequalities with 
+     queries sizes.
+   *)
   Ltac leq_queries_size :=
     repeat match goal with
            | [|- context [ query_size _]] => simp query_size => /=
@@ -72,5 +62,5 @@ Require Import Ssromega.
     match goal with
     | [ |- context [ lookup_field_in_type _ _ _]] => let Hlook := fresh "Hlook" in
                                                    let fld := fresh "fld" in
-                                                   case Hlook : lookup_field_in_type => //= [fld|]
+                                                   case Hlook : lookup_field_in_type => [fld|] //=
     end.

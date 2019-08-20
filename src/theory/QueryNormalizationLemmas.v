@@ -44,6 +44,53 @@ Section Theory.
   
   Variable (s : @wfGraphQLSchema Vals).
 
+   (**
+     This lemma states that the order of filtering queries by response name 
+     and normalizing does not affect the result.
+   *)
+  Lemma filter_normalize_swap rname ty φ :
+    filter_queries_with_label rname (normalize s ty φ) = normalize s ty (filter_queries_with_label rname φ).
+  Proof.
+    move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
+    elim: n φ rname => /= [| n IH] φ rname ; first by rewrite leqn0 => /queries_size_0_nil ->.
+    case: φ => //= q φ.
+    case_query q => /=; simp query_size => Hleq; simp normalize.
+    - lookup => //=; simp filter_queries_with_label; case: eqP => /= [/= Heq | Hneq].
+      * by rewrite Heq -IH // filter_filter_absorb.
+      * simp normalize; rewrite Hlook /= IH //; [by rewrite filter_swap | by leq_queries_size].
+      * by apply: IH.
+      * by simp normalize; rewrite Hlook /=; apply: IH.
+    - lookup => //=; simp filter_queries_with_label; case: eqP => /= Heq.
+      * by rewrite Heq -IH // filter_filter_absorb.
+      * simp normalize; rewrite Hlook /= IH //; [by rewrite filter_swap | by leq_queries_size].
+      * by apply: IH.
+      * by simp normalize; rewrite Hlook /=; apply: IH.
+
+    - lookup => //=; simp filter_queries_with_label; case: eqP => /= Heq; do ? by apply: IH; leq_queries_size.
+      * case Hscope : is_object_type => //=; simp filter_queries_with_label => //=; case: eqP => //= _;
+                                                                                                by rewrite Heq -IH // ?filter_filter_absorb; leq_queries_size.
+
+      * case Hscope : is_object_type => //=; simp filter_queries_with_label => //=; case: eqP => //= _;
+                                                                                                simp normalize; rewrite Hlook /= Hscope /= find_filter_swap; do ? by apply/eqP.
+        all: do ? [rewrite IH ?filter_filter_absorb; leq_queries_size; by rewrite filter_swap].
+
+      * by simp normalize; rewrite Hlook /=; apply: IH; leq_queries_size.
+
+    - lookup => //=; simp filter_queries_with_label; case: eqP => /= Heq; do ? by apply: IH; leq_queries_size.
+      * case Hscope : is_object_type => //=; simp filter_queries_with_label => //=; case: eqP => //= _;
+                                                                                                by rewrite Heq -IH // ?filter_filter_absorb; leq_queries_size.
+
+      * case Hscope : is_object_type => //=; simp filter_queries_with_label => //=; case: eqP => //= _;
+                                                                                                simp normalize; rewrite Hlook /= Hscope /= find_filter_swap; do ? by apply/eqP.
+        all: do ? [rewrite IH ?filter_filter_absorb; leq_queries_size; by rewrite filter_swap].
+
+      * by simp normalize; rewrite Hlook /=; apply: IH; leq_queries_size.
+
+    - case Hfapplies : does_fragment_type_apply => //=; simp filter_queries_with_label.
+      * by simp normalize; rewrite Hfapplies /= -filter_queries_with_label_cat; apply: IH; leq_queries_size.
+      * by simp normalize; rewrite Hfapplies /=; apply: IH; leq_queries_size.
+  Qed.
+  
   (**
      This lemma states that the result of [normalize] are 
      in ground form v2.0, whenever the type used to normalize is
@@ -113,43 +160,7 @@ Section Theory.
   Qed.
 
 
-  (**
-     This lemma states that 
-   *)
-  Lemma normalize_preserves_not_similar q (Hfield : q.(is_field)) φ ty :
-    ~~has (fun q' => are_similar q' q) (normalize s ty (filter_queries_with_label (qresponse_name q Hfield) φ)).
-  Proof.
-    move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
-    elim: n φ => /= [| n IH] φ; first by rewrite leqn0 => /queries_size_0_nil ->.
-    case: φ => // q' φ.
-    case_query q'; simp query_size => Hleq; simp filter_queries_with_label.
-    - case: eqP => //= Heq.
-        by apply: IH.
-        simp normalize; lookup; last by apply: IH.
-        apply/norP; split=> //; last by rewrite filter_swap //; apply: IH; leq_queries_size.
-          by case_query q => //=; intros; simp are_similar => /=; apply/nandP; left; apply/eqP.
-    - case: eqP => //= Heq.
-        by apply: IH.
-        simp normalize; lookup; last by apply: IH.
-        apply/norP; split=> //; last by rewrite filter_swap //; apply: IH; leq_queries_size.
-          by case_query q => //=; intros; simp are_similar => /=; apply/nandP; left; apply/eqP.
-
-    - case: eqP => //= Heq.
-        by apply: IH; leq_queries_size.
-        simp normalize; lookup; last by apply: IH; leq_queries_size.
-        case is_object_type => //=; apply/norP; split=> //; do ? by rewrite filter_swap //; apply: IH; leq_queries_size.
-        all: do ?by case_query q => //=; intros; simp are_similar => /=; apply/nandP; left; apply/eqP.
-
-    - case: eqP => //= Heq.
-        by apply: IH; leq_queries_size.
-        simp normalize; lookup; last by apply: IH; leq_queries_size.
-        case is_object_type => //=; apply/norP; split; do ? by rewrite filter_swap //; apply: IH; leq_queries_size.
-        all: do ?by case_query q => //=; intros; simp are_similar => /=; apply/nandP; left; apply/eqP.
-
-    - simp normalize; case does_fragment_type_apply => //=; last by apply: IH; leq_queries_size.
-        by rewrite -filter_queries_with_label_cat; apply: IH; leq_queries_size.
-  Qed.
-  
+    
   
   (**
      This lemma states that the result of [normalize] are
@@ -161,33 +172,18 @@ Section Theory.
     are_non_redundant (normalize s ty φ).
   Proof.
     apply_funelim (normalize s ty φ) => //=.
-    - intros; simp are_non_redundant; apply_and3P; [ by apply: normalize_preserves_not_similar | by apply: H].
-      
-    - intros; simp are_non_redundant; apply_and3P; [ by apply: normalize_preserves_not_similar | by apply: H].
-      
-    - intros; simp are_non_redundant; apply_and3P => /=; [ by apply: normalize_preserves_not_similar | by apply: H | by apply: H0].
 
-    - intros; simp are_non_redundant; apply_and3P => /=; [ by apply: normalize_preserves_not_similar | | by apply: H0].
-      have  := (@in_possible_types_is_object Vals s f.(return_type)).
-      have  := (uniq_get_possible_types s f.(return_type)).
-      elim: get_possible_types => //= t ptys IH /andP [Hnin Huniq] Hinobj.
-      simp are_non_redundant; apply_and3P => /=; last by apply: IH => //= t' Hin'; apply: Hinobj; apply: mem_tail.
-      apply/hasPn=> frag /mapP [t' Htin ->]; simp are_similar.
-        by move/memPn: Hnin => /(_ t' Htin).
-          by apply: H; apply: Hinobj; apply: mem_head.
-          
-    - intros; simp are_non_redundant; apply_and3P => /=; [ by apply: normalize_preserves_not_similar | by apply: H | by apply: H0].
+    all: do ? [by intros; non_red; apply_and3P; [ by rewrite -filter_normalize_swap /= find_fields_filter_nil | by apply: H] ].
+    all: do ? [by intros; non_red; apply_and3P => /=; [ by rewrite -filter_normalize_swap /= find_fields_filter_nil | by apply: H | by apply: H0] ].
 
-    - intros; simp are_non_redundant; apply_and3P => /=; [ by apply: normalize_preserves_not_similar | | by apply: H0].
-      have  := (@in_possible_types_is_object Vals s f.(return_type)).
-      have  := (uniq_get_possible_types s f.(return_type)).
-      elim: get_possible_types => //= t ptys IH /andP [Hnin Huniq] Hinobj.
-      simp are_non_redundant; apply_and3P => /=; last by apply: IH => //= t' Hin'; apply: Hinobj; apply: mem_tail.
-      apply/hasPn=> frag /mapP [t' Htin ->]; simp are_similar.
-        by move/memPn: Hnin => /(_ t' Htin).
-          by apply: H; apply: Hinobj; apply: mem_head.
+    all: do [intros; non_red; apply_and3P => /=; [ by rewrite -filter_normalize_swap /= find_fields_filter_nil | | by apply: H0] ].
+    all: do [have  := (@in_possible_types_is_object Vals s f.(return_type))].
+    all: do [have  := (uniq_get_possible_types s f.(return_type))].
+    all: do [elim: get_possible_types => //= t ptys IH /andP [Hnin Huniq] Hinobj].
+    all: do [non_red; apply_and3P => /=; last by apply: IH => //= t' Hin'; apply: Hinobj; apply: mem_tail].
+    all: do ? by apply/eqP; apply: find_fragment_inlined_nil_func.
+    all: do [by apply: H; apply: Hinobj; apply: mem_head].
   Qed.
-  
 
   (**
      This lemma states that the result of [normalize_queries] are
@@ -202,58 +198,12 @@ Section Theory.
     have  := (uniq_get_possible_types s ty).
     elim: get_possible_types => //= t ptys IH /andP [Hnin Huniq] Hinobj.
     simp are_non_redundant; apply_and3P => /=; last by apply: IH => //= t' Hin'; apply: Hinobj; apply: mem_tail.
-    apply/hasPn=> frag /mapP [t' Htin ->]; simp are_similar.
-      by move/memPn: Hnin => /(_ t' Htin).
-        by apply: normalize_are_non_redundant; apply: Hinobj; apply: mem_head.
+      by apply/eqP; apply: find_fragment_inlined_nil_func.
+      by apply: normalize_are_non_redundant; apply: Hinobj; apply: mem_head.
   Qed.
 
 
-  (**
-     This lemma states that the order of filtering queries by response name 
-     and normalizing does not affect the result.
-   *)
-  Lemma filter_normalize_swap rname ty φ :
-    filter_queries_with_label rname (normalize s ty φ) = normalize s ty (filter_queries_with_label rname φ).
-  Proof.
-    move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
-    elim: n φ rname => /= [| n IH] φ rname ; first by rewrite leqn0 => /queries_size_0_nil ->.
-    case: φ => //= q φ.
-    case_query q => /=; simp query_size => Hleq; simp normalize.
-    - lookup => //=; simp filter_queries_with_label; case: eqP => /= [/= Heq | Hneq].
-      * by rewrite Heq -IH // filter_filter_absorb.
-      * simp normalize; rewrite Hlook /= IH //; [by rewrite filter_swap | by leq_queries_size].
-      * by apply: IH.
-      * by simp normalize; rewrite Hlook /=; apply: IH.
-    - lookup => //=; simp filter_queries_with_label; case: eqP => /= Heq.
-      * by rewrite Heq -IH // filter_filter_absorb.
-      * simp normalize; rewrite Hlook /= IH //; [by rewrite filter_swap | by leq_queries_size].
-      * by apply: IH.
-      * by simp normalize; rewrite Hlook /=; apply: IH.
-
-    - lookup => //=; simp filter_queries_with_label; case: eqP => /= Heq; do ? by apply: IH; leq_queries_size.
-      * case Hscope : is_object_type => //=; simp filter_queries_with_label => //=; case: eqP => //= _;
-                                                                                                by rewrite Heq -IH // ?filter_filter_absorb; leq_queries_size.
-
-      * case Hscope : is_object_type => //=; simp filter_queries_with_label => //=; case: eqP => //= _;
-                                                                                                simp normalize; rewrite Hlook /= Hscope /= find_filter_swap; do ? by apply/eqP.
-        all: do ? [rewrite IH ?filter_filter_absorb; leq_queries_size; by rewrite filter_swap].
-
-      * by simp normalize; rewrite Hlook /=; apply: IH; leq_queries_size.
-
-    - lookup => //=; simp filter_queries_with_label; case: eqP => /= Heq; do ? by apply: IH; leq_queries_size.
-      * case Hscope : is_object_type => //=; simp filter_queries_with_label => //=; case: eqP => //= _;
-                                                                                                by rewrite Heq -IH // ?filter_filter_absorb; leq_queries_size.
-
-      * case Hscope : is_object_type => //=; simp filter_queries_with_label => //=; case: eqP => //= _;
-                                                                                                simp normalize; rewrite Hlook /= Hscope /= find_filter_swap; do ? by apply/eqP.
-        all: do ? [rewrite IH ?filter_filter_absorb; leq_queries_size; by rewrite filter_swap].
-
-      * by simp normalize; rewrite Hlook /=; apply: IH; leq_queries_size.
-
-    - case Hfapplies : does_fragment_type_apply => //=; simp filter_queries_with_label.
-      * by simp normalize; rewrite Hfapplies /= -filter_queries_with_label_cat; apply: IH; leq_queries_size.
-      * by simp normalize; rewrite Hfapplies /=; apply: IH; leq_queries_size.
-  Qed.
+ 
   
 
 End Theory.

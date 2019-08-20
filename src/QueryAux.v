@@ -6,7 +6,6 @@ From Equations Require Import Equations.
 
 Require Import String.
 Require Import QString.
-
 Require Import Base.
 Require Import Schema.
 Require Import SchemaAux.
@@ -574,8 +573,25 @@ Section QueryAux.
     Qed.
 
 
-    
+    (**
+       find_fragment_with_type_condition : Name → List Query → List Query 
 
+       Find all fragments whose type condition is equal to the type given 
+       as parameter.
+     *)
+    Equations find_fragment_with_type_condition : Name -> seq (@Query Vals) -> seq (@Query Vals) :=
+      {
+        find_fragment_with_type_condition _ [::] := [::];
+
+        find_fragment_with_type_condition t (on t' { β } :: φ)
+          with t == t' :=
+          {
+          | true := on t { β } :: find_fragment_with_type_condition t φ;
+          | _ := find_fragment_with_type_condition t φ
+          };
+
+        find_fragment_with_type_condition t (q :: φ) := find_fragment_with_type_condition t φ
+      }.
 
 
   End Find.
@@ -744,6 +760,7 @@ Arguments filter_pairs_with_response_name [Vals].
 Arguments find_queries_with_label [Vals].
 Arguments find_fields_with_response_name [Vals].
 Arguments find_pairs_with_response_name [Vals].
+Arguments find_fragment_with_type_condition [Vals].
 
 Arguments merge_selection_sets [Vals].
 Arguments merge_pairs_selection_sets [Vals].

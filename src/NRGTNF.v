@@ -215,13 +215,20 @@ Section NRGTNF.
     {
       are_non_redundant [::] := true;
       
+      are_non_redundant (on t { β } :: φ) :=
+        [&& find_fragment_with_type_condition t φ == [::],
+            are_non_redundant β &
+            are_non_redundant φ];
+
       are_non_redundant (q :: φ) :=
-        [&& ~~has (fun q' => are_similar q' q) φ,
-         are_non_redundant q.(qsubqueries) &
-         are_non_redundant φ]
+        [&& find_fields_with_response_name (qresponse_name q _) φ == [::],
+            are_non_redundant q.(qsubqueries) &
+            are_non_redundant φ]
+
     }.                 
   Proof.
-    all: do [case: q are_non_redundant; intros; simp query_size; ssromega].
+    all: do ? [case: q].
+    all: do ? intros; simp query_size; ssromega.
   Qed.
 
 

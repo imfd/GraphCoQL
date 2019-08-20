@@ -317,7 +317,7 @@ Section QuerySemantic.
             | NamedType ty
                 with ohead (neighbours_with_field g u (Field f α)) :=
                 {
-                | Some v => (l, {- ≪ φ ≫ in v -}) :: ≪ φ ≫ in u;
+                | Some v => (l, {- ≪ β ≫ in v -}) :: ≪ φ ≫ in u;
                 
                 | _ =>  (l, Leaf Null) :: ≪ φ ≫ in u
                 }
@@ -599,9 +599,11 @@ Section QuerySemantic.
 End QuerySemantic.
 
 Arguments execute_selection_set [Vals].
+Arguments execute_selection_set2 [Vals].
 
 Delimit Scope query_eval with QEVAL.
 Open Scope query_eval.
 
 (* This notation collides with the pairs notation (_ , _) ...  *)
 Notation "s , g ⊢ ⟦ φ ⟧ˢ 'in' u" := (execute_selection_set s g u φ) (at level 30, g at next level, φ at next level) : query_eval.
+Notation "s , g ⊢ ≪ φ ≫ 'in' u" := (execute_selection_set2 s g u φ) (at level 30, g at next level, φ at next level) : query_eval.
