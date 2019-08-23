@@ -172,7 +172,7 @@ Section Theory.
     - rewrite mem_seq1 => /eqP ->.
       by simp is_object_type; rewrite Heq.
     - by move/in_implementation_is_object.
-    - have <-: union_members s ty = union_members0 by rewrite /union_members Heq.
+    - have <-: union_members s ty = members by rewrite /union_members Heq.
         by apply: union_has_objects.
   Qed.
   

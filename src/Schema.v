@@ -113,20 +113,20 @@ Section Schema.
      **)
 
     Inductive TypeDefinition : Type :=
-    | ScalarTypeDefinition (scalar_name : Name)
+    | ScalarTypeDefinition (name : Name)
                            
-    | ObjectTypeDefinition (object_name : Name)
+    | ObjectTypeDefinition (name : Name)
                            (interfaces : seq Name)
                            (fields : seq FieldDefinition)
                            
-    | InterfaceTypeDefinition (interface_name : Name)
+    | InterfaceTypeDefinition (name : Name)
                               (fields : seq FieldDefinition)
                               
-    | UnionTypeDefinition (union_name : Name)
-                          (union_members : seq Name)
+    | UnionTypeDefinition (name : Name)
+                          (members : seq Name)
                           
-    | EnumTypeDefinition (enum_name : Name)
-                         (enum_members : seq EnumValue).
+    | EnumTypeDefinition (name : Name)
+                         (members : seq EnumValue).
     
 
   
