@@ -293,6 +293,17 @@ Section Max.
   
 End Max.
 
+Section Cat.
+  Variable (A : Type).
+
+  Lemma cat_nil (s1 s2 : seq A) :
+    s1 ++ s2 = [::] ->
+    s1 = [::] /\ s2 = [::].
+  Proof.
+      by case: s1.
+  Qed.
+  
+End Cat.
 
 Section list_size.
   Context {A : Type} (f : A -> nat).

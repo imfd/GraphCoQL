@@ -3,8 +3,10 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-From CoqUtils Require Import string.
 From Equations Require Import Equations.
+
+Require Import String.
+Require Import QString.
 
 Require Import Base.
 Require Import Schema.
@@ -29,7 +31,14 @@ Section Theory.
     let Hok := fresh "Hok" in
     case: s => sch Hhty; rewrite /is_wf_schema => /=  /and4P [Hqin Hqobj Huniq /allP Hok].
 
-  
+
+  (**
+     Reflection lemma between [implements_interface_correctly] and its Prop counterpart.
+     It states that [implements_interface_correctly] corresponds to :
+
+     ∀ ifields ∈ interface.fields →
+       ∃ ofield ∈ object.fields, ofield is_valid_field_implementation ifield.
+   *)
   Lemma implements_interface_correctlyP (object_type interface_type : string) :
     reflect (forall ifield, ifield \in fields s interface_type ->
                           exists2 ofield, ofield \in fields s object_type & is_valid_field_implementation s ofield ifield)
@@ -45,14 +54,21 @@ Section Theory.
       by move: (H ifield Hin) => [ofield Hin' Hok]; exists ofield.
   Qed.
 
-
+  (**
+     This lemma states that the query type in the schema is an Object type.
+   *)
   Lemma query_has_object_type :
     is_object_type s s.(query_type).
   Proof.
     by wfschema s. 
   Qed.
 
-  
+
+  (**
+     Reflection lemma between [is_object_type] and its Prop counterpart.
+     It states that saying that there is a name which is  an Object type is
+     the same as saying that looking that name up in the schema results in an Object type definition.
+   *)
   Lemma is_object_type_wfP ty :
     reflect (exists intfs flds, lookup_type s ty = Some (ObjectTypeDefinition ty intfs flds))
             (is_object_type s ty).
@@ -63,7 +79,10 @@ Section Theory.
     - by move=> [intfs [flds Hlook]]; simp is_object_type; rewrite Hlook.
   Qed.
 
- 
+  (**
+     This lemma states that if a type [t] belongs to a union's members, 
+     then that type must be an Object type.
+   *)
   Lemma union_has_objects ty :
     forall t, t \in union_members s ty ->
                is_object_type s t.
@@ -76,6 +95,11 @@ Section Theory.
   Qed.
 
 
+  (**
+     This lemma states that if a list of type definitions has no duplicate names, 
+     then looking up the name of one of its members should return that same 
+     type definition.
+   *)
   Lemma in_tdefs_get_first tdef tdefs :
     uniq [seq t.(tdname) | t <- tdefs] ->
     tdef \in tdefs ->
@@ -90,17 +114,27 @@ Section Theory.
       move=> Hnamein /(_ tdef.(tdname) Hnamein) /negbTE; rewrite eq_sym => ->.
       by apply: IH.
   Qed.
-  
+
+  (**
+     This lemma states that if a type definition belongs to a well-formed schema's
+     list of type definitions, then looking that definition's name should return
+     the same definition.
+   *)
   Lemma in_tdefs_lookup tdef :
     tdef \in s.(type_definitions) ->
              lookup_type s tdef.(tdname) = Some tdef.
   Proof.
       by rewrite /lookup_type => *; apply: in_tdefs_get_first => //; wfschema s.
   Qed.
-    
-  Lemma in_implementation_is_object ity ty :
-      ty \in implementation s ity ->
-             is_object_type s ty.
+
+  (**
+     This lemma states that if a type [t] belongs to the implementors of 
+     another type [ty], then [t] must be an Object type. This is valid 
+     for well-formed schemas.
+   *)
+  Lemma in_implementation_is_object ty t :
+      t \in implementation s ty ->
+             is_object_type s t.
   Proof.
     rewrite /implementation -in_undup => /mapP [tdef].
     rewrite mem_filter; case/andP.
@@ -112,15 +146,24 @@ Section Theory.
     have -> : object_name = (Object (object_name) implements interfaces {fields}).(tdname) by [].
     by apply: in_tdefs_lookup.
   Qed.
-  
+
+  (**
+     This lemma states that the list of possible types of a type [ty]
+     has no duplicates in a well-formed schema.
+   *)
   Lemma uniq_get_possible_types (ty : Name) :
-      uniq (get_possible_types s ty).
+    uniq (get_possible_types s ty).
   Proof.
     funelim (get_possible_types s ty) => //=; first by apply: undup_uniq.
     move: Heq; wfschema s => Heq.
     by move: (Hok _ (lookup_type_in_tdefs Heq)) => /=; case/and3P.
   Qed.
-  
+
+  (**
+     This lemma states that if a type [t] belongs to the possible types 
+     of another type [ty], then [t] must be an Object type. This is valid 
+     for well-formed schemas.
+   *)
   Lemma in_possible_types_is_object ty :
     forall t,
     t \in get_possible_types s ty ->

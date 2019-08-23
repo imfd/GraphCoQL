@@ -2,13 +2,15 @@
 
 -R ./lib Lib
 
+./lib/QString.v
 ./lib/treeordtype.v
 
 
 -R ./src GraphCoQL
 
+./src/theory/GeneralTactics.v
+
 ./src/Ssromega.v
-./src/CpdtTactics.v
 ./src/SeqExtra.v
 
 ./src/Base.v
