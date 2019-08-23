@@ -6,7 +6,6 @@ Set Asymmetric Patterns.
 From Equations Require Import Equations.
 
 
-Require Import Base.
 Require Import Schema.
 Require Import SchemaAux.
 Require Import SchemaWellFormedness.

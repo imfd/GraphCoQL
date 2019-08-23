@@ -7,7 +7,8 @@ Unset Printing Implicit Defensive.
 Require Import String.
 Require Import QString.
 
-Require Import Base.
+
+Notation Name := string.
 
 Section GraphQLGraph.
 

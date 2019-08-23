@@ -10,7 +10,6 @@ From extructures Require Import ord fset fmap.
 
 From Equations Require Import Equations.
 
-Require Import Base.
 Require Import Schema.
 Require Import SchemaAux.
 

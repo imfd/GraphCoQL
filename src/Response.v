@@ -9,8 +9,9 @@ Require Import String.
 Require Import QString.
 
 Require Import SeqExtra.
-Require Import Base.
 
+
+Notation Name := string.
 
 Section Response.
 

@@ -13,8 +13,6 @@
 ./src/Ssromega.v
 ./src/SeqExtra.v
 
-./src/Base.v
-
 ./src/Schema.v
 ./src/SchemaAux.v
 ./src/SchemaWellFormedness.v

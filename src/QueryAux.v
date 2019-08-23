@@ -6,7 +6,7 @@ From Equations Require Import Equations.
 
 Require Import String.
 Require Import QString.
-Require Import Base.
+
 Require Import Schema.
 Require Import SchemaAux.
 Require Import SchemaWellFormedness.
