@@ -19,8 +19,6 @@ Notation EnumValue := string.
 
   
 Section Schema.
-
-
   
   Section Base.
 
@@ -52,39 +50,6 @@ Section Schema.
 
     Coercion tname : type >-> Name.
 
-    Section Equality.
-      (* This section is only to establish that type belongs to eqType *)
-      
-      (** Packing and unpacking of a type, needed for canonical instances **)
-      Fixpoint tree_of_type (ty : type) : GenTree.tree Name :=
-        match ty with
-        | NamedType n => GenTree.Node 0 [:: GenTree.Leaf n]
-        | ListType ty' => GenTree.Node 1 [:: tree_of_type ty']
-        end.
-      
-      Fixpoint type_of_tree (t : GenTree.tree Name) : option type :=
-        match t with
-        | GenTree.Node 0 [:: GenTree.Leaf n] => Some (NamedType n)
-        | GenTree.Node 1 [:: t'] => if (type_of_tree t') is Some ty then
-                                     Some (ListType ty)
-                                   else
-                                     None
-        | _ => None
-        end.
-
-
-      (** Cancelation lemma for types **)
-      Lemma pcan_tree_of_type : pcancel tree_of_type type_of_tree.
-      Proof. by elim=> [| t /= ->]. Qed.
-      
-      Canonical type_eqType := EqType type (PcanEqMixin pcan_tree_of_type).
-      Canonical type_choiceType := ChoiceType type (PcanChoiceMixin pcan_tree_of_type).
-
-
-    End Equality.
-    
-
-
   End Base.
 
 
@@ -109,18 +74,7 @@ Section Schema.
 
 
        
-    (** Packing and unpacking of a field argument, needed for canonical instances **)
-    Definition prod_of_arg (arg : FieldArgumentDefinition) := let: FieldArgument n t := arg in (n, t).
-    Definition arg_of_prod (p : prod Name type) := let: (n, t) := p in FieldArgument n t.
-
-    (** Cancelation lemma for field arguments **)
-    Lemma prod_of_argK : cancel prod_of_arg arg_of_prod.  Proof. by case. Qed.
   
-    Canonical arg_eqType := EqType FieldArgumentDefinition (CanEqMixin prod_of_argK).
-    Canonical arg_choiceType := ChoiceType FieldArgumentDefinition (CanChoiceMixin prod_of_argK).
-
-
-
     
     (** *** Field of an object or interface in the schema. 
         Represents a leaf or an edge between nodes of the underlying tree structure.
@@ -134,19 +88,7 @@ Section Schema.
                                   }.
 
 
-    
-    (** Packing and unpacking of a field, needed for canonical instances **)
-    Definition prod_of_field (f : FieldDefinition) := let: Field n args t := f in (n, args, t).
-    Definition field_of_prod (p : Name * (seq FieldArgumentDefinition) * type)  := let: (n, args, t) := p in Field n args t.
-
-    (** Cancelation lemma for a field **)
-    Lemma prod_of_fieldK : cancel prod_of_field field_of_prod. Proof. by case. Qed.
-
-    
-    Canonical field_eqType := EqType FieldDefinition (CanEqMixin prod_of_fieldK).
-    Canonical field_choiceType := ChoiceType FieldDefinition (CanChoiceMixin prod_of_fieldK).
-
- 
+  
 
     
   
@@ -190,38 +132,6 @@ Section Schema.
   
 
   
-    (** Packing and unpacking of a type definition, needed for canonical instances **)
-    Notation tdefRep := (Name + (Name * (seq Name) * seq FieldDefinition) + (Name * seq FieldDefinition) +
-                        (Name * (seq Name)) + (Name * (seq EnumValue)))%type.
-
-    
-    Definition tdef_rep tdef : tdefRep :=
-      match tdef with 
-      | ScalarTypeDefinition name => inl (inl (inl (inl name)))
-      | ObjectTypeDefinition name intfs flds => inl (inl (inl (inr (name, intfs, flds))))
-      | InterfaceTypeDefinition name flds => inl (inl (inr (name, flds)))
-      | UnionTypeDefinition name mbs => inl (inr (name, mbs))
-      | EnumTypeDefinition name enums => inr (name, enums)
-      end.
-
-    Definition tdef_con (trep : tdefRep) : TypeDefinition :=
-      match trep with
-      | inl (inl (inl (inl name))) => ScalarTypeDefinition name
-      | inl (inl (inl (inr (name, intfs, flds)))) => ObjectTypeDefinition name intfs flds
-      | inl (inl (inr (name, flds))) => InterfaceTypeDefinition name flds
-      | inl (inr (name, mbs)) => UnionTypeDefinition name mbs
-      | inr (name, enums) => EnumTypeDefinition name enums
-      end.
-
-    (** Cancelation lemma for a type definition **)
-    Lemma tdef_repK : cancel tdef_rep tdef_con.
-    Proof. by case. Qed.
-
-    
-    Canonical tdef_eqType := EqType TypeDefinition (CanEqMixin tdef_repK).
-    Canonical tdef_choiceType := ChoiceType TypeDefinition (CanChoiceMixin tdef_repK).
-
-    
     
       
     (** *** Schema Definition 
@@ -252,27 +162,131 @@ Section Schema.
                                   type_definitions : seq TypeDefinition
                                 }.
     
-    (* Definition fun_of_schema sch := fun p => sch.(type_definitions) p. *)
-
-    (* Coercion fun_of_schema : graphQLSchema >-> Funclass. *)
-
-    (** Packing and unpacking of a schema **)
-    Definition prod_of_schema (s : graphQLSchema) := let: GraphQLSchema q tdefs := s in (q, tdefs).
-    Definition schema_of_prod p := let: (q, tdefs) := p in GraphQLSchema q tdefs.
-
-    (** Cancelation lemma for a schema **)
-    Lemma prod_of_schemaK : cancel prod_of_schema schema_of_prod.  Proof. by case. Qed.
- 
-    Canonical schema_eqType := EqType graphQLSchema (CanEqMixin prod_of_schemaK).
-    Canonical schema_choiceType := ChoiceType graphQLSchema (CanChoiceMixin prod_of_schemaK).
-
-
     
-  End TypeSystem.
-    
+  End TypeSystem.  
     
 End Schema.
 
+
+
+Section Equality.
+  (**
+     This section deals with some SSReflect bureaucratic things, in particular 
+     establishing that the different components in the schema (type, fields, type definitions, etc.)
+     do have a decidable procedure to establish equality between them (they belong to the 
+     SSReflect type - eqType).
+
+     This is basically done by establishing isomorphisms between the different structures
+     to others that already have a decidable procedure.
+   *)
+
+  
+  (** 
+      The two following functions serve to establish the ismorphism between [type]
+      and a tree structure.
+   *)
+  Fixpoint tree_of_type (ty : type) : GenTree.tree Name :=
+    match ty with
+    | NamedType n => GenTree.Node 0 [:: GenTree.Leaf n]
+    | ListType ty' => GenTree.Node 1 [:: tree_of_type ty']
+    end.
+  
+  Fixpoint type_of_tree (t : GenTree.tree Name) : option type :=
+    match t with
+    | GenTree.Node 0 [:: GenTree.Leaf n] => Some (NamedType n)
+    | GenTree.Node 1 [:: t'] => if (type_of_tree t') is Some ty then
+                                 Some (ListType ty)
+                               else
+                                 None
+    | _ => None
+    end.
+
+
+  (**
+     This lemma states that effectively both functions establish 
+     an isomorphism between [type] and a tree structure.
+   *)
+  Lemma pcan_tree_of_type : pcancel tree_of_type type_of_tree.
+  Proof. by elim=> [| t /= ->]. Qed.
+
+
+  
+  Canonical type_eqType := EqType type (PcanEqMixin pcan_tree_of_type).
+  Canonical type_choiceType := ChoiceType type (PcanChoiceMixin pcan_tree_of_type).
+
+
+
+  (** Packing and unpacking of a field argument, needed for canonical instances **)
+  Definition prod_of_arg (arg : FieldArgumentDefinition) := let: FieldArgument n t := arg in (n, t).
+  Definition arg_of_prod (p : prod Name type) := let: (n, t) := p in FieldArgument n t.
+
+  (** Cancelation lemma for field arguments **)
+  Lemma prod_of_argK : cancel prod_of_arg arg_of_prod.  Proof. by case. Qed.
+  
+  Canonical arg_eqType := EqType FieldArgumentDefinition (CanEqMixin prod_of_argK).
+  Canonical arg_choiceType := ChoiceType FieldArgumentDefinition (CanChoiceMixin prod_of_argK).
+
+
+  
+  (** Packing and unpacking of a field, needed for canonical instances **)
+  Definition prod_of_field (f : FieldDefinition) := let: Field n args t := f in (n, args, t).
+  Definition field_of_prod (p : Name * (seq FieldArgumentDefinition) * type)  := let: (n, args, t) := p in Field n args t.
+
+  (** Cancelation lemma for a field **)
+  Lemma prod_of_fieldK : cancel prod_of_field field_of_prod. Proof. by case. Qed.
+
+  
+  Canonical field_eqType := EqType FieldDefinition (CanEqMixin prod_of_fieldK).
+  Canonical field_choiceType := ChoiceType FieldDefinition (CanChoiceMixin prod_of_fieldK).
+
+
+  
+  (** Packing and unpacking of a type definition, needed for canonical instances **)
+  Notation tdefRep := (Name + (Name * (seq Name) * seq FieldDefinition) + (Name * seq FieldDefinition) +
+                      (Name * (seq Name)) + (Name * (seq EnumValue)))%type.
+
+  
+  Definition tdef_rep tdef : tdefRep :=
+    match tdef with 
+    | ScalarTypeDefinition name => inl (inl (inl (inl name)))
+    | ObjectTypeDefinition name intfs flds => inl (inl (inl (inr (name, intfs, flds))))
+    | InterfaceTypeDefinition name flds => inl (inl (inr (name, flds)))
+    | UnionTypeDefinition name mbs => inl (inr (name, mbs))
+    | EnumTypeDefinition name enums => inr (name, enums)
+    end.
+
+  Definition tdef_con (trep : tdefRep) : TypeDefinition :=
+    match trep with
+    | inl (inl (inl (inl name))) => ScalarTypeDefinition name
+    | inl (inl (inl (inr (name, intfs, flds)))) => ObjectTypeDefinition name intfs flds
+    | inl (inl (inr (name, flds))) => InterfaceTypeDefinition name flds
+    | inl (inr (name, mbs)) => UnionTypeDefinition name mbs
+    | inr (name, enums) => EnumTypeDefinition name enums
+    end.
+
+  (** Cancelation lemma for a type definition **)
+  Lemma tdef_repK : cancel tdef_rep tdef_con.
+  Proof. by case. Qed.
+
+  
+  Canonical tdef_eqType := EqType TypeDefinition (CanEqMixin tdef_repK).
+  Canonical tdef_choiceType := ChoiceType TypeDefinition (CanChoiceMixin tdef_repK).
+
+  
+
+  
+  (** Packing and unpacking of a schema **)
+  Definition prod_of_schema (s : graphQLSchema) := let: GraphQLSchema q tdefs := s in (q, tdefs).
+  Definition schema_of_prod p := let: (q, tdefs) := p in GraphQLSchema q tdefs.
+
+  (** Cancelation lemma for a schema **)
+  Lemma prod_of_schemaK : cancel prod_of_schema schema_of_prod.  Proof. by case. Qed.
+  
+  Canonical schema_eqType := EqType graphQLSchema (CanEqMixin prod_of_schemaK).
+  Canonical schema_choiceType := ChoiceType graphQLSchema (CanChoiceMixin prod_of_schemaK).
+
+  
+End Equality.
 
 
 
