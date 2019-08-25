@@ -59,17 +59,25 @@ Section WellFormedness.
         #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Interfaces'> See also: Interface Type Validation subsection </a>#
     *)
     Reserved Infix "<:" (at level 60).
-    Equations is_subtype (ty ty' : type) : bool :=
-      {
-        [ lty ] <: [ lty' ] := lty <: lty';
+    Fixpoint is_subtype (ty ty' : type) : bool :=
+      match ty, ty' with
+      | NamedType name, NamedType name' => 
+        match lookup_type s name, lookup_type s name' with
+        | Some (Scalar name), Some (Scalar name') => name == name'
+        | Some (Enum name { _ }), Some (Enum name' { _ }) => name == name'
+        | Some (Object name implements _ { _ }), Some (Object name' implements _ { _ }) => name == name'
+        | Some (Interface name { _ }), Some (Interface name' { _ }) => name == name'
+        | Some (Union name { _ }), Some (Union name' { _ }) => name == name'
+        | Some (Object name implements interfaces { _ }), Some (Interface name' { _ }) => name' \in interfaces
+        | Some (Object name implements _ { _ }), Some (Union name' { members }) => name \in members
+        | _, _ => false
+        end
 
-        NamedType name <: NamedType name' :=
-          [|| (name == name'),
-           declares_implementation s name name' | 
-           (name \in (union_members s name'))];
-        
-        _ <: _ := false
-      }
+      | ListType ty1, ListType ty2 => (ty1 <: ty2)
+
+      | _, _ => false
+      end
+
     where "ty1 <: ty2" := (is_subtype ty1 ty2).
 
     
