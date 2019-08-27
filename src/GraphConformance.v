@@ -1,3 +1,5 @@
+(* begin hide *)
+
 From mathcomp Require Import all_ssreflect.
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -7,13 +9,14 @@ Unset Printing Implicit Defensive.
 Require Import String.
 Require Import QString.
 
-Require Import Base.
 
 Require Import Schema.
 Require Import SchemaWellFormedness.
 Require Import SchemaAux.
 Require Import Graph.
 Require Import GraphAux.
+
+(* end hide *)
 
 
 Section Conformance.

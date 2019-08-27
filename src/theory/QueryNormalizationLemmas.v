@@ -1,3 +1,5 @@
+(* begin hide *)
+
 From mathcomp Require Import all_ssreflect.
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -9,7 +11,6 @@ From Equations Require Import Equations.
 Require Import String.
 Require Import QString.
 
-Require Import Base. 
 Require Import Schema.
 Require Import SchemaAux.
 Require Import SchemaAuxLemmas.
@@ -33,6 +34,7 @@ Require Import SeqExtra.
 Require Import QueryTactics.
 Require Import GeneralTactics.
 
+(* end hide *)
 
 Section Theory.
   

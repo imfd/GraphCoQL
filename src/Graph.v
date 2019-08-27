@@ -1,3 +1,5 @@
+(* begin hide *)
+
 From mathcomp Require Import all_ssreflect.
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -7,7 +9,10 @@ Unset Printing Implicit Defensive.
 Require Import String.
 Require Import QString.
 
-Require Import Base.
+
+Notation Name := string.
+
+(* end hide *)
 
 Section GraphQLGraph.
 

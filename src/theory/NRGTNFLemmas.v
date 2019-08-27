@@ -1,3 +1,5 @@
+(* begin hide *)
+
 From mathcomp Require Import all_ssreflect.
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -24,6 +26,8 @@ Require Import Ssromega.
 Require Import NRGTNF.
 
 Require Import GeneralTactics.
+
+(* end hide *)
 
 
 Section Theory.

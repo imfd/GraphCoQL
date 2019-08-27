@@ -1,3 +1,5 @@
+(* begin hide *)
+
 From mathcomp Require Import all_ssreflect.
 Unset Printing Implicit Defensive.
 Set Asymmetric Patterns.
@@ -8,7 +10,6 @@ From Equations Require Import Equations.
 Require Import String.
 Require Import QString.
 
-Require Import Base.
 Require Import Schema.
 Require Import SchemaAux.
 Require Import SchemaWellFormedness.
@@ -26,6 +27,8 @@ Require Import GraphConformance.
 
 
 Require Import QueryTactics.
+
+(* end hide *)
 
 
 Section QuerySemantic.

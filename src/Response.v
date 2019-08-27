@@ -1,3 +1,5 @@
+(* begin hide *)
+
 From mathcomp Require Import all_ssreflect.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -9,7 +11,11 @@ Require Import String.
 Require Import QString.
 
 Require Import SeqExtra.
-Require Import Base.
+
+
+Notation Name := string.
+
+(* end hide *)
 
 
 Section Response.

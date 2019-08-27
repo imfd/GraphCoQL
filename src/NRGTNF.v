@@ -1,3 +1,5 @@
+(* begin hide *)
+
 Require Import List.
 From mathcomp Require Import all_ssreflect.
 Unset Strict Implicit.
@@ -8,7 +10,6 @@ From Equations Require Import Equations.
 Require Import String.
 Require Import QString.
 
-Require Import Base.
 Require Import Query.
 Require Import QueryAux.
 Require Import SchemaWellFormedness.
@@ -21,6 +22,9 @@ Require Import QueryConformance.
 Require Import SeqExtra.
 
 Require Import Ssromega.
+
+(* end hide *)
+
 
 Section NRGTNF.
 

@@ -1,10 +1,12 @@
+(* begin hide *)
+
 From mathcomp Require Import all_ssreflect.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-
-
 Require Import Graph.
+
+(* end hide *)
 
 
 

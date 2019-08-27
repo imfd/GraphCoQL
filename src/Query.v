@@ -1,3 +1,5 @@
+(* begin hide *)
+
 Require Import List.
 
 From mathcomp Require Import all_ssreflect.
@@ -6,15 +8,16 @@ Unset Printing Implicit Defensive.
 
 Set Asymmetric Patterns.
 
-
 Require Import String.
 Require Import QString.
 
-Require Import Base.
 
+Notation Name := string.
+
+(* end hide *)
 
 Section Query.
-
+  
   (**
      Represents any possible value used in a Query (arguments). 
      The only requirement is that it must have a decidable procedure 

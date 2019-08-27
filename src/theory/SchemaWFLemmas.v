@@ -1,3 +1,5 @@
+(* begin hide *)
+
 From mathcomp Require Import all_ssreflect.
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -8,13 +10,15 @@ From Equations Require Import Equations.
 Require Import String.
 Require Import QString.
 
-Require Import Base.
 Require Import Schema.
 Require Import SchemaAux.
 Require Import SchemaAuxLemmas.
 Require Import SchemaWellFormedness.
 
 Require Import SeqExtra.
+
+(* begin hide *)
+
 
 Section Theory.
 
@@ -25,11 +29,10 @@ Section Theory.
   Ltac wfschema s :=
     let sch := fresh "s" in
     let Hhty := fresh "Hhty" in
-    let Hqin := fresh "Hqin" in
     let Hqobj := fresh "Hqboj" in
     let Huniq := fresh "Huniq" in
     let Hok := fresh "Hok" in
-    case: s => sch Hhty; rewrite /is_wf_schema => /=  /and4P [Hqin Hqobj Huniq /allP Hok].
+    case: s => sch Hhty; rewrite /is_wf_schema => /=  /and3P [Hqobj Huniq /allP Hok].
 
 
   (**
@@ -39,20 +42,20 @@ Section Theory.
      ∀ ifields ∈ interface.fields →
        ∃ ofield ∈ object.fields, ofield is_valid_field_implementation ifield.
    *)
-  Lemma implements_interface_correctlyP (object_type interface_type : string) :
-    reflect (forall ifield, ifield \in fields s interface_type ->
-                          exists2 ofield, ofield \in fields s object_type & is_valid_field_implementation s ofield ifield)
-            (implements_interface_correctly s object_type interface_type).
-  Proof.
-    apply: (iffP idP).
-    - rewrite /implements_interface_correctly => /allP H.
-      by move=> ifield /H /hasP [ofield Hin Hok]; exists ofield.
-    - move=> H.
-      rewrite /implements_interface_correctly.
-      apply/allP => ifield Hin.
-      apply/hasP.
-      by move: (H ifield Hin) => [ofield Hin' Hok]; exists ofield.
-  Qed.
+  (* Lemma implements_interface_correctlyP (object_type interface_type : string) : *)
+  (*   reflect (forall ifield, ifield \in fields s interface_type -> *)
+  (*                         exists2 ofield, ofield \in fields s object_type & is_valid_field_implementation s ofield ifield) *)
+  (*           (implements_interface_correctly s object_type interface_type). *)
+  (* Proof. *)
+  (*   apply: (iffP idP). *)
+  (*   - rewrite /implements_interface_correctly => /allP H. *)
+  (*     by move=> ifield /H /hasP [ofield Hin Hok]; exists ofield. *)
+  (*   - move=> H. *)
+  (*     rewrite /implements_interface_correctly. *)
+  (*     apply/allP => ifield Hin. *)
+  (*     apply/hasP. *)
+  (*     by move: (H ifield Hin) => [ofield Hin' Hok]; exists ofield. *)
+  (* Qed. *)
 
   (**
      This lemma states that the query type in the schema is an Object type.
@@ -60,7 +63,7 @@ Section Theory.
   Lemma query_has_object_type :
     is_object_type s s.(query_type).
   Proof.
-    by wfschema s. 
+      by wfschema s. 
   Qed.
 
 
@@ -173,7 +176,7 @@ Section Theory.
     - rewrite mem_seq1 => /eqP ->.
       by simp is_object_type; rewrite Heq.
     - by move/in_implementation_is_object.
-    - have <-: union_members s ty = union_members0 by rewrite /union_members Heq.
+    - have <-: union_members s ty = members by rewrite /union_members Heq.
         by apply: union_has_objects.
   Qed.
   

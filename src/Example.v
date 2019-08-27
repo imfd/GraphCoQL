@@ -1,3 +1,5 @@
+(* begin hide *)
+
 From mathcomp Require Import all_ssreflect.
 
 Set Implicit Arguments.
@@ -10,7 +12,6 @@ From Equations Require Import Equations.
 Require Import String.
 Require Import QString.
 
-Require Import Base.
 Require Import Schema.
 Require Import SchemaAux.
 
@@ -43,6 +44,9 @@ Require Import QueryTactics.
 Require Import QuerySemantic.
 
 Open Scope string_scope.
+
+(* end hide *)
+
 
 (** This file includes some examples of schemas, graphs and queries. 
     The base schema is the one used in [Hartig & Pérez, 2017];
@@ -1007,9 +1011,7 @@ Section GraphQLSpecExamples.
     Let extended_schwf : extended_schema.(is_wf_schema).
     Proof.
       (* For some reason just computing gets stuck - using by [] *)
-      rewrite /is_wf_schema /= ?andbT.
-      rewrite /is_wf_field /= andbT.
-      simp is_valid_field_type.
+      rewrite /is_wf_schema /= ?andbT; simp is_interface_type.
     Qed.
 
     Let extended_wf_schema : @wfGraphQLSchema string_eqType   := WFGraphQLSchema (fun n v => true) extended_schwf.
