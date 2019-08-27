@@ -219,51 +219,42 @@ Section QueryConformance.
      
    *)
  (* TODO: Rename? It is only a part of the whole validation process *)
-  Equations query_conforms (type_in_scope : Name) query : bool :=
-    {
-      query_conforms ty (f[[α]])
-        with lookup_field_in_type s ty f :=
-        {
-        | Some fld => (is_scalar_type s fld.(return_type) ||
-                      is_enum_type s fld.(return_type)) &&
-                      arguments_conform fld.(fargs) α;
-        | _ => false
-        };
+  Fixpoint query_conforms (type_in_scope : Name) query : bool :=
+    match query with
+    | f[[α]] =>
+      if lookup_field_in_type s type_in_scope f is Some fld then
+        (is_scalar_type s fld.(return_type) || is_enum_type s fld.(return_type)) && arguments_conform fld.(fargs) α
+      else
+        false
 
-      query_conforms ty (_:f[[α]])
-        with lookup_field_in_type s ty f :=
-        {
-        | Some fld => (is_scalar_type s fld.(return_type) ||
-                      is_enum_type s fld.(return_type)) &&
-                      arguments_conform fld.(fargs) α;
-        | _ => false
-        };
+    | _:f[[α]] =>
+      if lookup_field_in_type s type_in_scope f is Some fld then
+        (is_scalar_type s fld.(return_type) || is_enum_type s fld.(return_type)) && arguments_conform fld.(fargs) α
+      else
+        false
 
-      query_conforms ty (f[[α]] { φ })
-        with lookup_field_in_type s ty f :=
-        {
-        | Some fld => [&& (is_object_type s fld.(return_type) || is_abstract_type s fld.(return_type)),
-                         arguments_conform fld.(fargs) α,
-                         φ != [::] &
-                         all (query_conforms fld.(return_type)) φ];
-        | _ => false
-        };
-
-      query_conforms ty (_:f[[α]] { φ })
-        with lookup_field_in_type s ty f :=
-        {
-        | Some fld => [&& (is_object_type s fld.(return_type) || is_abstract_type s fld.(return_type)),
-                         arguments_conform fld.(fargs) α,
-                         φ != [::] &
-                         all (query_conforms fld.(return_type)) φ];
-        | _ => false
-        };
-
-      query_conforms ty (on t { φ }) :=
-        [&& is_fragment_spread_possible ty t,
+    | f[[α]] { φ } => 
+      if lookup_field_in_type s type_in_scope f is Some fld then
+        [&& (is_object_type s fld.(return_type) || is_abstract_type s fld.(return_type)),
+         arguments_conform fld.(fargs) α,
          φ != [::] &
-         all (query_conforms t) φ]
-    }.
+         all (query_conforms fld.(return_type)) φ]
+      else
+        false 
+
+    | _:f[[α]] { φ } =>
+      if lookup_field_in_type s type_in_scope f is Some fld then
+        [&& (is_object_type s fld.(return_type) || is_abstract_type s fld.(return_type)),
+         arguments_conform fld.(fargs) α,
+         φ != [::] &
+         all (query_conforms fld.(return_type)) φ]
+      else
+        false 
+
+    | on t { φ } => [&& is_fragment_spread_possible type_in_scope t,
+                    φ != [::] &
+                    all (query_conforms t) φ]
+    end.
   
 
   (** ---- *)
