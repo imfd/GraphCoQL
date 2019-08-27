@@ -19,17 +19,54 @@ Notation EnumValue := string.
 
 (* end hide *)
 
+
+(** * GraphQL Schema 
+    
+    This file contains the basic definitions necessary to build a GraphQL Schema.
+
+    Some of these are: Type definitions (Objects, Interfaces, etc.), Field definitions and its arguments, amongst others.
+
+    These definitions allow building a Schema but they do not guarantee that the schema is well-formed.
+    This notion of well-formedness is covered in the file _SchemaWellFormedness_.
+   
+ *)
   
 Section Schema.
   
   Section Base.
 
-    
-    (** *** Types of data expected by query variables.
+    (** ** Type References
+
+        In this section we define the [type] structure which is used 
+        to describe the types returned by fields or required by arguments.
+
+        _Example_ : 
         
+        #<img src='../imgs/Schema/type_character.png'>#
+
+        
+        Both _String_! and [[Episode!]]! belong to the [type] structure. 
+
+         
+      
+     *)
+
+    (** ---- *)
+
+    
+    (** *** Type
+        
+        Types of data expected by query variables.
+
+        #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
+
+        **** Observations
+
         - NonNull types are omitted in this current version.
         
-        https://graphql.github.io/graphql-spec/June2018/#sec-Type-References
+        #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
+        **** Spec Reference 
+        - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Type-References'> Type References </a>#
 
      *)
     Inductive type : Type :=
@@ -37,37 +74,65 @@ Section Schema.
     | ListType : type -> type.
 
 
-
+    (** ---- *)
     
-    (** Get a type's wrapped name.
+    (** 
+        #<strong> tname </strong>#: type → Name 
+
+        Get a type's wrapped name.
+
         Corresponds to a named type's actual name or the name used in a list type
 
-        https://facebook.github.io/graphql/June2018/#sec-Type-References
-        https://facebook.github.io/graphql/June2018/#sec-Wrapping-Types **)
+        #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
+
+        **** Spec Reference
+        - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Wrapping-Types'> Wrapping Types </a>#
+         
+     *)
     Fixpoint tname (ty : type) : Name :=
       match ty with
       | NamedType name => name
       | ListType ty' => tname ty'
       end.
 
+    (** ---- *)
+    
     Coercion tname : type >-> Name.
 
   End Base.
 
-
+  (** ---- *)
 
   Section TypeSystem.
 
+    (** ** Type System
+
+        In this section we will define the necessary types and structures needed 
+        to build a GraphQL Schema. These are:
+        - Arguments
+        - Fields 
+        - Type definition 
+        - Schema 
+     *)
+
+    (** ---- *)
     
-    (** *** Argument for a field.
+    (** *** Argument Definition
 
-        In the specification it is named "InputValue" (InputValueDefinition) but 
-        it is not very descriptive of what it is. Besides, it is constantly refered 
-        as "argument", therefore it is here named as FieldArgument (only fields can have
-        arguments so it may sound redundant to name it like this but I feel like it is
-        more descriptive and reinforces this notion). 
+        Arguments are defined for fields in a type (Object or Interface).
 
-        https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
+        #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
+        **** Observations
+
+        In the specification they are named "InputValue" (InputValueDefinition) but 
+        we believe it is not very descriptive of what it is.
+        
+        Besides, they are constantly refered as "argument", therefore we named them
+        as [FieldArgument].
+
+        #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
+        **** Spec Reference
+        - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Field-Arguments'>Field Arguments</a>#
      **)
     Structure FieldArgumentDefinition := FieldArgument {
                                             argname : Name;
@@ -75,13 +140,20 @@ Section Schema.
                                           }.
 
 
-       
+    (** ---- *)
   
     
-    (** *** Field of an object or interface in the schema. 
-        Represents a leaf or an edge between nodes of the underlying tree structure.
+    (** *** Field Definition
 
-        https://graphql.github.io/graphql-spec/June2018/#FieldsDefinition
+        Fields are defined for an Object or Interface type.
+
+        They ultimately represent the things we can query. 
+
+
+        #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
+        
+        **** Spec Reference 
+        - #<a href='https://graphql.github.io/graphql-spec/June2018/##FieldsDefinition'>Fields Definition</a>#
      **)
     Structure FieldDefinition := Field {
                                     fname : Name;
@@ -90,7 +162,7 @@ Section Schema.
                                   }.
 
 
-  
+    (** ---- *)
 
     
   
@@ -98,20 +170,21 @@ Section Schema.
 
         Possible type definitions one can make in a GraphQL service.
 
-        Some observations:
+        #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
+        **** Observations
 
-        1. Objects and Union types are defined with "NamedType" in the list of implemented
-           interfaces and members, respectively. Because NamedType is defined only as a Name,
-           we directly use this instead (https://graphql.github.io/graphql-spec/June2018/#NamedType). #<br>#
+        - This definition allows building Schemas which are not correct, such as 
+          Schemas where the fields are empty or where an Object type implements 
+          types which are not interfaces, amongst others. All these aspects are 
+          covered in the well-formedness predicate, which validates the defined 
+          schema.
 
-        2. Fields: Objects and interfaces must declare at least one field but the current
-           definition allows an empty list of fields. In the wf property it is checked that
-           this list is not empty.                                                                    #<br>#
+        - InputObjects: Currently not included in the formalization.                         
 
-        3. InputObjects: Currently not included in the formalization.                                 #<br>#
-
-
-        https://graphql.github.io/graphql-spec/June2018/#TypeDefinition
+        #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
+        **** Spec Reference 
+        - #<a href='https://graphql.github.io/graphql-spec/June2018/##TypeDefinition'>Type Definition</a># 
+        - #<a href='https://graphql.github.io/graphql-spec/June2018/##NamedType'>Named Type</a>#       
      **)
 
     Inductive TypeDefinition : Type :=
@@ -133,31 +206,40 @@ Section Schema.
 
   
 
-  
+    (** ---- *)
     
       
     (** *** Schema Definition 
 
-        There is some name clashing when the spec refers to a schema, by which it can
+        Here we define the actual structure of a GraphQL Schema.
+
+        There is some name clashing when the spec refers to a Schema, by which it can
         refer to:
-        1.- The type system of the GraphQL service.
-        2.- The root operation types (Query, Mutation, Subscription).
-        3.- Both.
+        - The type system of the GraphQL service.
+        - The root operation types (Query, Mutation, Subscription).
+        - Both.
  
         As per the spec:
        
-        > A GraphQL service’s collective type system capabilities are referred to as
+       #<blockquote class="blockquote">#
+         A GraphQL service’s collective type system capabilities are referred to as
           that service’s “schema”. A schema is defined in terms of the types and 
           directives it supports as well as the root operation types for each kind of
           operation: query, mutation, and subscription [...]
+       #</blockquote>#
 
         In this formalisation we take this latter approach, in which a schema is both 
-        the root operations as well as the types defined. Some observations:
+        the root operations as well as the types defined.
+
+
+        #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
+        **** Observations
+
+        - Only the Query type is included as root operation (Mutation and Subscription are not).
         
-        1. Only the Query type is included as root operation (Mutation and Subscription are not).
-        
-        
-        https://graphql.github.io/graphql-spec/June2018/#sec-Schema
+        #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
+        **** Spec Reference 
+        - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Schema'>Schema</a># 
     *)
     Structure graphQLSchema := GraphQLSchema {
                                   query_type : Name;
@@ -169,10 +251,46 @@ Section Schema.
     
 End Schema.
 
+(** *** Notations
+    Just some notations to make it easier to read (or at least closer to how it is in
+    the Spec).
+ *)
 
+
+Delimit Scope schema_scope with SCHEMA.
+Open Scope schema_scope.
+
+Notation "[ name ]" := (ListType name).
+
+  
+
+Notation "'Scalar' scalar_name" := (ScalarTypeDefinition scalar_name) (at level 0) : schema_scope.
+
+(* Using 'type', as in the spec, clashes with the actual type called 'type'... So I preferred Object instead *)
+Notation "'Object' object_name 'implements' interfaces '{' fields '}'" :=
+  (ObjectTypeDefinition object_name interfaces fields)
+    (object_name at next level, interfaces at next level, fields at next level) : schema_scope.
+
+Notation "'Interface' interface_name '{' fields '}'" :=
+  (InterfaceTypeDefinition interface_name fields)
+  (interface_name at next level, fields at next level) : schema_scope.
+
+Notation "'Union' union_name '{' union_members '}'" :=
+  (UnionTypeDefinition union_name union_members)
+  (union_name at next level, union_members at next level) : schema_scope.
+
+Notation "'Enum' enum_name '{' enum_members '}'" :=
+  (EnumTypeDefinition enum_name enum_members)
+    (enum_name at next level, enum_members at next level) : schema_scope.
+
+
+(** #<a href='GraphCoQL.SchemaWellFormedness.html' class="btn btn-info">Continue Reading → Schema Well-Formedness </a># *)
+
+
+(** ---- *)
 
 Section Equality.
-  (**
+  (** ** Equality 
      This section deals with some SSReflect bureaucratic things, in particular 
      establishing that the different components in the schema (type, fields, type definitions, etc.)
      do have a decidable procedure to establish equality between them (they belong to the 
@@ -290,33 +408,3 @@ Section Equality.
   
 End Equality.
 
-
-
-Delimit Scope schema_scope with SCHEMA.
-Open Scope schema_scope.
-
-Notation "[ name ]" := (ListType name).
-
-  
-Notation "argname : ty" := (FieldArgument argname ty) : schema_scope.
-Notation "fname '(' args ')' ':' ty" := (Field fname args ty) (at level 50) : schema_scope.
-
-
-Notation "'Scalar' scalar_name" := (ScalarTypeDefinition scalar_name) (at level 0) : schema_scope.
-
-(* Using 'type', as in the spec, clashes with the actual type called 'type'... So I preferred Object instead *)
-Notation "'Object' object_name 'implements' interfaces '{' fields '}'" :=
-  (ObjectTypeDefinition object_name interfaces fields)
-    (object_name at next level, interfaces at next level, fields at next level) : schema_scope.
-
-Notation "'Interface' interface_name '{' fields '}'" :=
-  (InterfaceTypeDefinition interface_name fields)
-  (interface_name at next level, fields at next level) : schema_scope.
-
-Notation "'Union' union_name '{' union_members '}'" :=
-  (UnionTypeDefinition union_name union_members)
-  (union_name at next level, union_members at next level) : schema_scope.
-
-Notation "'Enum' enum_name '{' enum_members '}'" :=
-  (EnumTypeDefinition enum_name enum_members)
-  (enum_name at next level, enum_members at next level) : schema_scope.
