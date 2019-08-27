@@ -50,41 +50,7 @@ Section WellFormedness.
     
     Variable (s : graphQLSchema).
 
-     
     
-    (** *** Valid argument's type
-
-       The following predicate checks whether a given type is valid for a field argument.
-       
-       This is necessary when checking that an Object or Interface type is well-formed.
-
-        
-       #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-
-       **** Observations:
-       - IsInputType : This predicate is named "IsInputType" in the spec but here it is renamed to make it more clear
-         that it is a check on the argument's type.
-
-       - InputObject : The spec allows the Input Object type as well as the
-         scalar and enum types, but since we are not currently implementing it, 
-         we discard it in this definition.
-
-       - Non-Null type : Similarly as the previous point.
-
-       #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-       **** Spec Reference
-       - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Input-and-Output-Types'>Input and Output Types</a># 
-       - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Field-Arguments'>Field Arguments</a>#
-        - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Objects'>Objects (Section 'Type Validation') </a>#
-        - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Interfaces'>Interfaces (Section 'Type Validation')</a># 
-    *)
-    Equations is_valid_argument_type (ty : type) : bool :=
-      {
-        is_valid_argument_type [ ty ] := is_valid_argument_type ty;
-        is_valid_argument_type (NamedType name) := is_scalar_type s name || is_enum_type s name
-      }.
-
-
     (** ---- *)
     (** *** Valid field's return type 
         
@@ -119,7 +85,7 @@ Section WellFormedness.
     (** *** Well-formed Argument
 
       The following predicate checks whether an argument definition is well-formed.
-      This is done simply by checking that its type is a valid type for an argument. 
+      This is done by simply checking that its type is a valid type for an argument. 
 
       This check is necessary when checking that an Object or Interface type is well-formed.
 
@@ -129,13 +95,30 @@ Section WellFormedness.
          begins with '__' because introspection is not implemented in this 
          formalisation.
 
+      - IsInputType : The predicate that checks whether the argument type is valid
+        is named "IsInputType" in the spec. Here it is renamed to [is_valid_argument_type]
+        to make it more clear that it is a check on the argument's type.
+
+       - InputObject : The spec allows the Input Object type as well as the
+         scalar and enum types, but since we are not currently implementing it, 
+         we discard it in this definition.
+
+       - Non-Null type : Similarly as the previous point.
+
       #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
       **** Spec Reference
       - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Field-Arguments'>Field Arguments</a>#
+      - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Input-and-Output-Types'>Input and Output Types</a>#
       - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Objects'>Objects (Section 'Type Validation') </a>#
       - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Interfaces'>Interfaces (Section 'Type Validation')</a># 
      *)
     Definition is_wf_field_argument (arg : FieldArgumentDefinition) : bool :=
+      let fix is_valid_argument_type (ty : type) : bool :=
+          match ty with
+          | ListType ty' => is_valid_argument_type ty'
+          | NamedType name => is_scalar_type s name || is_enum_type s name
+          end
+      in
       is_valid_argument_type arg.(argtype).
 
 
