@@ -166,6 +166,104 @@ Section QueryConformance.
     let applicable_types := (ty_possible_types :&: parent_possible_types)%SEQ in
     applicable_types != [::].
 
+
+   (** ---- *)
+ (** 
+      query_conforms : Name → Query → Bool 
+
+      Checks whether a query conforms to a given type in the schema.
+      
+      The first parameter corresponds to the type in context where
+      the queries might live.
+
+
+      This checks the following things specified in the spec :
+
+      1. Fields are defined in the type in context.
+      
+      2. If return type is a Scalar or Enum, then it doesn't have subqueries.
+
+      3. If return type is an Object, Interface or Union, then it must have non-empty subqueries.
+
+      4. Arguments conform to the type in context.
+
+      6. Inline fragments can be spread in the given type in context.
+
+      
+      #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
+      **** Observations 
+      
+      - Fragments on composite types : The spec states that a fragment's type condition must 
+        be an Object, Interface or Union type. We argue that adding this check is a bit 
+        redundant along with [is_fragment_spread_possible], because if the type condition 
+        is not any of the previous one, then its possible types would be empty (meaning 
+        the previous predicate would be false).
+
+      - Fragment spread type existence : Similar to the previous one, the spec states that 
+        the type condition must exist in the schema. We argue again that adding this check 
+        would be a bit redundant, for similar reasons.
+
+      - P&H : We do not have a complete definition of conformance to which we could compare.
+        They mention a notion of conformance of a query wrt. the Query type.
+
+
+     #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
+     **** Spec Reference
+     
+     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Field-Selections-on-Objects-Interfaces-and-Unions-Types'>Field Selections on Objects, Interfaces and Unions Types</a>#
+     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Leaf-Field-Selections'>Leaf Field Selections</a>#
+     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Fragment-Spread-Type-Existence'>Fragment Spread Type Existence</a>#
+     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Fragments-On-Composite-Types'>Fragments on Composite Types</a>#
+     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Fragment-spread-is-possible'>Fragment spread is possible</a>#  
+
+     
+   *)
+ (* TODO: Rename? It is only a part of the whole validation process *)
+  Equations query_conforms (type_in_scope : Name) query : bool :=
+    {
+      query_conforms ty (f[[α]])
+        with lookup_field_in_type s ty f :=
+        {
+        | Some fld => (is_scalar_type s fld.(return_type) ||
+                      is_enum_type s fld.(return_type)) &&
+                      arguments_conform fld.(fargs) α;
+        | _ => false
+        };
+
+      query_conforms ty (_:f[[α]])
+        with lookup_field_in_type s ty f :=
+        {
+        | Some fld => (is_scalar_type s fld.(return_type) ||
+                      is_enum_type s fld.(return_type)) &&
+                      arguments_conform fld.(fargs) α;
+        | _ => false
+        };
+
+      query_conforms ty (f[[α]] { φ })
+        with lookup_field_in_type s ty f :=
+        {
+        | Some fld => [&& (is_object_type s fld.(return_type) || is_abstract_type s fld.(return_type)),
+                         arguments_conform fld.(fargs) α,
+                         φ != [::] &
+                         all (query_conforms fld.(return_type)) φ];
+        | _ => false
+        };
+
+      query_conforms ty (_:f[[α]] { φ })
+        with lookup_field_in_type s ty f :=
+        {
+        | Some fld => [&& (is_object_type s fld.(return_type) || is_abstract_type s fld.(return_type)),
+                         arguments_conform fld.(fargs) α,
+                         φ != [::] &
+                         all (query_conforms fld.(return_type)) φ];
+        | _ => false
+        };
+
+      query_conforms ty (on t { φ }) :=
+        [&& is_fragment_spread_possible ty t,
+         φ != [::] &
+         all (query_conforms t) φ]
+    }.
   
 
   (** ---- *)
@@ -532,103 +630,7 @@ Section QueryConformance.
  Defined.
  (* end hide *)
  
- (** ---- *)
- (** 
-      query_conforms : Name → Query → Bool 
 
-      Checks whether a query conforms to a given type in the schema.
-      
-      The first parameter corresponds to the type in context where
-      the queries might live.
-
-
-      This checks the following things specified in the spec :
-
-      1. Fields are defined in the type in context.
-      
-      2. If return type is a Scalar or Enum, then it doesn't have subqueries.
-
-      3. If return type is an Object, Interface or Union, then it must have non-empty subqueries.
-
-      4. Arguments conform to the type in context.
-
-      6. Inline fragments can be spread in the given type in context.
-
-      
-      #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-      **** Observations 
-      
-      - Fragments on composite types : The spec states that a fragment's type condition must 
-        be an Object, Interface or Union type. We argue that adding this check is a bit 
-        redundant along with [is_fragment_spread_possible], because if the type condition 
-        is not any of the previous one, then its possible types would be empty (meaning 
-        the previous predicate would be false).
-
-      - Fragment spread type existence : Similar to the previous one, the spec states that 
-        the type condition must exist in the schema. We argue again that adding this check 
-        would be a bit redundant, for similar reasons.
-
-      - P&H : We do not have a complete definition of conformance to which we could compare.
-        They mention a notion of conformance of a query wrt. the Query type.
-
-
-     #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-     **** Spec Reference
-     
-     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Field-Selections-on-Objects-Interfaces-and-Unions-Types'>Field Selections on Objects, Interfaces and Unions Types</a>#
-     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Leaf-Field-Selections'>Leaf Field Selections</a>#
-     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Fragment-Spread-Type-Existence'>Fragment Spread Type Existence</a>#
-     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Fragments-On-Composite-Types'>Fragments on Composite Types</a>#
-     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Fragment-spread-is-possible'>Fragment spread is possible</a>#  
-
-     
-   *)
- (* TODO: Rename? It is only a part of the whole validation process *)
-  Equations query_conforms (type_in_scope : Name) query : bool :=
-    {
-      query_conforms ty (f[[α]])
-        with lookup_field_in_type s ty f :=
-        {
-        | Some fld => (is_scalar_type s fld.(return_type) ||
-                      is_enum_type s fld.(return_type)) &&
-                      arguments_conform fld.(fargs) α;
-        | _ => false
-        };
-
-      query_conforms ty (_:f[[α]])
-        with lookup_field_in_type s ty f :=
-        {
-        | Some fld => (is_scalar_type s fld.(return_type) ||
-                      is_enum_type s fld.(return_type)) &&
-                      arguments_conform fld.(fargs) α;
-        | _ => false
-        };
-
-      query_conforms ty (f[[α]] { φ })
-        with lookup_field_in_type s ty f :=
-        {
-        | Some fld => [&& (is_object_type s fld.(return_type) || is_abstract_type s fld.(return_type)),
-                         arguments_conform fld.(fargs) α,
-                         φ != [::] &
-                         all (query_conforms fld.(return_type)) φ];
-        | _ => false
-        };
-
-      query_conforms ty (_:f[[α]] { φ })
-        with lookup_field_in_type s ty f :=
-        {
-        | Some fld => [&& (is_object_type s fld.(return_type) || is_abstract_type s fld.(return_type)),
-                         arguments_conform fld.(fargs) α,
-                         φ != [::] &
-                         all (query_conforms fld.(return_type)) φ];
-        | _ => false
-        };
-
-      query_conforms ty (on t { φ }) :=
-        [&& is_fragment_spread_possible ty t,
-         φ != [::] &
-         all (query_conforms t) φ]
-    }.
 
   (** ---- *)
   (**
