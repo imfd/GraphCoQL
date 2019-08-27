@@ -49,37 +49,7 @@ Section WellFormedness.
   Section Defs.
     
     Variable (s : graphQLSchema).
-
-    
-    (** ---- *)
-    (** *** Valid field's return type 
-        
-        The following predicate checks whether a given type is valid for a field's return type.
-        
-        This is necessary when checking that an Object or Interface type is well-formed.
-
-        #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-        **** Observations:
-        - IsOutputType : This predicate is named "IsOutputType" in the spec but here it is renamed to make it more clear
-          that it is a check on the field's return type.
-
-        - InputObject : The spec does not allow Input Object type to be
-           a valid return type but since we are not implementing it, we
-           simply ignore it. This allows for every other type to be a valid
-           return type (as long as it is declared in the Schema).
-
-        #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-        **** Spec Reference
-        - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Input-and-Output-Types'>Input and Output Types</a>#
-        - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Objects'>Objects (Section 'Type Validation') </a>#
-        - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Interfaces'>Interfaces (Section 'Type Validation')</a># 
-    *)
-    Equations is_valid_field_type (ty : type) : bool :=
-      {
-        is_valid_field_type [ ty ] := is_valid_field_type ty;
-        is_valid_field_type (NamedType name) := is_declared s name
-      }.
-    
+   
 
     (** ---- *)
     (** *** Well-formed Argument
@@ -99,11 +69,11 @@ Section WellFormedness.
         is named "IsInputType" in the spec. Here it is renamed to [is_valid_argument_type]
         to make it more clear that it is a check on the argument's type.
 
-       - InputObject : The spec allows the Input Object type as well as the
-         scalar and enum types, but since we are not currently implementing it, 
-         we discard it in this definition.
+        - InputObject : The spec allows the Input Object type as well as the
+          scalar and enum types, but since we are not currently implementing it, 
+          we discard it in this definition.
 
-       - Non-Null type : Similarly as the previous point.
+        - Non-Null type : Similarly as the previous point.
 
       #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
       **** Spec Reference
@@ -127,7 +97,7 @@ Section WellFormedness.
 
      The following predicate checks whether a field is well-formed. This is done by
      checking the following things:
-     - It's return type is valid.
+     - Its return type is valid.
      - There are no two arguments with the same name.
      - All of its arguments are well-formed.
 
@@ -137,13 +107,34 @@ Section WellFormedness.
      - Introspection : There is no check as to whether the argument's name 
          begins with '__' because introspection is not implemented in this 
          formalisation.
+     - IsOutputType : The predicate that checks whether the field's return type is valid
+        is named  "IsOutputType" in the spec. Here it is renamed to [is_valid_field_type] 
+        to make it more clear that it is a check on the field's return type.
+
+        - InputObject : The spec does not allow Input Object type to be
+           a valid return type but since we are not implementing it, we
+           simply ignore it. This allows for every other type to be a valid
+           return type (as long as it is declared in the Schema).
+
      - Argument's uniqueness : We could not find a reference in the spec
         stating whether it is valid or not to have repeated arguments
         but we are including this notion in this definition (although there is
         one when checking the validity of a query).
-               
+
+
+     #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
+     **** Spec Reference 
+     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Input-and-Output-Types'>Input and Output Types</a>#
+     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Objects'>Objects (Section 'Type Validation') </a>#
+     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Interfaces'>Interfaces (Section 'Type Validation')</a>#         
     *)
     Definition is_wf_field (fld : FieldDefinition) : bool :=
+      let fix is_valid_field_type (ty : type) : bool :=
+          match ty with
+          | ListType ty' => is_valid_field_type ty'
+          | NamedType name => is_declared s name
+          end
+      in
       [&& is_valid_field_type fld.(return_type),
           uniq [seq arg.(argname) | arg <- fld.(fargs)] &  (* Not currently in the spec *)
           all is_wf_field_argument fld.(fargs)].

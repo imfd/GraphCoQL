@@ -1011,9 +1011,7 @@ Section GraphQLSpecExamples.
     Let extended_schwf : extended_schema.(is_wf_schema).
     Proof.
       (* For some reason just computing gets stuck - using by [] *)
-      rewrite /is_wf_schema /= ?andbT.
-      rewrite /is_wf_field /= andbT.
-      simp is_valid_field_type.
+      rewrite /is_wf_schema /= ?andbT; simp is_interface_type.
     Qed.
 
     Let extended_wf_schema : @wfGraphQLSchema string_eqType   := WFGraphQLSchema (fun n v => true) extended_schwf.
