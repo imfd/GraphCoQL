@@ -111,9 +111,9 @@ Section Query.
   
   Set Elimination Schemes.
 
-
+  (** ---- *)
   (**
-     Defining the induction principles for Query.
+     Defining the induction principle for Query.
    *)
   Definition Query_rect (P : Query -> Type)
              (Pl : seq Query -> Type)
@@ -168,8 +168,58 @@ Section Query.
         end.
 
 
+    
+End Query.
+(** ---- *)
 
+Arguments Query [Vals].
+Arguments SingleField [Vals].
+Arguments LabeledField [Vals].
+Arguments NestedField [Vals].
+Arguments NestedLabeledField [Vals].
+Arguments InlineFragment [Vals].
 
+(** *** Notations 
+      
+      Notations follow closely to the ones used in Pérez & Hartig.
+
+ *)
+Delimit Scope query_scope with QUERY.
+Open Scope query_scope.
+
+(* Maybe we could add formatting *)
+(* We are using double brackets because there is too much conflict with these notations and
+   others already used... And I don't really get how to fix it *)
+Notation "f [[ α ]]" := (SingleField f α) (at level 20, α at next level) : query_scope.
+Notation "l : f [[ α ]]" := (LabeledField l f α) (at level 20, f at next level, α at next level)  : query_scope.
+Notation "f [[ α ]] { φ }" := (NestedField f α φ) (at level 20, α at next level, φ at next level) : query_scope.
+Notation "l : f [[ α ]] { φ }" := (NestedLabeledField l f α φ)
+                                 (at level 20, f at next level, α at next level, φ at next level)  : query_scope.
+Notation "'on' t { φ }" := (InlineFragment t φ) (t at next level, φ at next level) : query_scope.
+
+(** ---- *)
+
+(** 
+    #<div>
+        <a href='GraphCoQL.Schema.html' class="btn btn-light" role='button'> Previous ← SchemaWellFormedness  </a>
+        <a href='GraphCoQL.QueryConformance.html' class="btn btn-info" role='button'>Continue Reading → QueryConformance </a>
+    </div>#
+*)
+
+(* begin hide *)
+Section Equality.
+
+  Variable (Vals : eqType).
+  
+  (** ** Equality 
+     This section deals with some SSReflect bureaucratic things, in particular 
+     establishing that a Query has decidable procedure to establish equality (they belong to the 
+     SSReflect type - eqType).
+
+     This is basically done by establishing isomorphisms between the different structures
+     to others that already have a decidable procedure.
+   *)
+  
   (**
      Declaring functions to establish isomorphism of Query to GenTree, allowing us 
      to later prove that Query has a decidable equality procedure.
@@ -201,7 +251,7 @@ Section Query.
 
      This could be generalised.
    *)
-  Fixpoint get_subqueries (queries : seq (option Query)) : seq Query :=
+  Fixpoint get_subqueries (queries : seq (option (@Query Vals))) : seq Query :=
     match queries with
       | [::] => [::]
       | ((Some q) :: tl) => q :: get_subqueries tl
@@ -264,30 +314,5 @@ Section Query.
 
 
 
-  
-
-    
-End Query.
-
-Arguments Query [Vals].
-Arguments SingleField [Vals].
-Arguments LabeledField [Vals].
-Arguments NestedField [Vals].
-Arguments NestedLabeledField [Vals].
-Arguments InlineFragment [Vals].
-
-
-(**
-   Notations follow closely to the ones used in J&O.
- *)
-Delimit Scope query_scope with QUERY.
-Open Scope query_scope.
-
-(* Maybe we could add formatting *)
-
-Notation "f [[ α ]]" := (SingleField f α) (at level 20, α at next level) : query_scope.
-Notation "l : f [[ α ]]" := (LabeledField l f α) (at level 20, f at next level, α at next level)  : query_scope.
-Notation "f [[ α ]] { φ }" := (NestedField f α φ) (at level 20, α at next level, φ at next level) : query_scope.
-Notation "l : f [[ α ]] { φ }" := (NestedLabeledField l f α φ)
-                                 (at level 20, f at next level, α at next level, φ at next level)  : query_scope.
-Notation "'on' t { φ }" := (InlineFragment t φ) (t at next level, φ at next level) : query_scope.
+End Equality.
+(* end hide *)
