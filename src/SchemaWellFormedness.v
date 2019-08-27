@@ -31,11 +31,10 @@ Require Import SchemaAux.
 
     #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
     
-    We will progressively define predicates that check if a structure is well-formed
-    and from them build up to ultimately define a well-formed GraphQL Schema, which will 
-    be the collection of predicates defined previously.  
-
-    This predicates will validate arguments, fields, implementations of objects, and so on.
+    We will progressively define predicates that check if a structure is well-formed;
+    check if an argument is well-formed, then a field, the implementation of an interface, etc.
+    From these we will ultimately define a well-formed GraphQL Schema, which will 
+    be the collection of the predicates defined previously.  
 
  *)
 
