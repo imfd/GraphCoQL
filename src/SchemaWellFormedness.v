@@ -199,8 +199,31 @@ Section WellFormedness.
     (** ---- *)
     (** *** Well-formed TypeDefinition
 
-        Using Schema as the lookup function in the schema (Schema : Name -> TypeDefinition).
+        The following predicate checks whether a type definition is well-formed.
+        This is used when checking that a Schema is well-formed.
+        Later on we will check that there are no duplicated names in the type definitions;
+        this predicate only checks for a particular definition and see if it holds by itself.
 
+        The rules are the following:
+        - Scalar: Nothing to check, scalars are ok by themselves.
+        - Object: 
+          - Fields are not empty.
+          - There are no duplicated field names.
+          - Fields are well-formed.
+          - There are no duplicated names in the list of implemented interfaces.
+          - Names in the list of implemented interfaces are _actually_ defined as interfaces in
+            the Schema.
+          - Every interface in the list of implemented interfaces is correctly implemented. 
+        - Interface:
+          - Fields are not empty. 
+          - There are no duplicated field names.
+          - Fields are well-formed.
+        - Union:
+          - Members are not empty. 
+          - There are no duplicated member names.
+          - Every member is _actually_ defined as an Object type in the Schema.
+        - Enum:
+          - Members are not empty.
 
                    
      #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
