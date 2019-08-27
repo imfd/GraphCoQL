@@ -17,28 +17,34 @@ Require Import SchemaAux.
 
 (* end hide *)
 
+(**
+   #<div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">Schema Well-formedness</h1>
+        <p class="lead">
+         This file contains the necessary definitions to validate 
+         when a GraphQL Schema is well-formed. 
+        </p>
 
-(** * Schema Well-Formedness
-
-    This file contains the necessary definitions to validate 
-    when a GraphQL Schema is well-formed. 
-
-    This notion includes things such as: 
-    - An object type cannot have empty fields.
-    - A field's return type must be defined in the Schema.
-    - Union type must contain existent object types.
-    - Etc.
-
-    #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-    
-    We will progressively define predicates that check if a structure is well-formed;
+        <p>
+         This notion includes things such as: 
+         <ul>
+           <li> An object type cannot have empty fields. </li>
+           <li> A field's return type must be defined in the Schema. </li>
+           <li> Union type must contain existent object types. </li>
+           <li> Etc. </li>
+         </ul>
+        </p>
+        <p>
+         We will progressively define predicates that check if a structure is well-formed;
     check if an argument is well-formed, then a field, the implementation of an interface, etc.
     From these we will ultimately define a well-formed GraphQL Schema, which will 
     be the collection of the predicates defined previously.  
-
+        </p>
+  </div>
+</div>#
  *)
 
-(** ---- *)
 
 Section WellFormedness.
 
@@ -330,9 +336,9 @@ End WellFormedness.
 
 
 (** 
-    #<div class="btn-group" role="group" aria-label="Basic example">
-        <a href='GraphCoQL.Schema.html' class="btn btn-light"> Previous ← Schema  </a>
-        <a href='GraphCoQL.Query.html' class="btn btn-info">Continue Reading → Query </a>
+    #<div>
+        <a href='GraphCoQL.Schema.html' class="btn btn-light" role='button'> Previous ← Schema  </a>
+        <a href='GraphCoQL.Query.html' class="btn btn-info" role='button'>Continue Reading → Query </a>
     </div>#
 *)
 

@@ -19,16 +19,32 @@ Notation EnumValue := string.
 
 (* end hide *)
 
+(**
+   #<div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">GraphQL Schema</h1>
+        <p class="lead">
+         This file contains the basic definitions necessary to build a GraphQL Schema. 
+        </p>
 
-(** * GraphQL Schema 
+        <p>
+         Some of these are: Type definitions (Objects, Interfaces, etc.), Field definitions and its arguments, amongst others.
+        </p>
+        <p>
+        These definitions allow building a Schema but they do not guarantee that the schema is well-formed.
+        This notion of well-formedness is covered in the <a href='GraphCoQL.SchemaWellFormedness.html'>SchemaWellFormedness</a> file.
     
-    This file contains the basic definitions necessary to build a GraphQL Schema.
+        </p>
+  </div>
+</div>#
+ *)
 
-    Some of these are: Type definitions (Objects, Interfaces, etc.), Field definitions and its arguments, amongst others.
-
-    These definitions allow building a Schema but they do not guarantee that the schema is well-formed.
-    This notion of well-formedness is covered in the file _SchemaWellFormedness_.
+(** *  
+    
+    
    
+
+     
  *)
   
 Section Schema.
@@ -284,11 +300,21 @@ Notation "'Enum' enum_name '{' enum_members '}'" :=
     (enum_name at next level, enum_members at next level) : schema_scope.
 
 
-(** #<a href='GraphCoQL.SchemaWellFormedness.html' class="btn btn-info">Continue Reading → Schema Well-Formedness </a># *)
-
 
 (** ---- *)
 
+(**
+   We also establish that all these structures have a decidable procedure for equality but 
+   we omit them here, as they are mostyl bureaucratic things (they may still be seen in the source code).
+ *)
+
+(** ---- *)
+
+(** #<a href='GraphCoQL.SchemaWellFormedness.html' class="btn btn-info" role='button'>Continue Reading → Schema Well-Formedness </a># *)
+
+
+
+(* begin hide *)
 Section Equality.
   (** ** Equality 
      This section deals with some SSReflect bureaucratic things, in particular 
@@ -407,4 +433,4 @@ Section Equality.
 
   
 End Equality.
-
+(* end hide *)
