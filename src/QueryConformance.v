@@ -127,13 +127,21 @@ Section QueryConformance.
       
       #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
       **** Spec Reference 
+      - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Validation.Arguments'>Validation - Arguments</a># 
+      - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Argument-Names'>Argument Names</a>#
       - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Argument-Uniqueness'>Argument Uniqueness</a>#
       - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Required-Arguments'>Required Arguments</a>#
       - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Values-of-Correct-Type'>Values of Correct Type</a>#
 
    **)
   Definition arguments_conform (args : seq FieldArgumentDefinition) (α : seq (Name * Vals)) : bool :=
-    all (argument_conforms args) α && uniq [seq arg.1 | arg <- α].
+    let argument_conforms (arg : Name * Vals) : bool :=
+        let: (argname, value) := arg in
+        has (fun argdef =>
+               let: FieldArgument name ty := argdef in
+                    (name == argname) && s.(has_type) ty value) args
+    in
+    all argument_conforms α && uniq [seq arg.1 | arg <- α].
      
 
 
@@ -657,7 +665,6 @@ Section QueryConformance.
  
 End QueryConformance.
 
-Arguments argument_conforms [Vals].
 Arguments arguments_conform [Vals].
 
 Arguments is_fragment_spread_possible [Vals].
