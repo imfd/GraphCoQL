@@ -160,6 +160,64 @@ Section SchemaAux.
 
     Definition is_leaf_type (ty : Name) : bool :=
       is_scalar_type ty || is_enum_type ty.
+
+
+
+    (** *** Subtyping relation.
+        Using Schema as the lookup function in the schema (Schema : Name -> TypeDefinition).
+
+   
+                 [―――――――――――――――――] (ST_Refl) #<br>#
+                       ty <: ty
+
+                  
+        Schema(O) = type O implements ... I ... { ... }  #<br>#
+                Schema(I) = interface I { ...}           #<br>#
+       [――――――――――――――――――――――――――――――――――――――――――――――] (ST_Object) #<br>#
+                         O <: I
+
+           
+                         T <: U                         #<br>#
+                [―――――――――――――――――――――] (ST_ListType)   #<br>#
+                       [T] <: [U]
+                       
+
+    ----
+    **** Observations
+
+        1. Limitations : Subtyping is strictly between objects and interfaces.
+           There cannot be an object that is subtype of another, as well as an
+           interface implementing another interface.
+
+        2. Transitivity : Because of the limitation, there is no need to specify
+           or worry about transitivity of the relation.
+
+        #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Objects'> See also: Object Type Validation subsection </a>#
+
+        #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Interfaces'> See also: Interface Type Validation subsection </a>#
+    *)
+    Reserved Infix "<:" (at level 60).
+    Fixpoint is_subtype (ty ty' : type) : bool :=
+      match ty, ty' with
+      | NamedType name, NamedType name' => 
+        match lookup_type name, lookup_type name' with
+        | Some (Scalar name), Some (Scalar name') => name == name'
+        | Some (Enum name { _ }), Some (Enum name' { _ }) => name == name'
+        | Some (Object name implements _ { _ }), Some (Object name' implements _ { _ }) => name == name'
+        | Some (Interface name { _ }), Some (Interface name' { _ }) => name == name'
+        | Some (Union name { _ }), Some (Union name' { _ }) => name == name'
+        | Some (Object name implements interfaces { _ }), Some (Interface name' { _ }) => name' \in interfaces
+        | Some (Object name implements _ { _ }), Some (Union name' { members }) => name \in members
+        | _, _ => false
+        end
+
+      | ListType ty1, ListType ty2 => (ty1 <: ty2)
+
+      | _, _ => false
+      end
+
+    where "ty1 <: ty2" := (is_subtype ty1 ty2).
+
     
   End TypePredicates.
   
@@ -298,3 +356,4 @@ Section SchemaAux.
 End SchemaAux.
 
 
+Notation "s ⊢ ty1 <: ty2" := (is_subtype s ty1 ty2) (at level 50, ty1 at next level) : schema_scope.

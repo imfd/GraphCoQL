@@ -51,61 +51,7 @@ Section WellFormedness.
     Variable (s : graphQLSchema).
 
     
-    (** *** Subtyping relation.
-        Using Schema as the lookup function in the schema (Schema : Name -> TypeDefinition).
-
-   
-                 [―――――――――――――――――] (ST_Refl) #<br>#
-                       ty <: ty
-
-                  
-        Schema(O) = type O implements ... I ... { ... }  #<br>#
-                Schema(I) = interface I { ...}           #<br>#
-       [――――――――――――――――――――――――――――――――――――――――――――――] (ST_Object) #<br>#
-                         O <: I
-
-           
-                         T <: U                         #<br>#
-                [―――――――――――――――――――――] (ST_ListType)   #<br>#
-                       [T] <: [U]
-                       
-
-    ----
-    **** Observations
-
-        1. Limitations : Subtyping is strictly between objects and interfaces.
-           There cannot be an object that is subtype of another, as well as an
-           interface implementing another interface.
-
-        2. Transitivity : Because of the limitation, there is no need to specify
-           or worry about transitivity of the relation.
-
-        #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Objects'> See also: Object Type Validation subsection </a>#
-
-        #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Interfaces'> See also: Interface Type Validation subsection </a>#
-    *)
-    Reserved Infix "<:" (at level 60).
-    Fixpoint is_subtype (ty ty' : type) : bool :=
-      match ty, ty' with
-      | NamedType name, NamedType name' => 
-        match lookup_type s name, lookup_type s name' with
-        | Some (Scalar name), Some (Scalar name') => name == name'
-        | Some (Enum name { _ }), Some (Enum name' { _ }) => name == name'
-        | Some (Object name implements _ { _ }), Some (Object name' implements _ { _ }) => name == name'
-        | Some (Interface name { _ }), Some (Interface name' { _ }) => name == name'
-        | Some (Union name { _ }), Some (Union name' { _ }) => name == name'
-        | Some (Object name implements interfaces { _ }), Some (Interface name' { _ }) => name' \in interfaces
-        | Some (Object name implements _ { _ }), Some (Union name' { members }) => name \in members
-        | _, _ => false
-        end
-
-      | ListType ty1, ListType ty2 => (ty1 <: ty2)
-
-      | _, _ => false
-      end
-
-    where "ty1 <: ty2" := (is_subtype ty1 ty2).
-
+    
     
     
     
@@ -239,7 +185,7 @@ Section WellFormedness.
     Definition is_valid_field_implementation (object_field interface_field : FieldDefinition) : bool :=
       [&& object_field.(fname) == interface_field.(fname),
           all (mem object_field.(fargs)) interface_field.(fargs) & 
-          object_field.(return_type) <: interface_field.(return_type)].
+          s ⊢ object_field.(return_type) <: interface_field.(return_type)].
     
 	
 
@@ -407,4 +353,3 @@ End WellFormedness.
 
 Arguments wfGraphQLSchema [Vals].
 
-Notation "s ⊢ ty1 <: ty2" := (is_subtype s ty1 ty2) (at level 50, ty1 at next level) : schema_scope.
