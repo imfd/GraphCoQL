@@ -90,27 +90,26 @@ Section QueryConformance.
      
      Having said that, we can now begin defining the necessary properties.
 
-     We will start by establishing when arguments are valid wrt. a list of Field definitions obtained from a 
-     particular type.
+     We will start by establishing when arguments are valid wrt. a list of Field Arguments obtained from a 
+     particular type and field.
    *)
   
   
   (** ---- *)
-  (**
-      arguments_conform : List FieldArgumentDefinition → List (Name * Vals) → Bool
+  (** *** Arguments conform 
 
-      Checks whether a list of arguments (described as a pairing between names and values)
-      conform to a set of fields defined in the schema.
+      #<strong>arguments_conform</strong># : List FieldArgumentDefinition → List (Name * Vals) → Bool
 
+      The following predicate checks whether a list of arguments (described as a pairing between names and values)
+      conform to a list of field arguments.
+      
       This is used when checking whether a field selection conforms to a type in the schema.
-      The arguments passed on to the field selection must actually exist for the corresponding 
-      field defined in the schema and the values must be of a valid type (eg. if argument requires 
-      an Int, then an "Int" value must be passed on when querying).
 
-
-      ∀ argument ∈ α, argument conforms Args ∧ α.names are_unique    #<br>#
-      [――――――――――――――――――――――――――――――――――――――――――――――――――――――――――]   #<br>#
-                    α conform Args                                                 
+      For a query argument to be valid it must satisfy the following:
+      - There exists an argument definition with the same name.
+      - The value given to the query argument must be of the "same type" as the type 
+        associated to the argument definition in the Schema (eg. if the argument requires 
+        an Int, then an "Int" value must be passed on when querying).      
       
 
       #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
@@ -134,6 +133,8 @@ Section QueryConformance.
   Definition arguments_conform (args : seq FieldArgumentDefinition) (α : seq (Name * Vals)) : bool :=
     let argument_conforms (arg : Name * Vals) : bool :=
         let: (argname, value) := arg in
+        (* ∃ argdef ∈ args, 
+           argdef.name = argname ∧ value has_type argdef.type *)
         has (fun argdef =>
                let: FieldArgument name ty := argdef in
                     (name == argname) && s.(has_type) ty value) args
