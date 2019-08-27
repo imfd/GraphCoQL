@@ -61,45 +61,42 @@ Section QueryConformance.
   Variable s : @wfGraphQLSchema Vals.
  
   (**
-     First of all, we will begin by establishing what it means for arguments of a field selection to be valid.
-     In essence, we need to compare the arguments we are using in our queries to the corresponding 
-     fields' arguments defined in some type in the Schema.
+     First of all, we will begin by establishing some basic properties that queries must satisfy and then 
+     we will move onto some more involved ones. Some of these basic properties are: 
+     - The arguments of a field selection must be valid.
+     - The field name used to query is actually defined in the Schema.
+     - Fragments' types are valid 
+     - etc. 
      
-     ----
+     One important notion that we must keep at all times is that queries are evaluated with a given type in context.
+     This means that when we check if a field selection is valid, it is valid wrt. the given type in context.
+
+     For example, we might have the following type :
+     
+     #<img src='../imgs/Schema/type_query.png'>#
+
+     Followed by this query:
+
+     #<img src='../imgs/Query/query1.png'>#
+
+     
+     We know that the field selection _hero_ is performed over the type _Query_, then if we want to validate _hero_ it has to be wrt. _Query_.
+
+     Similarly, we know that _name_ nested inside _hero_ is defined in a context with _Character_ as its type, 
+     while the field selection _name_ nested inside _droid_ is defined in a context where its type is _Droid_.     
+     
+     Therefore, whenever we want to validate queries we must do it keeping in mind the type where it's being applied.
+     
+     
+     Having said that, we can now begin defining the necessary properties.
+
+     We will start by establishing when arguments are valid wrt. a list of Field definitions obtained from a 
+     particular type.
    *)
   
-  (** Argument conforms 
-
-      argument_conforms : List FieldArgumentDefinition → Name * Vals → Bool 
-
-      Checks whether a query's argument (argument name & value associated) conforms to an argument
-      of a field defined in the schema.
-      
-      This is used when checking whether a field selection conforms to a type in the schema.
-      The arguments passed on to the field selection must actually exist for the corresponding 
-      field defined in the schema and the values must be of a valid type (eg. if argument requires 
-      an Int, then an "Int" value must be passed on when querying).
-
-      ∃ argument ∈ Args, argument.argname = α.name ∧ α.value has_type argument.argtype     #<br>#
-      [―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――]    #<br>#
-                                 α conforms Args
-
-
-     #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-     **** Spec Reference
-     
-     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Validation.Arguments'>Validation - Arguments</a># 
-     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Argument-Names'>Argument Names</a>#
-     
-
-   **)
-  Definition argument_conforms (args : seq FieldArgumentDefinition) (arg : Name * Vals) : bool :=
-    let: (argname, value) := arg in
-    has (fun argdef => let: FieldArgument name ty := argdef in
-                    (name == argname) && s.(has_type) ty value) args.
   
   (** ---- *)
-  (** 
+  (**
       arguments_conform : List FieldArgumentDefinition → List (Name * Vals) → Bool
 
       Checks whether a list of arguments (described as a pairing between names and values)
