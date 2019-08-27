@@ -139,121 +139,84 @@ Section WellFormedness.
           all is_wf_field_argument fld.(fargs)].
 
 
-    (** ---- *)
-    (** *** Valid field implementation
-
-    This checks whether a field is valid w/r to another. This is used to check 
-    whether an Object type is correctly implementing an interface's fields.
-    
-    It checks the following:
-      1. Both fields have the same name.
-      2. The arguments of the interface field must be a subset of the object's arguments
-         (the types of the arguments are invariant, therefore we can simply check that it's a subset).
-      3. The object's field return type must be a subtype of the interface's field.
-
-     
-    Observations:
-    1. Non-null extra arguments : The spec requires that any additional argument included in the object's
-       field must not be of a non-null type. Since we do not implement non-null types, we are not including 
-       this check. 
-    2. J&O : In Jorge and Olaf's paper, there is no check regarding arguments between an object 
-       type and its interface.
-
-      https://graphql.github.io/graphql-spec/June2018/#sec-Objects (Section 'Type Validation')
-    *)
-    Definition is_valid_field_implementation (object_field interface_field : FieldDefinition) : bool :=
-      [&& object_field.(fname) == interface_field.(fname),
-          all (mem object_field.(fargs)) interface_field.(fargs) & 
-          s ⊢ object_field.(return_type) <: interface_field.(return_type)].
-    
-	
-
 
     (** ---- *)
     (** *** Valid interface implementation
 
-     This checks whether an object type correctly implements an interface, 
-     by properly implementing every field defined in the interface.
+     The following predicate checks whether an object correctly implements an interface,
+     by properly implementing _every_ field defined in the interface.
+
+     To properly implement an interface field, there must exist a field in the object type 
+     such that:
+     - The object's field has the same name as the interface's.
+     - The arguments of the interface field must be a subset of the arguments contained in the object's field
+       (the types of the arguments are invariant, therefore we can simply check that it's a subset).
+     - The object's field return type must be a subtype of the interface's field return type.
+
      Using Schema as the lookup function in the schema (Schema : Name -> TypeDefinition).
 
 
-            Schema(O) = type O implements ... I ... { Flds }   
-                    Schema(I) = interface I { Flds' }
-      ∀ ifld ∈ Flds', ∃ ofld ∈ Flds s.t ofld is_valid_field_implementation ifld
-            ------------------------------------------------
-                        O implements_correctly I
 
 
-     Observations:
-     1. Implementation : From an implementation point of view, this definition might seem
+     #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
+     **** Observations
+     - Non-null extra arguments : The spec requires that any additional argument included in the object's
+       field must not be of a non-null type. Since we do not implement non-null types, we are not including 
+       this check. 
+     - J&O : In Perez & Hartig's paper, there is no check regarding arguments between an object 
+       type and its interface. This is posteriorly included in Hartig's and Hidders 
+       "Defining Schemas for Property Graphs by using the GraphQL Schema Definition Language" work.
+     - Implementation : From an implementation point of view, this definition might seem
         a bit redundant (considering its posterior use). For the moment it is left here 
         for readibility purposes.
+
+     #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
+     **** Spec Reference 
+     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Objects'>Objects (Section 'Type Validation') </a>#
+    
      *)
-    Definition implements_interface_correctly (object_type interface_type : Name) : bool :=
-      let interface_fields := fields s interface_type in
-      let object_fields := fields s object_type in
-      all (fun ifld => has (fun ofld => is_valid_field_implementation ofld ifld) object_fields) interface_fields.
+    Definition implements_interface_correctly (object_tdef : TypeDefinition) (interface_type : Name) : bool :=
+      match object_tdef, lookup_type s interface_type with
+      | Object _ implements _ { object_fields }, Some (Interface _ { interface_fields }) =>
+        (* ∀ interface_field ∈ interface_fields, 
+           ∃ object_field ∈ object_fields, 
+             object_field.name = interface_field.name ∧
+             interface_field.arguments ⊆ object_field.arguments ∧
+             object_field.return_type <: interface_field.return_type 
+         *)
+        all (fun interface_field =>
+               has (fun object_field =>
+                      [&& object_field.(fname) == interface_field.(fname),
+                       all (mem object_field.(fargs)) interface_field.(fargs) & 
+                       s ⊢ object_field.(return_type) <: interface_field.(return_type)]
+                   ) object_fields
+            ) interface_fields
+      | _, _ => false
+      end.
     
 
     
     (** ---- *)
-    (** ** TypeDefinition Well-formedness
+    (** *** Well-formed TypeDefinition
+
         Using Schema as the lookup function in the schema (Schema : Name -> TypeDefinition).
 
 
-                       Schema(S) = scalar S 
-                       -----------------------
-                           scalar S is_wf_type_def
-
-
-                 Schema(O) = Object O implements Intfs { Flds }
-                           Flds ≠ ∅
-                           Flds are_unique
-                    ∀ field ∈ Flds, field is_wf_field
-                           Intfs are_unique
-                  ∀ intf ∈ Intfs, S(intf) = interface intf { ... }
-                  ∀ intf ∈ Intfs, O implements_interface_correctly intf 
-                -----------------------------------------
-                  Object O implements Intfs { Flds } is_wf_type_def
-
-
-
-                    Schema(I) = interface I { Flds }
-                           Flds ≠ ∅
-                          Flds are_unique
-                         ∀ field ∈ Flds, field is_wf_field
-                ----------------------------------------
-                        interface I { Flds }  is_wf_type_def
-
-
-
-                       Schema(U) = union U { Mbs }
-                           Mbs ≠ ∅
-                         Mbs are_unique
-                     ∀ mb ∈ Mbs, Schema(mb) = Object mb implements ... { ... }
-                -----------------------------------------
-                          union U { Mbs } is_wf_type_def
-
-
-                       Schema(E) = enum E { Evs }
-                           Evs ≠ ∅
-                          Evs are_unique
-                -----------------------------------------
-                          enum E { Evs } 
-
-
-
-     Observations:
-     1. Enums : The spec does not specify whether the enum members must be different from 
-        other defined types in the schema (eg. Object type 'Human' cannot be part of a 
-        defined Enum type).
+                   
+     #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
+     **** Observations
+     - Enums : The spec does not specify whether the enum members must be different from 
+       other defined types in the schema (eg. Object type 'Human' cannot be part of a 
+       defined Enum type). We follow the same approach.
      
-
-     https://graphql.github.io/graphql-spec/June2018/#sec-Scalars
-     https://graphql.github.io/graphql-spec/June2018/#sec-Objects (Section 'Type Validation')
-     https://graphql.github.io/graphql-spec/June2018/#sec-Interfaces (Section 'Type Validation')
-     https://graphql.github.io/graphql-spec/June2018/#sec-Unions (Section 'Type Validation')
-     https://graphql.github.io/graphql-spec/June2018/#sec-Enums (Section 'Type Validation')
+     
+     #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
+     **** Spec Reference
+     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Scalars'>Scalars</a># 
+     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Objects'>Objects (Section 'Type Validation') </a>#
+     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Interfaces'>Interfaces (Section 'Type Validation')</a>#   
+     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Unions'>Unions (Section 'Type Validation') </a>#
+     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Enums'>Enums (Section 'Type Validation')</a>#
      *)
     Fixpoint is_wf_type_def (tdef : TypeDefinition) : bool :=
       match tdef with
@@ -265,7 +228,7 @@ Section WellFormedness.
             all is_wf_field fields,
             uniq interfaces,
             all (is_interface_type s) interfaces &
-            all (implements_interface_correctly name) interfaces]
+            all (implements_interface_correctly tdef) interfaces]
  
       | Interface _ { fields } =>
         [&& fields != [::],

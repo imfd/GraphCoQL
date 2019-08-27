@@ -43,20 +43,20 @@ Section Theory.
      ∀ ifields ∈ interface.fields →
        ∃ ofield ∈ object.fields, ofield is_valid_field_implementation ifield.
    *)
-  Lemma implements_interface_correctlyP (object_type interface_type : string) :
-    reflect (forall ifield, ifield \in fields s interface_type ->
-                          exists2 ofield, ofield \in fields s object_type & is_valid_field_implementation s ofield ifield)
-            (implements_interface_correctly s object_type interface_type).
-  Proof.
-    apply: (iffP idP).
-    - rewrite /implements_interface_correctly => /allP H.
-      by move=> ifield /H /hasP [ofield Hin Hok]; exists ofield.
-    - move=> H.
-      rewrite /implements_interface_correctly.
-      apply/allP => ifield Hin.
-      apply/hasP.
-      by move: (H ifield Hin) => [ofield Hin' Hok]; exists ofield.
-  Qed.
+  (* Lemma implements_interface_correctlyP (object_type interface_type : string) : *)
+  (*   reflect (forall ifield, ifield \in fields s interface_type -> *)
+  (*                         exists2 ofield, ofield \in fields s object_type & is_valid_field_implementation s ofield ifield) *)
+  (*           (implements_interface_correctly s object_type interface_type). *)
+  (* Proof. *)
+  (*   apply: (iffP idP). *)
+  (*   - rewrite /implements_interface_correctly => /allP H. *)
+  (*     by move=> ifield /H /hasP [ofield Hin Hok]; exists ofield. *)
+  (*   - move=> H. *)
+  (*     rewrite /implements_interface_correctly. *)
+  (*     apply/allP => ifield Hin. *)
+  (*     apply/hasP. *)
+  (*     by move: (H ifield Hin) => [ofield Hin' Hok]; exists ofield. *)
+  (* Qed. *)
 
   (**
      This lemma states that the query type in the schema is an Object type.
