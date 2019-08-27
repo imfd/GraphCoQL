@@ -16,63 +16,77 @@ Notation Name := string.
 
 (* end hide *)
 
+(**
+   #<div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">GraphQL Query</h1>
+        <p class="lead">
+         This file contains the basic definitions necessary to build a GraphQL Query. 
+        </p>
+         <p>
+        These definitions allow building a Query but they do not guarantee that it is valid wrt. to a Schema.
+        This notion of conformance/validation is covered in the <a href='GraphCoQL.QueryConformance.html'>QueryConformance</a> file.
+    
+        </p>
+  </div>
+</div>#
+ *)
+
 Section Query.
   
-  (**
-     Represents any possible value used in a Query (arguments). 
-     The only requirement is that it must have a decidable procedure 
-     for equality.
-   *)
   Variables Vals : eqType.
 
-  (** Unsetting because the automatically generated induction principle 
-      is not good enough.
+  (**
+     We start by defining the Query syntax.
    *)
+  
+  (* Unsetting because the automatically generated induction principle is not good enough. *)
   Unset Elimination Schemes.
 
   (** ** Query 
       
-      A Query corresponds to an atomic selection in a GraphQL query. 
+      A Query corresponds to an atomic selection one may perform in a GraphQL service. 
       It can either be a field selection or an inline fragment.
       
       A query can be seen as a tree, where fields without subqueries would 
-      represent the leaves of the tree, while fields and inline fragments with 
-      subqueries represent inner nodes.
+      represent the leaves of the tree and fields with subqueries, as well as 
+      inline fragments with represent inner nodes.
 
-  ----
-  **** Observations
+      #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
+      **** Observations
 
-  1. Type naming : In the spec, an atomic query is referred as a "Selection" and 
-     the collective as "Selection Sets". Here we preferred to give the 
-     name "Query" to an atomic selection instead and a list of Query will 
-     be referred as queries.
+      - Naming : In the spec, an atomic query is referred as a "Selection" and 
+        the collective as "Selection Sets". Here, we preferred to give the 
+        name "Query" to the type of an atomic selection instead and a list of Query will 
+        be referred as queries. Both "query" and "queries" might be used interchangeably, 
+        assuming that it is understood by context.
 
-  2. Directives : Currently not implemented.
+      - Directives : Currently not implemented.
 
-  3. Syntax : According to the spec, the "opt" keyword means 
-     there are two constructors; one with the element and one without. 
-     For arguments we just decided to use a list, and represent the optional 
-     via the empty list.
+      - Syntax : According to the spec, the "opt" keyword means 
+        there are two constructors; one with the element and one without. 
+        For arguments we just decided to use a list, and represent the optional 
+        via the empty list.
 
-  4. J&O : Jorge and Olaf put the list of queries at the same level as the 
-     atomic selections. This differs from the spec and from our implementation, 
-     where we consider them separately. Allowing both at the same level would
-     permit any shape of query tree to be generated (eg. the first element of a list of queries 
-     could be another list, with nested lists inside, etc.). This would 
-     require to be flatten the queries eventually to check for conformance or other properties.
+      - P&H : Pérez & Hartig put the list of queries at the same level as the 
+        atomic selections. This differs from the spec and from our implementation, 
+        where we consider them separately. Allowing both at the same level would
+        permit any shape of query tree to be generated (eg. the first element of a list of queries 
+        could be another list, with nested lists inside, etc.). This would 
+        require to flatten the queries eventually to check for conformance or other properties.
 
-  5. Fragment spread : Currently not implemented. As pointed out in J&O, fragment spreads are a 
-     convenience over inline fragments, therefore we prefer not to include them for the moment.
+      - Fragment spread : Currently not implemented. As pointed out in J&O, fragment spreads are a 
+        convenience over inline fragments, therefore we prefer not to include them for the moment.
 
-  6. Variables : Currently not implemented. Similarly to fragment spreads, we prefer to not
-     include them for the moment.
+      - Variables : Currently not implemented. Similarly to fragment spreads, we prefer to not
+      include them for the moment.
 
-  ----
-  **** See also
+      #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
+      **** Spec Reference
      
-     https://graphql.github.io/graphql-spec/June2018/#Selection      
-
-     https://graphql.github.io/graphql-spec/June2018/#sec-Selection-Sets 
+      - #<a href='https://graphql.github.io/graphql-spec/June2018/##Selection'>Selection</a>#      
+      - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Selection-Sets'>Selection Sets</a>#
+      
   *)
   Inductive Query : Type :=
   | SingleField (name : Name)
