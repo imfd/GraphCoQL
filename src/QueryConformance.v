@@ -132,12 +132,8 @@ Section QueryConformance.
    **)
   Definition arguments_conform (args : seq FieldArgumentDefinition) (α : seq (Name * Vals)) : bool :=
     let argument_conforms (arg : Name * Vals) : bool :=
-        let: (argname, value) := arg in
-        (* ∃ argdef ∈ args, 
-           argdef.name = argname ∧ value has_type argdef.type *)
-        has (fun argdef =>
-               let: FieldArgument name ty := argdef in
-                    (name == argname) && s.(has_type) ty value) args
+        let: (name, value) := arg in
+        has (fun argdef => (argdef.(argname) == name) && s.(has_type) argdef.(argtype) value) args
     in
     all argument_conforms α && uniq [seq arg.1 | arg <- α].
      
