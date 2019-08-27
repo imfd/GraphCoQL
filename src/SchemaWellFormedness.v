@@ -1,3 +1,5 @@
+(* begin hide *)
+
 From mathcomp Require Import all_ssreflect.
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -12,6 +14,8 @@ From Equations Require Import Equations.
 
 Require Import Schema.
 Require Import SchemaAux.
+
+(* end hide *)
 
 
 

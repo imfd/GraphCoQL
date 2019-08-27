@@ -1,3 +1,5 @@
+(* begin hide *)
+
 From mathcomp Require Import all_ssreflect.
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -9,6 +11,8 @@ Require Import QString.
 
 
 Notation Name := string.
+
+(* end hide *)
 
 Section GraphQLGraph.
 

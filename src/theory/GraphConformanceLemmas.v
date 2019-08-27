@@ -1,3 +1,5 @@
+(* begin hide *)
+
 From mathcomp Require Import all_ssreflect.
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -15,6 +17,8 @@ Require Import GraphAux.
 Require Import GraphConformance.
 
 Require Import SeqExtra.
+
+(* end hide *)
 
 
 Section Theory.

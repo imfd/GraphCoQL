@@ -1,3 +1,5 @@
+(* begin hide *)
+
 From mathcomp Require Import all_ssreflect.
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -13,6 +15,8 @@ Require Import SchemaWellFormedness.
 Require Import SchemaAux.
 Require Import Graph.
 Require Import GraphAux.
+
+(* end hide *)
 
 
 Section Conformance.

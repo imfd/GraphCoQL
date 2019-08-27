@@ -1,3 +1,5 @@
+(* begin hide *)
+
 From mathcomp Require Import all_ssreflect.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -17,6 +19,8 @@ Require Import Query.
 Require Import SeqExtra.
 
 Require Import Ssromega.
+
+(* end hide *)
 
 
 Section QueryAux.

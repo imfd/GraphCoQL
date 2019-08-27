@@ -1,3 +1,5 @@
+(* begin hide *)
+
 From mathcomp Require Import all_ssreflect.
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -11,6 +13,8 @@ Require Import QString.
 
 Require Import Schema.
 Require Import SeqExtra.
+
+(* end hide *)
 
 
 Section SchemaAux.

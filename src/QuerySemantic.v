@@ -1,3 +1,5 @@
+(* begin hide *)
+
 From mathcomp Require Import all_ssreflect.
 Unset Printing Implicit Defensive.
 Set Asymmetric Patterns.
@@ -25,6 +27,8 @@ Require Import GraphConformance.
 
 
 Require Import QueryTactics.
+
+(* end hide *)
 
 
 Section QuerySemantic.

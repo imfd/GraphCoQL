@@ -1,3 +1,5 @@
+(* begin hide *)
+
 From mathcomp Require Import all_ssreflect.
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -22,6 +24,8 @@ Require Import SeqExtra.
 
 
 Require Import Ssromega.
+
+(* end hide *)
 
 
 Section Theory.

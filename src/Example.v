@@ -1,3 +1,5 @@
+(* begin hide *)
+
 From mathcomp Require Import all_ssreflect.
 
 Set Implicit Arguments.
@@ -42,6 +44,9 @@ Require Import QueryTactics.
 Require Import QuerySemantic.
 
 Open Scope string_scope.
+
+(* end hide *)
+
 
 (** This file includes some examples of schemas, graphs and queries. 
     The base schema is the one used in [Hartig & Pérez, 2017];

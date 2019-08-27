@@ -1,3 +1,5 @@
+(* begin hide *)
+
 From mathcomp Require Import all_ssreflect.
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -14,6 +16,9 @@ Require Import SchemaAuxLemmas.
 Require Import SchemaWellFormedness.
 
 Require Import SeqExtra.
+
+(* begin hide *)
+
 
 Section Theory.
 
