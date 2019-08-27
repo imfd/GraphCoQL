@@ -50,10 +50,7 @@ Section WellFormedness.
     
     Variable (s : graphQLSchema).
 
-    
-    
-    
-    
+     
     
     (** *** Valid argument's type
 
@@ -88,6 +85,7 @@ Section WellFormedness.
       }.
 
 
+    (** ---- *)
     (** *** Valid field's return type 
         
         The following predicate checks whether a given type is valid for a field's return type.
@@ -117,41 +115,49 @@ Section WellFormedness.
       }.
     
 
-    (** *** Argument Well-formedness
+    (** ---- *)
+    (** *** Well-formed Argument
 
-      It checks whether an argument definition is well-formed by checking that
-      its type is a valid type for an argument. 
+      The following predicate checks whether an argument definition is well-formed.
+      This is done simply by checking that its type is a valid type for an argument. 
 
-      Observations:
-      1. Introspection : There is no check as to whether the argument's name 
+      This check is necessary when checking that an Object or Interface type is well-formed.
+
+      #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
+      **** Observations:
+      - Introspection : There is no check as to whether the argument's name 
          begins with '__' because introspection is not implemented in this 
          formalisation.
 
-      https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
-      https://graphql.github.io/graphql-spec/June2018/#sec-Objects (Section 'Type Validation')
-      https://graphql.github.io/graphql-spec/June2018/#sec-Interfaces (Section 'Type Validation')
-    *)
+      #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
+      **** Spec Reference
+      - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Field-Arguments'>Field Arguments</a>#
+      - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Objects'>Objects (Section 'Type Validation') </a>#
+      - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Interfaces'>Interfaces (Section 'Type Validation')</a># 
+     *)
     Definition is_wf_field_argument (arg : FieldArgumentDefinition) : bool :=
       is_valid_argument_type arg.(argtype).
 
-    
-    (** *** Field Well-formedness
 
-     It checks whether a field is well-formed, independently of the type where it is
-     defined:
+    (** ---- *)
+    (** *** Well-formed Field
 
+     The following predicate checks whether a field is well-formed. This is done by
+     checking the following things:
      - It's return type is valid.
      - There are no two arguments with the same name.
      - All of its arguments are well-formed.
 
-
-     Observations:
-     1. Introspection : There is no check as to whether the argument's name 
+     
+     #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
+     **** Observations:
+     - Introspection : There is no check as to whether the argument's name 
          begins with '__' because introspection is not implemented in this 
          formalisation.
-     2. Argument's uniqueness : We could not find a reference in the spec
+     - Argument's uniqueness : We could not find a reference in the spec
         stating whether it is valid or not to have repeated arguments
-        but we are including this notion in this definition.
+        but we are including this notion in this definition (although there is
+        one when checking the validity of a query).
                
     *)
     Definition is_wf_field (fld : FieldDefinition) : bool :=
@@ -160,7 +166,7 @@ Section WellFormedness.
           all is_wf_field_argument fld.(fargs)].
 
 
-
+    (** ---- *)
     (** *** Valid field implementation
 
     This checks whether a field is valid w/r to another. This is used to check 
@@ -190,7 +196,7 @@ Section WellFormedness.
 	
 
 
-    
+    (** ---- *)
     (** *** Valid interface implementation
 
      This checks whether an object type correctly implements an interface, 
@@ -217,6 +223,7 @@ Section WellFormedness.
     
 
     
+    (** ---- *)
     (** ** TypeDefinition Well-formedness
         Using Schema as the lookup function in the schema (Schema : Name -> TypeDefinition).
 
