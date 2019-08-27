@@ -48,7 +48,10 @@ Section WellFormedness.
   Section Defs.
     
     Variable (s : graphQLSchema).
-   
+
+    (**
+       We begin by establishing when a field's argument is properly defined.
+     *)
 
     (** ---- *)
     (** *** Well-formed Argument
@@ -91,6 +94,10 @@ Section WellFormedness.
       is_valid_argument_type arg.(argtype).
 
 
+    
+    (**
+       With this in hand, we can proceed to define when a field is properly defined.
+     *)
     (** ---- *)
     (** *** Well-formed Field
 
@@ -100,6 +107,7 @@ Section WellFormedness.
      - There are no two arguments with the same name.
      - All of its arguments are well-formed.
 
+     This check is necessary when checking that an Object or Interface are well-formed.
      
      #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
      **** Observations:
@@ -139,22 +147,26 @@ Section WellFormedness.
           all is_wf_field_argument fld.(fargs)].
 
 
+    
 
+    (**
+       Before continuing to establish when a Type Definition is properly defined, 
+       we need to define what it means for an Object type to properly implement an
+       Interface type. Once we have these three elements (arguments, fields and implementation), 
+       we can proceed to validate type definitions.
+     *)
     (** ---- *)
     (** *** Valid interface implementation
 
      The following predicate checks whether an object correctly implements an interface,
      by properly implementing _every_ field defined in the interface.
 
-     To properly implement an interface field, there must exist a field in the object type 
+     For an Object to properly implement an interface field, there must exist a field in the Object type 
      such that:
      - The object's field has the same name as the interface's.
      - The arguments of the interface field must be a subset of the arguments contained in the object's field
        (the types of the arguments are invariant, therefore we can simply check that it's a subset).
      - The object's field return type must be a subtype of the interface's field return type.
-
-     Using Schema as the lookup function in the schema (Schema : Name -> TypeDefinition).
-
 
 
 
@@ -163,7 +175,7 @@ Section WellFormedness.
      - Non-null extra arguments : The spec requires that any additional argument included in the object's
        field must not be of a non-null type. Since we do not implement non-null types, we are not including 
        this check. 
-     - J&O : In Perez & Hartig's paper, there is no check regarding arguments between an object 
+     - P&H : In Perez & Hartig's paper, there is no check regarding arguments between an object 
        type and its interface. This is posteriorly included in Hartig's and Hidders 
        "Defining Schemas for Property Graphs by using the GraphQL Schema Definition Language" work.
      - Implementation : From an implementation point of view, this definition might seem
@@ -195,7 +207,10 @@ Section WellFormedness.
       end.
     
 
-    
+    (**
+       Now we can proceed with establishing what is a properly defined Type Definition,
+       which will allow us to say when a Schema is also properly defined.
+     *)
     (** ---- *)
     (** *** Well-formed TypeDefinition
 
@@ -268,26 +283,19 @@ Section WellFormedness.
       end.
 
 
-    
-    (** ** Schema Well-formedness 
+    (**
+       Now we are equipped with sufficient definitions to establish 
+       when a Schema is well defined.
+     *)
+    (** ---- *)
+    (** *** Well-formed Schema 
 
-    This checks whether a schema is well-formed. 
-    1. The Query root operation is actually defined in the schema.
+    The following predicate checks whether a Schema is well-formed.
 
-    2. The Query type is an Object type.
-
-    3. Type names are unique. 
-
-    4. Every type definition is well-formed.
-
-    Observations:
-
-    1. J&O : In Jorge and Olaf's paper, they describe a schema as being 'consistent'
-       if "every object type that implements an interface type i defines at least all 
-       the fields that i defines". Because they work with functions and sets they can 
-       simplify some checks about uniqueness of names, etc. Their notion does not capture, 
-       I believe, that fields' arguments between an object type and its interface have 
-       to satisfy some property (being a subset of the other).
+    This is done by checking the following:
+    - The Query type is an actual type definition in the schema and it is an Object type.
+    - There are no duplicated type names.
+    - Every type definition in the Schema is well-formed.
        
     *)
     Definition is_wf_schema : bool :=
@@ -295,13 +303,18 @@ Section WellFormedness.
           uniq s.(schema_names) &
           all is_wf_type_def s.(type_definitions)].
 
+
+    (**
+       This finishes the necessary predicates to establish whether a GraphQL Schema is well-formed. 
+       With them in hand we can proceed to define the structure that holds it all together.
+     *)
   End Defs.
   
+  (** ---- *)
+  (** *** Well-formed GraphQL Schema
 
-  (** *** Well-formed Schema
-
-  A well-formed schema is a schema which satisfies the well-formedness property.
-  We also include the predicate "has_type", which 
+  A well-formed GraphQL Schema is a Schema which satisfies the well-formedness property.
+   
    *)
   Structure wfGraphQLSchema := WFGraphQLSchema {
                            schema : graphQLSchema;
@@ -314,6 +327,16 @@ Section WellFormedness.
 
 
 End WellFormedness.
+
+
+(** 
+    #<div class="btn-group" role="group" aria-label="Basic example">
+        <a href='GraphCoQL.Schema.html' class="btn btn-light"> Previous ← Schema  </a>
+        <a href='GraphCoQL.Query.html' class="btn btn-info">Continue Reading → Query </a>
+    </div>#
+*)
+
+
 
 
 Arguments wfGraphQLSchema [Vals].
