@@ -42,7 +42,7 @@ div + br {
 div:empty{ display: none;}
 
 #main h1 {
-	font-size: 2em;
+	/* font-size: 2em; */
 }
 
 #main h2 {
