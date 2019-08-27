@@ -29,11 +29,10 @@ Section Theory.
   Ltac wfschema s :=
     let sch := fresh "s" in
     let Hhty := fresh "Hhty" in
-    let Hqin := fresh "Hqin" in
     let Hqobj := fresh "Hqboj" in
     let Huniq := fresh "Huniq" in
     let Hok := fresh "Hok" in
-    case: s => sch Hhty; rewrite /is_wf_schema => /=  /and4P [Hqin Hqobj Huniq /allP Hok].
+    case: s => sch Hhty; rewrite /is_wf_schema => /=  /and3P [Hqobj Huniq /allP Hok].
 
 
   (**
@@ -64,7 +63,7 @@ Section Theory.
   Lemma query_has_object_type :
     is_object_type s s.(query_type).
   Proof.
-    by wfschema s. 
+      by wfschema s. 
   Qed.
 
 
