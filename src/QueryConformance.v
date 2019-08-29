@@ -60,40 +60,6 @@ Section QueryConformance.
 
   Variable s : @wfGraphQLSchema Vals.
  
-  (**
-     First of all, we will begin by establishing some basic properties that queries must satisfy and then 
-     we will move onto some more involved ones. Some of these basic properties are: 
-     - The arguments of a field selection must be valid.
-     - The field name used to query is actually defined in the Schema.
-     - Fragments' types are valid 
-     - etc. 
-     
-     One important notion that we must keep at all times is that queries are evaluated with a given type in context.
-     This means that when we check if a field selection is valid, it is valid wrt. the given type in context.
-
-     For example, we might have the following type :
-     
-     #<img src='../imgs/Schema/type_query.png'>#
-
-     Followed by this query:
-
-     #<img src='../imgs/Query/query1.png'>#
-
-     
-     We know that the field selection _hero_ is performed over the type _Query_, then if we want to validate _hero_ it has to be wrt. _Query_.
-
-     Similarly, we know that _name_ nested inside _hero_ is defined in a context with _Character_ as its type, 
-     while the field selection _name_ nested inside _droid_ is defined in a context where its type is _Droid_.     
-     
-     Therefore, whenever we want to validate queries we must do it keeping in mind the type where it's being applied.
-     
-     
-     Having said that, we can now begin defining the necessary properties.
-
-     We will start by establishing when arguments are valid wrt. a list of Field Arguments obtained from a 
-     particular type and field.
-   *)
-  
   
   (** ---- *)
   (** *** Arguments conform 
@@ -117,18 +83,6 @@ Section QueryConformance.
 
       - Required arguments : Since NonNull types are not implemented, we are not checking for required 
          arguments.
-      
-      - P&H : We do not have a complete definition of conformance to which we could compare.
-
-      
-      #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-      **** Spec Reference 
-      - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Validation.Arguments'>Validation - Arguments</a># 
-      - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Argument-Names'>Argument Names</a>#
-      - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Argument-Uniqueness'>Argument Uniqueness</a>#
-      - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Required-Arguments'>Required Arguments</a>#
-      - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Values-of-Correct-Type'>Values of Correct Type</a>#
-
    **)
   Definition arguments_conform (args : seq FieldArgumentDefinition) (α : seq (Name * Vals)) : bool :=
     let argument_conforms (arg : Name * Vals) : bool :=
@@ -147,15 +101,7 @@ Section QueryConformance.
      in a given context with another type in scope (parent type).
 
      It basically amounts to intersecting the possible types of each
-     and checking that the intersection is not empty.
-
-
-     #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-     **** Spec Reference
-     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Fragment-spread-is-possible'>Fragment spread is possible</a>#
-     - #<a href='https://facebook.github.io/graphql/June2018/##GetPossibleTypes()'>GetPossibleTypes()</a>#
-        
-      
+     and checking that the intersection is not empty.     
    *)
   Definition is_fragment_spread_possible parent_type fragment_type : bool :=
     let ty_possible_types := get_possible_types s fragment_type in
@@ -199,20 +145,6 @@ Section QueryConformance.
       - Fragment spread type existence : Similar to the previous one, the spec states that 
         the type condition must exist in the schema. We argue again that adding this check 
         would be a bit redundant, for similar reasons.
-
-      - P&H : We do not have a complete definition of conformance to which we could compare.
-        They mention a notion of conformance of a query wrt. the Query type.
-
-
-     #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-     **** Spec Reference
-     
-     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Field-Selections-on-Objects-Interfaces-and-Unions-Types'>Field Selections on Objects, Interfaces and Unions Types</a>#
-     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Leaf-Field-Selections'>Leaf Field Selections</a>#
-     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Fragment-Spread-Type-Existence'>Fragment Spread Type Existence</a>#
-     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Fragments-On-Composite-Types'>Fragments on Composite Types</a>#
-     - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Fragment-spread-is-possible'>Fragment spread is possible</a>#  
-
      
    *)
  (* TODO: Rename? It is only a part of the whole validation process *)
@@ -262,14 +194,7 @@ Section QueryConformance.
     This is posteriorly used to check if two queries have compatible response shapes.
 
     This corresponds to steps 3-6 used in the definition given in _SameResponseShape_ in the 
-    spec.
-
-    #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-    **** Spec Reference 
-
-    - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Field-Selection-Merging'>Field Selection Merging</a>#
-    - #<a href='https://graphql.github.io/graphql-spec/June2018/##SameResponseShape()'>SameResponseShape()</a>#
-    
+    spec.  
   *)
  Equations are_compatible_types : type -> type -> bool :=
    {
@@ -296,14 +221,6 @@ Section QueryConformance.
 
     Inline fragments do not have a return type, therefore this always 
     returns false for these cases.
-
-    #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-    **** Spec Reference
-    
-    - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Field-Selection-Merging'>Field Selection Merging</a>#
-    - #<a href='https://graphql.github.io/graphql-spec/June2018/##SameResponseShape()'>SameResponseShape()</a>#
- 
-
   *)
  Equations has_compatible_type (return_type : type) (nq : Name * @Query Vals) : bool :=
    {
@@ -370,15 +287,7 @@ Section QueryConformance.
 
     - Redundant pair-check : The spec checks _SameResponseShape_ for every pair of queries sharing a response name.
        We argue that it should suffice to check every query against a single one (as we do here) and via transitivity 
-       validate that they all have compatible return types.
-
-    
-    #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-    **** Spec Reference
-
-    - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Field-Selection-Merging'>Field Selection Merging</a>#
-    - #<a href='https://graphql.github.io/graphql-spec/June2018/##SameResponseShape()'>SameResponseShape()</a>#
- 
+       validate that they all have compatible return types. 
   *)
  (* I am pretty sure about claim (2) but we should confirm it somehow.. right xd? *)
  (* Equations is not able to build the graph *)
@@ -433,8 +342,6 @@ Section QueryConformance.
       have_compatible_response_shapes ((ty, on t { β }) :: φ) := have_compatible_response_shapes ([seq (t, q) | q <- β] ++ φ)
                                                                                                       
    }.
- (* begin hide *)
- (* Not showing this in the doc to ease reading *)
  Solve Obligations with intros; leq_queries_size.
  Next Obligation.
    rewrite /queries_size_aux /= map_cat queries_size_cat; simp query_size.
@@ -461,7 +368,6 @@ Section QueryConformance.
    have -> : forall xs y, [seq x.2 | x <- [seq (y, q) | q <- xs] ] = xs by intros; elim: xs => //= x xs ->.       
      by ssromega.
  Qed.
-(* end hide *)
 
  (** ---- *)
  (**
@@ -504,21 +410,7 @@ Section QueryConformance.
 
     - Implicit type : The spec refers to the _parent types_ of each field but they 
        are not given as parameter.
-      
-
-    #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-    **** Spec Reference
-
-    - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Field-Selection-Merging'>Field Selection Merging</a>#
-    - #<a href='https://graphql.github.io/graphql-spec/June2018/#FieldsInSetCanMerge()'>FieldsInSetCanMerge()</a>#
     
-    **** See also
-    
-    - #<a href='https://tinyurl.com/y4zkoofg'>Query example</a># 
-
-    - #<a href='https://github.com/graphql/graphql-spec/issues/367'>Fragments issue</a># 
-
-    - #<a href='https://github.com/graphql/graphql-spec/issues/399'>Discussion on fragments</a># 
   *)
  Equations? is_field_merging_possible (type_in_scope : Name) queries : bool by wf (queries_size queries)  :=
    {
@@ -601,8 +493,6 @@ Section QueryConformance.
        | _ := is_field_merging_possible ty φ
        }
    }.
- (* begin hide *)
- (* Not showing this on docs to ease reading *)
  Proof.
    all: do ? [rewrite ?/similar_queries; leq_queries_size].
  Qed.
@@ -616,7 +506,6 @@ Section QueryConformance.
    case is_fragment_spread_possible; constructor; last by apply: IH; leq_queries_size.
    all: do ? [case is_object_type => /=; by constructor; apply: IH; leq_queries_size].
  Defined.
- (* end hide *)
  
 
 
