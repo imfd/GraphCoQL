@@ -39,34 +39,12 @@ Notation EnumValue := string.
 </div>#
  *)
 
-(** *  
-    
-    
-   
-
-     
- *)
   
 Section Schema.
   
   Section Base.
 
-    (** ** Type References
-
-        In this section we define the [type] structure which is used 
-        to describe the types returned by fields or required by arguments.
-
-        _Example_ : 
-        
-        #<img src='../imgs/Schema/type_character.png'>#
-
-        
-        Both _String_! and [[Episode!]]! belong to the [type] structure. 
-
-         
-      
-     *)
-
+  
     (** ---- *)
 
     
@@ -79,11 +57,6 @@ Section Schema.
         **** Observations
 
         - NonNull types are omitted in this current version.
-        
-        #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-        **** Spec Reference 
-        - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Type-References'> Type References </a>#
-
      *)
     Inductive type : Type :=
     | NamedType : Name -> type
@@ -98,12 +71,6 @@ Section Schema.
         Get a type's wrapped name.
 
         Corresponds to a named type's actual name or the name used in a list type
-
-        #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-
-        **** Spec Reference
-        - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Wrapping-Types'> Wrapping Types </a>#
-         
      *)
     Fixpoint tname (ty : type) : Name :=
       match ty with
@@ -136,20 +103,9 @@ Section Schema.
     (** *** Argument Definition
 
         Arguments are defined for fields in a type (Object or Interface).
+        They contain a name and a type.
 
-        #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-        **** Observations
-
-        In the specification they are named "InputValue" (InputValueDefinition) but 
-        we believe it is not very descriptive of what it is.
-        
-        Besides, they are constantly refered as "argument", therefore we named them
-        as [FieldArgument].
-
-        #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-        **** Spec Reference
-        - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Field-Arguments'>Field Arguments</a>#
-     **)
+     *)
     Structure FieldArgumentDefinition := FieldArgument {
                                             argname : Name;
                                             argtype : type
@@ -163,14 +119,9 @@ Section Schema.
 
         Fields are defined for an Object or Interface type.
 
-        They ultimately represent the things we can query. 
+        They ultimately represent the things we can query in our system.
 
-
-        #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-        
-        **** Spec Reference 
-        - #<a href='https://graphql.github.io/graphql-spec/June2018/##FieldsDefinition'>Fields Definition</a>#
-     **)
+    *)
     Structure FieldDefinition := Field {
                                     fname : Name;
                                     fargs : seq FieldArgumentDefinition;
@@ -197,11 +148,7 @@ Section Schema.
 
         - InputObjects: Currently not included in the formalization.                         
 
-        #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-        **** Spec Reference 
-        - #<a href='https://graphql.github.io/graphql-spec/June2018/##TypeDefinition'>Type Definition</a># 
-        - #<a href='https://graphql.github.io/graphql-spec/June2018/##NamedType'>Named Type</a>#       
-     **)
+     *)
 
     Inductive TypeDefinition : Type :=
     | ScalarTypeDefinition (name : Name)
@@ -227,35 +174,15 @@ Section Schema.
       
     (** *** Schema Definition 
 
-        Here we define the actual structure of a GraphQL Schema.
-
-        There is some name clashing when the spec refers to a Schema, by which it can
-        refer to:
-        - The type system of the GraphQL service.
-        - The root operation types (Query, Mutation, Subscription).
-        - Both.
- 
-        As per the spec:
-       
-       #<blockquote class="blockquote">#
-         A GraphQL service’s collective type system capabilities are referred to as
-          that service’s “schema”. A schema is defined in terms of the types and 
-          directives it supports as well as the root operation types for each kind of
-          operation: query, mutation, and subscription [...]
-       #</blockquote>#
-
-        In this formalisation we take this latter approach, in which a schema is both 
-        the root operations as well as the types defined.
-
+        Here we define the actual structure of a GraphQL Schema, which is made up of:
+        - A root type operation for query.
+        - A list of type definitions.
 
         #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
         **** Observations
 
-        - Only the Query type is included as root operation (Mutation and Subscription are not).
+        - Mutation and Subscription are not currently implemented.
         
-        #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-        **** Spec Reference 
-        - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Schema'>Schema</a># 
     *)
     Structure graphQLSchema := GraphQLSchema {
                                   query_type : Name;
@@ -266,6 +193,7 @@ Section Schema.
   End TypeSystem.  
     
 End Schema.
+
 
 (** *** Notations
     Just some notations to make it easier to read (or at least closer to how it is in
@@ -314,7 +242,6 @@ Notation "'Enum' enum_name '{' enum_members '}'" :=
 
 
 
-(* begin hide *)
 Section Equality.
   (** ** Equality 
      This section deals with some SSReflect bureaucratic things, in particular 
@@ -433,4 +360,3 @@ Section Equality.
 
   
 End Equality.
-(* end hide *)
