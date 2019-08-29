@@ -60,32 +60,6 @@ Section Query.
         name "Query" to the type of an atomic selection instead and a list of Query will 
         be referred as queries. Both "query" and "queries" might be used interchangeably, 
         assuming that it is understood by context.
-
-      - Directives : Currently not implemented.
-
-      - Syntax : According to the spec, the "opt" keyword means 
-        there are two constructors; one with the element and one without. 
-        For arguments we just decided to use a list, and represent the optional 
-        via the empty list.
-
-      - P&H : Pérez & Hartig put the list of queries at the same level as the 
-        atomic selections. This differs from the spec and from our implementation, 
-        where we consider them separately. Allowing both at the same level would
-        permit any shape of query tree to be generated (eg. the first element of a list of queries 
-        could be another list, with nested lists inside, etc.). This would 
-        require to flatten the queries eventually to check for conformance or other properties.
-
-      - Fragment spread : Currently not implemented. As pointed out in J&O, fragment spreads are a 
-        convenience over inline fragments, therefore we prefer not to include them for the moment.
-
-      - Variables : Currently not implemented. Similarly to fragment spreads, we prefer to not
-      include them for the moment.
-
-      #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-      **** Spec Reference
-     
-      - #<a href='https://graphql.github.io/graphql-spec/June2018/##Selection'>Selection</a>#      
-      - #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Selection-Sets'>Selection Sets</a>#
       
   *)
   Inductive Query : Type :=
@@ -111,6 +85,7 @@ Section Query.
   
   Set Elimination Schemes.
 
+  
   (** ---- *)
   (**
      Defining the induction principle for Query.
@@ -206,7 +181,10 @@ Notation "'on' t { φ }" := (InlineFragment t φ) (t at next level, φ at next l
     </div>#
 *)
 
-(* begin hide *)
+
+
+
+
 Section Equality.
 
   Variable (Vals : eqType).
@@ -315,4 +293,3 @@ Section Equality.
 
 
 End Equality.
-(* end hide *)
