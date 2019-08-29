@@ -66,7 +66,7 @@ Section Query.
   | SingleField (name : Name)
                 (arguments : seq (Name * Vals))
                 
-  | LabeledField (alias : Name)
+  | AliasedField (alias : Name)
                  (name : Name)
                  (arguments : seq (Name * Vals))
                  
@@ -74,7 +74,7 @@ Section Query.
                 (arguments : seq (Name * Vals))
                 (subqueries : seq Query)
                 
-  | NestedLabeledField (alias : Name)
+  | NestedAliasedField (alias : Name)
                        (name : Name)
                        (arguments : seq (Name * Vals))
                        (subqueries : seq Query)
@@ -93,9 +93,9 @@ Section Query.
   Definition Query_rect (P : Query -> Type)
              (Pl : seq Query -> Type)
              (IH_SF : forall n α, P (SingleField n α))
-             (IH_LF : forall l n α, P (LabeledField l n α))
+             (IH_LF : forall l n α, P (AliasedField l n α))
              (IH_NF : forall n α ϕ, Pl ϕ -> P (NestedField n α ϕ))
-             (IH_NLF : forall l n α ϕ, Pl ϕ -> P (NestedLabeledField l n α ϕ))
+             (IH_NLF : forall l n α ϕ, Pl ϕ -> P (NestedAliasedField l n α ϕ))
              (IH_IF : forall t ϕ, Pl ϕ -> P (InlineFragment t ϕ))
              (IH_Nil : Pl [::])
              (IH_Cons : forall q, P q -> forall qs, Pl qs -> Pl (q :: qs))
@@ -109,9 +109,9 @@ Section Query.
       in
       match query with
       | SingleField n α => IH_SF n α
-      | LabeledField l n α => IH_LF l n α
+      | AliasedField l n α => IH_LF l n α
       | NestedField n α ϕ => IH_NF n α ϕ (F ϕ)
-      | NestedLabeledField l n α ϕ => IH_NLF l n α ϕ (F ϕ)
+      | NestedAliasedField l n α ϕ => IH_NLF l n α ϕ (F ϕ)
       | InlineFragment t ϕ => IH_IF t ϕ (F ϕ)
       end.
 
@@ -120,9 +120,9 @@ Section Query.
   Definition Query_ind (P : Query -> Prop)
              (Pl : seq Query -> Prop)
             (IH_SF : forall n α, P (SingleField n α))
-            (IH_LF : forall l n α, P (LabeledField l n α))
+            (IH_LF : forall l n α, P (AliasedField l n α))
             (IH_NF : forall n α ϕ, Pl ϕ -> P (NestedField n α ϕ))
-            (IH_NLF : forall l n α ϕ, Pl ϕ -> P (NestedLabeledField l n α ϕ))
+            (IH_NLF : forall l n α ϕ, Pl ϕ -> P (NestedAliasedField l n α ϕ))
             (IH_IF : forall t ϕ, Pl ϕ -> P (InlineFragment t ϕ))
             (IH_Nil : Pl [::])
             (IH_Cons : forall q, P q -> forall qs, Pl qs -> Pl (q :: qs))
@@ -136,9 +136,9 @@ Section Query.
         in
         match query with
         | SingleField n α => IH_SF n α
-        | LabeledField l n α => IH_LF l n α
+        | AliasedField l n α => IH_LF l n α
         | NestedField n α ϕ => IH_NF n α ϕ (F ϕ)
-        | NestedLabeledField l n α ϕ => IH_NLF l n α ϕ (F ϕ)
+        | NestedAliasedField l n α ϕ => IH_NLF l n α ϕ (F ϕ)
         | InlineFragment t ϕ => IH_IF t ϕ (F ϕ)
         end.
 
@@ -149,9 +149,9 @@ End Query.
 
 Arguments Query [Vals].
 Arguments SingleField [Vals].
-Arguments LabeledField [Vals].
+Arguments AliasedField [Vals].
 Arguments NestedField [Vals].
-Arguments NestedLabeledField [Vals].
+Arguments NestedAliasedField [Vals].
 Arguments InlineFragment [Vals].
 
 (** *** Notations 
@@ -166,9 +166,9 @@ Open Scope query_scope.
 (* We are using double brackets because there is too much conflict with these notations and
    others already used... And I don't really get how to fix it *)
 Notation "f [[ α ]]" := (SingleField f α) (at level 20, α at next level) : query_scope.
-Notation "l : f [[ α ]]" := (LabeledField l f α) (at level 20, f at next level, α at next level)  : query_scope.
+Notation "l : f [[ α ]]" := (AliasedField l f α) (at level 20, f at next level, α at next level)  : query_scope.
 Notation "f [[ α ]] { φ }" := (NestedField f α φ) (at level 20, α at next level, φ at next level) : query_scope.
-Notation "l : f [[ α ]] { φ }" := (NestedLabeledField l f α φ)
+Notation "l : f [[ α ]] { φ }" := (NestedAliasedField l f α φ)
                                  (at level 20, f at next level, α at next level, φ at next level)  : query_scope.
 Notation "'on' t { φ }" := (InlineFragment t φ) (t at next level, φ at next level) : query_scope.
 
@@ -215,9 +215,9 @@ Section Equality.
   Fixpoint tree_of_query query : GenTree.tree (option Name * Name * seq (Name * Vals)):=
     match query with
     | SingleField f α => GenTree.Node 0 [:: GenTree.Leaf  (None, f, α)]
-    | LabeledField l f α => GenTree.Node 1 [:: GenTree.Leaf (Some l, f, α)]
+    | AliasedField l f α => GenTree.Node 1 [:: GenTree.Leaf (Some l, f, α)]
     | NestedField f α φ => GenTree.Node 2  (GenTree.Leaf (None, f, α) :: [seq (tree_of_query subquery) | subquery <- φ])
-    | NestedLabeledField l f α φ => GenTree.Node 3 (GenTree.Leaf (Some l, f, α) :: [seq (tree_of_query subquery) | subquery <- φ])
+    | NestedAliasedField l f α φ => GenTree.Node 3 (GenTree.Leaf (Some l, f, α) :: [seq (tree_of_query subquery) | subquery <- φ])
     | InlineFragment t φ => GenTree.Node 4 (GenTree.Leaf (None, t, [::]) :: [seq (tree_of_query subquery) | subquery <- φ])
     end.
 
@@ -246,12 +246,12 @@ Section Equality.
   Fixpoint query_of_tree tree : option Query :=
     match tree with
     | (GenTree.Node 0 [:: GenTree.Leaf  (None, f, α)]) => Some (SingleField f α)
-      | (GenTree.Node 1 [:: GenTree.Leaf (Some l, f, α)]) => Some (LabeledField l f α)
+      | (GenTree.Node 1 [:: GenTree.Leaf (Some l, f, α)]) => Some (AliasedField l f α)
       | (GenTree.Node 2  (GenTree.Leaf (None, f, α) :: subtree)) =>
         Some (NestedField f α (get_subqueries [seq (query_of_tree t) | t <- subtree]))
       
       | (GenTree.Node 3  (GenTree.Leaf (Some l, f, α) :: subtree)) =>
-          Some (NestedLabeledField l f α (get_subqueries [seq (query_of_tree t) | t <- subtree]))
+          Some (NestedAliasedField l f α (get_subqueries [seq (query_of_tree t) | t <- subtree]))
       
       | (GenTree.Node 4  (GenTree.Leaf (None, t, emptym) :: subtree)) =>
         Some (InlineFragment t (get_subqueries [seq (query_of_tree t) | t <- subtree]))
@@ -276,7 +276,7 @@ Section Equality.
     | t φ /Forall_forall H
     | hd IH tl IH'];
     rewrite -?map_comp; try congr Some;
-      [congr (NestedField f α) | congr (NestedLabeledField l f α) | congr (InlineFragment t) | ].
+      [congr (NestedField f α) | congr (NestedAliasedField l f α) | congr (InlineFragment t) | ].
 
     all: do ?[elim: φ H => //= hd tl IH H;
               have Heq : (hd = hd \/ In hd tl) by left].
