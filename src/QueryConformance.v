@@ -196,18 +196,18 @@ Section QueryConformance.
     This corresponds to steps 3-6 used in the definition given in _SameResponseShape_ in the 
     spec.  
   *)
- Equations are_compatible_types : type -> type -> bool :=
-   {
-     are_compatible_types (NamedType rty) (NamedType rty')
-       with (is_scalar_type s rty || is_enum_type s rty) :=
-       {
-       | true := rty == rty';
-       | _ := is_composite_type s rty'
-       };
-     are_compatible_types (ListType rty) (ListType rty') := are_compatible_types rty rty';
-     are_compatible_types _ _ := false
-   }.
+  Fixpoint are_compatible_types (ty ty' : type) : bool :=
+    match ty, ty' with
+    | NamedType rty, NamedType rty' =>
+      if (is_scalar_type s rty || is_enum_type s rty) then
+        rty == rty'
+      else
+        is_composite_type s rty'
+    | ListType rty, ListType rty' => are_compatible_types rty rty'
+    | _, _ => false
+    end.
 
+  
  (** ---- *)
  (**
     has_compatible_type : Name → Type → Query → Bool 
@@ -221,38 +221,37 @@ Section QueryConformance.
 
     Inline fragments do not have a return type, therefore this always 
     returns false for these cases.
-  *)
- Equations has_compatible_type (return_type : type) (nq : Name * @Query Vals) : bool :=
-   {
-     has_compatible_type rty (ty, f[[ _ ]])
-       with lookup_field_in_type s ty f :=
-       {
-       | Some fld := are_compatible_types fld.(return_type) rty;
-       | _ := false
-       };
-     has_compatible_type rty (ty, _:f[[ _ ]])
-       with lookup_field_in_type s ty f :=
-       {
-       | Some fld := are_compatible_types fld.(return_type) rty;
-       | _ := false
-       };
-     
-     has_compatible_type rty (ty, f[[ _ ]] { _ })
-       with lookup_field_in_type s ty f :=
-       {
-       | Some fld := are_compatible_types fld.(return_type) rty;
-       | _ := false
-       };
-     
-     has_compatible_type rty (ty, _:f[[ _ ]] { _ })
-       with lookup_field_in_type s ty f :=
-       {
-       | Some fld := are_compatible_types fld.(return_type) rty;
-       | _ := false
-       };
 
-     has_compatible_type _ (_, on _ { _ }) := false
-   }.
+    There is a lot of code repetition, which is there only for reading purposes.
+  *)
+  Fixpoint has_compatible_type (rty : type) (nq : Name * @Query Vals) : bool :=
+    match nq with
+    | (ty, f[[ _ ]]) =>
+      if lookup_field_in_type s ty f is Some fld then
+        are_compatible_types fld.(return_type) rty
+      else
+        false
+          
+    | (ty, _:f[[ _ ]]) =>
+      if lookup_field_in_type s ty f is Some fld then
+        are_compatible_types fld.(return_type) rty
+      else
+        false
+          
+    | (ty, f[[ _ ]] { _ }) =>
+      if lookup_field_in_type s ty f is Some fld then
+        are_compatible_types fld.(return_type) rty
+      else
+        false
+
+    | (ty, _:f[[ _ ]] { _ }) =>
+       if lookup_field_in_type s ty f is Some fld then
+        are_compatible_types fld.(return_type) rty
+      else
+        false
+
+    | (_, on _ { _ }) => false
+    end.
 
  (** ---- *)
  (**
