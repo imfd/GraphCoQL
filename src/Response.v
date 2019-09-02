@@ -20,7 +20,7 @@ Notation Name := string.
 
 Section Response.
 
-  Context {A : eqType}.
+  Variable (A : Type).
   
   Unset Elimination Schemes.
 
@@ -168,21 +168,21 @@ Section GraphQLResponse.
   
   Variable (Vals : eqType).
   
-  Inductive Value : Type :=
-  | Null : Value
-  | SingleValue : Vals -> Value.
+  (* Inductive Value : Type := *)
+  (* | Null : Value *)
+  (* | SingleValue : Vals -> Value. *)
 
-   Definition option_of_value value := if value is SingleValue v then Some v else None.
-  Definition value_of_option opt := if opt is Some v then SingleValue v else Null.
+  (* Definition option_of_value value := if value is SingleValue v then Some v else None. *)
+  (* Definition value_of_option opt := if opt is Some v then SingleValue v else Null. *)
 
-  Lemma option_of_valueK : cancel option_of_value value_of_option.
-  Proof.
-      by case.
-  Qed.
+  (* Lemma option_of_valueK : cancel option_of_value value_of_option. *)
+  (* Proof. *)
+  (*     by case. *)
+  (* Qed. *)
 
-  Canonical value_eqType := EqType Value (CanEqMixin option_of_valueK).
+  (* Canonical value_eqType := EqType Value (CanEqMixin option_of_valueK). *)
   
-  Definition GraphQLResponse := seq (Name * (@ResponseNode Vals)).
+  Definition GraphQLResponse := seq (Name * (@ResponseNode (option Vals))).
 
 End GraphQLResponse.
 
@@ -191,9 +191,6 @@ Arguments Leaf [A].
 Arguments Object [A].
 Arguments Array [A].
 
-Arguments Value [Vals].
-Arguments Null [Vals].
-Arguments SingleValue [Vals].
 
 Delimit Scope response_scope with RESP.
 Open Scope response_scope.
