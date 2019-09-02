@@ -25,6 +25,18 @@ Require Import Ssromega.
 
 (* end hide *)
 
+(**
+   #<div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">Non-redundant Ground-typed Normal Form</h1>
+        <p class="lead">
+         This file contains the necessary definitions to establish when a GraphQL
+         Query is non-redundant and in ground-typed normal form.
+        </p>
+         
+  </div>
+</div>#
+ *)
 
 Section NRGTNF.
 
@@ -35,48 +47,22 @@ Section NRGTNF.
   Implicit Type query : @Query Vals.
   
   
-  
+  (** ---- *)
   (**
-     is_grounded : Query → Bool 
-     are_grounded_fields : List Query → Bool
-     are_grounded_inlines : List Query → Bool
-     are_grounded : List Query → Bool
+     #<strong>is_grounded</strong># : Query → Bool 
 
-     Checks whether the given queries are in ground-typed normal form.
-     
-     This follows the definition as specified in Jorge and Olaf's paper.
-     As per their definition, there is no restriction over the kind of queries in
-     the subqueries of a field selection; they can either be all fragments or all fields.
-     This means that if there are two occurrences of the same field, its subqueries can 
-     be fields in the first ocurrence and inline fragments in the second one.
+     #<strong>are_grounded_fields</strong># : List Query → Bool
 
-     Example:
+     #<strong>are_grounded_inlines</strong># : List Query → Bool
 
-     query {
-           friends {
-                   name 
-                   age 
-           }
-           friends {
-                   ... on Human {
-                       name
-                       age
-                   }
-                   ... on Droid {
-                       name
-                       age
-                   }
-           }
-    } 
+     #<strong>are_grounded</strong># : List Query → Bool
 
-    Both queries are in ground-typed normal form, but in the first case, 
-    its subqueries are all fields, while in the second one, all are inline 
-    fragments.
-    
-    This looseness in the definition made it a bit harder to reason about, 
-    basically because there is no way of telling how your queries are structured
-    and what you can apply on them (this mostly appeared during the proof that 
-    the normalization function returned a grounded query).
+     #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
+
+     Checks whether the given queries are grounded.
+
+     Differently from Pérez & Hartig, we call this property _groundness_ and not 
+     include the _normal form_ part in the name.
    *)
   Equations is_grounded query : bool  :=
     {
@@ -109,28 +95,18 @@ Section NRGTNF.
           }.
 
 
-
+  (** ---- *)
   (**
-     is_grounded2 : Name → Query → Bool 
-     are_grounded2 : Name → List Query → Bool
+     #<strong>is_grounded2</strong># : Name → Query → Bool 
 
-     Checks whether the given query is in ground-typed normal form v2.0.
-     
-     This notion of groundness is a stronger definition of groundness than the one in 
-     Jorge and Olaf's paper. This definition uses information of the type where the queries 
-     are defined to determine the kind of queries allowed (fragments or fields).
-     
-     The main difference wrt. to the original definition is that subqueries of field 
-     selections must all be inline fragments IF the return type of the field is an Abstract 
-     type, and if the return type is an Object type, then all its subqueries must be fields.
+     #<strong>are_grounded2</strong># : Name → List Query → Bool
 
-     The reason behind this decision is the following:
+     #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
+     Checks whether the given query is grounded v.2.0.
      
-     If we are querying something that is an object, then it doesn't make sense 
-     that you may want to specialize the query with inline fragments.
-     On the other hand, if you are querying something that is abstract, then a priori you don't 
-     know which object that implements the interface will be used to evaluate the query. 
-     Therefore, you want to cover all possible implementors with inline fragments.
+     This predicate uses information on the type in context where queries might be defined.
+     - If the type in context is an Object type, then it expects to find only fields.
+     - If the type in context is an Abstract type, then it expects to find only fragments.
      
    *)
   (* TODO : Rename ! *)
@@ -168,51 +144,15 @@ Section NRGTNF.
      }.
 
 
+ 
+  (** ---- *)
   (**
-     are_similar : Query → Query → Bool
-     
-     Checks whether two queries might produce the same response.
-     
-     This is used when checking that queries are non-redundant, as per 
-     the definition in Jorge and Olaf's paper. 
+     #<strong>are_non_redundant</strong># : List Query → Bool 
 
-   *)
-  (* TODO : Rename? *)
-  Equations are_similar (q1 q2 : @Query Vals) : bool :=
-    {
-      are_similar (on t { _ }) (on t' { _ }) := t == t';
-      are_similar (on _ { _ }) _ := false;
-      are_similar _ (on _ { _ }) := false;
-      are_similar q1 q2 := ((qresponse_name q1 _) == (qresponse_name q2 _)) && ((qargs q1 _) == (qargs q2 _))
-    }.
-
-  (**
-     are_non_redundant : List Query → Bool 
-
-     Checks whether the list of queries are non-redundant, as per
-     the definition in Jorge and Olaf's paper.
-     
-     #### Observations
-     1. Response name check : Differently from the definition by J&O, 
-        we check that two queries share their _response name_. In their paper, 
-        they check unaliased field selections between themselves, but they 
-        do not check whether an aliased field might be "equal" to an unaliased one.
-        
-        Example: 
-                 f[α] & f[α] are redundant.
-
-                 l:f[α] & l:f[α] are redundant.
-
-                 f:_[α] & f[α] are not redundant (as per J&O), even though they may produce the same result. 
-
-      
-
-     ----
-     See also:
-     
-     https://graphql.github.io/graphql-spec/June2018/#sec-Field-Selection-Merging
-
-     https://graphql.github.io/graphql-spec/June2018/#FieldsInSetCanMerge()
+     Checks whether the list of queries are non-redundant.
+     This checks that :
+     - There are no inline fragments with the same type condition.
+     - There are no field selections with the same response name.
    *)
   Equations? are_non_redundant (queries : seq (@Query Vals)) : bool
     by wf (queries_size queries) :=
@@ -237,9 +177,9 @@ Section NRGTNF.
 
 
   
-  
+  (** ---- *)
   (**
-     are_in_normal_form : List Query → Bool 
+     #<strong>are_in_normal_form</strong># : List Query → Bool 
 
      Checks whether a list of queries are in normal form.
 
@@ -251,7 +191,7 @@ Section NRGTNF.
   Definition are_in_normal_form queries := are_grounded queries && are_non_redundant queries.
 
 
-  
+  (** ---- *)  
 End NRGTNF.
 
 Arguments is_grounded [Vals].
@@ -261,8 +201,12 @@ Arguments are_grounded [Vals].
 Arguments is_grounded2 [Vals].
 Arguments are_grounded2 [Vals].
 Arguments are_non_redundant [Vals].
-
-
-Arguments are_similar [Vals].
-
 Arguments are_in_normal_form [Vals].
+
+(** ---- *)
+(** 
+    #<div>
+        <a href='GraphCoQL.QueryConformance.html' class="btn btn-light" role='button'> Previous ← Query Conformance  </a>
+        <a href='GraphCoQL.QueryNormalization.html' class="btn btn-info" role='button'>Continue Reading → Normalisation </a>
+    </div>#
+*)
