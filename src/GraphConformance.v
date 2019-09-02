@@ -71,18 +71,17 @@ Section Conformance.
       - The arguments must be declared in the given type for that given field.
       - The arguments' values must be of the type declared for each argument in the schema.  
  
-   **)     
-  Definition argument_conforms schema (ty fname : Name) (arg : Name * Vals) : bool :=
-    let: (argname, value) := arg in
-    match lookup_argument_in_type_and_field schema ty fname argname with
-    | Some field_arg => (has_type schema) field_arg.(argtype) value    (* If the argument is declared then check its value's type *)
-    | _ => false
-    end.
-
-
-  (** Checks whether all of the field's arguments conform to the schema **)
+   **)
+  
   Definition arguments_conform schema ty (f : fld) : bool :=
-    all (argument_conforms schema ty f.(label)) f.(args).
+    let argument_conforms (fname : Name) (arg : Name * Vals) : bool :=
+        let: (argname, value) := arg in
+        match lookup_argument_in_type_and_field schema ty fname argname with
+        | Some field_arg => (has_type schema) field_arg.(argtype) value    (* If the argument is declared then check its value's type *)
+        | _ => false
+        end
+    in
+    all (argument_conforms f.(label)) f.(args).
  
 
     

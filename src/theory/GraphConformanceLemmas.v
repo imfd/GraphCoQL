@@ -27,18 +27,6 @@ Section Theory.
 
   Variable (s : @wfGraphQLSchema Vals) (g : conformedGraph s).
 
-  (**
-     Reflection lemma for [argument_conforms].
-   *)
-  Lemma argument_conformsP ty fname arg :
-    reflect (exists2 fld_arg, lookup_argument_in_type_and_field s ty fname arg.1 = Some fld_arg & s.(has_type) fld_arg.(argtype) arg.2)
-            (argument_conforms s ty fname arg).
-  Proof.
-    apply: (iffP idP); rewrite /argument_conforms; case: arg => argname value.
-    - case Hlook : lookup_argument_in_type_and_field => [arg|] // Hty.
-        by exists arg.
-    - by case=> fld_arg Hlook Hty; rewrite Hlook.
-  Qed.
 
 
   (**
