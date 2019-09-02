@@ -71,6 +71,7 @@ Section Conformance.
       - The arguments must be declared in the given type for that given field.
       - The arguments' values must be of the type declared for each argument in the schema.  
  
+      This is used when validating edges' fields and nodes' properties.
    **)
   
   Definition arguments_conform schema ty (f : fld) : bool :=
@@ -128,18 +129,18 @@ Section Conformance.
   
   (** ---- *)
   (**
-     It states whether a field conforms to the Schema.
+     #<strong>nodes_conform</strong># : wfGraphQLSchema → graphQLGraph → Bool 
 
-     ∀ u ∈ N, f ∈ fld, v ∈ Vals ⋃ [Vals], λ (u, f[α]) = v 
-     then it must be that:
-     1. f ∈ fields (τ(u)) : 
-          Field 'f' must be declared in the type associated to node 'u' in the Schema.
+     The following predicate checks whether a graph's nodes conform to a given Schema.
+     This is done by checking that:
+     - Every node's type is an Object type.
+     - Every property conforms.
 
-     2. v ∈ values (type (f)) :
-          The value must be of the type declared for that field in the Schema.
-    
-     3. The arguments of 'f' must conform to what the Schema requires of them.
-
+     The latter is done by checking that:
+     - The properties are actually defined in the type of the node.
+     - The field's arguments conform.
+     - The properties values have a valid type wrt. to what is expected in the Schema 
+       (If we expect a field to have Int type then the value should ressemble an Int).
    **)
   
   Definition nodes_conform schema graph :=
