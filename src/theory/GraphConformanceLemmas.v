@@ -90,19 +90,15 @@ Section Theory.
                v.(ntype) \in get_possible_types s fdef.(return_type).
   Proof.
     move=> Hlook.
-    case: g => g' Hroot Hedges.
-    
-    have Hedge : forall e, e \in g'.(E) -> edge_conforms s g' e.
-      by apply/allP; move: Hedges; rewrite /edges_conform; case/andP.
-
-    move=> Hflds Hobjs v.
+    case: g => g' Hroot Hedges Hflds Hobjs v.
     rewrite /neighbours_with_field -in_undup => /mapP [v'].
-    rewrite mem_filter => /andP [/andP [/eqP Hsrc /eqP Hfld] Hin] Htrgt.    
-    move: (Hedge v' Hin).
-    rewrite /edge_conforms /=.
-    case: v' Hsrc Hfld Hin Htrgt => //=.
-    case=> //= src fld' v' -> -> Hin ->.
-      by rewrite Hlook /=; case/and3P.
+    case: v' => [[src' fld'] target].
+    rewrite mem_filter => /andP [/andP [/eqP /= Hsrc /eqP Hfld] Hin] Htrgt.
+    simpl in Hin.
+    move: Hedges; rewrite /edges_conform /=.
+    case/andP=> _ /allP-/(_ _ Hin).
+    rewrite Hsrc Hfld Htrgt Hlook /=.
+      by case: ifP => //= _; [case/and3P | case/andP].  
   Qed.
 
   

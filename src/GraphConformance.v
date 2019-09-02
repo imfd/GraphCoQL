@@ -104,23 +104,26 @@ Section Conformance.
      And the latter is done by checking that:
      - The edge's field is defined is defined in source node.
      - The target node's type is a subtype of the return type associated to the field of the edge.
-     - If the return type is not a List type, then this is the only edge connecting the source node 
+     - If the field's return type is not a List type, then this is the only edge connecting the source node 
        with the target node using the given field. 
      - The field's arguments conform.
    **)
-  Definition edge_conforms schema graph (edge : node * fld * @node Vals) : bool :=
-    let: (src, fld, target) := edge in
-    match lookup_field_in_type schema src.(ntype) fld.(label) with
-    | Some fdef => [&& (* is_subtype schema (NT target.(type)) fdef.(return_type), *) (* wrong... right? *)
-                     target.(ntype) \in get_possible_types schema fdef.(return_type),
-                   (is_list_type fdef.(return_type) || is_field_unique_for_src_node graph src fld) &
-                   arguments_conform schema src.(ntype) fld]
-    | _ => false
-    end.
-
-  
+ 
   Definition edges_conform schema graph :=
-    uniq graph.(E) && all (edge_conforms schema graph) graph.(E).
+    let edge_conforms (edge : node * fld * @node Vals) : bool :=
+        let: (src, fld, target) := edge in
+        match lookup_field_in_type schema src.(ntype) fld.(label) with
+        | Some fdef =>
+          if ~~is_list_type fdef.(return_type) then
+            [&& target.(ntype) \in get_possible_types schema fdef.(return_type),
+                is_field_unique_for_src_node graph src fld &
+                arguments_conform schema src.(ntype) fld]
+          else
+            (target.(ntype) \in get_possible_types schema fdef.(return_type)) && arguments_conform schema src.(ntype) fld
+        | _ => false     
+        end
+    in
+    uniq graph.(E) && all edge_conforms graph.(E).
 
 
   
