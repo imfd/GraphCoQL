@@ -18,6 +18,31 @@ Require Import GraphAux.
 
 (* end hide *)
 
+(**
+   #<div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">Graph Conformance</h1>
+        <p class="lead">
+         This file contains the necessary definitions to validate when a GraphQL Graph
+         is valid wrt. to a Schema. 
+        </p>
+         <p>
+         This notion includes things such as: 
+          <ul>
+           <li> Root node's type is same as the root query operation type. </li>
+           <li> Fields in edges are defined in the Schema. </li>
+           <li> Values for arguments and properties correspond to the expected type in the Schema. </li>
+           <li> Etc. </li>
+         </ul>
+        </p>
+         <p>
+         We will progressively define predicates that check different aspects of a graph.
+         From these we will ultimately define the predicate and structure for conformed graphs.
+        </p>
+  </div>
+</div>#
+ *)
+
 
 Section Conformance.
 
@@ -28,22 +53,23 @@ Section Conformance.
   Implicit Type schema : @wfGraphQLSchema Vals.
   Implicit Type graph : @graphQLGraph Vals. 
 
-
+  (** ---- *)
   (** 
-      It states that a Graph's root must have the same type as the Schema's root
+      #<strong>root_type_conforms</strong># : wfGraphQLSchema → graphQLSchema → Bool
+
+      This predicate checks that a Graph's root node must have the same type as the Schema's query type.
    **)
   Definition root_type_conforms schema graph : bool := graph.(root).(ntype) == schema.(query_type).
   
 
-
+  (** ---- *)
   (** 
-      It states whether a given field's argument conforms to 
-      what the Schema requires of it.
+      #<strong>arguments_conform</strong># : wfGraphQLSchema → graphQLSchema → fld → Bool
 
-      Given a node's type 'ty', one of the nodes' field name 'f' and an argument (argname, value).
-     
-     1. argname ∈ args (src, f) : The argument must be declared in the given type for that given field.
-     2. value ∈ values (type (arg)) : The value must be of the type declared for that argument in the schema.  
+      This predicate checks a field's arguments conform to 
+      what the Schema requires of them.
+      - The arguments must be declared in the given type for that given field.
+      - The arguments' values must be of the type declared for each argument in the schema.  
  
    **)     
   Definition argument_conforms schema (ty fname : Name) (arg : Name * Vals) : bool :=
@@ -63,40 +89,24 @@ Section Conformance.
 
 
   
-  (** 
-      It checks whether a field's unwrapped type (if it's List type) and a type 
-      conform.
-
-      This is used when checking that an edge conforms to a Schema (see next definition).
-   **)
-  Definition field_type_conforms schema (field_type target_type : Name) : bool :=
-    schema ⊢ NamedType target_type <: NamedType field_type.
 
 
-  
+  (** ---- *)
   (**
-     It states whether an edge conforms to the Schema.
-     An edge corresponds to a type's field whose type is another Object, Interface or Union type.
+     #<strong>edges_conform</strong># : wfGraphQLSchema → graphQLSchema → Bool
 
-     ∀ u v ∈ N, f[α] ∈ fld, (u, f[α], v) ∈ E:
+     This predicate checks whether a graph's edges conform to a Schema.
+     
+     This checks the following:
+     - There are no repeated edges. 
+     - Each edge conforms.
 
-     1. f ∈ fields (τ(u)) :
-          field 'f' has to be a field of that node's type in the Schema.
-
-     2. type (f) = τ(v) ∨ τ(v) ∈ implementation (type (f)) ∨ τ(v) ∈ union (type (f)) , ie, is a subtype :
-          The type associated to 'f' in the schema has to be the same type associated to node 'v'
-       OR the type of 'f' is an Interface type therefore the type of 'v' has to be of an 
-            object which implements this interface
-       OR the type of 'f' is a Union type, therefore the type of 'v' has to be an Object type
-            which is included in that union type.
-
-     3. type (f) ∉ Lt → ∀ w ∈ N, (u, f[α], w) ∈ E → w = v : 
-          If the type associated to field 'f' is not of List type,
-          then node 'v' is the only node associated to 'u' via an edge with 'f'.
-
-     4. The arguments of 'f' must conform to what the Schema requires of them, for
-        that given field.
-
+     And the latter is done by checking that:
+     - The edge's field is defined is defined in source node.
+     - The target node's type is a subtype of the return type associated to the field of the edge.
+     - If the return type is not a List type, then this is the only edge connecting the source node 
+       with the target node using the given field. 
+     - The field's arguments conform.
    **)
   Definition edge_conforms schema graph (edge : node * fld * @node Vals) : bool :=
     let: (src, fld, target) := edge in
@@ -112,7 +122,9 @@ Section Conformance.
   Definition edges_conform schema graph :=
     uniq graph.(E) && all (edge_conforms schema graph) graph.(E).
 
+
   
+  (** ---- *)
   (**
      It states whether a field conforms to the Schema.
 
