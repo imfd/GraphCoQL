@@ -14,14 +14,26 @@ Notation Name := string.
 
 (* end hide *)
 
+(**
+   #<div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">GraphQL Graph</h1>
+        <p class="lead">
+         This file contains the basic building blocks to define a GraphQL Graph.
+        </p>
+         
+  </div>
+</div>#
+ *)
+
 Section GraphQLGraph.
 
   Variables (Vals : eqType).
 
-
+  (** ---- *)
   (** *** Field 
 
-      It corresponds to an edge's label or a property's key, with a list of arguments
+      It corresponds to an edge's label or a property's key.
    **)
   Structure fld := Field {
                       label : string;
@@ -33,7 +45,7 @@ Section GraphQLGraph.
   Coercion label_of_fld (f : fld) := let: Field l _ := f in l.
   Coercion fun_of_fld (f : fld) := let: Field _ a := f in a.
 
-
+  (** ---- *)
   (** *** Node
       It corresponds to a node in a graph.
       It contains its type and its fields (as a partial mapping between
@@ -46,9 +58,9 @@ Section GraphQLGraph.
 
 
 
-  
+  (** ---- *)
   (** *** GraphQL Graph 
-      The collection of edges and a root node 
+      The collection of edges and a root node.
    *)
   Structure graphQLGraph := GraphQLGraph {
                             root : node;
@@ -58,7 +70,7 @@ Section GraphQLGraph.
 
   Coercion edges_of_graph (g : graphQLGraph) := g.(E).
 
-
+  (** ---- *)
 End GraphQLGraph.
 
 
@@ -66,9 +78,25 @@ Arguments fld [Vals].
 Arguments node [Vals].
 Arguments graphQLGraph [Vals].
 
+(** ---- *)
+(** 
+    #<div>
+        <a href='GraphCoQL.QueryNormalization.html' class="btn btn-light" role='button'> Previous ← Normalisation</a>
+        <a href='GraphCoQL.GraphConformance.html' class="btn btn-info" role='button'>Continue Reading → Graph Conformance </a>
+    </div>#
+*)
 
 Section Equality.
 
+  (** ** Equality 
+     This section deals with some SSReflect bureaucratic things needed to establish 
+     that the different components have a decidable procedure to establish equality (they belong to the 
+     SSReflect type - eqType).
+
+     This is basically done by establishing isomorphisms between the different structures
+     to others that already have a decidable procedure.
+   *)
+  
   Variable (Vals : eqType).
   
 
