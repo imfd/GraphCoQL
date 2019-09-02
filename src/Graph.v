@@ -48,12 +48,12 @@ Section GraphQLGraph.
   (** ---- *)
   (** *** Node
       It corresponds to a node in a graph.
-      It contains its type and its fields (as a partial mapping between
-      Fields and values).
+      It contains its type and its properties (as a partial mapping between
+      fields and values).
    *)
   Structure node := Node {
                        ntype : Name;
-                       nfields : seq (fld * (Vals + seq Vals)%type)  (* Vals could include list values? *)
+                       nprops : seq (fld * (Vals + seq Vals)%type)  (* Vals could include list values? *)
                      }.
 
 
@@ -70,6 +70,8 @@ Section GraphQLGraph.
 
   Coercion edges_of_graph (g : graphQLGraph) := g.(E).
 
+
+  
   (** ---- *)
 End GraphQLGraph.
 
@@ -77,6 +79,8 @@ End GraphQLGraph.
 Arguments fld [Vals].
 Arguments node [Vals].
 Arguments graphQLGraph [Vals].
+
+
 
 (** ---- *)
 (** 
@@ -131,7 +135,7 @@ Section Equality.
     | (fld, _) :: flds => (f == fld) || mem_seq_field flds f
     end.
     
-  Definition mem_field (n : node) f := mem_seq_field n.(nfields) f.
+  Definition mem_field (n : node) f := mem_seq_field n.(nprops) f.
   
   Definition pred_of_node (n : node) : pred_class :=
     [eta mem_field n].

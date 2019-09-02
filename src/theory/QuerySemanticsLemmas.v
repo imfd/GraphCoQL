@@ -55,14 +55,14 @@ Section Theory.
     repeat
       match goal with
       | [ H : lookup_field_in_type _ _ _ = _ |- context [ lookup_field_in_type _ _ _] ] => rewrite H /=
-      | [ H : (field_seq_value (nfields _) _) = _ |- context [ field_seq_value (nfields _) _] ] => rewrite H /=
+      | [ H : (field_seq_value (nprops _) _) = _ |- context [ field_seq_value (nprops _) _] ] => rewrite H /=
 
       | [|- context [ lookup_field_in_type _ _ _] ] => lookup
-      | [|- context [ field_seq_value ?u.(nfields) ] ] =>
+      | [|- context [ field_seq_value ?u.(nprops) ] ] =>
         let Hv := fresh "Hv" in
         let v := fresh "v" in
         let vs := fresh "vs" in
-        case Hv : (field_seq_value u.(nfields) _) => [ [v | vs] |] /=
+        case Hv : (field_seq_value u.(nprops) _) => [ [v | vs] |] /=
 
       | [H : (return_type ?f) = _ |- context [ return_type ?f ] ] => rewrite H /=
 
@@ -97,14 +97,14 @@ Section Theory.
     repeat
       match goal with
       | [ H : lookup_field_in_type _ _ _ = _ |- context [ lookup_field_in_type _ _ _] ] => rewrite H /=
-      | [ H : (field_seq_value (nfields _) _) = _ |- context [ field_seq_value (nfields _) _] ] => rewrite H /=
+      | [ H : (field_seq_value (nprops _) _) = _ |- context [ field_seq_value (nprops _) _] ] => rewrite H /=
 
       | [|- context [ lookup_field_in_type _ _ _] ] => lookup
-      | [|- context [ field_seq_value ?u.(nfields) ] ] =>
+      | [|- context [ field_seq_value ?u.(nprops) ] ] =>
         let Hv := fresh "Hv" in
         let v := fresh "v" in
         let vs := fresh "vs" in
-        case Hv : (field_seq_value u.(nfields) _) => [ [v | vs] |] /=
+        case Hv : (field_seq_value u.(nprops) _) => [ [v | vs] |] /=
 
       | [H : (return_type ?f) = _ |- context [ return_type ?f ] ] => rewrite H /=
 

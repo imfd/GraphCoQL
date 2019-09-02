@@ -144,7 +144,7 @@ Section Conformance.
    **)
   
   Definition nodes_conform schema graph :=
-    let field_conforms ty (fd : fld * (Vals + seq Vals)) : bool :=
+    let property_conforms ty (fd : fld * (Vals + seq Vals)) : bool :=
         match lookup_field_in_type schema ty fd.1.(label) with
         | Some fdef =>
           arguments_conform schema ty fd.1 &&
@@ -157,7 +157,7 @@ Section Conformance.
     in
     let node_conforms (u : node) :=
         is_object_type schema u.(ntype) &&
-        all (field_conforms u.(ntype)) u.(nfields)
+        all (property_conforms u.(ntype)) u.(nprops)
     in
     all node_conforms graph.(nodes).
 

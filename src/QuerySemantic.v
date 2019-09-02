@@ -163,7 +163,7 @@ Section QuerySemantic.
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some _
-            with field_seq_value u.(nfields) (Field f α) :=
+            with field_seq_value u.(nprops) (Field f α) :=
             {
             | Some (inl value) => (f, Leaf (Some value)) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
             | Some (inr values) => (f, Array (map (fun value => Leaf (Some value)) values)) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
@@ -176,7 +176,7 @@ Section QuerySemantic.
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some _
-            with field_seq_value u.(nfields) (Field f α) :=
+            with field_seq_value u.(nprops) (Field f α) :=
             {
             | Some (inl value) => (l, Leaf (Some value)) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
             | Some (inr values) => (l, Array (map (fun value => Leaf (Some value)) values)) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
@@ -267,7 +267,7 @@ Section QuerySemantic.
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some _ 
-            with field_seq_value u.(nfields) (Field f α) :=
+            with field_seq_value u.(nprops) (Field f α) :=
             {
             | Some (inl value) => (f, Leaf (Some value)) :: ≪ φ ≫ in u;
             | Some (inr values) => (f, Array (map (fun value => Leaf (Some value)) values)) :: ≪ φ ≫ in u;
@@ -280,7 +280,7 @@ Section QuerySemantic.
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some _ 
-            with field_seq_value u.(nfields) (Field f α) :=
+            with field_seq_value u.(nprops) (Field f α) :=
             {
             | Some (inl value) => (l, Leaf (Some value)) :: ≪ φ ≫ in u;
             | Some (inr values) => (l, Array (map (fun value => Leaf (Some value)) values)) :: ≪ φ ≫ in u;
@@ -366,7 +366,7 @@ Section QuerySemantic.
   Equations resolve_field_value u (field_name : Name) (argument_values : seq (Name * Vals)) : option ((Vals + seq Vals) + (@node Vals) + seq (@node Vals)) :=
     {
       resolve_field_value u f α
-        with field_seq_value u.(nfields) (Field f α) :=
+        with field_seq_value u.(nprops) (Field f α) :=
         {
         | Some value := Some (inl (inl value));
         | _ with neighbours_with_field g u (Field f α) :=
