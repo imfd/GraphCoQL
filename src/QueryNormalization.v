@@ -27,6 +27,17 @@ Require Import QueryTactics.
 
 (* end hide *)
 
+(**
+   #<div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">Query Normalisation</h1>
+        <p class="lead">
+         This file contains the definition of the normalisation procedure.
+        </p>
+         
+  </div>
+</div>#
+ *)
 
 Section QueryRewrite.
 
@@ -37,14 +48,14 @@ Section QueryRewrite.
 
   Variable s : @wfGraphQLSchema Vals.
   
-
+  (** ---- *)
   (**
-     normalize : Name → List Query → List Query 
+     #<strong>normalize</strong># : Name → List Query → List Query 
 
      Normalizes the given list of queries. 
      The resulting list of queries are non-redundant and in ground-type 
      normal form.
-
+     
      Normalization consists of two main processes :
      
      1. Eliminating redundancies via merging : Fields which share 
@@ -55,71 +66,13 @@ Section QueryRewrite.
      2. Grounding : Queries which are supposed to occur in abstract types 
         (be it an inline fragment with an abstract type condition or a    
         field with an abstract return type) are specialized into every
-        possible subtype of the given abstract type (minus itself). This means 
-        that fragments might be "lifted" (its type condition is removed and its 
+        possible subtype of the given abstract type (minus the abstract type itself). 
+        This means that fragments might be "lifted" (its type condition is removed and its 
         subqueries lifted) or removed if they do not make sense in the context
-        (See discussion in [is_field_merging_possible]). On the other hand,
-        fields' subqueries might be wrapped in fragments, specializing their contents.
+        On the other hand, fields' subqueries might be wrapped in fragments, specializing their contents.
 
 
      This definition assumes that the given type in scope is actually an Object type.
-     The following definition, [normalize_queries], does not make an assumption about
-     the type in scope, but still relies on this normalization function.
-     
-     - ty : Type in scope (Object type).
-
-     - lookup (f) : Searches the field definition with name "f" in ty.
-
-     - filter f φ : filters every field selection with response name "f" in φ (see [filter_queries_with_label]).
-
-     - collect ty f φ : finds every field selection with response name "f" in φ (see [find_queries_with_label]).
-
-     - merge φ : Extracts subqueries of queries in φ (see [merge_selection_sets]).
-
-     - Not showing aliased fields because they are the same as unaliased.
-
-
-
-         normalize [] := []
-                                               ⎧
-         normalize ty (f[α] :: φ_1 ... φ_n) := ⎨ f[α] :: (normalize ty (filter f (φ_1 ... φ_n)))   if (lookup (f) = f (Args) : rty)
-                                               |
-                                               ⎩  normalize ty (φ_1 ... φ_n)                       if (lookup (f) = ⊥)
-
-                                                
-                                                                ⎧
-         normalize ty (f[α] { β_1 ... β_k } :: φ_1 ... φ_n) :=  ⎨ f [α] { normalize rty (β1 ... β_k ++ merge (collect ty f (φ_1 ... φ_n))) } :: (normalize ty (filter f (φ_1 ... φ_n))) 
-                                                                |
-                                                                |         if (lookup (f) = f (Args) : rty) ∧ ty ∈ Ot 
-                                                                | 
-                                                                | 
-                                                                | f [α] { map (λ t => normalize t (β1 ... β_k ++ merge (collect ty f (φ_1 ... φ_n)))) (get_possible_types ty) }
-                                                                |     :: (normalize ty (filter f (φ_1 ... φ_n))) 
-                                                                |
-                                                                |         if (lookup (f) = f (Args) : rty) ∧ rty ∈ At
-                                                                |
-                                                                |
-                                                                | normalize ty (φ_1 ... φ_n)                  if (lookup (f) = ⊥)
-                                                                ⎩
-               
-                                                               ⎧
-         normalize ty (on t { β_1 ... β_k } :: φ_1 ... φ_n) := ⎨ normalize ty (β_1 ... β_k ++ φ_1 ... φ_n)       if (does_fragment_type_apply ty t) 
-                                                               |
-                                                               |        
-                                                               | normalize ty (φ_1 ... φ_n)                      ~
-                                                               ⎩
-
-                                               
-     #### Observations 
-     1. Split : In a previous version we attempted to split the normalization 
-        process into these two steps; removing redundancies and grounding.
-        This separation made the proof of semantics preservation actually harder,
-        resulting in inductive hypotheses that would not be directly usable.
-        Presumably it was due to the non compositional definition of the semantics vs.
-        the more compositional (not entirely...) of the other definitions.
-
-
-     2. J&O : 
    *)
   Equations? normalize (type_in_scope : Name) (queries : seq (@Query Vals)) :
     seq (@Query Vals) by wf (queries_size queries) :=
@@ -183,9 +136,9 @@ Section QueryRewrite.
     all: do [leq_queries_size].
   Qed.
 
-
+  (** ---- *)
   (**
-     normalize_queries : Name → List Query → List Query 
+     #<strong>normalize_queries</strong># : Name → List Query → List Query 
 
      Normalizes a list of queries.
      
@@ -193,17 +146,8 @@ Section QueryRewrite.
      is an Object type. It only checks the type and either calls [normalize] 
      on the list of queries if the type is an Object type, or wraps the queries
      in fragments with type conditions equal to the given type's subtypes 
-     (minus itself).
-
-                                        ⎧
-     normalize_queries ty (φ_1 ... φ_n) := ⎨ normalize ty (φ_1 ... φ_n)                                                    if (ty ∈ Ot)
-                                        |
-                                        | map (λ t => on t { normalize t (φ_1 ... φ_n) }) (get_possible_types ty)       ~
-                                        ⎩
-
-
+     (minus the abstract type itself).
    *)
-  (* TODO : Rename ! *)
   Equations normalize_queries (type_in_scope : Name) (queries : seq (@Query Vals)) :
     seq (@Query Vals) :=
     {
@@ -215,9 +159,20 @@ Section QueryRewrite.
         }
     }.
 
- 
+
+  (** ---- *)
 End QueryRewrite.
 
 
 Arguments normalize [Vals].
 Arguments normalize_queries [Vals].
+
+
+
+(** ---- *)
+(** 
+    #<div>
+        <a href='GraphCoQL.NRGTNF.html' class="btn btn-light" role='button'> Previous ← Non-redundancy and Groundness  </a>
+        <a href='GraphCoQL.Graph.html' class="btn btn-info" role='button'>Continue Reading → GraphQL Graph</a>
+    </div>#
+*)
