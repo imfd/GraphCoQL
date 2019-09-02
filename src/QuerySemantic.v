@@ -165,9 +165,9 @@ Section QuerySemantic.
         | Some _
             with field_seq_value u.(nfields) (Field f α) :=
             {
-            | Some (inl value) => (f, Leaf (SingleValue value)) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
-            | Some (inr values) => (f, Array (map (fun value => Leaf (SingleValue value)) values)) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
-            | None => (f, Leaf Null) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u  (* Should throw error? *)
+            | Some (inl value) => (f, Leaf (Some value)) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
+            | Some (inr values) => (f, Array (map (fun value => Leaf (Some value)) values)) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
+            | None => (f, Leaf None) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u  (* Should throw error? *)
             };
         | _ := ⟦ φ ⟧ˢ in u (* Should throw error *)
         };
@@ -178,9 +178,9 @@ Section QuerySemantic.
         | Some _
             with field_seq_value u.(nfields) (Field f α) :=
             {
-            | Some (inl value) => (l, Leaf (SingleValue value)) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
-            | Some (inr values) => (l, Array (map (fun value => Leaf (SingleValue value)) values)) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
-            | None => (l, Leaf Null) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u (* Should throw error? *)
+            | Some (inl value) => (l, Leaf (Some value)) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
+            | Some (inr values) => (l, Array (map (fun value => Leaf (Some value)) values)) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
+            | None => (l, Leaf None) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u (* Should throw error? *)
             };
 
         | _ := ⟦ φ ⟧ˢ in u (* Should throw error *)
@@ -200,7 +200,7 @@ Section QuerySemantic.
                 {
                 | Some v => (f, {- (⟦ β ++ merge_selection_sets (find_queries_with_label s f u.(ntype) φ) ⟧ˢ in v) -}) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
                 
-                | _ =>  (f, Leaf Null) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u
+                | _ =>  (f, Leaf None) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u
                 }
             };
 
@@ -220,7 +220,7 @@ Section QuerySemantic.
                 {
                 | Some v => (l, {- (⟦ β ++ merge_selection_sets (find_queries_with_label s l u.(ntype) φ) ⟧ˢ in v) -}) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
                 
-                | _ =>  (l, Leaf Null) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u
+                | _ =>  (l, Leaf None) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u
                 }
             };
 
@@ -269,9 +269,9 @@ Section QuerySemantic.
         | Some _ 
             with field_seq_value u.(nfields) (Field f α) :=
             {
-            | Some (inl value) => (f, Leaf (SingleValue value)) :: ≪ φ ≫ in u;
-            | Some (inr values) => (f, Array (map (fun value => Leaf (SingleValue value)) values)) :: ≪ φ ≫ in u;
-            | None => (f, Leaf Null) :: ≪ φ ≫ in u
+            | Some (inl value) => (f, Leaf (Some value)) :: ≪ φ ≫ in u;
+            | Some (inr values) => (f, Array (map (fun value => Leaf (Some value)) values)) :: ≪ φ ≫ in u;
+            | None => (f, Leaf None) :: ≪ φ ≫ in u
             };
         | _ := ≪ φ ≫ in u (* Error *)
         };
@@ -282,9 +282,9 @@ Section QuerySemantic.
         | Some _ 
             with field_seq_value u.(nfields) (Field f α) :=
             {
-            | Some (inl value) => (l, Leaf (SingleValue value)) :: ≪ φ ≫ in u;
-            | Some (inr values) => (l, Array (map (fun value => Leaf (SingleValue value)) values)) :: ≪ φ ≫ in u;
-            | None => (l, Leaf Null) :: ≪ φ ≫ in u
+            | Some (inl value) => (l, Leaf (Some value)) :: ≪ φ ≫ in u;
+            | Some (inr values) => (l, Array (map (fun value => Leaf (Some value)) values)) :: ≪ φ ≫ in u;
+            | None => (l, Leaf None) :: ≪ φ ≫ in u
             };
         | _ := ≪ φ ≫ in u (* Error *)
         };
@@ -303,7 +303,7 @@ Section QuerySemantic.
                 {
                 | Some v => (f, {- ≪ β ≫ in v -}) :: ≪ φ ≫ in u;
                 
-                | _ =>  (f, Leaf Null) :: ≪ φ ≫ in u
+                | _ =>  (f, Leaf None) :: ≪ φ ≫ in u
                 }
             };
 
@@ -322,7 +322,7 @@ Section QuerySemantic.
                 {
                 | Some v => (l, {- ≪ β ≫ in v -}) :: ≪ φ ≫ in u;
                 
-                | _ =>  (l, Leaf Null) :: ≪ φ ≫ in u
+                | _ =>  (l, Leaf None) :: ≪ φ ≫ in u
                 }
             };
 
@@ -400,13 +400,13 @@ Section QuerySemantic.
 
   (*          where complete_value (result : option ((Vals + seq Vals) + (@node Name Vals) + seq (@node Name Vals))) : ResponseNode := *)
   (*                  { *)
-  (*                    complete_value None := Leaf Null; *)
+  (*                    complete_value None := Leaf None; *)
 
   (*                    complete_value (Some (inr vs)) := Array *)
   (*                                                       [seq Object *)
   (*                                                            (execute_selection_set v (q.(qsubqueries) ++ merge_selection_sets (find_queries_with_label s v.(type) (qresponse_name q _) qs))) | v <- vs]; *)
 
-  (*                    complete_value _ := Leaf Null *)
+  (*                    complete_value _ := Leaf None *)
   (*                  }; *)
 
   (*       | Some (NamedType ty) := ((qresponse_name q _), complete_value (resolve_field_value u (qname q _) (qargs q _))) *)
@@ -414,21 +414,21 @@ Section QuerySemantic.
 
   (*          where complete_value (result : option ((Vals + seq Vals) + (@node Name Vals) + seq (@node Name Vals))) : ResponseNode := *)
   (*                  { *)
-  (*                    complete_value None := Leaf Null; *)
+  (*                    complete_value None := Leaf None; *)
 
   (*                    complete_value (Some (inl (inl value))) *)
   (*                      with value := *)
   (*                      { *)
-  (*                      | inl v := Leaf (SingleValue v); *)
-  (*                      | inr vs := Array (map (fun value => Leaf (SingleValue value)) vs) *)
+  (*                      | inl v := Leaf (Some v); *)
+  (*                      | inr vs := Array (map (fun value => Leaf (Some value)) vs) *)
   (*                      }; *)
 
   (*                    complete_value (Some (inl (inr v))) := Object (execute_selection_set v (q.(qsubqueries) ++ merge_selection_sets (find_queries_with_label s v.(type) (qresponse_name q _) qs))); *)
 
-  (*                    complete_value _ := Leaf Null *)
+  (*                    complete_value _ := Leaf None *)
   (*                  }; *)
 
-  (*       | _ := ((qresponse_name q _), Leaf Null) :: execute_selection_set3 u (filter_queries_with_label (qresponse_name q _) qs) *)
+  (*       | _ := ((qresponse_name q _), Leaf None) :: execute_selection_set3 u (filter_queries_with_label (qresponse_name q _) qs) *)
   (*       } *)
   (*   }. *)
   (* Proof. *)

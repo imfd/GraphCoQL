@@ -287,26 +287,26 @@ Section Example.
        (pair "hero"
              {-
                 [::
-                   (pair "name" (Leaf (SingleValue "Luke")));
+                   (pair "name" (Leaf (Some "Luke")));
                    (pair "friends"
                          (Array
                             [::
                                {-
                                 [::
-                                   (pair "droidFriend" (Leaf (SingleValue "R2-D2")));
-                                   (pair "primaryFunction" (Leaf (SingleValue "Astromech")))
+                                   (pair "droidFriend" (Leaf (Some "R2-D2")));
+                                   (pair "primaryFunction" (Leaf (Some "Astromech")))
                                 ]
                                 -};
                                {-
                                 [::
-                                   (pair "humanFriend" (Leaf (SingleValue "Han")));
+                                   (pair "humanFriend" (Leaf (Some "Han")));
                                    (pair "starships"
                                          (Array
                                             [::
                                                {-
                                                 [::
-                                                   (pair "starship" (Leaf (SingleValue "Falcon")));
-                                                   (pair "length" (Leaf (SingleValue "34.37")))
+                                                   (pair "starship" (Leaf (Some "Falcon")));
+                                                   (pair "length" (Leaf (Some "34.37")))
                                                 ]
                                                 -}
                                             ]
@@ -354,8 +354,8 @@ Section Example.
             [::
                (pair "hero" {-
                              [::
-                                (pair "name" (Leaf (SingleValue "Luke")));
-                                (pair "id" (Leaf (SingleValue "1000")))
+                                (pair "name" (Leaf (Some "Luke")));
+                                (pair "id" (Leaf (Some "1000")))
                              ]
                              -}
                )
