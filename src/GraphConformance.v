@@ -162,11 +162,12 @@ Section Conformance.
     all node_conforms graph.(nodes).
 
   
+  (** ---- *)
   (**
      A GraphQL graph conforms to a given Schema if:
-     1. Its root conforms to the Schema.
-     2. Its edges conform to the Schema.
-     4. Its nodes conform to the Schema.
+     - Its root conforms to the Schema.
+     - Its edges conform to the Schema.
+     - Its nodes conform to the Schema.
 
    **)
   Record conformedGraph schema := ConformedGraph {
@@ -184,4 +185,12 @@ Section Conformance.
 
 End Conformance.
 
-Arguments conformedGraph [Vals]. 
+Arguments conformedGraph [Vals].
+
+(** ---- *)
+(** 
+    #<div>
+        <a href='GraphCoQL.Graph.html' class="btn btn-light" role='button'> Previous ← GraphQL Graph</a>
+        <a href='GraphCoQL.Response.html' class="btn btn-info" role='button'>Continue Reading → GraphQL Response </a>
+    </div>#
+*)
