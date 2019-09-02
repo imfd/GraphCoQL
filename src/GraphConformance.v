@@ -142,35 +142,30 @@ Section Conformance.
      3. The arguments of 'f' must conform to what the Schema requires of them.
 
    **)
-
-  Definition field_conforms schema ty (fd : fld * (Vals + seq Vals)) : bool :=
-    match lookup_field_in_type schema ty fd.1.(label) with
-    | Some fdef =>
-      arguments_conform schema ty fd.1 &&
-      match fd.2 with
-      | (inl value) => schema.(has_type) fdef.(return_type) value
-      | (inr values) => all (schema.(has_type) fdef.(return_type)) values
-      end
-    | _ => false
-    end.
   
-  Definition node_fields_conform schema (u : node) :=
-    all (field_conforms schema u.(ntype)) u.(nfields).
-
-  
-  Definition fields_conform schema graph :=
-    all (node_fields_conform schema) graph.(nodes).
-
-  
-  Definition nodes_have_object_type schema graph : bool :=
-    all (fun node : node => is_object_type schema node.(ntype)) graph.(nodes).
+  Definition nodes_conform schema graph :=
+    let field_conforms ty (fd : fld * (Vals + seq Vals)) : bool :=
+        match lookup_field_in_type schema ty fd.1.(label) with
+        | Some fdef =>
+          arguments_conform schema ty fd.1 &&
+                            match fd.2 with
+                            | (inl value) => schema.(has_type) fdef.(return_type) value
+                            | (inr values) => all (schema.(has_type) fdef.(return_type)) values
+                            end
+        | _ => false
+        end
+    in
+    let node_conforms (u : node) :=
+        is_object_type schema u.(ntype) &&
+        all (field_conforms u.(ntype)) u.(nfields)
+    in
+    all node_conforms graph.(nodes).
 
   
   (**
      A GraphQL graph conforms to a given Schema if:
      1. Its root conforms to the Schema.
      2. Its edges conform to the Schema.
-     3. Its fields conform to the Schema.
      4. Its nodes conform to the Schema.
 
    **)
@@ -178,11 +173,10 @@ Section Conformance.
                                                 graph;
                                                 _ : root_type_conforms schema graph;
                                                 _ : edges_conform schema graph;
-                                                _ : fields_conform schema graph;
-                                                _ : nodes_have_object_type schema graph
+                                                _ : nodes_conform schema graph
                                       }.
 
-  Coercion graph_of_conformed_graph schema (g : conformedGraph schema) := let: ConformedGraph g _ _ _ _ := g in g.
+  Coercion graph_of_conformed_graph schema (g : conformedGraph schema) := let: ConformedGraph g _ _ _ := g in g.
 
 
                

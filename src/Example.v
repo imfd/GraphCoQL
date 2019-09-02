@@ -225,18 +225,13 @@ Section Example.
       by [].
     Qed.
 
-    Lemma fc : fields_conform wf_schema g.
+    Lemma fc : nodes_conform wf_schema g.
     Proof.
         by [].
     Qed.
     
-    Lemma nhot : nodes_have_object_type wf_schema g.
-    Proof.
-      by [].
-    Qed.
-    
 
-    Let wf_graph := ConformedGraph rtc ec fc nhot.
+    Let wf_graph := ConformedGraph rtc ec fc.
 
 
     
@@ -483,7 +478,7 @@ Section Example.
     Let g5 := GraphQLGraph r edges5.
 
     
-    Example fNc : ~ fields_conform wf_schema g5.
+    Example fNc : ~ nodes_conform wf_schema g5.
     Proof. by [].
     Qed.
     

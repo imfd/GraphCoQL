@@ -40,14 +40,6 @@ Section Theory.
     - by case=> fld_arg Hlook Hty; rewrite Hlook.
   Qed.
 
-  (**
-     Reflection lemma for [nodes_have_object_type].
-   *)
-  Lemma nodes_have_object_typeP graph :
-    reflect (forall node, node \in graph.(nodes) -> is_object_type s node.(ntype))
-            (nodes_have_object_type s graph).
-  Proof. by apply: (iffP allP). Qed.
-
 
   (**
      This lemma states that if the root node's type conforms to the schema, 
@@ -67,6 +59,13 @@ Section Theory.
       by move: (aux_root_query_type H).
   Qed.
 
+  Lemma nodes_conform_have_object_type :
+    nodes_conform s g -> forall u, u \in g.(nodes) -> is_object_type s u.(ntype).
+  Proof.
+    rewrite /nodes_conform /= => /allP Hconf u Hin.
+      by case/andP : (Hconf u Hin).
+  Qed.
+    
   (**
      This lemma states that every node in the conforming graph 
      must have Object type.
@@ -74,8 +73,8 @@ Section Theory.
   Lemma node_in_graph_has_object_type :
     forall u, u \in g.(nodes) -> is_object_type s u.(ntype).
   Proof.
-    apply/nodes_have_object_typeP.
-    by case: g.
+    apply: nodes_conform_have_object_type.
+      by case: g.
   Qed.
 
   
@@ -90,7 +89,7 @@ Section Theory.
                v.(ntype) \in get_possible_types s fdef.(return_type).
   Proof.
     move=> Hlook.
-    case: g => g' Hroot Hedges Hflds Hobjs v.
+    case: g => g' Hroot Hedges Hnodes v.
     rewrite /neighbours_with_field -in_undup => /mapP [v'].
     case: v' => [[src' fld'] target].
     rewrite mem_filter => /andP [/andP [/eqP /= Hsrc /eqP Hfld] Hin] Htrgt.
