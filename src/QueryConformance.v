@@ -95,7 +95,7 @@ Section QueryConformance.
 
   (** ---- *)
   (**
-     is_fragment_spread_possible : Name → Name → Bool 
+     #<strong>is_fragment_spread_possible</strong># : Name → Name → Bool 
      
      Checks whether a given type can be used as an inline fragment's type condition 
      in a given context with another type in scope (parent type).
@@ -112,13 +112,9 @@ Section QueryConformance.
 
    (** ---- *)
  (** 
-      query_conforms : Name → Query → Bool 
+     #<strong>is_consistent</strong># : Name → Query → Bool 
 
-      Checks whether a query conforms to a given type in the schema.
-      
-      The first parameter corresponds to the type in context where
-      the queries might live.
-
+      Checks whether a query is consistent to a given type in the schema.
 
       This checks the following things specified in the spec :
 
@@ -148,7 +144,7 @@ Section QueryConformance.
      
    *)
  (* TODO: Rename? It is only a part of the whole validation process *)
-  Fixpoint query_conforms (type_in_scope : Name) query : bool :=
+  Fixpoint is_consistent (type_in_scope : Name) query : bool :=
     match query with
     | f[[α]] =>
       if lookup_field_in_type s type_in_scope f is Some fld then
@@ -167,7 +163,7 @@ Section QueryConformance.
         [&& (is_object_type s fld.(return_type) || is_abstract_type s fld.(return_type)),
          arguments_conform fld.(fargs) α,
          φ != [::] &
-         all (query_conforms fld.(return_type)) φ]
+         all (is_consistent fld.(return_type)) φ]
       else
         false 
 
@@ -176,13 +172,13 @@ Section QueryConformance.
         [&& (is_object_type s fld.(return_type) || is_abstract_type s fld.(return_type)),
          arguments_conform fld.(fargs) α,
          φ != [::] &
-         all (query_conforms fld.(return_type)) φ]
+         all (is_consistent fld.(return_type)) φ]
       else
         false 
 
     | on t { φ } => [&& is_fragment_spread_possible type_in_scope t,
                     φ != [::] &
-                    all (query_conforms t) φ]
+                    all (is_consistent t) φ]
     end.
   
 
@@ -532,7 +528,7 @@ Section QueryConformance.
 
    *)
   Definition queries_conform (ty : Name) queries : bool :=
-    [&& all (query_conforms ty) queries,
+    [&& all (is_consistent ty) queries,
         have_compatible_response_shapes [seq (ty, q) | q <- queries] &
         is_field_merging_possible ty queries].
     
@@ -545,7 +541,7 @@ Arguments arguments_conform [Vals].
 Arguments is_fragment_spread_possible [Vals].
 Arguments have_compatible_response_shapes [Vals].
 Arguments is_field_merging_possible [Vals].
-Arguments query_conforms [Vals].
+Arguments is_consistent [Vals].
 Arguments queries_conform [Vals].
 
 (** 

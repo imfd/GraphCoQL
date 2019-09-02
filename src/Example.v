@@ -1099,8 +1099,8 @@ Section GraphQLSpecExamples.
                                                       "name" [[ [::] ]]
                                                    ]
                                                  }.
-    Example e130_1 : query_conforms wf_schema "Dog" example130_1 &&
-                     query_conforms wf_schema "Pet" example130_1.
+    Example e130_1 : is_consistent wf_schema "Dog" example130_1 &&
+                     is_consistent wf_schema "Pet" example130_1.
     Proof.
         by [].
     Qed.
@@ -1110,8 +1110,8 @@ Section GraphQLSpecExamples.
                                                       "name" [[ [::] ]]
                                                    ]
                                                  }.
-    Example e130_2 : query_conforms wf_schema "Dog" example130_2 &&
-                     query_conforms wf_schema "Pet" example130_2.
+    Example e130_2 : is_consistent wf_schema "Dog" example130_2 &&
+                     is_consistent wf_schema "Pet" example130_2.
     Proof.
         by [].
     Qed.
@@ -1125,7 +1125,7 @@ Section GraphQLSpecExamples.
                                                        }
                                                     ]
                                                  }.
-    Example e130_3 : query_conforms wf_schema "CatOrDog" example130_3.
+    Example e130_3 : is_consistent wf_schema "CatOrDog" example130_3.
     Proof.
         by [].
     Qed.
@@ -1136,7 +1136,7 @@ Section GraphQLSpecExamples.
                                                      ]
                                                    }.
 
-    Example e131_1 : all (fun name => ~~query_conforms wf_schema name example131_1) wf_schema.(schema_names).
+    Example e131_1 : all (fun name => ~~is_consistent wf_schema name example131_1) wf_schema.(schema_names).
     Proof.
         by [].
     Qed.
@@ -1151,7 +1151,7 @@ Section GraphQLSpecExamples.
                                                      ]
                                                    }.
 
-    Example e131_2 : all (fun name => ~~query_conforms wf_schema name example131_2) wf_schema.(schema_names).
+    Example e131_2 : all (fun name => ~~is_consistent wf_schema name example131_2) wf_schema.(schema_names).
     Proof.
         by [].
     Qed.
@@ -1183,7 +1183,7 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
     
-    Example e137 : query_conforms wf_schema "Dog" example137.
+    Example e137 : is_consistent wf_schema "Dog" example137.
     Proof.
         by [].
     Qed.
@@ -1199,7 +1199,7 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
 
-    Example e138 : ~~ query_conforms wf_schema "Dog" example138.
+    Example e138 : ~~ is_consistent wf_schema "Dog" example138.
     Proof.
         by [].
     Qed.
@@ -1220,7 +1220,7 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
     
-    Example e139 : query_conforms wf_schema "Dog" example139.
+    Example e139 : is_consistent wf_schema "Dog" example139.
     Proof.
         by [].
     Qed.
@@ -1240,7 +1240,7 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
     
-    Example e140 : query_conforms wf_schema "Dog" example140.
+    Example e140 : is_consistent wf_schema "Dog" example140.
     Proof.
         by [].
     Qed.
@@ -1301,7 +1301,7 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
 
-    Example e142_1 : ~~ query_conforms wf_schema "Sentient" example142_1.
+    Example e142_1 : ~~ is_consistent wf_schema "Sentient" example142_1.
     Proof.
         by [].
     Qed.
@@ -1318,7 +1318,7 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
     
-    Example e142_2 : ~~ query_conforms wf_schema "HumanOrAlien" example142_2.
+    Example e142_2 : ~~ is_consistent wf_schema "HumanOrAlien" example142_2.
     Proof.
         by [].
     Qed.
@@ -1361,7 +1361,7 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
 
-    Example e144 : ~~ query_conforms wf_schema "Pet" example144.
+    Example e144 : ~~ is_consistent wf_schema "Pet" example144.
     Proof.
         by [].
     Qed.
