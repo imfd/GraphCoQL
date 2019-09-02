@@ -23,6 +23,32 @@ Require Import Ssromega.
 (* end hide *)
 
 
+(**
+   #<div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">Query Conformance</h1>
+        <p class="lead">
+         This file contains the necessarty definitions to validate when a GraphQL Query
+         is valid wrt. to a Schema. 
+        </p>
+         <p>
+         This notion includes things such as: 
+          <ul>
+           <li> Field selection over a type is actually defined in that type. </li>
+           <li> Arguments have valid names </li>
+           <li> Inline fragments are applied on valid types </li>
+           <li> Etc. </li>
+         </ul>
+        </p>
+         <p>
+         We will progressively define predicates that check different aspects of a query;
+         check if an argument conforms, do fields merge, etc. 
+         From these we will ultimately define the predicate for conformed queries.
+        </p>
+  </div>
+</div>#
+ *)
+
 Section QueryConformance.
 
   Variables Vals : eqType.
@@ -34,80 +60,40 @@ Section QueryConformance.
 
   Variable s : @wfGraphQLSchema Vals.
  
- 
   
-  (** 
-      argument_conforms : List FieldArgumentDefinition → Name * Vals → Bool 
+  (** ---- *)
+  (** *** Arguments conform 
 
-      Checks whether a query's argument (argument name & value associated) conforms to an argument
-      of a field defined in the schema.
+      #<strong>arguments_conform</strong># : List FieldArgumentDefinition → List (Name * Vals) → Bool
+
+      The following predicate checks whether a list of arguments (described as a pairing between names and values)
+      conform to a list of field arguments.
       
       This is used when checking whether a field selection conforms to a type in the schema.
-      The arguments passed on to the field selection must actually exist for the corresponding 
-      field defined in the schema and the values must be of a valid type (eg. if argument requires 
-      an Int, then an "Int" value must be passed on when querying).
 
-      ∃ argument ∈ Args, argument.argname = α.name ∧ α.value has_type argument.argtype     #<br>#
-      [―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――]    #<br>#
-                                 α conforms Args
-
-
-     ----
-     See also:
-     
-     https://graphql.github.io/graphql-spec/June2018/#sec-Validation.Arguments
-
-     https://graphql.github.io/graphql-spec/June2018/#sec-Argument-Names
-
-   **)
-  Definition argument_conforms (args : seq FieldArgumentDefinition) (arg : Name * Vals) : bool :=
-    let: (argname, value) := arg in
-    has (fun argdef => let: FieldArgument name ty := argdef in
-                    (name == argname) && s.(has_type) ty value) args.
-  
-
-  (** 
-      arguments_conform : List FieldArgumentDefinition → List (Name * Vals) → Bool
-
-      Checks whether a list of arguments (described as a pairing between names and values)
-      conform to a set of fields defined in the schema.
-
-      This is used when checking whether a field selection conforms to a type in the schema.
-      The arguments passed on to the field selection must actually exist for the corresponding 
-      field defined in the schema and the values must be of a valid type (eg. if argument requires 
-      an Int, then an "Int" value must be passed on when querying).
-
-
-      ∀ argument ∈ α, argument conforms Args ∧ α.names are_unique    #<br>#
-      [――――――――――――――――――――――――――――――――――――――――――――――――――――――――――]   #<br>#
-                    α conform Args                                                 
+      For a query argument to be valid it must satisfy the following:
+      - There exists an argument definition with the same name.
+      - The value given to the query argument must be of the "same type" as the type 
+        associated to the argument definition in the Schema (eg. if the argument requires 
+        an Int, then an "Int" value must be passed on when querying).      
       
 
-      ---- 
+      #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
       **** Observations
 
-      1. Required arguments : Since NonNull types are not implemented, we are not checking for required 
+      - Required arguments : Since NonNull types are not implemented, we are not checking for required 
          arguments.
-      
-      3. J&O : We do not have a complete definition of conformance to which we could compare.
-
-      ---- 
-      
-      See also:
-
-      - [arguments_conforms].
-
-      https://graphql.github.io/graphql-spec/June2018/#sec-Argument-Uniqueness
-      
-      https://graphql.github.io/graphql-spec/June2018/#sec-Required-Arguments
-
-      https://graphql.github.io/graphql-spec/June2018/#sec-Values-of-Correct-Type
    **)
   Definition arguments_conform (args : seq FieldArgumentDefinition) (α : seq (Name * Vals)) : bool :=
-    all (argument_conforms args) α && uniq [seq arg.1 | arg <- α].
+    let argument_conforms (arg : Name * Vals) : bool :=
+        let: (name, value) := arg in
+        has (fun argdef => (argdef.(argname) == name) && s.(has_type) argdef.(argtype) value) args
+    in
+    all argument_conforms α && uniq [seq arg.1 | arg <- α].
      
 
-  
+
+  (** ---- *)
   (**
      is_fragment_spread_possible : Name → Name → Bool 
      
@@ -115,17 +101,7 @@ Section QueryConformance.
      in a given context with another type in scope (parent type).
 
      It basically amounts to intersecting the possible types of each
-     and checking that the intersection is not empty.
-
-
-      ---- 
-      See also:
-      
-      - [get_possible_types]     
-
-      https://graphql.github.io/graphql-spec/June2018/#sec-Fragment-spread-is-possible
-
-      https://facebook.github.io/graphql/June2018/#GetPossibleTypes()
+     and checking that the intersection is not empty.     
    *)
   Definition is_fragment_spread_possible parent_type fragment_type : bool :=
     let ty_possible_types := get_possible_types s fragment_type in
@@ -133,40 +109,106 @@ Section QueryConformance.
     let applicable_types := (ty_possible_types :&: parent_possible_types)%SEQ in
     applicable_types != [::].
 
+
+   (** ---- *)
+ (** 
+      query_conforms : Name → Query → Bool 
+
+      Checks whether a query conforms to a given type in the schema.
+      
+      The first parameter corresponds to the type in context where
+      the queries might live.
+
+
+      This checks the following things specified in the spec :
+
+      1. Fields are defined in the type in context.
+      
+      2. If return type is a Scalar or Enum, then it doesn't have subqueries.
+
+      3. If return type is an Object, Interface or Union, then it must have non-empty subqueries.
+
+      4. Arguments conform to the type in context.
+
+      6. Inline fragments can be spread in the given type in context.
+
+      
+      #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
+      **** Observations 
+      
+      - Fragments on composite types : The spec states that a fragment's type condition must 
+        be an Object, Interface or Union type. We argue that adding this check is a bit 
+        redundant along with [is_fragment_spread_possible], because if the type condition 
+        is not any of the previous one, then its possible types would be empty (meaning 
+        the previous predicate would be false).
+
+      - Fragment spread type existence : Similar to the previous one, the spec states that 
+        the type condition must exist in the schema. We argue again that adding this check 
+        would be a bit redundant, for similar reasons.
+     
+   *)
+ (* TODO: Rename? It is only a part of the whole validation process *)
+  Fixpoint query_conforms (type_in_scope : Name) query : bool :=
+    match query with
+    | f[[α]] =>
+      if lookup_field_in_type s type_in_scope f is Some fld then
+        (is_scalar_type s fld.(return_type) || is_enum_type s fld.(return_type)) && arguments_conform fld.(fargs) α
+      else
+        false
+
+    | _:f[[α]] =>
+      if lookup_field_in_type s type_in_scope f is Some fld then
+        (is_scalar_type s fld.(return_type) || is_enum_type s fld.(return_type)) && arguments_conform fld.(fargs) α
+      else
+        false
+
+    | f[[α]] { φ } => 
+      if lookup_field_in_type s type_in_scope f is Some fld then
+        [&& (is_object_type s fld.(return_type) || is_abstract_type s fld.(return_type)),
+         arguments_conform fld.(fargs) α,
+         φ != [::] &
+         all (query_conforms fld.(return_type)) φ]
+      else
+        false 
+
+    | _:f[[α]] { φ } =>
+      if lookup_field_in_type s type_in_scope f is Some fld then
+        [&& (is_object_type s fld.(return_type) || is_abstract_type s fld.(return_type)),
+         arguments_conform fld.(fargs) α,
+         φ != [::] &
+         all (query_conforms fld.(return_type)) φ]
+      else
+        false 
+
+    | on t { φ } => [&& is_fragment_spread_possible type_in_scope t,
+                    φ != [::] &
+                    all (query_conforms t) φ]
+    end.
   
 
-
- (**
+  (** ---- *)
+  (**
     are_compatible_types : Type → Type → Bool
 
     Checks whether two types are compatible. 
     This is posteriorly used to check if two queries have compatible response shapes.
 
     This corresponds to steps 3-6 used in the definition given in _SameResponseShape_ in the 
-    spec.
-
-    ----
-    See also:
-
-    - [have_compatible_shapes]
-
-    https://graphql.github.io/graphql-spec/June2018/#sec-Field-Selection-Merging
-    
-    https://graphql.github.io/graphql-spec/June2018/#SameResponseShape()
+    spec.  
   *)
- Equations are_compatible_types : type -> type -> bool :=
-   {
-     are_compatible_types (NamedType rty) (NamedType rty')
-       with (is_scalar_type s rty || is_enum_type s rty) :=
-       {
-       | true := rty == rty';
-       | _ := is_composite_type s rty'
-       };
-     are_compatible_types (ListType rty) (ListType rty') := are_compatible_types rty rty';
-     are_compatible_types _ _ := false
-   }.
+  Fixpoint are_compatible_types (ty ty' : type) : bool :=
+    match ty, ty' with
+    | NamedType rty, NamedType rty' =>
+      if (is_scalar_type s rty || is_enum_type s rty) then
+        rty == rty'
+      else
+        is_composite_type s rty'
+    | ListType rty, ListType rty' => are_compatible_types rty rty'
+    | _, _ => false
+    end.
 
-
+  
+ (** ---- *)
  (**
     has_compatible_type : Name → Type → Query → Bool 
 
@@ -180,49 +222,38 @@ Section QueryConformance.
     Inline fragments do not have a return type, therefore this always 
     returns false for these cases.
 
-    ----
-    See also:
-
-    - [have_compatible_shapes]
-
-    https://graphql.github.io/graphql-spec/June2018/#sec-Field-Selection-Merging
-    
-    https://graphql.github.io/graphql-spec/June2018/#SameResponseShape()
-
+    There is a lot of code repetition, which is there only for reading purposes.
   *)
- Equations has_compatible_type (return_type : type) (nq : Name * @Query Vals) : bool :=
-   {
-     has_compatible_type rty (ty, f[[ _ ]])
-       with lookup_field_in_type s ty f :=
-       {
-       | Some fld := are_compatible_types fld.(return_type) rty;
-       | _ := false
-       };
-     has_compatible_type rty (ty, _:f[[ _ ]])
-       with lookup_field_in_type s ty f :=
-       {
-       | Some fld := are_compatible_types fld.(return_type) rty;
-       | _ := false
-       };
-     
-     has_compatible_type rty (ty, f[[ _ ]] { _ })
-       with lookup_field_in_type s ty f :=
-       {
-       | Some fld := are_compatible_types fld.(return_type) rty;
-       | _ := false
-       };
-     
-     has_compatible_type rty (ty, _:f[[ _ ]] { _ })
-       with lookup_field_in_type s ty f :=
-       {
-       | Some fld := are_compatible_types fld.(return_type) rty;
-       | _ := false
-       };
+  Fixpoint has_compatible_type (rty : type) (nq : Name * @Query Vals) : bool :=
+    match nq with
+    | (ty, f[[ _ ]]) =>
+      if lookup_field_in_type s ty f is Some fld then
+        are_compatible_types fld.(return_type) rty
+      else
+        false
+          
+    | (ty, _:f[[ _ ]]) =>
+      if lookup_field_in_type s ty f is Some fld then
+        are_compatible_types fld.(return_type) rty
+      else
+        false
+          
+    | (ty, f[[ _ ]] { _ }) =>
+      if lookup_field_in_type s ty f is Some fld then
+        are_compatible_types fld.(return_type) rty
+      else
+        false
 
-     has_compatible_type _ (_, on _ { _ }) := false
-   }.
+    | (ty, _:f[[ _ ]] { _ }) =>
+       if lookup_field_in_type s ty f is Some fld then
+        are_compatible_types fld.(return_type) rty
+      else
+        false
 
+    | (_, on _ { _ }) => false
+    end.
 
+ (** ---- *)
  (**
     have_compatible_response_shapes : Name → List Query → Bool 
 
@@ -245,26 +276,17 @@ Section QueryConformance.
     The first parameter corresponds to the type in context where the queries 
     might live.
 
-    ---- 
+    #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
     **** Observations
     
-    1. Redundant recursion : We argue that the definitions given in the spec for _FieldsInSetCanMerge_ and _SameResponseShape_
+    - Redundant recursion : We argue that the definitions given in the spec for _FieldsInSetCanMerge_ and _SameResponseShape_
        make two recursive calls that are redundant (Section 2.iv and 9.a respectively). You can separate this 
        calls and work separately, checking equality of names and arguments on one hand and checking types on the 
        other (or try and mix both to optimize calls - in this case we prefer to split to facilitate reasoning).
 
-    2. Redundant pair-check : The spec checks _SameResponseShape_ for every pair of queries sharing a response name.
+    - Redundant pair-check : The spec checks _SameResponseShape_ for every pair of queries sharing a response name.
        We argue that it should suffice to check every query against a single one (as we do here) and via transitivity 
-       validate that they all have compatible return types.
-
-    ----
-    See also:
-
-    
-    https://graphql.github.io/graphql-spec/June2018/#sec-Field-Selection-Merging
-    
-    https://graphql.github.io/graphql-spec/June2018/#SameResponseShape()    
-
+       validate that they all have compatible return types. 
   *)
  (* I am pretty sure about claim (2) but we should confirm it somehow.. right xd? *)
  (* Equations is not able to build the graph *)
@@ -343,11 +365,10 @@ Section QueryConformance.
  Next Obligation.
    rewrite /queries_size_aux /= map_cat queries_size_cat; simp query_size.
    have -> : forall xs y, [seq x.2 | x <- [seq (y, q) | q <- xs] ] = xs by intros; elim: xs => //= x xs ->.       
-   by ssromega.
+     by ssromega.
  Qed.
 
-
-
+ (** ---- *)
  (**
     is_field_merging_possible : Name → List Query → Bool
 
@@ -383,29 +404,12 @@ Section QueryConformance.
     respectively. This way, we can actually check merging on fields that make sense 
     and not on all fields that share a response name.
 
-    ---- 
+    #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
     **** Observations
 
-    1. Implicit type : The spec refers to the _parent types_ of each field but they 
+    - Implicit type : The spec refers to the _parent types_ of each field but they 
        are not given as parameter.
-      
-
-    ---- 
-    See also:
-    - [are_equivalent]
-    - [find_queries_with_label]
-    - [find_fields_with_response_name]
-    - [have_compatible_response_shapes]
-
-    https://graphql.github.io/graphql-spec/June2018/#sec-Field-Selection-Merging
-
-    https://graphql.github.io/graphql-spec/June2018/#FieldsInSetCanMerge()
-
-    https://tinyurl.com/y4zkoofg
-
-    https://github.com/graphql/graphql-spec/issues/367
-
-    https://github.com/graphql/graphql-spec/issues/399
+    
   *)
  Equations? is_field_merging_possible (type_in_scope : Name) queries : bool by wf (queries_size queries)  :=
    {
@@ -502,109 +506,9 @@ Section QueryConformance.
    all: do ? [case is_object_type => /=; by constructor; apply: IH; leq_queries_size].
  Defined.
  
-        
-  (** 
-      query_conforms : Name → Query → Bool 
-
-      Checks whether a query conforms to a given type in the schema.
-      
-      The first parameter corresponds to the type in context where
-      the queries might live.
 
 
-      This checks the following things specified in the spec :
-
-      1. Fields are defined in the type in context.
-      
-      2. If return type is a Scalar or Enum, then it doesn't have subqueries.
-
-      3. If return type is an Object, Interface or Union, then it must have non-empty subqueries.
-
-      4. Arguments conform to the type in context.
-
-      6. Inline fragments can be spread in the given type in context.
-
-      ---- 
-      **** Observations 
-      
-      1. Fragments on composite types : The spec states that a fragment's type condition must 
-         be an Object, Interface or Union type. We argue that adding this check is a bit 
-         redundant along with [is_fragment_spread_possible], because if the type condition 
-         is not any of the previous one, then its possible types would be empty (meaning 
-         the previous predicate would be false).
-
-      2. Fragment spread type existence : Similar to the previous one, the spec states that 
-         the type condition must exist in the schema. We argue again that adding this check 
-         would be a bit redundant, for similar reasons.
-
-      3. J&O : We do not have a complete definition of conformance to which we could compare.
-         They mention a notion of conformance of a query wrt. the Query type.
-
-
-     ---- 
-     See also
-     
-     - [arguments_conform]
-
-     - [is_fragment_spread_possible]
-
-     https://graphql.github.io/graphql-spec/June2018/#sec-Field-Selections-on-Objects-Interfaces-and-Unions-Types
-
-     https://graphql.github.io/graphql-spec/June2018/#sec-Leaf-Field-Selections
-
-     https://graphql.github.io/graphql-spec/June2018/#sec-Fragment-Spread-Type-Existence
-
-     https://graphql.github.io/graphql-spec/June2018/#sec-Fragments-On-Composite-Types
-
-     https://graphql.github.io/graphql-spec/June2018/#sec-Fragment-spread-is-possible
-   *)
- (* TODO: Rename? It is only a part of the whole validation process *)
-  Equations query_conforms (type_in_scope : Name) query : bool :=
-    {
-      query_conforms ty (f[[α]])
-        with lookup_field_in_type s ty f :=
-        {
-        | Some fld => (is_scalar_type s fld.(return_type) ||
-                      is_enum_type s fld.(return_type)) &&
-                      arguments_conform fld.(fargs) α;
-        | _ => false
-        };
-
-      query_conforms ty (_:f[[α]])
-        with lookup_field_in_type s ty f :=
-        {
-        | Some fld => (is_scalar_type s fld.(return_type) ||
-                      is_enum_type s fld.(return_type)) &&
-                      arguments_conform fld.(fargs) α;
-        | _ => false
-        };
-
-      query_conforms ty (f[[α]] { φ })
-        with lookup_field_in_type s ty f :=
-        {
-        | Some fld => [&& (is_object_type s fld.(return_type) || is_abstract_type s fld.(return_type)),
-                         arguments_conform fld.(fargs) α,
-                         φ != [::] &
-                         all (query_conforms fld.(return_type)) φ];
-        | _ => false
-        };
-
-      query_conforms ty (_:f[[α]] { φ })
-        with lookup_field_in_type s ty f :=
-        {
-        | Some fld => [&& (is_object_type s fld.(return_type) || is_abstract_type s fld.(return_type)),
-                         arguments_conform fld.(fargs) α,
-                         φ != [::] &
-                         all (query_conforms fld.(return_type)) φ];
-        | _ => false
-        };
-
-      query_conforms ty (on t { φ }) :=
-        [&& is_fragment_spread_possible ty t,
-         φ != [::] &
-         all (query_conforms t) φ]
-    }.
-
+  (** ---- *)
   (**
      queries_conform : Name -> List Query -> Bool 
 
@@ -618,13 +522,13 @@ Section QueryConformance.
 
      - field merging is possible.
 
-     ---- 
+     #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
      **** Observations
      
-     1. Empty lists : Our definition allows for a list of queries to be empty.
-        We argue that this is not an issue, since we do check that subqueries 
-        are not empty. If this list is empty and then evaluated, it would just 
-        result in an empty list of results.
+     - Empty lists : Our definition allows for a list of queries to be empty.
+       We argue that this is not an issue, since we do check that subqueries 
+       are not empty. If this list is empty and then evaluated, it would just 
+       result in an empty list of results.
 
    *)
   Definition queries_conform (ty : Name) queries : bool :=
@@ -636,7 +540,6 @@ Section QueryConformance.
  
 End QueryConformance.
 
-Arguments argument_conforms [Vals].
 Arguments arguments_conform [Vals].
 
 Arguments is_fragment_spread_possible [Vals].
@@ -644,3 +547,10 @@ Arguments have_compatible_response_shapes [Vals].
 Arguments is_field_merging_possible [Vals].
 Arguments query_conforms [Vals].
 Arguments queries_conform [Vals].
+
+(** 
+    #<div>
+        <a href='GraphCoQL.Query.html' class="btn btn-light" role='button'> Previous ← Query  </a>
+        <a href='GraphCoQL.QuerySemantic.html' class="btn btn-info" role='button'>Continue Reading → QuerySemantics </a>
+    </div>#
+*)
