@@ -35,9 +35,6 @@ Require Import Response.
 Require Import NRGTNF.
 
 
-Require Import QueryNormalization.
-
-
 Require Import SeqExtra.
 Require Import QueryTactics.
 

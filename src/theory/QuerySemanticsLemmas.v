@@ -33,7 +33,6 @@ Require Import Response.
 Require Import NRGTNF.
 Require Import NRGTNFLemmas.
 
-Require Import QueryNormalization.
 Require Import QueryNormalizationLemmas.
 
 

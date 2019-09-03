@@ -1,6 +1,5 @@
 (* begin hide *)
 
-Require Import List.
 From mathcomp Require Import all_ssreflect.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -12,6 +11,7 @@ Require Import QString.
 
 Require Import Query.
 Require Import QueryAux.
+Require Import QueryAuxLemmas.
 Require Import SchemaWellFormedness.
 
 Require Import Schema.
@@ -23,6 +23,9 @@ Require Import SeqExtra.
 
 Require Import Ssromega.
 
+
+Require Import QueryTactics.
+
 (* end hide *)
 
 (**
@@ -30,8 +33,8 @@ Require Import Ssromega.
       <div class="container">
         <h1 class="display-4">Non-redundant Ground-typed Normal Form</h1>
         <p class="lead">
-         This file contains the necessary definitions to establish when a GraphQL
-         Query is non-redundant and in ground-typed normal form.
+         This file contains the basic predicates for non-redundancy and groundness of queries.
+         It also contains the normalisation procedure.
         </p>
          
   </div>
@@ -46,7 +49,13 @@ Section NRGTNF.
   Implicit Type queries : seq (@Query Vals).
   Implicit Type query : @Query Vals.
   
+
+  (** * Definitions *)
   
+  (** ** Groundness
+      In this section we define the predicates to establish when a 
+      GraphQL Query is grounded.
+   *)
   (** ---- *)
   (**
      #<strong>is_grounded</strong># : Query → Bool 
@@ -144,7 +153,11 @@ Section NRGTNF.
      }.
 
 
- 
+  (** ** Non-redundancy
+      
+      In this section we define the predicate to establish when a GraphQL Query 
+      is non-redundant.
+   *)
   (** ---- *)
   (**
      #<strong>are_non_redundant</strong># : List Query → Bool 
@@ -202,6 +215,144 @@ Arguments is_grounded2 [Vals].
 Arguments are_grounded2 [Vals].
 Arguments are_non_redundant [Vals].
 Arguments are_in_normal_form [Vals].
+
+
+
+Section QueryRewrite.
+
+  Variables Vals : eqType.
+  Implicit Type schema : @wfGraphQLSchema Vals.
+  Implicit Type query : @Query Vals.
+
+
+  Variable s : @wfGraphQLSchema Vals.
+
+  (** * Normalisation
+      
+      In this section we will define a normalisation procedure, which 
+      takes a GraphQL Query and outputs another one in normal form.
+      
+      The proof of this is in the file _QueryNormalizationLemmas_.
+   *)
+  (** ---- *)
+  (**
+     #<strong>normalize</strong># : Name → List Query → List Query 
+
+     Normalizes the given list of queries. 
+     The resulting list of queries are non-redundant and in ground-type 
+     normal form.
+     
+     Normalization consists of two main processes :
+     
+     - Eliminating redundancies via merging : Fields which share 
+        a response name are collapsed/collected into the first occurrence of 
+        this set of common fields. This resembles the process carried out 
+        by the semantics (CollectFields & MergeSelectionSets).
+
+     - Grounding : Queries which are supposed to occur in abstract types 
+        (be it an inline fragment with an abstract type condition or a    
+        field with an abstract return type) are specialized into every
+        possible subtype of the given abstract type (minus the abstract type itself). 
+        This means that fragments might be "lifted" (its type condition is removed and its 
+        subqueries lifted) or removed if they do not make sense in the context
+        On the other hand, fields' subqueries might be wrapped in fragments, specializing their contents.
+
+
+     This definition assumes that the given type in scope is actually an Object type.
+   *)
+  Equations? normalize (type_in_scope : Name) (queries : seq (@Query Vals)) :
+    seq (@Query Vals) by wf (queries_size queries) :=
+    {
+      normalize _ [::] := [::];
+
+      normalize ty (f[[α]] :: φ)
+        with lookup_field_in_type s ty f :=
+        {
+        | Some _ := f[[α]] :: normalize ty (filter_queries_with_label f φ);
+        | _ := normalize ty φ
+        };
+      
+      normalize ty (l:f[[α]] :: φ)
+        with lookup_field_in_type s ty f :=
+        {
+        | Some _ := l:f[[α]] :: normalize ty (filter_queries_with_label l φ);
+        | _ := normalize ty φ
+        };
+
+      normalize ty (f[[α]] { β } :: φ)
+        with lookup_field_in_type s ty f :=
+        {
+        | Some fld
+            with is_object_type s fld.(return_type) :=
+            {
+            | true := f[[α]] { normalize fld.(return_type) (β ++ merge_selection_sets (find_queries_with_label s f ty φ)) }
+                                 :: normalize ty (filter_queries_with_label f φ);
+            | _ := f[[α]] { [seq on t { normalize t (β ++ merge_selection_sets (find_queries_with_label s f ty φ)) } | t <- get_possible_types s fld.(return_type)] } ::
+                              normalize ty (filter_queries_with_label f φ)
+            };
+        
+        | _ => normalize ty φ
+        };
+      
+      normalize ty (l:f[[α]] { β } :: φ)
+        with lookup_field_in_type s ty f :=
+        {
+        | Some fld
+            with is_object_type s fld.(return_type) :=
+            {
+            | true := l:f[[α]] { normalize fld.(return_type) (β ++ merge_selection_sets (find_queries_with_label s l ty φ)) }
+                                        :: normalize ty (filter_queries_with_label l φ);
+            | _ := l:f[[α]] { [seq on t { normalize t (β ++ merge_selection_sets (find_queries_with_label s l ty φ)) } | t <- get_possible_types s fld.(return_type)] }
+                     :: normalize ty (filter_queries_with_label l φ)
+            };
+        
+        | _ => normalize ty φ
+        };
+        
+      
+      normalize ty (on t { β } :: φ)
+        with does_fragment_type_apply s ty t :=
+        {
+        | true := normalize ty (β ++ φ);
+        | _ := normalize ty φ
+        }
+
+    }.
+  Proof. 
+    all: do [leq_queries_size].
+  Qed.
+
+  (** ---- *)
+  (**
+     #<strong>normalize_queries</strong># : Name → List Query → List Query 
+
+     Normalizes a list of queries.
+     
+     Unlike [normalize], this definition does not assume that the type given 
+     is an Object type. It only checks the type and either calls [normalize] 
+     on the list of queries if the type is an Object type, or wraps the queries
+     in fragments with type conditions equal to the given type's subtypes 
+     (minus the abstract type itself).
+   *)
+  Equations normalize_queries (type_in_scope : Name) (queries : seq (@Query Vals)) :
+    seq (@Query Vals) :=
+    {
+      normalize_queries ty qs
+        with is_object_type s ty :=
+        {
+              | true := normalize ty qs;
+              | _ := [seq on t { normalize t qs } | t <- get_possible_types s ty]
+        }
+    }.
+
+
+  (** ---- *)
+End QueryRewrite.
+
+
+Arguments normalize [Vals].
+Arguments normalize_queries [Vals].
+
 
 (** ---- *)
 (** 
