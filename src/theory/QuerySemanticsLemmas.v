@@ -43,7 +43,7 @@ Require Import QuerySemantic.
 (**
    #<div class="jumbotron">
       <div class="container">
-        <h1 class="display-4">Query Semantics</h1>
+        <h1 class="display-4">Query Semantics Theory</h1>
         <p class="lead">
          This file contains lemmas and theory about the semantics of queries.
         </p>         

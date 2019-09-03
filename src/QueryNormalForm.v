@@ -358,6 +358,6 @@ Arguments normalize_queries [Vals].
 (** 
     #<div>
         <a href='GraphCoQL.QueryConformance.html' class="btn btn-light" role='button'> Previous ← Query Conformance  </a>
-        <a href='GraphCoQL.QueryNormalization.html' class="btn btn-info" role='button'>Continue Reading → Normalisation </a>
+        <a href='GraphCoQL.Graph.html' class="btn btn-info" role='button'>Continue Reading → GraphQL Graph </a>
     </div>#
 *)
