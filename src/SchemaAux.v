@@ -324,7 +324,10 @@ Section SchemaAux.
       end.
     
     
-
+    (** ---- *)
+    (**
+       Gets all object types that implement the given interface.
+     *)
     Definition implementation (ty : Name) : seq Name :=
       undup [seq tdef.(tdname) | tdef <- schema.(type_definitions) & ty \in tdef.(tintfs)].
 
@@ -360,3 +363,13 @@ End SchemaAux.
 
 
 Notation "s ⊢ ty1 <: ty2" := (is_subtype s ty1 ty2) (at level 50, ty1 at next level) : schema_scope.
+
+
+(** ---- *)
+
+(** 
+    #<div>
+        <a href='GraphCoQL.Schema.html' class="btn btn-light" role='button'> Previous ← Schema  </a>
+        <a href='GraphCoQL.SchemaWellFormedness.html' class="btn btn-info" role='button'>Next → Schema Well-Formedness </a>
+    </div>#
+*)
