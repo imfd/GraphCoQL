@@ -78,7 +78,7 @@ Section Theory.
   Proof.
     apply: (iffP idP)=> //.
     - funelim (is_object_type s ty) => // _.
-      by exists interfaces, fields; rewrite Heq; move/lookup_type_name_wf: Heq =>  -> /=.
+      by exists interfaces, fields0; rewrite Heq; move/lookup_type_name_wf: Heq =>  -> /=.
     - by move=> [intfs [flds Hlook]]; simp is_object_type; rewrite Hlook.
   Qed.
 
