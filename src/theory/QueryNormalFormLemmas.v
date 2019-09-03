@@ -50,12 +50,20 @@ Require Import QueryNormalForm.
 
 Section NormalForm.
 
+  (** * Normal Form 
+
+      In this section we prove several lemmas about groundness and non-redundancy.
+   *)
 
   Variables (Vals : eqType).
 
+
+  (** ** Groundness *)
+  (** ---- *)
   Section Ground.
     Variable (s : @wfGraphQLSchema Vals).
 
+    (** ---- *)
     (**
        Elimination lemma for [are_grounded_fields].
      *)
@@ -66,6 +74,8 @@ Section NormalForm.
         by rewrite andbACA -[RHS]andbA.
     Qed.
 
+
+    (** ---- *)
     (**
        This lemma states that if some queries [are_grounded_fields] then 
        they [are_grounded].
@@ -77,6 +87,8 @@ Section NormalForm.
         by case: φ => //= q φ; case_query q.
     Qed.
 
+
+    (** ---- *)
     (**
        Elimination lemma for [are_grounded_fields].
      *)
@@ -86,6 +98,8 @@ Section NormalForm.
         by rewrite andbACA -[RHS]andbA.
     Qed.
 
+    
+    (** ---- *)
     (**
        This lemma states that if some queries [are_grounded_inlines] then 
        they [are_grounded].
@@ -98,7 +112,7 @@ Section NormalForm.
     Qed.
 
       
-    
+    (** ---- *)
     (**
        This lemma states that the predicate [are_grounded2] distributes over list concatenation.
      *)
@@ -111,6 +125,7 @@ Section NormalForm.
     Qed.
 
 
+    (** ---- *)
     (**
        This lemma states that [are_grounded2] implies [are_grounded].
      *)
@@ -158,7 +173,7 @@ Section NormalForm.
 
 
    
-
+    (** ---- *)
     Section Filter.
 
       Transparent is_field.
@@ -210,9 +225,13 @@ Section NormalForm.
       Qed.
       
     End Filter.
-    
+   
   End Ground.
+  (** ---- *)
 
+
+  (** ** Non-redundancy *)
+  (** ---- *)
   Section NonRedundant.
 
     
@@ -245,6 +264,7 @@ Section NormalForm.
   End NonRedundant.
 End NormalForm.
 
+(** ---- *)
 
 Ltac grounding :=
   repeat match goal with
@@ -268,9 +288,16 @@ Ltac non_red :=
          | [|- is_true (are_non_redundant (_ :: _)) -> _] => simp are_non_redundant
          | [|- is_true (are_non_redundant _)] => simp are_non_redundant
          end.
+(** ---- *)
 
 
+(** * Normalisation 
 
+    In this section we prove things related to the normalisation procedure.
+    
+    In particular, we prove that it does what it is supposed to do
+ *)
+(** ---- *)
 Section Normalisation.
 
   
@@ -326,7 +353,7 @@ Section Normalisation.
       * by simp normalize; rewrite Hfapplies /=; apply: IH; leq_queries_size.
   Qed.
 
-  (** * Groundness *)
+  (** ** Groundness *)
   (** ---- *)
   (**
      This lemma states that the result of [normalize] are 
@@ -399,7 +426,7 @@ Section Normalisation.
 
 
 
-  (** * Non-redundancy *)
+  (** ** Non-redundancy *)
   (** ---- *)
   (**
      This lemma states that the result of [normalize] are
@@ -424,6 +451,7 @@ Section Normalisation.
     all: do [by apply: H; apply: Hinobj; apply: mem_head].
   Qed.
 
+  (** ---- *)
   (**
      This lemma states that the result of [normalize_queries] are
      non-redundant, regardless of the type used to normalize.
@@ -443,7 +471,7 @@ Section Normalisation.
 
 
  
-
+  (** ---- *)
   (**
      This lemma states that if a query conforms to the Query type, then 
      normalizing results in a query in normal form.
@@ -461,47 +489,3 @@ Section Normalisation.
   Qed.
 
 End Normalisation.
-
-
-
-
-
-
-
-
-(* Unused lemmas *)
-
-
- (* 
-    
-    (* Lemma are_grounded_inlines_E qs : are_grounded_inlines s qs = all (fun q => q.(is_inline_fragment)) qs && all (is_grounded s) qs. *)
-    (* Proof. *)
-    (*   elim: qs => //= q qs ->. *)
-    (*     by rewrite andbACA -[RHS]andbA. *)
-    (* Qed. *)
-
-
-  (* Lemma are_grounded2_consE ty q qs : *)
-    (*   are_grounded2 s ty (q :: qs) -> *)
-    (*   are_grounded2 s ty qs. *)
-    (* Proof. *)
-    (*     by case: q => //= [f α | l f α | f α φ | l f α φ | t φ]; case: is_object_type => /=; case/and3P. *)
-    (* Qed. *)
-
-    (* Lemma grounded2_are_fields_in_object_scope : *)
-    (*   forall ty qs, *)
-    (*     is_object_type s ty -> *)
-    (*     are_grounded2 s ty qs -> *)
-    (*     all (fun q => q.(is_field)) qs. *)
-    (* Proof. *)
-    (*   apply (is_grounded2_elim Vals s *)
-    (*            (fun ty q b => true) *)
-    (*            (fun ty qs b => *)
-    (*               is_object_type s ty -> *)
-    (*               b -> *)
-    (*               all (fun q => q.(is_field)) qs)) => //. *)
-    (*   - by intros => /=; case/and3P: H2 => *; apply_andP; apply: H0. *)
-    (*   - by intros; rewrite H1 in Heq. *)
-    (* Qed. 
-*)
-*)
