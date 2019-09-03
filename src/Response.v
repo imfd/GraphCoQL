@@ -55,15 +55,7 @@ Section Response.
   Set Elimination Schemes.
 
 
-  Definition is_leaf (rnode : ResponseNode) : bool :=
-      if rnode is Leaf _ then true else false.
-
-  Definition is_object (rnode : ResponseNode) : bool :=
-      if rnode is Object _ then true else false.
-
-  Definition is_array (rnode : ResponseNode) : bool :=
-    if rnode is Array _ then true else false.
-
+  
 
   (** ---- *)
   (**
