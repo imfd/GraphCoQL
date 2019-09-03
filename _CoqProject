@@ -22,6 +22,7 @@
 
 ./src/Query.v
 ./src/QueryAux.v
+
 ./src/theory/QueryAuxLemmas.v
 ./src/QueryTactics.v
 ./src/QueryConformance.v
@@ -30,10 +31,7 @@
 ./src/theory/QueryNormalFormLemmas.v
 
 ./src/Graph.v
-./src/GraphAux.v
 ./src/GraphConformance.v
-
-./src/theory/GraphAuxLemmas.v
 ./src/theory/GraphConformanceLemmas.v
 
 ./src/Response.v

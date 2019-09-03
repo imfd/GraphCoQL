@@ -22,7 +22,6 @@ Require Import QueryAuxLemmas.
 Require Import Response.
 
 Require Import Graph.
-Require Import GraphAux.
 Require Import GraphConformance.
 
 

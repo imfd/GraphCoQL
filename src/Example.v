@@ -19,7 +19,6 @@ Require Import SchemaWellFormedness.
 
 
 Require Import Graph.
-Require Import GraphAux.
 
 Require Import GraphConformance.
 
