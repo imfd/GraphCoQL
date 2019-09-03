@@ -23,7 +23,7 @@ Require Import SeqExtra.
 
 Require Import Ssromega.
 
-Require Import NRGTNF.
+Require Import QueryNormalForm.
 
 Require Import GeneralTactics.
 

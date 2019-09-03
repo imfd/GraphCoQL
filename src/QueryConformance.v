@@ -471,6 +471,6 @@ Arguments queries_conform [Vals].
 (** 
     #<div>
         <a href='GraphCoQL.Query.html' class="btn btn-light" role='button'> Previous ← Query  </a>
-        <a href='GraphCoQL.NRGTNF.html' class="btn btn-info" role='button'>Continue Reading → NRGTNF </a>
+        <a href='GraphCoQL.QueryNormalForm.html' class="btn btn-info" role='button'>Continue Reading → Normal Form </a>
     </div>#
 *)

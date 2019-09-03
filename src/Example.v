@@ -32,7 +32,7 @@ Require Import QueryConformance.
 
 Require Import Response.
 
-Require Import NRGTNF.
+Require Import QueryNormalForm.
 
 
 Require Import SeqExtra.

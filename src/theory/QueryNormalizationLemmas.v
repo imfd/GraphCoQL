@@ -23,7 +23,7 @@ Require Import QueryAuxLemmas.
 Require Import QueryConformance.
 
 
-Require Import NRGTNF.
+Require Import QueryNormalForm.
 Require Import NRGTNFLemmas.
 
 Require Import Ssromega.
@@ -233,7 +233,7 @@ Section Theory.
   (* Conformance is not really needed... *)
   Lemma normalize_root_query_is_in_normal_form φ :
     queries_conform s s.(query_type) φ ->
-    NRGTNF.are_non_redundant (normalize s s.(query_type) φ) /\
+    are_non_redundant (normalize s s.(query_type) φ) /\
     are_grounded s (normalize s s.(query_type) φ).
   Proof.
     intros; split.

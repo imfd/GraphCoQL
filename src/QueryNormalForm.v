@@ -31,17 +31,17 @@ Require Import QueryTactics.
 (**
    #<div class="jumbotron">
       <div class="container">
-        <h1 class="display-4">Non-redundant Ground-typed Normal Form</h1>
+        <h1 class="display-4">Normal Form</h1>
         <p class="lead">
-         This file contains the basic predicates for non-redundancy and groundness of queries.
-         It also contains the normalisation procedure.
+         This file contains the basic predicates for non-redundancy and groundness of queries,
+         and also contains the normalisation procedure.
         </p>
          
   </div>
 </div>#
  *)
 
-Section NRGTNF.
+Section NormalForm.
 
   Variables Vals : eqType.
   Variables (s : @wfGraphQLSchema Vals).
@@ -205,7 +205,7 @@ Section NRGTNF.
 
 
   (** ---- *)  
-End NRGTNF.
+End NormalForm.
 
 Arguments is_grounded [Vals].
 Arguments are_grounded_fields [Vals].
@@ -218,7 +218,7 @@ Arguments are_in_normal_form [Vals].
 
 
 
-Section QueryRewrite.
+Section Normalisation.
 
   Variables Vals : eqType.
   Implicit Type schema : @wfGraphQLSchema Vals.
@@ -347,7 +347,7 @@ Section QueryRewrite.
 
 
   (** ---- *)
-End QueryRewrite.
+End Normalisation.
 
 
 Arguments normalize [Vals].

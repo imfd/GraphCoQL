@@ -33,7 +33,7 @@
 ./src/QueryConformance.v
 
 
-./src/NRGTNF.v
+./src/QueryNormalForm.v
 
 ./src/Response.v
 
