@@ -31,7 +31,7 @@ Require Import QueryConformanceLemmas.
 Require Import Response.
 
 Require Import QueryNormalForm.
-Require Import NRGTNFLemmas.
+Require Import QueryNormalFormLemmas.
 
 Require Import QueryNormalizationLemmas.
 

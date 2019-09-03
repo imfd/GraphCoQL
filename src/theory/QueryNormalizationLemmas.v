@@ -24,7 +24,7 @@ Require Import QueryConformance.
 
 
 Require Import QueryNormalForm.
-Require Import NRGTNFLemmas.
+Require Import QueryNormalFormLemmas.
 
 Require Import Ssromega.
 

@@ -43,7 +43,7 @@
 ./src/theory/GraphAuxLemmas.v
 ./src/theory/GraphConformanceLemmas.v
 
-./src/theory/NRGTNFLemmas.v
+./src/theory/QueryNormalFormLemmas.v
 ./src/theory/QueryNormalizationLemmas.v
 
 ./src/theory/QuerySemanticsLemmas.v
