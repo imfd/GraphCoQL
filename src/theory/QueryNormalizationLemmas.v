@@ -36,6 +36,21 @@ Require Import GeneralTactics.
 
 (* end hide *)
 
+(**
+   #<div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">Query Normalisation</h1>
+        <p class="lead">
+         This file contains lemmas and theory about the normalisation of queries.
+        </p>         
+        <p>
+        In particular, we prove here that the normalisation procedures actually do
+        what they are supposed to do.
+        </p>
+  </div>
+</div>#
+ *)
+
 Section Theory.
   
  
@@ -46,7 +61,8 @@ Section Theory.
   
   Variable (s : @wfGraphQLSchema Vals).
 
-   (**
+  (** ---- *)
+  (**
      This lemma states that the order of filtering queries by response name 
      and normalizing does not affect the result.
    *)
@@ -92,7 +108,9 @@ Section Theory.
       * by simp normalize; rewrite Hfapplies /= -filter_queries_with_label_cat; apply: IH; leq_queries_size.
       * by simp normalize; rewrite Hfapplies /=; apply: IH; leq_queries_size.
   Qed.
-  
+
+  (** * Groundness *)
+  (** ---- *)
   (**
      This lemma states that the result of [normalize] are 
      in ground form v2.0, whenever the type used to normalize is
@@ -164,7 +182,8 @@ Section Theory.
 
 
 
-  
+  (** * Non-redundancy *)
+  (** ---- *)
   (**
      This lemma states that the result of [normalize] are
      non-redundant, whenever the type used to normalize 
@@ -208,7 +227,7 @@ Section Theory.
 
  
 
-   (**
+  (**
      This lemma states that if a query conforms to the Query type, then 
      normalizing results in a query in normal form.
    *)
@@ -226,16 +245,3 @@ Section Theory.
 
 End Theory.
 
-
-
-
-(* Lemma inlining_preserves_non_redundancy (φ : seq (@Query Vals)) (ptys : seq Name) : *)
-  (*   are_non_redundant φ -> *)
-  (*   uniq ptys -> *)
-  (*   are_non_redundant [seq InlineFragment t φ | t <- ptys]. *)
-  (* Proof. *)
-  (*   elim: ptys => //= t ptys IH Hnr /andP [Hnin Huniq]. *)
-  (*   simp are_non_redundant; apply_and3P => /=; last by apply: IH. *)
-  (*   apply/hasPn=> frag /mapP [t' Hin ->]; simp are_similar. *)
-  (*     by move/memPn: Hnin => /(_ t' Hin). *)
-  (* Qed. *)
