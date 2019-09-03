@@ -5,12 +5,9 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-Require Import String.
-Require Import QString.
-
-From extructures Require Import ord fset fmap.
-
 From Equations Require Import Equations.
+
+Require Import QString.
 
 Require Import Schema.
 Require Import SchemaAux.
