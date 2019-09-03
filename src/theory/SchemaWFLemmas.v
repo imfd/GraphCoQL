@@ -119,7 +119,7 @@ Section Theory.
   Proof.
     rewrite /implementation -in_undup => /mapP [tdef].
     rewrite mem_filter; case/andP.
-    rewrite /implements_interface /tintfs.
+    rewrite /tintfs.
     case: tdef => //= object_name interfaces fields Hinintfs Hintdefs Heq.
     apply/is_object_type_wfP.
     exists interfaces, fields.

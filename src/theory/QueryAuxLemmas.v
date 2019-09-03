@@ -66,7 +66,21 @@ Section Theory.
       is_object_type s ty ->
       does_fragment_type_apply s ty ty.
     Proof.
-        by rewrite /does_fragment_type_apply => ->.
+      funelim (is_object_type s ty) => //=.
+      rewrite /does_fragment_type_apply Heq.
+        by move/lookup_type_name_wf: Heq => ->.
+    Qed.
+
+    Lemma object_diff_name_N_applies ty ty' :
+      is_object_type s ty' ->
+      ty' != ty ->
+      does_fragment_type_apply s ty ty' = false.
+    Proof.
+      rewrite /does_fragment_type_apply.
+      funelim (is_object_type s ty') => //= _ /negbTE Hneq.
+      case lookup_type => //=; case=> //=; rewrite Heq => _ _ _.
+      move/lookup_type_name_wf: Heq => /= <-.
+        by rewrite eq_sym.
     Qed.
     
   End DefPreds.
@@ -162,9 +176,8 @@ Section Theory.
       elim: ptys => //= t' ptys IH /andP [Hnin Huniq] /andP [Hobj Hinobj] Htnin.
       simp find_queries_with_label.
       have -> /= : does_fragment_type_apply s t t' = false.
-      rewrite /does_fragment_type_apply Hobj /=. 
-        by move/memPn: Htnin => /(_ t' (mem_head t' ptys)) /negbTE; rewrite eq_sym.
-        apply: IH => //=.
+        by apply: object_diff_name_N_applies => //; move/memPn: Htnin => /(_ t' (mem_head t' ptys)).
+      apply: IH => //=.
           by move: Htnin; rewrite /negb; case: ifP => //=; case: ifP => //= Hcontr <- _; apply: mem_tail.
     Qed.
 
@@ -179,9 +192,8 @@ Section Theory.
       elim: ptys => //= t' ptys IH /andP [Hnin Huniq] /andP [Hobj Hinobj] Htnin.
       simp find_queries_with_label.
       have -> /= : does_fragment_type_apply s t t' = false.
-      rewrite /does_fragment_type_apply Hobj /=. 
-        by move/memPn: Htnin => /(_ t' (mem_head t' ptys)) /negbTE; rewrite eq_sym.
-        apply: IH => //=.
+          by apply: object_diff_name_N_applies => //; move/memPn: Htnin => /(_ t' (mem_head t' ptys)).
+      apply: IH => //=.
           by move: Htnin; rewrite /negb; case: ifP => //=; case: ifP => //= Hcontr <- _; apply: mem_tail.
     Qed.
 
@@ -550,196 +562,3 @@ Section Theory.
 
 End Theory.
 
-
-
-
-
-
-
-
-
-(* Unused lemmas *)
-
- (* Lemma query_size_gtn_0 query : *)
-    (*   0 < query_size query. *)
-    (* Proof. *)
-    (*     by case: query. *)
-    (* Qed. *)
-
-    (* Lemma subqueries_lt_query query : *)
-    (*   queries_size query.(qsubqueries) < query_size query. *)
-    (* Proof. *)
-    (*     by case: query. *)
-    (* Qed. *)
-
-
-    
-    (* Lemma in_queries_lt query φ : *)
-    (*   query \in φ -> *)
-    (*         query_size query <= queries_size φ. *)
-    (* Proof. *)
-    (*   elim: φ => //= q φ IH. *)
-    (*   rewrite inE => /orP [/eqP -> | Hin]. *)
-    (*     by ssromega. *)
-    (*       by move: (IH Hin) => Hlt; ssromega. *)
-    (* Qed. *)
-
-    (* Lemma in_subqueries_size_lt query1 query : *)
-    (*   query1 \in query.(qsubqueries) -> *)
-    (*          query_size query1 < query_size query. *)
-    (* Proof. *)
-    (*   move=> Hin. *)
-    (*   have Hlt := (subqueries_lt_query query). *)
-    (*   have Hleq := (in_queries_lt Hin). *)
-    (*   ssromega. *)
-    (* Qed. *)
-
-
- (* Section DefPreds. *)
-    
-  (*   Variable (s : @wfSchema Vals). *)
-    
-  (*   Lemma is_definedE q (Hfield : q.(is_field)) ty : *)
-  (*     is_defined s q Hfield ty -> *)
-  (*     exists fld, lookup_field_in_type s ty (qname q Hfield) = Some fld. *)
-  (*   Proof. *)
-  (*     funelim (is_defined _ _ _ _) => //=. *)
-  (*       by rewrite /isSome; case lookup_field_in_type => //= fld _; exists fld. *)
-  (*   Qed. *)
-
-  (*   Lemma are_defined_cat φ1 φ2 ty : *)
-  (*     are_defined s (φ1 ++ φ2) ty = are_defined s φ1 ty && are_defined φ2 ty. *)
-  (*   Proof. *)
-  (*     funelim (are_defined φ1 ty) => //=; simp are_defined is_defined => /=; rewrite ?H ?H0 ?andbA //. *)
-  (*   Qed. *)
-(* End DefPreds. *)
-
-
-
-    (* Lemma found_queries_are_fields k O__t qs : *)
-    (*   all (fun q => q.(is_field)) (find_queries_with_label s k O__t qs). *)
-    (* Proof. *)
-    (*   by funelim (find_queries_with_label s k O__t qs) => //=; rewrite all_cat; apply_andP. *)
-    (* Qed. *)
-
-   (* Lemma found_queries_have_response_name rname O__t qs : *)
-    (*   forall q, q \in find_queries_with_label s rname O__t qs -> *)
-    (*              q.(oqresponse_name) = Some rname. *)
-    (* Proof. *)
-    (*   funelim (find_queries_with_label s rname O__t qs) => //= q; rewrite ?inE. *)
-
-    (*   all: do ? [move=> /orP [/eqP -> /= | Hin] ]. *)
-    (*   all: do ? [by simpl in Heq; move/eqP in Heq; congr Some]. *)
-    (*   all: do ?[by apply: H].     *)
-    (*     by rewrite mem_cat => /orP [Hin1 | Hin2]; [apply: H | apply: H0]. *)
-    (* Qed. *)
-    
-
-    
-    (* Lemma all_found_fields_are_fields k φ : *)
-    (*   all (fun query => query.(is_field)) (find_fields_with_response_name k φ).                   *)
-    (* Proof. *)
-    (*   funelim (find_fields_with_response_name k φ) => //=. *)
-    (*     by rewrite all_cat; apply_andP. *)
-(* Qed. *)
-
- (* Lemma find_map_inline_nil_get_types rname t ty φ : *)
-    (*   t \notin get_possible_types s ty -> *)
-    (*   find_queries_with_label s rname t [seq InlineFragment t' φ | t' <- get_possible_types s ty] = [::]. *)
-    (* Proof. *)
-    (*     by move=> Hnin; apply: find_map_inline_nil => //=; [apply: uniq_get_possible_types | apply/allP; apply: in_possible_types_is_object]. *)
-    (* Qed. *)
-
-    
-    (* Lemma find_all_q_equiv_to_sf_are_simple α f ty φ : *)
-    (*   all (are_equivalent (SingleField f α)) (find_queries_with_label s f ty φ) -> *)
-    (*   all (fun query => query.(is_simple_field_selection)) (find_queries_with_label s f ty φ). *)
-    (* Proof. *)
-    (*   funelim (find_queries_with_label s f ty φ) => //=. *)
-
-    (*   all: do ? by case/andP=> *; apply_andP; apply: (H α). *)
-    (*   all: do ? by move=> *; apply: (H α). *)
-
-    (*     by rewrite 2!all_cat => /andP [Hall1 Hall2]; apply_andP; [apply: (H α) | apply: (H0 α)]. *)
-
-    (* Qed. *)
-
-    
-    (* Lemma find_all_f_equiv_to_sf_are_simple ty f α (φ : seq (@Query Vals)) : *)
-    (*   all (are_equivalent (SingleField f α)) (find_fields_with_response_name f φ) -> *)
-    (*   all (fun q => q.(is_simple_field_selection)) (find_queries_with_label s f ty φ). *)
-    (* Proof. *)
-    (*   funelim (find_queries_with_label s f ty φ) => //=. *)
-
-    (*   all: do ?[by simp find_fields_with_response_name; rewrite Heq /= => /andP [Hequiv Hequivs]; apply_andP; apply: (H α)]. *)
-
-    (*   all: do ? by simp find_fields_with_response_name; rewrite Heq /= => *; apply: (H α). *)
-
-    (*   - by simp find_fields_with_response_name; rewrite 2!all_cat => /andP [Hequiv Hequivs]; apply_andP; [apply: (H α) | apply: (H0 α)]. *)
-    (*   - by simp find_fields_with_response_name; rewrite all_cat => /andP [Hequiv Hequivs]; apply: (H α). *)
-        
-    (* Qed. *)
-
-
-
-   
-
-    
-    (* Lemma find_fields_cat rname φ1 φ2 : *)
-    (*   find_fields_with_response_name rname (φ1 ++ φ2) = *)
-    (*   find_fields_with_response_name rname φ1 ++ find_fields_with_response_name rname φ2. *)
-(* Admitted. *)
-
-  (* Lemma filter_fields_spec l φ : *)
-    (*   all (fun q => q.(is_field)) φ -> *)
-    (*   filter_queries_with_label l φ = [seq q <- φ | match q with *)
-    (*                                                | SingleField f _ *)
-    (*                                                | NestedField f _ _ => f != l *)
-    (*                                                | LabeledField l' _ _ *)
-    (*                                                | NestedLabeledField l' _ _ _ => l' != l *)
-    (*                                                | _ => false *)
-    (*                                                end ]. *)
-    (* Proof. *)
-    (*     by funelim (filter_queries_with_label l φ) => //= /andP [Hf Hflds]; rewrite Heq H. *)
-    (* Qed. *)
-
-
- 
-    (* Lemma filter_find_nil f ty φ : *)
-    (*   filter_queries_with_label f (find_queries_with_label s f ty φ) = [::]. *)
-    (* Admitted. *)
-
-    (* Lemma filter_find_swap f1 f2 ty φ : *)
-    (*   filter_queries_with_label f1 (find_queries_with_label f2 ty φ) = find_queries_with_label f2 ty (filter_queries_with_label f1 φ). *)
-(* Admitted.  *)
-
-
-    
-    (* Lemma merge_simple_fields_is_empty φ : *)
-    (*   all (fun query => query.(is_simple_field_selection)) φ -> *)
-    (*   merge_selection_sets φ = [::]. *)
-    (* Proof. *)
-    (*     by elim: φ => //=; case. *)
-    (* Qed. *)
-
-
-
-    (* Lemma filter_all rname (φ : seq (@Query Vals)) : *)
-    (*   all (has_response_name rname) φ -> *)
-    (*   filter_queries_with_label rname φ = [::]. *)
-    (* Proof. *)
-    (*     by elim: φ => //=; case=> //= [f' α | l f' α | f' α β | l f' α β] φ IH; simp has_response_name => /= /andP [/eqP Heq Hsame]; *)
-    (*                                                                                                      simp filter_queries_with_label => /=;  *)
-    (*                                                                                                                                         rewrite Heq /=; case: eqP => //= _; apply: IH. *)
-    (* Qed. *)
-    
-    
-    (* Lemma filter_frag (ptys : seq Name) f φ : *)
-    (*   all (has_response_name f) φ -> *)
-    (*   filter_queries_with_label f [seq InlineFragment t φ | t <- ptys] = *)
-    (*   [seq InlineFragment t [::] | t <- ptys]. *)
-    (* Proof. *)
-    (*   move=> /filter_all Heq. *)
-    (*   elim: ptys => //= q qs IHqs; simp filter_queries_with_label => /=. *)
-    (*     by rewrite Heq IHqs. *)
-    (* Qed. *)

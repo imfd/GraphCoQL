@@ -381,16 +381,16 @@ Section QueryAux.
     https://graphql.github.io/graphql-spec/June2018/#DoesFragmentTypeApply() 
      *)
     Definition does_fragment_type_apply object_type fragment_type :=
-      if is_object_type s fragment_type then
-        object_type == fragment_type
-      else
-        if is_interface_type s fragment_type then
-          object_type \in implementation s fragment_type
-        else
-          if is_union_type s fragment_type then
-            object_type \in union_members s fragment_type
-          else
-            false.
+      match lookup_type s object_type, lookup_type s fragment_type with
+      | Some (Object oname implements _ { _ }), Some (Object name implements _ { _ }) =>
+        object_type == name
+      | Some (Object _ implements interfaces { _ }), Some (Interface name { _ }) =>
+        name \in interfaces
+      | Some (Object oname implements _ { _ }), Some (Union name { members }) =>
+        oname \in members
+      | _, _ => false
+      end.
+    
     
   End DefPreds.
   

@@ -162,12 +162,17 @@ Section Theory.
     u.(ntype) \notin ptys ->
     s, g ⊢ ⟦ [seq InlineFragment t (f t φ) | t <- ptys] ⟧ˢ in u = [::].
   Proof.
-    elim: ptys => //= t ptys IH /andP [Hnin Huniq] /andP [Hobj Hinobj] Hunin.
-    have /negbTE Hneq : u.(ntype) != t by move/memPn: Hunin => /(_ t (mem_head t ptys)); rewrite eq_sym.
-    simp execute_selection_set; rewrite /does_fragment_type_apply Hobj Hneq /=.
-    apply: IH => //=.
-    move: Hunin; rewrite /negb; case: ifP => //=.
-      by case: ifP => //= Hin <- _; apply: mem_tail.
+    elim: ptys => //= t ptys IH /andP [Hnin Huniq] /andP [Hobj Hinobj].
+    rewrite /negb; case: ifP => //=.
+    rewrite inE => /negbT-/norP [/negbTE Hneq Hunin] _.
+    simp execute_selection_set; rewrite /does_fragment_type_apply.
+    case Hlook: lookup_type => //= [tdef|]; last by apply: IH.
+    case: tdef Hlook => //=; do ? by intros; apply: IH.
+    intros.
+    move: Hobj; simp is_object_type; case Hlook2: lookup_type => [tdef|] //=; case: tdef Hlook2 => //=; intros.
+    move: Hneq.
+    rewrite (lookup_type_name_wf Hlook) (lookup_type_name_wf Hlook2) => -> /=.
+      by apply: IH.
   Qed.
 
   Lemma exec_frags_nil u ptys φ :
@@ -239,19 +244,21 @@ Section Theory.
                  s, g ⊢ ⟦ [seq InlineFragment t (f t φ) | t <- ptys] ⟧ˢ in u =  s, g ⊢ ⟦ [:: InlineFragment u.(ntype) (f u.(ntype) φ) ] ⟧ˢ in u.
   Proof.
     move=> Hswap.
-    elim: ptys => //= t ptys IH /andP [Hnin Huniq] /andP [Hobj Hinobj].
+    elim: ptys => //= t ptys IH /andP [Hnin Huniq] /andP [/is_object_type_wfP [intfs [flds Hlook] ] Hinobj].
     rewrite inE => /orP [/eqP Heq | Hin].
     - rewrite -Heq in Hnin *; simp execute_selection_set.
       have -> /= : does_fragment_type_apply s u.(ntype) u.(ntype).
-        by apply: object_applies_to_itself; rewrite Heq; apply: Hobj.
+      by apply: object_applies_to_itself; rewrite Heq; simp is_object_type; rewrite Hlook.
           by rewrite cats0; apply: exec_cat_frags_func.
           
     - rewrite {1}execute_selection_set_equation_6.
       have -> /= : does_fragment_type_apply s u.(ntype) t = false.
       rewrite /does_fragment_type_apply.
-      move/memPn: Hnin => /(_ u.(ntype) Hin) /negbTE.
-        by rewrite Hobj /=.
-          by apply: IH.
+      move/memPn: Hnin => /(_ u.(ntype) Hin) /negbTE Hneq.
+      case lookup_type => //=; case=> //=; intros.
+        by rewrite Hlook.
+
+      by apply: IH.
   Qed.
   
   Lemma exec_inlined ptys u φ :
@@ -578,8 +585,10 @@ Section Theory.
     simp find_fragment_with_type_condition; case: eqP => //= /eqP Hneq Hfind.
     simp is_grounded; bcase.
     move: Hb2; bcase.
-    rewrite /does_fragment_type_apply Hb0 Hneq.
-    apply_andP; by apply: IH.
+    apply_andP; last by apply: IH.
+    rewrite /does_fragment_type_apply.
+    move/is_object_type_wfP: Hb0 => [intfs [flds ->] ].
+    by case lookup_type => //=; case.
   Qed.
 
 
@@ -616,10 +625,13 @@ Section Theory.
       
     - move: Hb1; simp is_grounded; bcase.
       have Htyeq : u.(ntype) = t.
-        by apply/eqP; move: Hfapplies; rewrite /does_fragment_type_apply Hb1.
-        rewrite exec_grounded_inlines_nil ?exec2_cat.
-        have -> /= := (exec2_inlines_nil φ).
-          by rewrite cats0; apply: IH => //; leq_queries_size; grounding.
+      apply/eqP; move: Hfapplies; rewrite /does_fragment_type_apply.
+      move/is_object_type_wfP: Hb1 => [intfs [flds ->] ].
+        by case lookup_type => //=; case.
+
+      rewrite exec_grounded_inlines_nil ?exec2_cat.
+      have -> /= := (exec2_inlines_nil φ).
+        by rewrite cats0; apply: IH => //; leq_queries_size; grounding.
 
           all: do ? by move: Hb2; rewrite are_grounded_inlines_E; case/andP.
 

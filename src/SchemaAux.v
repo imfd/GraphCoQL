@@ -322,30 +322,11 @@ Section SchemaAux.
       | Some (Union _ { mbs }) => mbs
       | _ => [::]
       end.
-
-
-    (** ---- *)
-    (**
-       Checks whether the given type declares implementation of another type.
-     *)
-    Definition declares_implementation (ty ty' : Name) : bool :=
-      match lookup_type ty with
-      | Some (Object _ implements intfs { _ }) => ty' \in intfs
-      | _ => false
-      end.
-
-
-    
-    Definition implements_interface (iname : Name) (tdef : TypeDefinition) : bool :=
-      iname \in tdef.(tintfs).
-
-
-
     
     
 
     Definition implementation (ty : Name) : seq Name :=
-      undup [seq tdef.(tdname) | tdef <- schema.(type_definitions) & implements_interface ty tdef].
+      undup [seq tdef.(tdname) | tdef <- schema.(type_definitions) & ty \in tdef.(tintfs)].
 
     (** ---- *)
     (**
