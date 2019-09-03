@@ -43,11 +43,18 @@ Require Import Graph.
  *)
 
 
+(** * Conformance *)
 Section Conformance.
 
 
   Variables (Vals: eqType).
 
+  (** ---- *)
+  (** ** Auxiliary definitions 
+
+      In this section we define some auxiliary definitions.
+   *)
+  (** ---- *)
   Section GraphAux.
 
     Variable (graph :  @graphQLGraph Vals).
@@ -55,44 +62,65 @@ Section Conformance.
 
     
     
-    (** Extractors for an edge **)
+    (** *** Extractors for an edge *)
 
-
+    (** ---- *)
+    (**
+       Returns an edge's target node.
+     *)
     Definition etarget edge : node :=
       let: (_, _, v) := edge in v.
 
+    (** ---- *)
+    (**
+       Returns an edge's source node.
+     *)
     Definition esource edge : node :=
       let: (u, _, _) := edge in u.
 
+    (** ---- *)
+    (**
+       Returns an edge's field (label).
+     *)
     Definition efield edge : fld :=
       let: (_, f, _) := edge in f.
 
+    (** ---- *)
+    (**
+       Returns the nodes of an edge (source and target).
+     *)
     Definition enodes edge : seq node := [:: edge.(esource) ; edge.(etarget)].
     
-    (** Get all nodes from a graph **)
+    (** ---- *)
+    (** 
+        Returns all nodes from a graph.
+     *)
     Definition nodes graph : seq node :=
       undup (graph.(root) ::  flatten [seq edge.(enodes) | edge <- graph.(E)]).
 
 
-
-    (** Get all neighbours of a node irrespective of the field in the edge 
-      connecting the two **)
+    (** ---- *)
+    (**
+       Returns a node's neighbours.
+     *)
     Definition neighbours (u : node) (edges : seq (node * fld * node)) : seq node :=
       undup [seq edge.(etarget) | edge <- edges & edge.(esource) == u]. 
 
     
 
-
-    (** Get all neighbours of a node that are linked via an edge with a given
-      field. **)
+    (** ---- *)
+    (**
+       Get a node's neighbours connected via an edge with a given field. 
+     *)
     Definition neighbours_with_field (u : node) (f : fld) : seq node :=
       undup [seq edge.(etarget) |  edge <- [seq edge <- graph.(E) | (esource edge == u) & (efield edge == f)]].
 
 
+    (** ---- *)
     (** 
-      Checks whether there is only one edge coming out of the source node and 
+      This predicate checks whether there is only one edge coming out of the source node and 
       having the given field.
-     **)
+     *)
     Definition is_field_unique_for_src_node graph (src_node : node) (f : fld) : bool :=
       uniq [seq edge <- graph.(E) | (esource edge == src_node) & (efield edge == f)].
     
@@ -100,14 +128,21 @@ Section Conformance.
     
 
   End GraphAux.
-
+  (** ---- *)
   
 
   Implicit Type schema : @wfGraphQLSchema Vals.
   Implicit Type graph : @graphQLGraph Vals. 
 
+  (** ** Conformance predicates 
+      
+      In this section we define predicates to establish when a graph conforms 
+      to a given schema.
+   *)
+  
   (** ---- *)
-  (** 
+  (** *** Root type conforms
+
       #<strong>root_type_conforms</strong># : wfGraphQLSchema → graphQLSchema → Bool
 
       This predicate checks that a Graph's root node must have the same type as the Schema's query type.
@@ -116,7 +151,8 @@ Section Conformance.
   
 
   (** ---- *)
-  (** 
+  (** *** Arguments conform
+
       #<strong>arguments_conform</strong># : wfGraphQLSchema → graphQLSchema → fld → Bool
 
       This predicate checks a field's arguments conform to 
@@ -145,7 +181,7 @@ Section Conformance.
 
 
   (** ---- *)
-  (**
+  (** *** Edges conform 
      #<strong>edges_conform</strong># : wfGraphQLSchema → graphQLSchema → Bool
 
      This predicate checks whether a graph's edges conform to a Schema.
@@ -181,7 +217,7 @@ Section Conformance.
 
   
   (** ---- *)
-  (**
+  (** *** Nodes conform
      #<strong>nodes_conform</strong># : wfGraphQLSchema → graphQLGraph → Bool 
 
      The following predicate checks whether a graph's nodes conform to a given Schema.
@@ -214,7 +250,9 @@ Section Conformance.
     in
     all node_conforms graph.(nodes).
 
-  
+
+
+  (** ** Conformed Graph *)
   (** ---- *)
   (**
      A GraphQL graph conforms to a given Schema if:
