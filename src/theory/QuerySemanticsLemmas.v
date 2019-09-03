@@ -45,12 +45,34 @@ Require Import QuerySemantic.
 
 (* end hide *)
 
+(**
+   #<div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">Query Semantics</h1>
+        <p class="lead">
+         This file contains lemmas and theory about the semantics of queries.
+        </p>         
+        <p>
+        In particular, we prove here that normalisation preserves the semantics
+        and that the simplified semantics is equivalent to the regular semantics, 
+        whenever the queries are in normal form.
+        </p>
+        <p>
+        Having this, we can satisfy the statement by Pérez & Hartig, that for every query 
+        there is a normalised version with the same semantics, and that we can replace 
+        one semantics for the other.
+        </p>
+  </div>
+</div>#
+ *)
 
 Section Theory.
   Transparent qresponse_name has_response_name.
-  
 
-  
+  (** We will be hiding several auxiliary definitions from the generated docs. They may still be seen 
+      by looking at the source code. *)
+
+  (* begin hide *)
   Ltac exec :=
     repeat
       match goal with
@@ -246,11 +268,14 @@ Section Theory.
       by apply: (exec_inlined_func (fun t qs => qs)).
   Qed.
 
+  (* end hide *)
   
 
+  (** * Normalisation proofs *)
+  (** ---- *)
   (**
-     This lemma states that normalizing a query with the same type as 
-     the node where it is being evaluated, preserves its semantics.
+     This lemma states that the semantics is preserved when normalizing with the the node's type
+     where the queries are evaluated.
    *)
   Lemma normalize_exec φ u :
     u \in g.(nodes) ->
@@ -395,11 +420,10 @@ Section Theory.
   Qed.
 
 
-
+  (** ---- *)
   (**
-     This theorem states that [normalize_queries] preserves the semantics of the query,
-     if the node's type where the query is executed is subtype of the type used 
-     to normalize.
+     This theorem states that the semantics is preserved when normalizing with a supertype
+     of the node's type where the queries are evaluated.
    *)
   Theorem normalize_queries_exec ty φ u :
     u \in g.(nodes) ->
@@ -439,12 +463,16 @@ Section Theory.
     - apply: are_grounded2_are_grounded.
         by apply: normalize_are_grounded2; apply: query_has_object_type.
   Qed.
-  
+
+
+  (** ---- *)
   (**
-     This theorem states that if a query conforms to the Query type, 
-     then normalizing it with the Query type preserves its semantics,
-     whenever evaluated on the root node of the graph.
+     This theorem states that the semantics are preserved when normalizing 
+     with the Query type, evaluating from the root node and if the queries
+     conform to the Query type. 
    *)
+  (* Conformance doesn't affect this at all... This is a particular case of 
+     the previous theorem *)
   Theorem exec_normalize_from_root φ :
     queries_conform s s.(query_type) φ ->
     s, g ⊢ ⟦ normalize_queries s s.(query_type) φ ⟧ˢ in g.(root) = s, g ⊢ ⟦ φ ⟧ˢ in g.(root).
@@ -457,6 +485,8 @@ Section Theory.
   Qed.
 
 
+
+  (* begin hide *)
   
   Transparent is_field.
 
@@ -572,18 +602,17 @@ Section Theory.
     rewrite /does_fragment_type_apply Hb0 Hneq.
     apply_andP; by apply: IH.
   Qed.
-    
-      
+
+
+  (* end hide *)
+
+
+  (** * Semantics equivalence *)
+  (** ---- *)
   (**
      This theorem states that in the presence of a query in normal form, 
      both the semantics with collection and the simplified semantics are 
      equivalent.
-
-     ---- 
-     See also :
-     - [execute_selection_set]
-     - [execute_selection_set2]
-     
    *)
   Theorem exec_equivalence u φ :
     are_grounded s φ ->
@@ -618,122 +647,6 @@ Section Theory.
           all: do ? by rewrite -Htyeq in Hb1 Hb0; apply: find_frags_nil_then_N_applies => //=; apply/eqP.                
   Qed.
 
-
   
-
+(** ---- *)
 End Theory.
-
-
-
-
-
-
-
-(* Unused lemmas *)
-
-
-
-  (* Section Equiv. *)
-    
-  (*   Ltac equiv := *)
-  (*     repeat match goal with *)
-  (*            | [ H: ?eq1 && ?eq2 = _ |- context [_ && _]] => rewrite H /= *)
-  (*            | [ H: lookup_field_in_type _ _ _ = _ |- context [ lookup_field_in_type _ _ _ ]] => rewrite H /= *)
-  (*            | [ H:  does_fragment_type_apply _ _ _ = _ |- context [does_fragment_type_apply _ _ _]] => *)
-  (*              rewrite H /= *)
-  (*            | [ H:  is_true (does_fragment_type_apply _ _ _) |- context [does_fragment_type_apply _ _ _]] => *)
-  (*              rewrite H /= *)
-  (*            | [|- context [ Equiv _ _ _ ]] => simp Equiv *)
-  (*            end. *)
-    
-    
-  (*   Lemma equiv_eval1 ty φ1 φ2 : *)
-  (*     (forall t, t \in get_possible_types s ty -> *)
-  (*                 t ⊢ φ1 ≡ φ2) -> *)
-  (*     forall u, u.(ntype) \in get_possible_types s ty -> *)
-  (*                       ⟦ φ1 ⟧ˢ in u = ⟦ φ1 ⟧ˢ in u. *)
-  (*   Proof. *)
-  (*     move=> Heq u Hin. *)
-  (*     move: (Heq _ Hin). *)
-  (*     funelim (Equiv _  φ1 φ2) => //=. *)
-  (*   Qed. *)
-
-  (* End Equiv. *)
-
-
-  
-  
-  (* Theorem execs_on_nrgtnf_are_equivalent u φ : *)
-  (*   are_in_normal_form s φ -> *)
-  (*   are_non_redundant φ -> *)
-  (*   ⦃ φ in u ⦄ = ⟦ φ in u ⟧ˢ. *)
-  (* Proof. *)
-  (*   move: {2}(queries_size _) (leqnn (queries_size φ)) => n. *)
-  (*   elim: n φ u => [| n IH] φ u. *)
-  (*   - by rewrite leqn0 => /queries_size_0_nil ->.  *)
-  (*   - case: φ => //=; case=> /= [f α | l f α | f α φ | l f α φ | t φ] qs Hleq. *)
-  (*     * simp are_in_normal_form => /andP [Hflds Hnf]. *)
-  (*       simp are_non_redundant; rewrite andTb => /=-/andP [Hneq Hnr]. *)
-  (*       simp execute_selection_set; simp execute_selection_set2. *)
-  (*       case: (u.(fields) _) => //=; [case=> // v|]; *)
-  (*                                rewrite (filter_not_similar_preserves_list (SingleField f α)) // IH //; by apply: asdf. *)
-        
-  (*     * simp are_in_normal_form => /andP [Hflds Hnf]. *)
-  (*       simp are_non_redundant; rewrite andTb => /=-/andP [Hneq Hnr]. *)
-  (*       simp execute_selection_set; simp execute_selection_set2. *)
-  (*       case: (u.(fields) _) => //=; [case=> // v|]; *)
-  (*                                rewrite (filter_not_similar_preserves_list (LabeledField l f α)) // IH //; by apply: asdf. *)
-
-        
-  (*     * simp are_in_normal_form => /and3P [Hnf Hfields Hnfs]. *)
-  (*       simp are_non_redundant => /= /and3P [Hsim Hnr Hnrs].  *)
-  (*       simp execute_selection_set; simp execute_selection_set2. *)
-  (*       case Hlook : lookup_field_in_type => [fld|] //=; last rewrite (filter_not_similar_preserves_list (NestedField f α φ)) //. *)
-  (*       case: fld Hlook => f' args; case=> ty Hlook /=.  *)
-  (*     + case ohead => //= [v|]; rewrite (filter_not_similar_preserves_list (NestedField f α φ)) //. *)
-  (*       rewrite (find_not_similar_is_nil v.(ntype) (NestedField f α φ)) //; simp merge_selection_sets. *)
-  (*         by rewrite cats0 !IH //; rewrite -/(queries_size φ) in Hleq; ssromega. *)
-  (*           by rewrite IH //; ssromega. *)
-            
-  (*     + rewrite (filter_not_similar_preserves_list (NestedField f α φ)) //.  *)
-  (*       congr cons; last by apply: IH => //; ssromega. *)
-  (*       congr pair; congr Array. *)
-  (*       apply/eq_in_map => v Hin. *)
-  (*       rewrite (find_not_similar_is_nil v.(ntype) (NestedField f α φ)) //; simp merge_selection_sets. *)
-  (*         by rewrite cats0 !IH //; rewrite -/(queries_size φ) in Hleq; ssromega. *)
-  (*     + by rewrite IH //; ssromega. *)
-        
-  (*       * simp are_in_normal_form => /and3P [Hnf Hfields Hnfs]. *)
-  (*         simp are_non_redundant => /= /and3P [Hsim Hnr Hnrs].  *)
-  (*         simp execute_selection_set; simp execute_selection_set2. *)
-  (*         case Hlook : lookup_field_in_type => [fld|] //=; last rewrite (filter_not_similar_preserves_list (NestedLabeledField l f α φ)) //. *)
-  (*         case: fld Hlook => f' args; case=> ty Hlook /=.  *)
-  (*     + case ohead => //= [v|]; rewrite (filter_not_similar_preserves_list (NestedLabeledField l f α φ)) //. *)
-  (*       rewrite (find_not_similar_is_nil v.(ntype) (NestedLabeledField l f α φ)) //; simp merge_selection_sets. *)
-  (*         by rewrite cats0 !IH //; rewrite -/(queries_size φ) in Hleq; ssromega. *)
-  (*           by rewrite IH //; ssromega. *)
-            
-  (*     + rewrite (filter_not_similar_preserves_list (NestedLabeledField l f α φ)) //.  *)
-  (*       congr cons; last by apply: IH => //; ssromega. *)
-  (*       congr pair; congr Array. *)
-  (*       apply/eq_in_map => v Hin. *)
-  (*       rewrite (find_not_similar_is_nil v.(ntype) (NestedLabeledField l f α φ)) //; simp merge_selection_sets. *)
-  (*         by rewrite cats0 !IH //; rewrite -/(queries_size φ) in Hleq; ssromega. *)
-  (*     + by rewrite IH //; ssromega.  *)
-
-  (*       * simp are_in_normal_form => /and5P [Hobj Hflds Hnf Hinl Hnfs]. *)
-  (*         simp are_non_redundant => /= /and3P [Hsim Hnr Hnrs]. *)
-  (*         simp execute_selection_set; simp execute_selection_set2. *)
-  (*         case Hfrag: does_fragment_type_apply => //=; last by apply: IH => //; ssromega. *)
-  (*         rewrite execute_selection_set2_cat. *)
-  (*         rewrite (all_invalid_fragments_eval u φ qs) // ?cats0; last first. *)
-  (*         rewrite /does_fragment_type_apply Hobj in Hfrag. *)
-  (*           by move/eqP in Hfrag; rewrite Hfrag.         *)
-            
-            
-  (*           rewrite all_invalid_fragments_exec //; [apply: IH => //; rewrite -/(queries_size φ) in Hleq; ssromega|]. *)
-  (*           rewrite /does_fragment_type_apply Hobj in Hfrag. *)
-  (*             by move/eqP in Hfrag; rewrite Hfrag. *)
-  (* Qed. *)
-  
-
