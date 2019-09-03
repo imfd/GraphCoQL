@@ -50,17 +50,20 @@ Section WellFormedness.
 
   Variables (Vals : eqType).
 
+  (** * Well-formedness predicates
+
+      In this section we define the predicates necessary to establish the well-formedness
+      of a GraphQL Schema 
+   *)
   
   Section Defs.
     
     Variable (s : graphQLSchema).
 
-    (**
-       We begin by establishing when a field's argument is properly defined.
-     *)
+   
 
     (** ---- *)
-    (** *** Well-formed Argument
+    (** ** Well-formed Argument
 
       The following predicate checks whether an argument definition is well-formed.
       This is done by simply checking that its type is a valid type for an argument. 
@@ -91,7 +94,7 @@ Section WellFormedness.
 
     
     (** ---- *)
-    (** *** Well-formed Field
+    (** ** Well-formed Field
 
      The following predicate checks whether a field is well-formed. This is done by
      checking the following things:
@@ -131,7 +134,7 @@ Section WellFormedness.
 
     
     (** ---- *)
-    (** *** Valid interface implementation
+    (** ** Valid interface implementation
 
      The following predicate checks whether an object correctly implements an interface,
      by properly implementing _every_ field defined in the interface.
@@ -175,7 +178,7 @@ Section WellFormedness.
     
 
     (** ---- *)
-    (** *** Well-formed TypeDefinition
+    (** ** Well-formed TypeDefinition
 
         The following predicate checks whether a type definition is well-formed.
         This is used when checking that a Schema is well-formed.
@@ -216,7 +219,7 @@ Section WellFormedness.
 
 
     (** ---- *)
-    (** *** Well-formed Schema 
+    (** ** Well-formed Schema 
 
     The following predicate checks whether a Schema is well-formed.
 
@@ -232,11 +235,12 @@ Section WellFormedness.
        With them in hand we can proceed to define the structure that holds it all together.
      *)
   End Defs.
+
   
   (** ---- *)
-  (** *** Well-formed GraphQL Schema
+  (** * Well-formed GraphQL Schema
 
-  A well-formed GraphQL Schema is a Schema which satisfies the well-formedness property.
+      A well-formed GraphQL Schema is a Schema which satisfies the well-formedness property.
    
    *)
   Structure wfGraphQLSchema := WFGraphQLSchema {
