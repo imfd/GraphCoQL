@@ -33,8 +33,6 @@ Require Import Response.
 Require Import QueryNormalForm.
 Require Import QueryNormalFormLemmas.
 
-Require Import QueryNormalizationLemmas.
-
 
 Require Import SeqExtra.
 Require Import QueryTactics.
