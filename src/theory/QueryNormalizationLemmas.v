@@ -162,7 +162,8 @@ Section Theory.
   Qed.
 
 
-    
+
+
   
   (**
      This lemma states that the result of [normalize] are
@@ -206,7 +207,22 @@ Section Theory.
 
 
  
-  
+
+   (**
+     This lemma states that if a query conforms to the Query type, then 
+     normalizing results in a query in normal form.
+   *)
+  (* Conformance is not really needed... *)
+  Lemma normalize_root_query_is_in_normal_form φ :
+    queries_conform s s.(query_type) φ ->
+    NRGTNF.are_non_redundant (normalize s s.(query_type) φ) /\
+    are_grounded s (normalize s s.(query_type) φ).
+  Proof.
+    intros; split.
+    - by apply: normalize_are_non_redundant; apply: query_has_object_type.
+    - apply: are_grounded2_are_grounded.
+        by apply: normalize_are_grounded2; apply: query_has_object_type.
+  Qed.
 
 End Theory.
 
