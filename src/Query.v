@@ -32,18 +32,18 @@ Notation Name := string.
 </div>#
  *)
 
+
+(** * Query *)
 Section Query.
   
   Variables Vals : eqType.
 
-  (**
-     We start by defining the Query syntax.
-   *)
+  (** ** Definition *)
   
   (* Unsetting because the automatically generated induction principle is not good enough. *)
   Unset Elimination Schemes.
 
-  (** ** Query 
+  (** *** Query 
       
       A Query corresponds to an atomic selection one may perform in a GraphQL service. 
       It can either be a field selection or an inline fragment.

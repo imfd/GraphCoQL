@@ -49,6 +49,7 @@ Require Import Ssromega.
 </div>#
  *)
 
+
 Section QueryConformance.
 
   Variables Vals : eqType.
@@ -60,7 +61,14 @@ Section QueryConformance.
 
   Variable s : @wfGraphQLSchema Vals.
  
+  (** * Conformance Predicates *)
+  (** ---- *)
   
+  (** ** Are queries consistent ?
+      
+      First we define the necessary predicates to establish that a query is consistent 
+      by itself.
+   *)
   (** ---- *)
   (** 
       #<strong>arguments_conform</strong># : List FieldArgumentDefinition → List (Name * Vals) → Bool
@@ -68,7 +76,7 @@ Section QueryConformance.
       The following predicate checks whether a list of arguments (described as a pairing between names and values)
       conform to a list of field arguments.
       
-      This is used when checking whether a field selection conforms to a type in the schema.
+      This is used when checking whether a field selection is consistent with a type in the schema.
 
       For a query argument to be valid it must satisfy the following:
       - There exists an argument definition with the same name.
@@ -99,7 +107,7 @@ Section QueryConformance.
      Checks whether a given type can be used as an inline fragment's type condition 
      in a given context with another type in scope (parent type).
 
-     It basically amounts to intersecting the possible types of each
+     It basically amounts to intersecting the possible subtypes of each
      and checking that the intersection is not empty.     
    *)
   Definition is_fragment_spread_possible parent_type fragment_type : bool :=
@@ -109,8 +117,8 @@ Section QueryConformance.
     applicable_types != [::].
 
 
-   (** ---- *)
- (** 
+  (** ---- *)
+  (** 
      #<strong>is_consistent</strong># : Name → Query → Bool 
 
       Checks whether a query is consistent to a given type in the schema.
@@ -171,6 +179,12 @@ Section QueryConformance.
     end.
   
 
+  (** ---- *)
+  (** ** Do queries have compatible response shapes ?
+
+      In this segment we define the necessary predicates to establish if the queries 
+      have compatible response shapes.
+   *)
   (** ---- *)
   (**
     #<strong>are_compatible_types</strong># : Type → Type → Bool
@@ -238,8 +252,9 @@ Section QueryConformance.
     | (_, on _ { _ }) => false
     end.
 
- (** ---- *)
- (**
+  
+  (** ---- *)
+  (**
     #<strong>have_compatible_response_shapes</strong># : Name → List (Name * Query) → Bool 
 
     Checks whether a list of queries have compatible return types.
@@ -331,14 +346,25 @@ Section QueryConformance.
      by ssromega.
  Qed.
 
+
+
+ (** ---- *)
+ (** ** Is field merging possible ?
+     In this section we define the predicate that checks if field merging is possible.
+  *)
  (** ---- *)
  (**
     #<strong>is_field_merging_possible</strong># : Name → List Query → Bool
 
     Checks whether a list of queries are mergeable.
 
-    The first parameter corresponds to the type in context where
-    the queries might live.
+    In a nutshell, what we do is look for fields with the same _response name_ and then check that:
+    - They are all leaf fields or all node fields.
+    - They all have the same _field name_.
+    - They all have the same arguments.
+
+    We use the type in context to find only the fields that make sense 
+    (because with fragments we can create queries that don't make sense).
   *)
  Equations? is_field_merging_possible (type_in_scope : Name) queries : bool by wf (queries_size queries)  :=
    {
@@ -436,9 +462,10 @@ Section QueryConformance.
  Defined.
  
 
-
-  (** ---- *)
-  (**
+ (** ---- *)
+ (** * Query Conformance *)
+ (** ---- *)
+ (**
      #<strong>queries_conform</strong># : Name -> List Query -> Bool 
 
      Check whether a list of queries conform to a given type in the schema.
@@ -460,6 +487,7 @@ Section QueryConformance.
   
  
 End QueryConformance.
+(** ---- *)
 
 Arguments arguments_conform [Vals].
 Arguments is_fragment_spread_possible [Vals].
@@ -468,6 +496,7 @@ Arguments is_field_merging_possible [Vals].
 Arguments is_consistent [Vals].
 Arguments queries_conform [Vals].
 
+(** ---- *)
 (** 
     #<div>
         <a href='GraphCoQL.Query.html' class="btn btn-light" role='button'> Previous ← Query  </a>
