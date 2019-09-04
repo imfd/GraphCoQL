@@ -49,13 +49,22 @@ Section QuerySemantic.
   
   Variable s : @wfGraphQLSchema Vals.
   Variable g : @conformedGraph Vals s.
+  Variables (coerce : Vals -> @ResponseNode (option Vals)).
   
   Implicit Type u : @node Vals.
   Implicit Type query : @Query Vals.
   Implicit Type queries : seq (@Query Vals).
 
  
+  Fixpoint is_valid_response_value (ty : type) (response : @ResponseNode (option Vals)) : bool :=
+    match response with
+    | Leaf (Some v) => s.(is_valid_value) ty v
+    | Response.Object rs => all (fun r => is_valid_response_value ty r.2) rs
+    | Array rs => all (is_valid_response_value ty) rs
+    | _ => false 
+    end.
 
+  
   Reserved Notation "⟦ φ ⟧ˢ 'in' u" (at level 40).
   
   (** * Semantics in a Graph setting *)
@@ -75,11 +84,15 @@ Section QuerySemantic.
       ⟦ f[[α]] :: φ ⟧ˢ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
-        | Some _
+        | Some fdef
             with field_seq_value u.(nprops) (Field f α) :=
             {
-            | Some (inl value) => (f, Leaf (Some value)) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
-            | Some (inr values) => (f, Array (map (fun value => Leaf (Some value)) values)) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
+            | Some value => let coerced_value := coerce value in
+                           if is_valid_response_value fdef.(return_type) coerced_value then
+                             (f, coerced_value) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u
+                           else
+                             (f, Leaf None) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
+
             | None => (f, Leaf None) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u  (* Should throw error? *)
             };
         | _ := ⟦ φ ⟧ˢ in u (* Should throw error *)
@@ -88,11 +101,14 @@ Section QuerySemantic.
       ⟦ l:f[[α]] :: φ ⟧ˢ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
-        | Some _
+        | Some fdef
             with field_seq_value u.(nprops) (Field f α) :=
             {
-            | Some (inl value) => (l, Leaf (Some value)) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
-            | Some (inr values) => (l, Array (map (fun value => Leaf (Some value)) values)) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
+            | Some value => let coerced_value := coerce value in
+                           if is_valid_response_value fdef.(return_type) coerced_value then
+                             (l, coerced_value) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u
+                           else
+                             (l, Leaf None) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
             | None => (l, Leaf None) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u (* Should throw error? *)
             };
 
@@ -181,11 +197,15 @@ Section QuerySemantic.
       ≪ f[[α]] :: φ ≫ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
-        | Some _ 
+        | Some fdef
             with field_seq_value u.(nprops) (Field f α) :=
             {
-            | Some (inl value) => (f, Leaf (Some value)) :: ≪ φ ≫ in u;
-            | Some (inr values) => (f, Array (map (fun value => Leaf (Some value)) values)) :: ≪ φ ≫ in u;
+            | Some value => let coerced_value := coerce value in
+                           if is_valid_response_value fdef.(return_type) coerced_value then
+                             (f, coerced_value) :: ≪ φ ≫ in u
+                           else
+                             (f, Leaf None) :: ≪ φ ≫ in u;
+            
             | None => (f, Leaf None) :: ≪ φ ≫ in u
             };
         | _ := ≪ φ ≫ in u (* Error *)
@@ -194,11 +214,15 @@ Section QuerySemantic.
       ≪ l:f[[α]] :: φ ≫ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
-        | Some _ 
+        | Some fdef
             with field_seq_value u.(nprops) (Field f α) :=
             {
-            | Some (inl value) => (l, Leaf (Some value)) :: ≪ φ ≫ in u;
-            | Some (inr values) => (l, Array (map (fun value => Leaf (Some value)) values)) :: ≪ φ ≫ in u;
+            | Some value => let coerced_value := coerce value in
+                           if is_valid_response_value fdef.(return_type) coerced_value then
+                             (l, coerced_value) :: ≪ φ ≫ in u
+                           else
+                             (l, Leaf None) :: ≪ φ ≫ in u;
+            
             | None => (l, Leaf None) :: ≪ φ ≫ in u
             };
         | _ := ≪ φ ≫ in u (* Error *)
@@ -280,7 +304,7 @@ Section QuerySemantic.
      **** See also
      - #<a href='https://graphql.github.io/graphql-spec/June2018/##ResolveFieldValue()'>ResolveFieldValue()</a># 
    *)
-  Equations resolve_field_value u (field_name : Name) (argument_values : seq (Name * Vals)) : option ((Vals + seq Vals) + (@node Vals) + seq (@node Vals)) :=
+  Equations resolve_field_value u (field_name : Name) (argument_values : seq (Name * Vals)) : option (Vals + (@node Vals) + seq (@node Vals)) :=
     {
       resolve_field_value u f α
         with field_seq_value u.(nprops) (Field f α) :=
@@ -518,6 +542,7 @@ Section QuerySemantic.
   (** ---- *)
 End QuerySemantic.
 
+Arguments is_valid_response_value [Vals].
 Arguments execute_selection_set [Vals].
 Arguments execute_selection_set2 [Vals].
 
@@ -525,8 +550,8 @@ Delimit Scope query_eval with QEVAL.
 Open Scope query_eval.
 
 (* This notation collides with the pairs notation (_ , _) ...  *)
-Notation "s , g ⊢ ⟦ φ ⟧ˢ 'in' u" := (execute_selection_set s g u φ) (at level 30, g at next level, φ at next level) : query_eval.
-Notation "s , g ⊢ ≪ φ ≫ 'in' u" := (execute_selection_set2 s g u φ) (at level 30, g at next level, φ at next level) : query_eval.
+Notation "s , g ⊢ ⟦ φ ⟧ˢ 'in' u 'with' coerce" := (execute_selection_set s g coerce u φ) (at level 30, g at next level, φ at next level) : query_eval.
+Notation "s , g ⊢ ≪ φ ≫ 'in' u 'with' coerce" := (execute_selection_set2 s g coerce u φ) (at level 30, g at next level, φ at next level) : query_eval.
 
 
 (** ---- *)

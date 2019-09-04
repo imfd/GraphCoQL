@@ -242,8 +242,8 @@ Section WellFormedness.
    *)
   Structure wfGraphQLSchema := WFGraphQLSchema {
                            schema : graphQLSchema;
-                           has_type :  Name -> Vals -> bool;
                            _ : is_wf_schema schema;
+                           is_valid_value : type -> Vals -> bool;
                          }.
 
   

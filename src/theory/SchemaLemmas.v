@@ -43,7 +43,7 @@ Section Aux.
 
     (** ---- *)
     (**
-       This lemma states that if looking up a type definition by name
+       This rlemma states that if looking up a type definition by name
        returns a valid definition, then that definition is in the list 
        of type definitions of the schema.
      *)
@@ -126,7 +126,7 @@ Section WellFormedness.
     let Hqobj := fresh "Hqboj" in
     let Huniq := fresh "Huniq" in
     let Hok := fresh "Hok" in
-    case: s => sch Hhty; rewrite /is_wf_schema => /=  /and3P [Hqobj Huniq /allP Hok].
+    case: s => sch; rewrite /is_wf_schema => /=  /and3P [Hqobj Huniq /allP Hok] Hhty.
 
 
   (** ---- *)

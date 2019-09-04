@@ -19,7 +19,6 @@ Require Import SchemaWellFormedness.
 
 
 Require Import Graph.
-
 Require Import GraphConformance.
 
 
@@ -44,6 +43,97 @@ Open Scope string_scope.
 (* end hide *)
 
 
+
+
+Section Values.
+
+  Inductive Value : Type :=
+  | VInt : nat -> Value
+  | VBool: bool -> Value            
+  | VString : string -> Value
+  | VList : seq Value -> Value
+  | VFloat : nat -> nat -> Value.
+
+  Notation vtype := (nat + bool + string + (nat * nat))%type.
+
+  Fixpoint tree_of_value (v : Value) : GenTree.tree vtype  :=
+    match v with
+    | VInt n => GenTree.Node 0 [:: GenTree.Leaf (inl (inl (inl n)))]
+    | VBool b => GenTree.Node 4 [:: GenTree.Leaf (inl (inl (inr b)))]                            
+    | VString s => GenTree.Node 1 [:: GenTree.Leaf (inl (inr s))]
+    | VFloat f1 f2 => GenTree.Node 2 [:: GenTree.Leaf (inr (pair f1 f2))]
+    | VList ls => GenTree.Node 3 [seq tree_of_value x | x <- ls]
+    end.
+
+  Fixpoint value_of_tree (t : GenTree.tree vtype) : option Value :=
+    match t with
+    | GenTree.Node 0 [:: GenTree.Leaf (inl (inl (inl n)))] => Some (VInt n)
+    | GenTree.Node 4 [:: GenTree.Leaf (inl (inl (inr b)))] => Some (VBool b)
+    | GenTree.Node 1 [:: GenTree.Leaf (inl (inr s))] => Some (VString s)
+    | GenTree.Node 2 [:: GenTree.Leaf (inr (pair f1 f2))] => Some (VFloat f1 f2)
+    | GenTree.Node 3 vals =>
+      Some (VList (pmap value_of_tree vals))
+    | _ => None
+    end.
+
+  Lemma tree_of_valueK : pcancel tree_of_value value_of_tree.
+  Proof.
+    rewrite /pcancel; case => //=.
+    elim=> //= x xs IH.
+  Admitted.
+
+  Canonical value_eqType := EqType Value (PcanEqMixin tree_of_valueK).
+
+  Fixpoint coerce (v : Value) : @ResponseNode (option Value) :=
+    match v with
+    | VList ls => Array [seq coerce x | x <- ls]
+    | _ => Leaf (Some v)
+    end.
+  
+  Coercion v_of_nat (n : nat) := VInt n.
+  Coercion v_of_bool (b : bool) := VBool b.
+  Coercion v_of_str (s : string) := VString s.
+
+
+  Variable (schema : graphQLSchema). 
+  Fixpoint is_valid_value (ty : type) (v : Value) : bool :=
+    match v with
+    | VInt _ => if ty is NamedType name then
+                 (name == "Int") || (name == "ID")
+               else
+                 false
+                   
+    | VBool _ => if ty is NamedType name then
+                  name == "Boolean"
+                else
+                  false 
+                    
+    | VString s => if ty is NamedType name then
+                    (name == "String")
+                    ||
+                    if lookup_type schema name is Some (Enum _ { members }) then
+                      s \in members
+                    else
+                      false
+                  else
+                    false
+                      
+    | VFloat _ _ => if ty is NamedType name then
+                     name == "Float"
+                   else
+                     false
+                       
+    | VList ls => if ty is ListType ty' then
+                   all (is_valid_value ty') ls
+                 else
+                   false
+
+    end.
+
+End Values.
+
+
+
 (** This file includes some examples of schemas, graphs and queries. 
     The base schema is the one used in [Hartig & Pérez, 2017];
 
@@ -51,6 +141,7 @@ Open Scope string_scope.
     while the other sections may vary.
  **)
 Section Example.
+
  
   Coercion namedType_of_string (s : string) := NamedType s.
   
@@ -116,97 +207,98 @@ Section Example.
   
 
 
+ 
 
-  Let wf_schema : @wfGraphQLSchema string_eqType := WFGraphQLSchema (fun n v => true) sdf.
+  Let wf_schema : wfGraphQLSchema := WFGraphQLSchema sdf (is_valid_value schema).
   
   Section HP.
 
 
     (* Close Scope query_eval. *)
     
-    Let edges : seq (node * fld * node) :=
+    Let edges : seq (@node value_eqType * fld * node) :=
       [::
          pair (pair (Node "Query" [::])
-                    (Graph.Field "search" [:: (pair "text" "L")]))
+                    (Graph.Field "search" [:: (pair "text" (VString "L"))]))
          (Node "Starship" [::
-                             (pair (Graph.Field "id" [::])  (inl "3000"));
-                             (pair (Graph.Field "name" [::]) (inl "Falcon")); 
-                             (pair (Graph.Field "length" [::]) (inl "34.37"))
+                             (pair (Graph.Field "id" [::])  (VInt 3000));
+                             (pair (Graph.Field "name" [::]) (VString "Falcon")); 
+                             (pair (Graph.Field "length" [::]) (VFloat 34 37))
          ]);
          pair (pair (Node "Query" [::])
-                    (Graph.Field "search" [:: (pair "text" "L")]))
+                    (Graph.Field "search" [:: (pair "text" (VString "L"))]))
               (Node "Human" [::
-                               pair (Graph.Field "id" [::]) (inl "1000");
-                               pair (Graph.Field "name" [::]) (inl "Luke")
+                               pair (Graph.Field "id" [::]) (VInt 1000);
+                               pair (Graph.Field "name" [::]) (VString "Luke")
               ]);
          pair (pair (Node "Query" [::])
-                    (Graph.Field "hero" [:: pair "episode" "EMPIRE"]))
+                    (Graph.Field "hero" [:: pair "episode" (VString "EMPIRE")]))
               (Node "Human" [::
-                               pair (Graph.Field "id" [::]) (inl "1000");
-                               pair (Graph.Field "name" [::]) (inl "Luke")
+                               pair (Graph.Field "id" [::]) (VInt 1000);
+                               pair (Graph.Field "name" [::]) (VString "Luke")
               ]);
          pair (pair (Node "Query" [::])
-                    (Graph.Field "hero" [:: pair "episode" "NEWHOPE"]))
+                    (Graph.Field "hero" [:: pair "episode" (VString "NEWHOPE")]))
               (Node "Droid" [::
-                               (pair (Graph.Field "id" [::]) (inl "2001"));
-                               (pair (Graph.Field "name" [::]) (inl "R2-D2"));
-                               (pair (Graph.Field "primaryFunction" [::]) (inl "Astromech"))
+                               (pair (Graph.Field "id" [::]) (VInt 2001));
+                               (pair (Graph.Field "name" [::]) (VString "R2-D2"));
+                               (pair (Graph.Field "primaryFunction" [::]) (VString "Astromech"))
               ]);
          
          pair (pair (Node "Human" [::
-                                     pair (Graph.Field "id" [::]) (inl "1000");
-                                     pair (Graph.Field "name" [::]) (inl "Luke")
+                                     pair (Graph.Field "id" [::]) (VInt 1000);
+                                     pair (Graph.Field "name" [::]) (VString "Luke")
                     ])
                     (Graph.Field "friends" [::]))
               (Node "Droid" [::
-                               (pair (Graph.Field "id" [::]) (inl "2001"));
-                               (pair (Graph.Field "name" [::]) (inl "R2-D2"));
-                               (pair (Graph.Field "primaryFunction" [::]) (inl "Astromech"))
+                               (pair (Graph.Field "id" [::]) (VInt 2001));
+                               (pair (Graph.Field "name" [::]) (VString "R2-D2"));
+                               (pair (Graph.Field "primaryFunction" [::]) (VString "Astromech"))
               ]);
 
          pair (pair (Node "Droid" [::
-                                     (pair (Graph.Field "id" [::]) (inl "2001"));
-                                     (pair (Graph.Field "name" [::]) (inl "R2-D2"));
-                                     (pair (Graph.Field "primaryFunction" [::]) (inl "Astromech"))
+                                     (pair (Graph.Field "id" [::]) (VInt 2001));
+                                     (pair (Graph.Field "name" [::]) (VString "R2-D2"));
+                                     (pair (Graph.Field "primaryFunction" [::]) (VString "Astromech"))
                     ])
                     (Graph.Field "friends" [::]))
               (Node "Human" [::
-                               pair (Graph.Field "id" [::]) (inl "1000");
-                               pair (Graph.Field "name" [::]) (inl "Luke")
+                               pair (Graph.Field "id" [::]) (VInt 1000);
+                               pair (Graph.Field "name" [::]) (VString "Luke")
               ]);
          
          pair (pair (Node "Human" [::
-                                     pair (Graph.Field "id" [::]) (inl "1000");
-                                     pair (Graph.Field "name" [::]) (inl "Luke")
+                                     pair (Graph.Field "id" [::]) (VInt 1000);
+                                     pair (Graph.Field "name" [::]) (VString "Luke")
                     ])
                     (Graph.Field "friends" [::]))
               (Node "Human" [::
-                               pair (Graph.Field "id" [::]) (inl "1002");
-                               pair (Graph.Field "name" [::]) (inl "Han")
+                               pair (Graph.Field "id" [::]) (VInt 1002);
+                               pair (Graph.Field "name" [::]) (VString "Han")
               ]);
          
          pair (pair (Node "Human" [::
-                                     pair (Graph.Field "id" [::]) (inl "1002");
-                                     pair (Graph.Field "name" [::]) (inl "Han")
+                                     pair (Graph.Field "id" [::]) (VInt 1002);
+                                     pair (Graph.Field "name" [::]) (VString "Han")
                     ])
                     (Graph.Field "friends" [::]))
               (Node "Human" [::
-                               pair (Graph.Field "id" [::]) (inl "1000");
-                               pair (Graph.Field "name" [::]) (inl "Luke")
+                               pair (Graph.Field "id" [::]) (VInt 1000);
+                               pair (Graph.Field "name" [::]) (VString "Luke")
               ]);
          
          pair (pair (Node "Human" [::
-                                     pair (Graph.Field "id" [::]) (inl "1002");
-                                     pair (Graph.Field "name" [::]) (inl "Han")
+                                     pair (Graph.Field "id" [::]) (VInt 1002);
+                                     pair (Graph.Field "name" [::]) (VString "Han")
                     ])
                     (Graph.Field "starships" [::]))
-              (Node "Starship" [:: (pair (Graph.Field "id" [::]) (inl "3000"));
-                                  (pair (Graph.Field "name" [::]) (inl "Falcon")); 
-                                  (pair (Graph.Field "length" [::]) (inl "34.37"))])
+              (Node "Starship" [:: (pair (Graph.Field "id" [::]) (VInt 3000));
+                                  (pair (Graph.Field "name" [::]) (VString "Falcon")); 
+                                  (pair (Graph.Field "length" [::]) (VFloat 34 37))])
       ].
     
     
-    Let r : @node string_eqType := Node "Query" [::].
+    Let r : @node value_eqType := Node "Query" [::].
     
     
     Let g := GraphQLGraph r edges.
@@ -223,7 +315,7 @@ Section Example.
 
     Lemma fc : nodes_conform wf_schema g.
     Proof.
-        by [].
+      by []. 
     Qed.
     
 
@@ -233,7 +325,7 @@ Section Example.
     
     Let q :=
       [::
-         "hero" [[ [:: (pair "episode" "EMPIRE") ] ]] {
+         "hero" [[ [:: (pair "episode" (VString "EMPIRE")) ] ]] {
            [::
               "name" [[ [::] ]] ;
               "friends" [[ [::] ]] {
@@ -278,26 +370,26 @@ Section Example.
        (pair "hero"
              {-
                 [::
-                   (pair "name" (Leaf (Some "Luke")));
+                   (pair "name" (Leaf (Some (VString "Luke"))));
                    (pair "friends"
                          (Array
                             [::
                                {-
                                 [::
-                                   (pair "droidFriend" (Leaf (Some "R2-D2")));
-                                   (pair "primaryFunction" (Leaf (Some "Astromech")))
+                                   (pair "droidFriend" (Leaf (Some (VString "R2-D2"))));
+                                   (pair "primaryFunction" (Leaf (Some (VString "Astromech"))))
                                 ]
                                 -};
                                {-
                                 [::
-                                   (pair "humanFriend" (Leaf (Some "Han")));
+                                   (pair "humanFriend" (Leaf (Some (VString "Han"))));
                                    (pair "starships"
                                          (Array
                                             [::
                                                {-
                                                 [::
-                                                   (pair "starship" (Leaf (Some "Falcon")));
-                                                   (pair "length" (Leaf (Some "34.37")))
+                                                   (pair "starship" (Leaf (Some (VString "Falcon"))));
+                                                   (pair "length" (Leaf (Some (VFloat 34 37))))
                                                 ]
                                                 -}
                                             ]
@@ -316,7 +408,7 @@ Section Example.
 
 
                 
-  Example ev_query_eq_response :  (execute_selection_set wf_schema wf_graph wf_graph.(root) q) = query_response.
+  Example ev_query_eq_response :  wf_schema, wf_graph ⊢  ⟦ q ⟧ˢ in wf_graph.(root) with coerce = query_response.
   Proof.
       by [].
   Qed.
@@ -324,7 +416,7 @@ Section Example.
     
 
     Let q' := [::
-                ("hero" [[ [:: (pair "episode" "EMPIRE") ] ]] {
+                ("hero" [[ [:: (pair "episode" (VString "EMPIRE")) ] ]] {
                           [::
                              ("name" [[ [::] ]]);
                              ("name" [[ [::] ]]);
@@ -341,16 +433,16 @@ Section Example.
   
 
 
-     Goal (wf_schema, wf_graph ⊢  ⟦ q' ⟧ˢ in wf_graph.(root) =
+     Goal (wf_schema, wf_graph ⊢  ⟦ q' ⟧ˢ in wf_graph.(root) with coerce =
             [::
                (pair "hero" {-
                              [::
-                                (pair "name" (Leaf (Some "Luke")));
-                                (pair "id" (Leaf (Some "1000")))
+                                (pair "name" (Leaf (Some (VString "Luke"))));
+                                (pair "id" (Leaf (Some (VInt 1000))))
                              ]
                              -}
                )
-          ]).
+          ]) .
          by [].
      Qed.
     
@@ -361,12 +453,12 @@ Section Example.
   Section WrongGraph.
     (** Some examples of graph's not conforming to the schema **)
 
-    Let r : @node string_eqType := Node "Query" [::].
+    Let r : @node value_eqType := Node "Query" [::].
         
     (** Root node does not have same type as query type **)
-    Let edges1 : seq (@node string_eqType * @fld string_eqType * @node string_eqType) := [::].
+    Let edges1 : seq (@node value_eqType * @fld value_eqType * @node value_eqType) := [::].
     
-    Let r1 : @node string_eqType := Graph.Node "Human" [::].
+    Let r1 : @node value_eqType := Graph.Node "Human" [::].
     
     Let g := GraphQLGraph r1 edges1.
 
@@ -378,17 +470,17 @@ Section Example.
     
     (** Arguments are incorrect **)
 
-    Let edges2 : seq (@node string_eqType * @fld string_eqType * @node string_eqType) :=
+    Let edges2 : seq (@node value_eqType * @fld value_eqType * @node value_eqType) :=
       [:: (pair
              (pair
                 (Node "Query" [::])
 
-                (Graph.Field "search" [:: pair "wrong_Arg" "L"]))          (* <--- Wrong name for argument *)
+                (Graph.Field "search" [:: pair "wrong_Arg" (VString "L")]))          (* <--- Wrong name for argument *)
 
                 (Node "Starship" [::
-                                   (pair (Graph.Field  "id" [::]) (inl "3000"));
-                                   (pair (Graph.Field "name" [::]) (inl "Falcon")); 
-                                   (pair (Graph.Field "length" [::]) (inl "34.37"))
+                                   (pair (Graph.Field  "id" [::]) (VInt 3000));
+                                   (pair (Graph.Field "name" [::]) (VString "Falcon")); 
+                                   (pair (Graph.Field "length" [::]) (VFloat 34 37))
                                  ]
                 )
           )
@@ -404,19 +496,19 @@ Section Example.
     
     (** Types are incorrect **)
     
-    Let edges3 : seq (@node string_eqType * @fld string_eqType * @node string_eqType) :=
+    Let edges3 : seq (@node value_eqType * @fld value_eqType * @node value_eqType) :=
       [:: pair
           (pair (Node "Human" [::
-                                 (pair (Graph.Field "id" [::]) (inl "1000"));
-                                 (pair (Graph.Field "name" [::]) (inl "Luke"))
+                                 (pair (Graph.Field "id" [::]) (VInt 1000));
+                                 (pair (Graph.Field "name" [::]) (VString "Luke"))
                               ]
                 )
                 (Graph.Field "friends" [::])
           )
           (Node "Starship" [::
-                             (pair (Graph.Field "id" [::]) (inl "2001"));
-                             (pair (Graph.Field "name" [::]) (inl "R2-D2"));
-                             (pair (Graph.Field "primaryFunction" [::]) (inl "Astromech"))
+                             (pair (Graph.Field "id" [::]) (VInt 2001));
+                             (pair (Graph.Field "name" [::]) (VString "R2-D2"));
+                             (pair (Graph.Field "primaryFunction" [::]) (VString "Astromech"))
                            ]
           )
       ].
@@ -432,20 +524,20 @@ Section Example.
 
 
 
-    Let edges4 : seq (@node string_eqType * @fld string_eqType * @node string_eqType) :=
+    Let edges4 : seq (@node value_eqType * fld * node) :=
       [:: pair
           (pair (Node "Query" [::])
-                (Graph.Field "search" [:: (pair "wrong_Arg" "L")])
+                (Graph.Field "search" [:: (pair "wrong_Arg" (VString "L"))])
           )
           (Node "Other" [::
-                           (pair (Graph.Field "id" [::]) (inl "3000")); (* <--- Type is not in union *)
-                           (pair (Graph.Field "name" [::]) (inl "Falcon")); 
-                           (pair (Graph.Field "length" [::]) (inl "34.37"))
+                           (pair (Graph.Field "id" [::]) (VInt 3000)); (* <--- Type is not in union *)
+                           (pair (Graph.Field "name" [::]) (VString "Falcon")); 
+                           (pair (Graph.Field "length" [::]) (VFloat 34 37))
                         ]
           )
       ].
 
-    Let r4 : @node string_eqType := Node "Query" [::].
+    Let r4 : @node value_eqType := Node "Query" [::].
 
     Let g4 := GraphQLGraph r edges4.
     
@@ -457,15 +549,15 @@ Section Example.
 
     (** Field's are incorrect **)
 
-     Let edges5 : seq (@node string_eqType * @fld string_eqType * @node string_eqType) :=
+     Let edges5 : seq (@node value_eqType * @fld value_eqType * @node value_eqType) :=
        [:: pair
            (pair (Node "Query" [::])
-                 (Graph.Field "search" [:: (pair "wrong_Arg" "L")])
+                 (Graph.Field "search" [:: (pair "wrong_Arg" (VString "L"))])
            )
            (Node "Starship" [::
-                               (pair (Graph.Field "id" [::]) (inl "3000"));
-                               (pair (Graph.Field "name" [:: (pair "wrong" "arg")]) (inl "Falcon")); (* <--- invalid argument in field*) 
-                               (pair (Graph.Field "length" [::]) (inl "34.37"))
+                               (pair (Graph.Field "id" [::]) (VInt 3000));
+                               (pair (Graph.Field "name" [:: (pair "wrong" (VString "arg"))]) (VString "Falcon")); (* <--- invalid argument in field*) 
+                               (pair (Graph.Field "length" [::]) (VFloat 34 37))
                             ]
            )
        ].
@@ -573,7 +665,7 @@ Section GraphQLSpecExamples.
   Let schwf : schema.(is_wf_schema).
   Proof. by []. Qed.
 
-  Let wf_schema : @wfGraphQLSchema string_eqType   := WFGraphQLSchema (fun n v => true) schwf.
+  Let wf_schema : wfGraphQLSchema := WFGraphQLSchema schwf (is_valid_value schema).
 
   Section FieldValidation.
     (**
@@ -583,7 +675,7 @@ Section GraphQLSpecExamples.
     (**
        https://graphql.github.io/graphql-spec/June2018/#sec-Field-Selections-on-Objects-Interfaces-and-Unions-Types
      *)
-    Let example102 : seq (@Query string_eqType) :=  [::
+    Let example102 : seq (@Query value_eqType) :=  [::
                                                       on "Dog" {
                                                         [::
                                                            "meowVolume" [[ [::] ]]
@@ -591,7 +683,7 @@ Section GraphQLSpecExamples.
                                                       }
                                                    ].
     
-    Let example102' :  seq (@Query string_eqType) := [::
+    Let example102' :  seq (@Query value_eqType) := [::
                                                        on "Dog" {
                                                          [::
                                                             "barkVolume" : "kawVolume" [[ [::] ]]
@@ -607,7 +699,7 @@ Section GraphQLSpecExamples.
     Proof. by []. Qed.
 
 
-    Let example103 : seq (@Query string_eqType) := [::
+    Let example103 : seq (@Query value_eqType) := [::
                                                      (* on "Pet" { *)
                                                      (* [:: *)
                                                      "name" [[ [::] ]]
@@ -621,7 +713,7 @@ Section GraphQLSpecExamples.
 
     
 
-    Let example104 : seq (@Query string_eqType) := [::
+    Let example104 : seq (@Query value_eqType) := [::
                                                      (* on "Pet" { *)
                                                      (* [:: *)
                                                      "nickname" [[ [::] ]]
@@ -638,7 +730,7 @@ Section GraphQLSpecExamples.
     Qed.
     
 
-    Let example105 : seq (@Query string_eqType) := [::
+    Let example105 : seq (@Query value_eqType) := [::
                                                      (* on "CatOrDog" { *)
                                                      (* [:: *)
                                                      on "Pet" {
@@ -658,7 +750,7 @@ Section GraphQLSpecExamples.
     Example e105 : queries_conform wf_schema "CatOrDog" example105.
     Proof. by []. Qed.
 
-    Let example106 : seq (@Query string_eqType) := [::
+    Let example106 : seq (@Query value_eqType) := [::
                                                      "name" [[ [::] ]];
                                                      "barkVolume" [[ [::] ]]
                                                   ].
@@ -670,11 +762,11 @@ Section GraphQLSpecExamples.
 
     Section FieldSelectionMerging.
 
-      Let example107_1 : seq (@Query string_eqType) := [::
+      Let example107_1 : seq (@Query value_eqType) := [::
                                                          "name" [[ [::] ]];
                                                          "name" [[ [::] ]]
                                                       ].
-      Let example107_2 : seq (@Query string_eqType) := [::
+      Let example107_2 : seq (@Query value_eqType) := [::
                                                          "otherName" : "name" [[ [::] ]];
                                                          "otherName" : "name" [[ [::] ]]
                                                       ].
@@ -690,7 +782,7 @@ Section GraphQLSpecExamples.
       Qed.
 
 
-      Let example108 : seq (@Query string_eqType) := [::
+      Let example108 : seq (@Query value_eqType) := [::
                                                        "name" : "nickname" [[ [::] ]];
                                                        "name" [[ [::] ]]
                                                     ].
@@ -701,8 +793,8 @@ Section GraphQLSpecExamples.
       Qed.
 
       Let example109 := [::
-                          "doesKnowCommand" [[ [:: pair "dogCommand" "SIT"] ]];
-                          "doesKnowCommand" [[ [:: pair "dogCommand" "SIT"] ]]
+                          "doesKnowCommand" [[ [:: pair "dogCommand" (VString "SIT")] ]];
+                          "doesKnowCommand" [[ [:: pair "dogCommand" (VString "SIT")] ]]
                        ].
 
       Example e109 : is_field_merging_possible wf_schema "Dog" example109.
@@ -714,12 +806,12 @@ Section GraphQLSpecExamples.
        Omitting examples with variables since they are not implemented. 
        *)
       Let example110_1 := [::
-                            "doesKnowCommand" [[ [:: pair "dogCommand" "SIT"] ]];
-                            "doesKnowCommand" [[ [:: pair "dogCommand" "HEEL"] ]]
+                            "doesKnowCommand" [[ [:: pair "dogCommand" (VString "SIT")] ]];
+                            "doesKnowCommand" [[ [:: pair "dogCommand" (VString "HEEL")] ]]
                          ].
       
       Let example110_2 := [::
-                            "doesKnowCommand" [[ [:: pair "dogCommand" "SIT"] ]];
+                            "doesKnowCommand" [[ [:: pair "dogCommand" (VString "SIT")] ]];
                             "doesKnowCommand" [[ [::] ]]
                          ].
 
@@ -734,7 +826,7 @@ Section GraphQLSpecExamples.
       Qed.
 
 
-      Let example111_1 : seq (@Query string_eqType) := [::
+      Let example111_1 : seq (@Query value_eqType) := [::
                                                          on "Dog" {
                                                            [::
                                                               "volume": "barkVolume" [[ [::] ]]
@@ -753,16 +845,16 @@ Section GraphQLSpecExamples.
           by [].
       Qed.
 
-      Let example111_2 : seq (@Query string_eqType) := [::
+      Let example111_2 : seq (@Query value_eqType) := [::
                                                          on "Dog" {
                                                            [::
-                                                              "doesKnowCommand" [[ [:: pair "dogCommand" "SIT"] ]]
+                                                              "doesKnowCommand" [[ [:: pair "dogCommand" (VString "SIT")] ]]
                                                            ]
                                                          };
                                                          
                                                          on "Cat" {
                                                               [::
-                                                                 "doesKnowCommand" [[ [:: pair "catCommand" "JUMP"] ]]
+                                                                 "doesKnowCommand" [[ [:: pair "catCommand" (VString "JUMP")] ]]
                                                               ]
                                                             }
                                                       ].
@@ -773,7 +865,7 @@ Section GraphQLSpecExamples.
       Qed.
       
 
-      Let example112 : seq (@Query string_eqType) := [::
+      Let example112 : seq (@Query value_eqType) := [::
                                                        on "Dog" {
                                                          [::
                                                             "someValue": "nickname" [[ [::] ]]
@@ -806,7 +898,7 @@ Section GraphQLSpecExamples.
        https://graphql.github.io/graphql-spec/June2018/#sec-Leaf-Field-Selections
        *)
 
-      Let example113 : seq (@Query string_eqType) := [::
+      Let example113 : seq (@Query value_eqType) := [::
                                                        "barkVolume" [[ [::] ]]
                                                     ].
       
@@ -815,7 +907,7 @@ Section GraphQLSpecExamples.
           by [].
       Qed.
 
-      Let example114 : seq (@Query string_eqType) :=
+      Let example114 : seq (@Query value_eqType) :=
         [::
            "barkVolume" [[ [::] ]] {
              [::
@@ -857,9 +949,9 @@ Section GraphQLSpecExamples.
       Let extended_schwf : extended_schema.(is_wf_schema).
       Proof. by []. Qed.
 
-      Let extended_wf_schema : @wfGraphQLSchema string_eqType   := WFGraphQLSchema (fun n v => true) extended_schwf.
+      Let extended_wf_schema : @wfGraphQLSchema value_eqType   := WFGraphQLSchema extended_schwf (is_valid_value extended_schema).
 
-      Let example116_1 : seq (@Query string_eqType) :=
+      Let example116_1 : seq (@Query value_eqType) :=
         [::
            "human" [[ [::] ]]
         ].
@@ -869,7 +961,7 @@ Section GraphQLSpecExamples.
           by [].
       Qed.
 
-      Let example116_2 : seq (@Query string_eqType) :=
+      Let example116_2 : seq (@Query value_eqType) :=
         [::
            "pet" [[ [::] ]]
         ].
@@ -879,7 +971,7 @@ Section GraphQLSpecExamples.
           by [].
       Qed.
 
-      Let example116_3 : seq (@Query string_eqType) :=
+      Let example116_3 : seq (@Query value_eqType) :=
         [::
            "catOrDog" [[ [::] ]]
         ].
@@ -899,9 +991,9 @@ Section GraphQLSpecExamples.
        https://graphql.github.io/graphql-spec/June2018/#sec-Argument-Names
      *)
 
-    Let example117_1 : seq (@Query string_eqType) :=
+    Let example117_1 : seq (@Query value_eqType) :=
       [::
-         "doesKnowCommand" [[ [:: pair "dogCommand" "SIT"] ]]
+         "doesKnowCommand" [[ [:: pair "dogCommand" (VString "SIT")] ]]
       ].
 
     Example e117_1 : queries_conform wf_schema "Dog" example117_1.
@@ -912,9 +1004,9 @@ Section GraphQLSpecExamples.
     (**
        Not including the directive @include since directives are not implemented.
      *)
-    Let example117_2 : seq (@Query string_eqType) :=
+    Let example117_2 : seq (@Query value_eqType) :=
       [::
-         "isHousetrained" [[ [:: pair "atOtherHomes" "true" ] ]]
+         "isHousetrained" [[ [:: pair "atOtherHomes" (VBool true) ] ]]
       ].
 
     Example e117_2 : queries_conform wf_schema "Dog" example117_2.
@@ -923,9 +1015,9 @@ Section GraphQLSpecExamples.
     Qed.
 
 
-    Let example_118 : seq (@Query string_eqType) :=
+    Let example_118 : seq (@Query value_eqType) :=
       [::
-         "doesKnowCommand" [[ [:: pair "command" "CLEAN_UP_HOUSE" ] ]]
+         "doesKnowCommand" [[ [:: pair "command" (VString "CLEAN_UP_HOUSE") ] ]]
       ].
 
     Example e118 : ~~queries_conform wf_schema "Dog" example_118.
@@ -1005,11 +1097,11 @@ Section GraphQLSpecExamples.
       rewrite /is_wf_schema /= ?andbT; simp is_interface_type.
     Qed.
 
-    Let extended_wf_schema : @wfGraphQLSchema string_eqType   := WFGraphQLSchema (fun n v => true) extended_schwf.
+    Let extended_wf_schema : @wfGraphQLSchema value_eqType   := WFGraphQLSchema extended_schwf (is_valid_value extended_schema).
 
-    Let example121_1 : seq (@Query string_eqType) :=
+    Let example121_1 : seq (@Query value_eqType) :=
       [::
-         "multipleReqs" [[ [:: (pair "x" "1"); (pair "y" "2")] ]]
+         "multipleReqs" [[ [:: (pair "x" (VInt 1)); (pair "y" (VInt 2))] ]]
       ].
 
     Example e121_1 : queries_conform extended_wf_schema "Arguments" example121_1.
@@ -1017,9 +1109,9 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
 
-    Let example121_2 : seq (@Query string_eqType) :=
+    Let example121_2 : seq (@Query value_eqType) :=
       [::
-         "multipleReqs" [[ [:: (pair "y" "1"); (pair "x" "2")] ]]
+         "multipleReqs" [[ [:: (pair "y" (VInt 1)); (pair "x" (VInt 2))] ]]
       ].
 
     Example e121_2 : queries_conform extended_wf_schema "Arguments" example121_2.
@@ -1050,7 +1142,7 @@ Section GraphQLSpecExamples.
        We check this indirectly when checking if the fragments spread.
        If a fragment does not exist in the schema, it will never spread.
      *)
-    Let example128 : seq (@Query string_eqType) :=
+    Let example128 : seq (@Query value_eqType) :=
       [::
          on "Dog" {
            [::
@@ -1066,7 +1158,7 @@ Section GraphQLSpecExamples.
     Qed.
 
 
-    Let example129 : seq (@Query string_eqType) :=
+    Let example129 : seq (@Query value_eqType) :=
       [::
          on "NotInSchema" {
            [::
@@ -1085,7 +1177,7 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
 
-    Let example130_1 : @Query string_eqType := on "Dog" {
+    Let example130_1 : @Query value_eqType := on "Dog" {
                                                    [::
                                                       "name" [[ [::] ]]
                                                    ]
@@ -1096,7 +1188,7 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
 
-    Let example130_2 : @Query string_eqType := on "Pet" {
+    Let example130_2 : @Query value_eqType := on "Pet" {
                                                    [::
                                                       "name" [[ [::] ]]
                                                    ]
@@ -1107,7 +1199,7 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
 
-     Let example130_3 : @Query string_eqType := on "CatOrDog" {
+     Let example130_3 : @Query value_eqType := on "CatOrDog" {
                                                     [::
                                                        on "Dog" {
                                                          [::
@@ -1121,7 +1213,7 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
 
-    Let example131_1 : (@Query string_eqType) := on "Int" {
+    Let example131_1 : (@Query value_eqType) := on "Int" {
                                                      [::
                                                         "something" [[ [::] ]]
                                                      ]
@@ -1132,7 +1224,7 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
 
-    Let example131_2 : (@Query string_eqType) := on "Dog" {
+    Let example131_2 : (@Query value_eqType) := on "Dog" {
                                                      [::
                                                         on "Boolean" {
                                                           [::
@@ -1164,7 +1256,7 @@ Section GraphQLSpecExamples.
     (**
        https://graphql.github.io/graphql-spec/June2018/#sec-Object-Spreads-In-Object-Scope
      *)
-    Let example137 : @Query string_eqType := on "Dog" {
+    Let example137 : @Query value_eqType := on "Dog" {
                                                  [::
                                                     "barkVolume" [[ [::] ]]
                                                  ]
@@ -1179,7 +1271,7 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
 
-    Let example138 : @Query string_eqType := on "Cat" {
+    Let example138 : @Query value_eqType := on "Cat" {
                                                  [::
                                                     "meowVolume" [[ [::] ]]
                                                  ]
@@ -1199,7 +1291,7 @@ Section GraphQLSpecExamples.
     (**
        https://graphql.github.io/graphql-spec/June2018/#sec-Abstract-Spreads-in-Object-Scope
      *)
-    Let example139 : @Query string_eqType := on "Pet" {
+    Let example139 : @Query value_eqType := on "Pet" {
                                                  [::
                                                     "name" [[ [::] ]]
                                                  ]
@@ -1216,7 +1308,7 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
 
-    Let example140 : @Query string_eqType := on "CatOrDog" {
+    Let example140 : @Query value_eqType := on "CatOrDog" {
                                                  [::
                                                     on "Cat" {
                                                       [::
@@ -1240,7 +1332,7 @@ Section GraphQLSpecExamples.
     (**
        https://graphql.github.io/graphql-spec/June2018/#sec-Object-Spreads-In-Abstract-Scope
      *)
-    Let example141_1 : seq (@Query string_eqType) :=
+    Let example141_1 : seq (@Query value_eqType) :=
       [::
          "name" [[ [::] ]];
          on "Dog" {
@@ -1261,7 +1353,7 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
 
-    Let example141_2 : seq (@Query string_eqType) :=
+    Let example141_2 : seq (@Query value_eqType) :=
       [::
          on "Cat" {
            [::
@@ -1281,7 +1373,7 @@ Section GraphQLSpecExamples.
     Qed.
     
     
-    Let example142_1 : @Query string_eqType := on "Dog" {
+    Let example142_1 : @Query value_eqType := on "Dog" {
                                                  [::
                                                     "barkVolume" [[ [::] ]]
                                                  ]
@@ -1298,7 +1390,7 @@ Section GraphQLSpecExamples.
     Qed.
 
     
-    Let example142_2 : @Query string_eqType := on "Cat" {
+    Let example142_2 : @Query value_eqType := on "Cat" {
                                                  [::
                                                     "meowVolume" [[ [::] ]]
                                                  ]
@@ -1318,7 +1410,7 @@ Section GraphQLSpecExamples.
     (**
        https://graphql.github.io/graphql-spec/June2018/#sec-Abstract-Spreads-in-Abstract-Scope
      *)
-    Let example143 : seq (@Query string_eqType) :=
+    Let example143 : seq (@Query value_eqType) :=
       [::
          on "DogOrHuman" {
            [::
@@ -1341,7 +1433,7 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
 
-    Let example144 : @Query string_eqType := on "Sentient" {
+    Let example144 : @Query value_eqType := on "Sentient" {
                                                  [::
                                                     "name" [[ [::] ]]
                                                  ]
