@@ -18,7 +18,6 @@
 ./src/SchemaWellFormedness.v
 
 ./src/theory/SchemaAuxLemmas.v
-./src/theory/SchemaWFLemmas.v
 
 ./src/Query.v
 ./src/QueryAux.v
