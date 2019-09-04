@@ -41,6 +41,7 @@
 
 ./src/Example.v
 ./src/SpecExamples.v
+./src/OtherExamples.v
 
 
 
