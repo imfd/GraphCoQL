@@ -102,18 +102,10 @@ Section Theory.
      This lemma states that if the root node's type conforms to the schema, 
      then its type must be the Query type.
      *)
-    Lemma aux_root_query_type graph :
-      root_type_conforms s graph -> graph.(root).(ntype) = s.(query_type).
-    Proof. by rewrite /root_type_conforms; move/eqP. Qed.
-
-    (**
-     This lemma states that 
-     *)
     Lemma root_query_type :
       g.(root).(ntype) = s.(query_type).
     Proof.
-      case: g => g' H *.
-        by move: (aux_root_query_type H).
+        by case: g => g'; rewrite /root_type_conforms => /= /eqP.
     Qed.
 
     (** ---- *)
