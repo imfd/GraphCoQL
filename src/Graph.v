@@ -30,6 +30,8 @@ Section GraphQLGraph.
 
   Variables (Vals : eqType).
 
+  (** * Definition *)
+  
   (** ---- *)
   (** *** Field 
 
@@ -92,7 +94,7 @@ Arguments graphQLGraph [Vals].
 
 Section Equality.
 
-  (** ** Equality 
+  (** * Equality 
      This section deals with some SSReflect bureaucratic things needed to establish 
      that the different components have a decidable procedure to establish equality (they belong to the 
      SSReflect type - eqType).

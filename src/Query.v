@@ -33,12 +33,11 @@ Notation Name := string.
  *)
 
 
-(** * Query *)
 Section Query.
   
   Variables Vals : eqType.
 
-  (** ** Definition *)
+  (** * Definition *)
   
   (* Unsetting because the automatically generated induction principle is not good enough. *)
   Unset Elimination Schemes.
@@ -189,7 +188,7 @@ Section Equality.
 
   Variable (Vals : eqType).
   
-  (** ** Equality 
+  (** * Equality 
      This section deals with some SSReflect bureaucratic things, in particular 
      establishing that a Query has decidable procedure to establish equality (they belong to the 
      SSReflect type - eqType).

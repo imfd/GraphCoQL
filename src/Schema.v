@@ -40,12 +40,11 @@ Notation EnumValue := string.
  *)
 
 
-(** * Schema *)
 (** ---- *)
 Section Schema.
 
 
-  (** ** Base types 
+  (** * Base types 
 
       This section includes the basic definition for base types.
    *)
@@ -86,7 +85,7 @@ Section Schema.
 
   End Base.
 
-  (** ** Type System
+  (** * Type System
 
       In this section we will define the necessary types and structures needed 
       to build a GraphQL Schema. These are:
@@ -234,7 +233,7 @@ Notation "'Enum' enum_name '{' enum_members '}'" :=
 
 
 Section Equality.
-  (** ** Equality 
+  (** * Equality 
      This section deals with some SSReflect bureaucratic things, in particular 
      establishing that the different components in the schema (type, fields, type definitions, etc.)
      do have a decidable procedure to establish equality between them (they belong to the 
