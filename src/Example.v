@@ -2,47 +2,28 @@
 
 From mathcomp Require Import all_ssreflect.
 
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
-
-
-From Equations Require Import Equations.
-
 Require Import String.
 Require Import QString.
 
 Require Import Schema.
 Require Import SchemaAux.
-
 Require Import SchemaWellFormedness.
-
 
 Require Import Graph.
 Require Import GraphConformance.
 
-
 Require Import Query.
 Require Import QueryAux.
-
 Require Import QueryConformance.
-
 
 Require Import Response.
 
-Require Import QueryNormalForm.
-
-
-Require Import SeqExtra.
-Require Import QueryTactics.
-
 Require Import QuerySemantic.
-
-Open Scope string_scope.
 
 (* end hide *)
 
 
+Open Scope string_scope.
 
 
 Section Values.
