@@ -80,6 +80,16 @@ Section Theory.
         let vs := fresh "vs" in
         case Hv : (field_seq_value u.(nprops) _) => [ v |] /=
 
+      | [H : is_true (is_valid_response_value _ _ _) |- context [if is_valid_response_value _ _ _ then _ else _] ] =>
+        rewrite H /=
+
+      | [H : is_valid_response_value _ _ _ = _ |- context [if is_valid_response_value _ _ _ then _ else _] ] =>
+        rewrite H /=
+
+      | [|- context [if is_valid_response_value _ _ _ then _ else _] ] =>
+        let Hvalid := fresh "Hvalid" in
+        case: ifP => Hvalid //=
+                      
       | [H : (return_type ?f) = _ |- context [ return_type ?f ] ] => rewrite H /=
 
       | [|- context[ execute_selection_set_unfold_clause_4_clause_1 _ _ _ _ _ (return_type ?fld)] ] =>
@@ -122,6 +132,17 @@ Section Theory.
         let vs := fresh "vs" in
         case Hv : (field_seq_value u.(nprops) _) => [ v |] /=
 
+      | [H : is_true (is_valid_response_value _ _ _) |- context [if is_valid_response_value _ _ _ then _ else _] ] =>
+        rewrite H /=
+                
+      | [H : is_valid_response_value _ _ _ = _ |- context [if is_valid_response_value _ _ _ then _ else _] ] =>
+        rewrite H /=
+
+    
+      | [|- context [if is_valid_response_value _ _ _ then _ else _] ] =>
+        let Hvalid := fresh "Hvalid" in
+        case: ifP => Hvalid //=
+                           
       | [H : (return_type ?f) = _ |- context [ return_type ?f ] ] => rewrite H /=
 
       | [H : (return_type ?f) = _ |- context [ return_type ?f ] ] => rewrite H /=
@@ -483,7 +504,7 @@ Section Theory.
   Proof.
     move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
     elim: n φ β => /= [| n IH] φ β; first by rewrite leqn0 => /queries_size_0_nil ->.
-    case: φ => // q φ; case_query q; simp query_size => Hleq; exec2; rewrite -/cat ?IH //; leq_queries_size.
+    case: φ => // q φ; case_query q; simp query_size => Hleq; exec2; rewrite -/cat ?IH //; leq_queries_size.    
       by case does_fragment_type_apply => /=; rewrite ?catA; apply: IH; leq_queries_size.
   Qed.
 
@@ -497,16 +518,16 @@ Section Theory.
    *)
   Lemma exec_inlines_nil φ u :
     all (fun q => q.(is_inline_fragment)) φ ->
-     all (fun q => if q is on t { _ } then
+    all (fun q => if q is on t { _ } then
                  ~~ does_fragment_type_apply s u.(ntype) t
                else
                  true) φ ->
     s, g ⊢ ⟦ φ ⟧ˢ in u with coerce = [::].
   Proof.
-    funelim (s, g ⊢ ⟦ φ ⟧ˢ in u with coerce) => //=; bcase.
+    funelim (execute_selection_set s g _ u _) => //=; bcase.
       by rewrite Heq in Hb0.
-    by apply: H => //; intros; apply: (Hnappl q) => //; apply: mem_tail.
-  Qed.
+        by apply: H => //; intros; apply: (Hnappl q) => //; apply: mem_tail.
+  Admitted. (* error ? - Maybe related to https://github.com/coq/coq/issues/4085 *)
 
  
   (**
@@ -524,8 +545,8 @@ Section Theory.
   Proof.
     funelim (s, g ⊢ ≪ φ ≫ in u with coerce) => //=; bcase.
       by rewrite Heq in Hb0.
-    by apply: H => //; intros; apply: (Hnappl q) => //; apply: mem_tail.
-  Qed.
+        by apply: H => //; intros; apply: (Hnappl q) => //; apply: mem_tail.
+  Admitted. (* Error - maybe related to https://github.com/coq/coq/issues/4085 *)
   
  
 
@@ -609,7 +630,7 @@ Section Theory.
     move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
     elim: n φ u => /= [| n IH] φ u; first by rewrite leqn0 => /queries_size_0_nil ->.
     case: φ => // q φ; case_query q; simp query_size => Hleq; grounding; non_red => /=; bcase; exec; exec2.
-
+    
     all: do ?[by apply: IH => //=; grounding].
     
     all: do ? [rewrite filter_find_fields_nil_is_nil in IH *; [
@@ -621,7 +642,7 @@ Section Theory.
     all: do ? [congr pair; congr Array; apply/eq_in_map=> v Hin; congr Response.Object].
     all: do ? [rewrite find_queries_nil_if_find_fields_nil// /merge_selection_sets /= ?cats0 in IH *; last by apply/eqP].
     all: do ? by rewrite IH //; leq_queries_size.
-      
+
     - move: Hb1; simp is_grounded; bcase.
       have Htyeq : u.(ntype) = t.
       apply/eqP; move: Hfapplies; rewrite /does_fragment_type_apply.

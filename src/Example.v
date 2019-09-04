@@ -96,22 +96,40 @@ Section Values.
 
 
   Variable (schema : graphQLSchema). 
-  Fixpoint is_valid_value (ty : Name) (v : Value) : bool :=
+  Fixpoint is_valid_value (ty : type) (v : Value) : bool :=
     match v with
-    | VInt _ => (ty == "Int") || (ty == "ID")
-    | VBool _ => ty == "Boolean"
-    | VString s => (ty == "String")
-                  ||
-                  if lookup_type schema ty is Some (Enum _ { members }) then
-                    s \in members
+    | VInt _ => if ty is NamedType name then
+                 (name == "Int") || (name == "ID")
+               else
+                 false
+                   
+    | VBool _ => if ty is NamedType name then
+                  name == "Boolean"
+                else
+                  false 
+                    
+    | VString s => if ty is NamedType name then
+                    (name == "String")
+                    ||
+                    if lookup_type schema name is Some (Enum _ { members }) then
+                      s \in members
+                    else
+                      false
                   else
                     false
                       
-    | VFloat _ _ => ty == "Float"
-    | VList ls => all (is_valid_value ty) ls
+    | VFloat _ _ => if ty is NamedType name then
+                     name == "Float"
+                   else
+                     false
+                       
+    | VList ls => if ty is ListType ty' then
+                   all (is_valid_value ty') ls
+                 else
+                   false
+
     end.
 
-   
 End Values.
 
 
@@ -191,7 +209,7 @@ Section Example.
 
  
 
-  Let wf_schema : wfGraphQLSchema := WFGraphQLSchema (is_valid_value schema) sdf.
+  Let wf_schema : wfGraphQLSchema := WFGraphQLSchema sdf (is_valid_value schema).
   
   Section HP.
 
@@ -647,7 +665,7 @@ Section GraphQLSpecExamples.
   Let schwf : schema.(is_wf_schema).
   Proof. by []. Qed.
 
-  Let wf_schema : wfGraphQLSchema := WFGraphQLSchema (is_valid_value schema) schwf.
+  Let wf_schema : wfGraphQLSchema := WFGraphQLSchema schwf (is_valid_value schema).
 
   Section FieldValidation.
     (**
@@ -931,7 +949,7 @@ Section GraphQLSpecExamples.
       Let extended_schwf : extended_schema.(is_wf_schema).
       Proof. by []. Qed.
 
-      Let extended_wf_schema : @wfGraphQLSchema value_eqType   := WFGraphQLSchema (fun n v => true) extended_schwf.
+      Let extended_wf_schema : @wfGraphQLSchema value_eqType   := WFGraphQLSchema extended_schwf (is_valid_value extended_schema).
 
       Let example116_1 : seq (@Query value_eqType) :=
         [::
@@ -1079,7 +1097,7 @@ Section GraphQLSpecExamples.
       rewrite /is_wf_schema /= ?andbT; simp is_interface_type.
     Qed.
 
-    Let extended_wf_schema : @wfGraphQLSchema value_eqType   := WFGraphQLSchema (fun n v => true) extended_schwf.
+    Let extended_wf_schema : @wfGraphQLSchema value_eqType   := WFGraphQLSchema extended_schwf (is_valid_value extended_schema).
 
     Let example121_1 : seq (@Query value_eqType) :=
       [::

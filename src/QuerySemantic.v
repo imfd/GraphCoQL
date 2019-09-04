@@ -49,14 +49,22 @@ Section QuerySemantic.
   
   Variable s : @wfGraphQLSchema Vals.
   Variable g : @conformedGraph Vals s.
-  Variable coerce : Vals -> @ResponseNode (option Vals).
+  Variables (coerce : Vals -> @ResponseNode (option Vals)).
   
   Implicit Type u : @node Vals.
   Implicit Type query : @Query Vals.
   Implicit Type queries : seq (@Query Vals).
 
  
+  Fixpoint is_valid_response_value (ty : type) (response : @ResponseNode (option Vals)) : bool :=
+    match response with
+    | Leaf (Some v) => s.(is_valid_value) ty v
+    | Response.Object rs => all (fun r => is_valid_response_value ty r.2) rs
+    | Array rs => all (is_valid_response_value ty) rs
+    | _ => false 
+    end.
 
+  
   Reserved Notation "⟦ φ ⟧ˢ 'in' u" (at level 40).
   
   (** * Semantics in a Graph setting *)
@@ -76,10 +84,15 @@ Section QuerySemantic.
       ⟦ f[[α]] :: φ ⟧ˢ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
-        | Some _
+        | Some fdef
             with field_seq_value u.(nprops) (Field f α) :=
             {
-            | Some value => (f, coerce value) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
+            | Some value => let coerced_value := coerce value in
+                           if is_valid_response_value fdef.(return_type) coerced_value then
+                             (f, coerced_value) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u
+                           else
+                             (f, Leaf None) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
+
             | None => (f, Leaf None) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u  (* Should throw error? *)
             };
         | _ := ⟦ φ ⟧ˢ in u (* Should throw error *)
@@ -88,10 +101,14 @@ Section QuerySemantic.
       ⟦ l:f[[α]] :: φ ⟧ˢ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
-        | Some _
+        | Some fdef
             with field_seq_value u.(nprops) (Field f α) :=
             {
-            | Some value => (l, coerce value) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
+            | Some value => let coerced_value := coerce value in
+                           if is_valid_response_value fdef.(return_type) coerced_value then
+                             (l, coerced_value) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u
+                           else
+                             (l, Leaf None) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
             | None => (l, Leaf None) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u (* Should throw error? *)
             };
 
@@ -180,10 +197,15 @@ Section QuerySemantic.
       ≪ f[[α]] :: φ ≫ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
-        | Some _ 
+        | Some fdef
             with field_seq_value u.(nprops) (Field f α) :=
             {
-            | Some value => (f, coerce value) :: ≪ φ ≫ in u;
+            | Some value => let coerced_value := coerce value in
+                           if is_valid_response_value fdef.(return_type) coerced_value then
+                             (f, coerced_value) :: ≪ φ ≫ in u
+                           else
+                             (f, Leaf None) :: ≪ φ ≫ in u;
+            
             | None => (f, Leaf None) :: ≪ φ ≫ in u
             };
         | _ := ≪ φ ≫ in u (* Error *)
@@ -192,10 +214,15 @@ Section QuerySemantic.
       ≪ l:f[[α]] :: φ ≫ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
-        | Some _ 
+        | Some fdef
             with field_seq_value u.(nprops) (Field f α) :=
             {
-            | Some value => (l, coerce value) :: ≪ φ ≫ in u;
+            | Some value => let coerced_value := coerce value in
+                           if is_valid_response_value fdef.(return_type) coerced_value then
+                             (l, coerced_value) :: ≪ φ ≫ in u
+                           else
+                             (l, Leaf None) :: ≪ φ ≫ in u;
+            
             | None => (l, Leaf None) :: ≪ φ ≫ in u
             };
         | _ := ≪ φ ≫ in u (* Error *)
@@ -515,6 +542,7 @@ Section QuerySemantic.
   (** ---- *)
 End QuerySemantic.
 
+Arguments is_valid_response_value [Vals].
 Arguments execute_selection_set [Vals].
 Arguments execute_selection_set2 [Vals].
 

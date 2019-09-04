@@ -167,7 +167,7 @@ Section Conformance.
     let argument_conforms (fname : Name) (arg : Name * Vals) : bool :=
         let: (argname, value) := arg in
         match lookup_argument_in_type_and_field schema ty fname argname with
-        | Some field_arg => (has_type schema) field_arg.(argtype) value    (* If the argument is declared then check its value's type *)
+        | Some field_arg => schema.(is_valid_value) field_arg.(argtype) value    (* If the argument is declared then check its value's type *)
         | _ => false
         end
     in
@@ -235,7 +235,7 @@ Section Conformance.
   Definition nodes_conform schema graph :=
     let property_conforms ty (fd : fld * Vals) : bool :=
         match lookup_field_in_type schema ty fd.1.(label) with
-        | Some fdef => arguments_conform schema ty fd.1 && schema.(has_type) fdef.(return_type) fd.2
+        | Some fdef => arguments_conform schema ty fd.1 && schema.(is_valid_value) fdef.(return_type) fd.2
         | _ => false
         end
     in
