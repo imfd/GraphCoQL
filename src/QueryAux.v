@@ -355,7 +355,7 @@ Section QueryAux.
   End Base.
 
   (** ---- *)
-  (** ** Size functions 
+  (** *** Size functions 
       
       In this section we define functions related to
       the size of queries.
