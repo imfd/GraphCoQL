@@ -39,14 +39,17 @@ Notation EnumValue := string.
 </div>#
  *)
 
-  
+
+(** ---- *)
 Section Schema.
-  
+
+
+  (** * Base types 
+
+      This section includes the basic definition for base types.
+   *)
+  (** ---- *)
   Section Base.
-
-  
-    (** ---- *)
-
     
     (** *** Type
         
@@ -63,8 +66,7 @@ Section Schema.
     | ListType : type -> type.
 
 
-    (** ---- *)
-    
+    (** ---- *)    
     (** 
         #<strong> tname </strong>#: type → Name 
 
@@ -78,28 +80,23 @@ Section Schema.
       | ListType ty' => tname ty'
       end.
 
-    (** ---- *)
     
     Coercion tname : type >-> Name.
 
   End Base.
 
-  (** ---- *)
+  (** * Type System
 
+      In this section we will define the necessary types and structures needed 
+      to build a GraphQL Schema. These are:
+      - Arguments
+      - Fields 
+      - Type definition 
+      - Schema 
+   *)
+  (** ---- *)
   Section TypeSystem.
 
-    (** ** Type System
-
-        In this section we will define the necessary types and structures needed 
-        to build a GraphQL Schema. These are:
-        - Arguments
-        - Fields 
-        - Type definition 
-        - Schema 
-     *)
-
-    (** ---- *)
-    
     (** *** Argument Definition
 
         Arguments are defined for fields in a type (Object or Interface).
@@ -113,8 +110,6 @@ Section Schema.
 
 
     (** ---- *)
-  
-    
     (** *** Field Definition
 
         Fields are defined for an Object or Interface type.
@@ -130,9 +125,6 @@ Section Schema.
 
 
     (** ---- *)
-
-    
-  
     (** *** Type Definition 
 
         Possible type definitions one can make in a GraphQL service.
@@ -170,8 +162,6 @@ Section Schema.
   
 
     (** ---- *)
-    
-      
     (** *** Schema Definition 
 
         Here we define the actual structure of a GraphQL Schema, which is made up of:
@@ -193,7 +183,7 @@ Section Schema.
   End TypeSystem.  
     
 End Schema.
-
+(** ---- *)
 
 (** *** Notations
     Just some notations to make it easier to read (or at least closer to how it is in
@@ -243,7 +233,7 @@ Notation "'Enum' enum_name '{' enum_members '}'" :=
 
 
 Section Equality.
-  (** ** Equality 
+  (** * Equality 
      This section deals with some SSReflect bureaucratic things, in particular 
      establishing that the different components in the schema (type, fields, type definitions, etc.)
      do have a decidable procedure to establish equality between them (they belong to the 

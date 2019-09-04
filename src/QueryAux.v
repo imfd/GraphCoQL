@@ -22,6 +22,20 @@ Require Import Ssromega.
 
 (* end hide *)
 
+(**
+   #<div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">GraphQL Query Auxiliary</h1>
+        <p class="lead">
+         This file contains auxiliary definitions used with a GraphQL Query.
+        </p>
+
+        <p>
+         Some of these are: query size, extractors for queries, general purpose predicates, etc.
+        </p>
+  </div>
+</div>#
+ *)
 
 Section QueryAux.
 
@@ -32,13 +46,12 @@ Section QueryAux.
   Implicit Type query : @Query Vals.
 
 
+  (** ---- *)
+  (** *** General purpose predicates *)
   Section Base.
 
-    (** **** General boolean predicates for Query
-       
-     *)
 
-    
+    (** ---- *)
     (** 
         is_field : Query → Bool 
 
@@ -50,6 +63,8 @@ Section QueryAux.
         is_field _ := true
       }.
 
+    
+    (** ---- *)
     (**
        is_inline_fragment : Query → Bool 
 
@@ -60,8 +75,9 @@ Section QueryAux.
         is_inline_fragment (on _ { _ }) := true;
         is_inline_fragment _ := false
       }.
-    
 
+    
+    (** ---- *)
     (**
        is_aliased : Query → Bool
 
@@ -74,6 +90,8 @@ Section QueryAux.
       | _ => false
       end.
 
+    
+    (** ---- *)
     (**
        has_subqueries : Query → Bool
 
@@ -85,10 +103,13 @@ Section QueryAux.
       | _ : _ [[ _ ]] => false
       | _ => true
       end.
-    
-    (** **** Extractors for queries *)
 
 
+
+    (** ---- *)
+    (** *** Extractors for queries *)
+
+    (** ---- *)
     (**
        qname : ∀ query, query.is_field → Name
 
@@ -106,7 +127,9 @@ Section QueryAux.
         qname (_:name[[ _ ]] { _ }) _ := name;
         qname (on _ { _ }) Hfld := _
       }.
-        
+
+
+    (** ---- *)
     (**
        qalias : ∀ query, query.is_aliased → Name
 
@@ -121,7 +144,9 @@ Section QueryAux.
         qalias (alias : _ [[ _ ]] { _ }) _ := alias;
         qalias _ Halias := _
       }.
-    
+
+
+    (** ---- *)
     (**
        oqalias : Query → option Name 
 
@@ -135,7 +160,9 @@ Section QueryAux.
         oqalias (label : _ [[ _ ]] { _ }) := Some label;
         oqalias _ := None
       }.
-    
+
+
+    (** ---- *)
     (**
        qresponse_name : ∀ query, query.is_field → Name 
 
@@ -156,6 +183,8 @@ Section QueryAux.
         qresponse_name (on _ { _ }) Hfld := _
       }.
 
+
+    (** ---- *)
     (**
        oqresponse_name : Query → option Name
     
@@ -169,6 +198,8 @@ Section QueryAux.
         oqresponse_name q := Some (qresponse_name q _)
       }.
 
+    
+    (** ---- *)
     (**
        has_response_name : Name → Query → Bool 
 
@@ -183,7 +214,8 @@ Section QueryAux.
         has_response_name rname q := (qresponse_name q _) == rname
       }.
 
-    
+
+    (** ---- *)
     (**
        qsubqueries : Query → List Query
 
@@ -199,7 +231,8 @@ Section QueryAux.
       | _ => [::]
       end.
 
-    
+
+    (** ---- *)
     (**
        qargs : ∀ query, query.is_field → List (Name * Vals) 
 
@@ -219,7 +252,7 @@ Section QueryAux.
 
 
     
-
+    (** ---- *)
     (**
        have_same_name : Query → Query → Bool 
 
@@ -233,7 +266,9 @@ Section QueryAux.
         have_same_name _ (on _ { _ }) := false;
         have_same_name q1 q2 := (qname q1 _) == (qname q2 _)
       }.
-    
+
+
+    (** ---- *)
     (**
        have_same_response_name : Query → Query → Bool 
 
@@ -248,6 +283,8 @@ Section QueryAux.
         have_same_response_name q1 q2 := (qresponse_name q1 _) == (qresponse_name q2 _)
       }.
 
+
+    (** ---- *)
     (**
        have_same_arguments : Query → Query → Bool
        
@@ -262,6 +299,8 @@ Section QueryAux.
         have_same_arguments q1 q2 := (qargs q1 _) == (qargs q2 _)
       }.
 
+
+    (** ---- *)
     (**
        is_simple_field_selection : Query → Bool 
 
@@ -274,7 +313,8 @@ Section QueryAux.
         is_simple_field_selection _ := false
       }.
 
-    
+
+    (** ---- *)
     (**
        is_nested_field_selection : Query → Bool 
 
@@ -287,6 +327,8 @@ Section QueryAux.
         is_nested_field_selection _ := false
       }.
 
+    
+    (** ---- *)
     (**
        are_equivalent : Query → Query → Bool 
 
@@ -296,22 +338,31 @@ Section QueryAux.
        produce responses with the same name and if both 
        share the same arguments.
 
-       ---- 
-       See also : [is_field_merging_possible] (QueryConformance)
+       
+       **** See also
+       - [is_field_merging_possible] (_QueryConformance_)
      *)
     (* FIXME : Rename *)
     Definition are_equivalent (q1 q2 : @Query Vals) : bool :=
       [&& (q1.(is_simple_field_selection) && (q2.(is_simple_field_selection)) ||
            q1.(is_nested_field_selection) && q2.(is_nested_field_selection)),
        have_same_name q1 q2 & have_same_arguments q1 q2].
+
+
+    
+
     
   End Base.
-  
+
+  (** ---- *)
+  (** *** Size functions 
+      
+      In this section we define functions related to
+      the size of queries.
+   *)
   Section Size.
 
-    (** **** Functions related to size of Queries
-     *)
-    
+    (** ---- *)
     (**
        query_size : Query → Nat 
        queries_size : List Query → Nat 
@@ -332,6 +383,7 @@ Section QueryAux.
         queries_size (q :: φ) := query_size q + queries_size φ
       }.
 
+    (** ---- *)
     (**
 
      *)
@@ -341,101 +393,59 @@ Section QueryAux.
   End Size.
   
 
-  
+
+  (** ---- *)
+  (** *** Other type of predicates *)
+    
   Section DefPreds.
     
     Variable s : @wfGraphQLSchema Vals.
 
-    (** **** Other type of boolean predicates
-     *)
-    
+    (** ---- *)
     (**       
        does_fragment_type_apply : Name → Name → Bool 
 
-       Checks whether a type is valid with respect to another type. 
-
-       This is used when checking that a fragment's type condition is 
-       valid with respect to the actual type of the data where the 
-       fragment is being evaluated (which corresponds to an object type).
-
-           fragment_type ∈ Ot             #<br>#
-       fragment_type = object_type        #<br>#
-      [――――――――――――――――――――――――――]        #<br>#
-        fragment_type applies
-
-
-                  fragment_type ∈ It                    #<br>#
-       object_type ∈ implementation fragment_type       #<br>#
-      [――――――――――――――――――――――――――――――――――――――――――]      #<br>#
-               fragment_type applies
-
-
-                  fragment_type ∈ Ut                    #<br>#
-       object_type ∈ union_members fragment_type        #<br>#
-      [――――――――――――――――――――――――――――――――――――――――――]      #<br>#
-               fragment_type applies
-
-    ----
-    See also
-    
-    https://graphql.github.io/graphql-spec/June2018/#DoesFragmentTypeApply() 
+       This predicate checks whether a type condition is valid in 
+       a given object type. 
+       
+       This is used to check if we have to evaluate a fragment.
+   
+       This definition is similar to the one #<a href='https://graphql.github.io/graphql-spec/June2018/#DoesFragmentTypeApply()'>in the spec</a>#. This one is a bit different to make it clearer and easier to reason about. 
+     
      *)
     Definition does_fragment_type_apply object_type fragment_type :=
-      if is_object_type s fragment_type then
-        object_type == fragment_type
-      else
-        if is_interface_type s fragment_type then
-          object_type \in implementation s fragment_type
-        else
-          if is_union_type s fragment_type then
-            object_type \in union_members s fragment_type
-          else
-            false.
+      match lookup_type s object_type, lookup_type s fragment_type with
+      | Some (Object oname implements _ { _ }), Some (Object name implements _ { _ }) =>
+        object_type == name
+      | Some (Object _ implements interfaces { _ }), Some (Interface name { _ }) =>
+        name \in interfaces
+      | Some (Object oname implements _ { _ }), Some (Union name { members }) =>
+        oname \in members
+      | _, _ => false
+      end.
+    
     
   End DefPreds.
   
   
 
   
-
+  (** ---- *)
+  (** *** Functions related to finding queries that satisfy a predicate *)
   Section Find.
 
-    (** **** Functions related to finding queries that satisfy a predicate.
-     *)
     
     Variable (s : @wfGraphQLSchema Vals).
-    
+
+    (** ---- *)
     (**
        find_queries_with_label : Name → Name → List Query → List Query 
 
-       Find all queries with response name equal to the given parameter.
+       Find all queries with response name equal to a given name.
        In case there is a fragment, it first checks that the fragment's type condition 
        applies to the given object type, then it may proceed to find more queries in its
        subqueries.
 
-       This function can be related to the _CollectFields_ function defined in the specification.
-       The CollectFields function returns a map of names to list of queries, effectively collecting 
-       every possible _valid_ field (there is also a check for inline fragments - see subpoint "e"
-       of the CollectFields definition) in a list of queries.
-
-       In our case, instead of generating a map of every possible field and name, we take 
-       the first element of a list and try to find every other possible query that is related 
-       (has the same response name). Once we get all queries with a given response name, 
-       we proceed to perform other operations over that collection. This is similar to how 
-       J&O defined their _collect_ function.
-       
-       This choice is mostly to facilitate reasoning over the semantics.
-
-       ---- 
-       See also 
-        
-        - [execute_selection_set]
-
-        https://graphql.github.io/graphql-spec/June2018/#sec-Executing-Selection-Sets
-
-        https://graphql.github.io/graphql-spec/June2018/#sec-Field-Collection
-        
-        https://graphql.github.io/graphql-spec/June2018/#CollectFields()
      *)
     (* FIXME : Rename to something that makes sense - find_fields_with_response_name ? *)
     Equations? find_queries_with_label (label : Name) (object_type : Name) (queries : seq (@Query Vals)) :
@@ -461,30 +471,14 @@ Section QueryAux.
     Qed.
 
     
-
+    (** ---- *)
     (** 
         find_fields_with_response_name : Name → List Query → List Query 
 
-        Find all field selections with response name equal to the one given as parameter.
+        Find all queries with response name equal to a given name.
         It collects every field, regardless of fragment's type condition. This differs 
         with [find_queries_with_label], where the type condition _is_ important.
-
-        This function is used when checking the conformance of queries, in particular when
-        checking that field merging is possible. In this process, you have to check every possible 
-        field with a given response name and validate they are mergeable (further discussion 
-        on this can be found at [is_field_merging_possible].
-
-        Not using fold mostly because of the nested recursion appearing in inline fragments. 
-
-        ---- 
-        See also 
-
-        https://graphql.github.io/graphql-spec/June2018/#sec-Field-Selection-Merging
-
-        https://graphql.github.io/graphql-spec/June2018/#FieldsInSetCanMerge()
-
-        https://github.com/graphql/graphql-spec/issues/367
-     **)
+     *)
     (* FIXME : Rename considering previous def *)
     Equations? find_fields_with_response_name (rname : Name) (φ : seq (@Query Vals)) :
       seq (@Query Vals) by wf (queries_size φ) :=
@@ -528,8 +522,10 @@ Section QueryAux.
       all: do [by simp query_size; ssromega].
     Qed.
 
-    (**
 
+    (** ---- *)
+    (**
+       
      *)
     Equations? find_pairs_with_response_name (rname : Name) (φ : seq (Name * @Query Vals)) :
       seq (Name * @Query Vals) by wf (queries_size_aux φ) :=
@@ -577,11 +573,11 @@ Section QueryAux.
     Qed.
 
 
+    (** ---- *)
     (**
        find_fragment_with_type_condition : Name → List Query → List Query 
 
-       Find all fragments whose type condition is equal to the type given 
-       as parameter.
+       Find all fragments with type condition equal to a given type.
      *)
     Equations find_fragment_with_type_condition : Name -> seq (@Query Vals) -> seq (@Query Vals) :=
       {
@@ -600,34 +596,15 @@ Section QueryAux.
 
   End Find.
   
-
+  (** ---- *)
+  (** *** Functions related to filtering queries according to some predicate *)
   Section Filter.
-    (** **** Functions related to filtering queries according to some predicate
-     *)
-    
+
+    (** ---- *)
     (** 
         filter_queries_with_label : Name → List Query → List Query 
         
-        Filters all fields with response name equal to the one given as parameter.
-        This also filters inline fragments' subqueries.
-
-        This definition follows a similar approach as the one in [find_queries_with_label], 
-        considering how collection and evaluation is done in the spec. Similarly, we 
-        preferred this approach to ease reasoning over the semantics. 
-
-        This is similar to how J&O defined their _collect_ function.
-
-        ----
-        See also:
-        
-        - [execute_selection_set]
-
-        https://graphql.github.io/graphql-spec/June2018/#sec-Executing-Selection-Sets
-
-        https://graphql.github.io/graphql-spec/June2018/#sec-Field-Collection
-        
-        https://graphql.github.io/graphql-spec/June2018/#CollectFields()
-        
+        Remove all fields with a given response name.
      *)
     Equations? filter_queries_with_label (label : Name) (queries : seq (@Query Vals)) :
       seq (@Query Vals) by wf (queries_size queries) :=
@@ -649,6 +626,7 @@ Section QueryAux.
     Qed.
 
 
+    (** ---- *)
     (**
 
      *)
@@ -677,24 +655,22 @@ Section QueryAux.
     
   End Filter.
 
+  (** ---- *)
+  (** *** Functions related to merging queries *)
   Section Merging.
 
-    (** **** Functions related to merging queries.
-     *)
-
+    (** ---- *)
     (**
        merge_selection_sets : List Query → List Query 
-
+       
        Concatenates the subqueries of every query in the given list.
-
-       ---- 
-       https://graphql.github.io/graphql-spec/June2018/#MergeSelectionSets()
      *)
     Definition merge_selection_sets queries := flatten [seq q.(qsubqueries) | q <- queries].
-
+    
 
     Variable (s : @wfGraphQLSchema Vals).
-    
+
+    (** ---- *)
     (**
 
      *)
@@ -729,6 +705,19 @@ Section QueryAux.
 End QueryAux.
 
 
+
+
+(** ---- *)
+
+(** 
+    #<div>
+        <a href='GraphCoQL.Query.html' class="btn btn-light" role='button'> Previous ← Query  </a>
+        <a href='GraphCoQL.QueryConformance.html' class="btn btn-info" role='button'>Next → Query Conformance</a>
+    </div>#
+ *)
+
+
+(** ---- *)
 
 Arguments is_field [Vals].
 Arguments is_inline_fragment [Vals].
@@ -768,3 +757,5 @@ Arguments find_fragment_with_type_condition [Vals].
 
 Arguments merge_selection_sets [Vals].
 Arguments merge_pairs_selection_sets [Vals].
+
+

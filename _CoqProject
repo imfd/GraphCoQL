@@ -17,40 +17,35 @@
 ./src/SchemaAux.v
 ./src/SchemaWellFormedness.v
 
-
-./src/theory/SchemaAuxLemmas.v
-./src/theory/SchemaWFLemmas.v
-
-./src/Graph.v
-./src/GraphAux.v
-./src/GraphConformance.v
-
+./src/theory/SchemaLemmas.v
 
 ./src/Query.v
 ./src/QueryAux.v
+
 ./src/theory/QueryAuxLemmas.v
 ./src/QueryTactics.v
 ./src/QueryConformance.v
+./src/QueryNormalForm.v
+./src/theory/QueryConformanceLemmas.v
+./src/theory/QueryNormalFormLemmas.v
 
-
-./src/NRGTNF.v
-./src/QueryNormalization.v
+./src/Graph.v
+./src/GraphConformance.v
+./src/theory/GraphLemmas.v
 
 ./src/Response.v
 
 ./src/QuerySemantic.v
-
-
-./src/theory/GraphAuxLemmas.v
-./src/theory/GraphConformanceLemmas.v
-
-./src/theory/NRGTNFLemmas.v
-./src/theory/QueryNormalizationLemmas.v
-
 ./src/theory/QuerySemanticsLemmas.v
-./src/theory/QueryConformanceLemmas.v
+
+
 
 ./src/Example.v
+
+
+
+
+
 
 
 

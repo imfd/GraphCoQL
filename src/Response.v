@@ -16,13 +16,35 @@ Require Import SeqExtra.
 Notation Name := string.
 
 (* end hide *)
-
+(**
+   #<div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">GraphQL Response</h1>
+        <p class="lead">
+         This file contains the basic building blocks to define a GraphQL Response.
+        </p>
+         
+  </div>
+</div>#
+ *)
 
 Section Response.
 
   Variable (A : Type).
   
   Unset Elimination Schemes.
+
+  (** * JSON *)
+  (** ---- *)
+  (**
+     Here we define a general Response structure, which is a JSON tree.
+     We later use this definition to build a GraphQL Response.     
+
+     There are:
+     - Leaf nodes: Contain _scalar_ values.
+     - Object nodes: Contain key-value elements.
+     - Array nodes: Contain elements
+   *)
 
   Inductive ResponseNode : Type :=
   | Leaf : A -> ResponseNode
@@ -33,16 +55,15 @@ Section Response.
   Set Elimination Schemes.
 
 
-  Definition is_leaf (rnode : ResponseNode) : bool :=
-      if rnode is Leaf _ then true else false.
+  
 
-  Definition is_object (rnode : ResponseNode) : bool :=
-      if rnode is Object _ then true else false.
+  (** ---- *)
+  (**
+     #<strong>rsize</strong># : ResponseNode → Nat
 
-  Definition is_array (rnode : ResponseNode) : bool :=
-    if rnode is Array _ then true else false.
-
-
+     Gets the size of the response tree.
+   *)
+  
   Equations rsize (response : ResponseNode) : nat :=
     {
       rsize (Leaf _) := 1;
@@ -56,6 +77,15 @@ Section Response.
           }.
   
 
+  (** ---- *)
+  (**
+     #<strong>is_non_redundant</strong># : ResponseNode → Bool 
+
+     This predicate checks whether the responses are non-redundant.
+     
+     Non-redundancy means that there are no repeated keys.
+   *)
+  
   Equations is_non_redundant (response : ResponseNode) : bool :=
           {
             is_non_redundant (Leaf _) := true;
@@ -75,16 +105,25 @@ Section Response.
   
   
   
-    
+(** ---- *)    
 End Response.
 
 
 Section GraphQLResponse.
   
   Variable (Vals : eqType).
+  (** * GraphQL Response 
+
+   A GraphQL Response is a JSON Object.
+
+   Because we can have _null_ values, we use option for the leaves values.
+   *)
   
   Definition GraphQLResponse := seq (Name * (@ResponseNode (option Vals))).
 
+
+  
+  (** ---- *)
 End GraphQLResponse.
 
 Arguments ResponseNode [A].
@@ -97,5 +136,15 @@ Delimit Scope response_scope with RESP.
 Open Scope response_scope.
 
 Notation "{- ρ -}" := (Object ρ) : response_scope.
+
+
+(** ---- *)
+(** 
+    #<div>
+        <a href='GraphCoQL.Graph.html' class="btn btn-light" role='button'> Previous ← GraphQL Graph </a>
+        <a href='GraphCoQL.QuerySemantic.html' class="btn btn-info" role='button'>Continue Reading → Query Semantics</a>
+    </div>#
+*)
+
   
   

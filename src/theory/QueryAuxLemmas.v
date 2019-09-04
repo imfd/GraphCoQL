@@ -12,9 +12,8 @@ Require Import QString.
 
 Require Import Schema.
 Require Import SchemaAux.
-Require Import SchemaAuxLemmas.
+Require Import SchemaLemmas.
 Require Import SchemaWellFormedness.
-Require Import SchemaWFLemmas.
 
 Require Import Query.
 Require Import QueryAux.
@@ -27,6 +26,24 @@ Require Import GeneralTactics.
 
 (* end hide *)
 
+(**
+   #<div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">Query Aux Theory</h1>
+        <p class="lead">
+         This file contains lemmas about the auxiliary definitions used with GraphQL Queries.
+        </p>         
+        <p>
+        These are mostly auxiliary and bureaucratic lemmas, such as filter distributing over 
+        concatenation, queries size equals to 0 means empty list, etc. 
+        </p>
+        <p>
+        The most widely used are probably those related to showing that the queries size
+        is reduced after applying a certain function (filtering, finding, merging, etc.).
+        </p>
+  </div>
+</div>#
+ *)
 
 
 (**
@@ -46,7 +63,6 @@ Ltac case_query q :=
 
 Section Theory.
   
-  Ltac apply_andP := apply/andP; split => //.
   Transparent oqresponse_name qresponse_name is_field.
 
   Variables Vals : eqType.
@@ -54,25 +70,54 @@ Section Theory.
   Implicit Type φ : seq (@Query Vals).
   Implicit Type query : @Query Vals.
 
-
+  (** ---- *)
+  (** *** Other types of predicates *)
   Section DefPreds.
     Variable (s : @wfGraphQLSchema Vals).
 
+    
+    (** ---- *)
     (**
        This lemma states that an Object type [ty] always 
-       applies to itself (See also [does_fragment_type_apply]).
+       applies to itself.
      *)
     Lemma object_applies_to_itself ty :
       is_object_type s ty ->
       does_fragment_type_apply s ty ty.
     Proof.
-        by rewrite /does_fragment_type_apply => ->.
+      funelim (is_object_type s ty) => //=.
+      rewrite /does_fragment_type_apply Heq.
+        by move/lookup_type_name_wf: Heq => ->.
+    Qed.
+
+
+    (** ---- *)
+    (**
+       This lemma states that an Object type different to another
+       cannot apply to it.
+     *)
+    Lemma object_diff_name_N_applies ty ty' :
+      is_object_type s ty' ->
+      ty' != ty ->
+      does_fragment_type_apply s ty ty' = false.
+    Proof.
+      rewrite /does_fragment_type_apply.
+      funelim (is_object_type s ty') => //= _ /negbTE Hneq.
+      case lookup_type => //=; case=> //=; rewrite Heq => _ _ _.
+      move/lookup_type_name_wf: Heq => /= <-.
+        by rewrite eq_sym.
     Qed.
     
   End DefPreds.
-  
+
+  (** ---- *)
+  (** *** Query size 
+      
+      In this section we define lemmas about queries size.
+   *)
   Section Size.
 
+    (** ---- *)
     (**
        Equality lemma for queries_size without Equations. 
        It shows equality to the [sumn] function defined in SSreflect.
@@ -82,7 +127,9 @@ Section Theory.
     Proof.
         by elim: φ => //= q φ IH; case: q => /= *; simp query_size; rewrite IH.
     Qed.
-    
+
+
+    (** ---- *)
     (**
        This lemma states that [queries_size] distributes over list concatenation.
      *)
@@ -93,17 +140,20 @@ Section Theory.
         by rewrite (IH φ') addnA.
     Qed.
 
-    
+
+    (** ---- *)
     (**
-       This lemma states that if [queries_size] is 0, that means the list is empty.
+       This lemma states that if the size of queries is 0, that means the list is empty.
      *)
     Lemma queries_size_0_nil (qs : seq (@Query Vals)) : queries_size qs == 0 -> qs = [::].
     Proof.
         by case: qs => //=; case.
     Qed.
 
+    
+    (** ---- *)
     (**
-       This lemma states that if [queries_size_aux] is 0, that means the list is empty.
+       This lemma states that if the size of queries is 0, that means the list is empty.
      *)
     Lemma queries_size_aux_0_nil (nq : seq (Name * @Query Vals)) : queries_size_aux nq == 0 -> nq = [::].
     Proof.
@@ -114,9 +164,15 @@ Section Theory.
 
 
 
+  (** ---- *)
+  (** *** Find 
+     
+     Lemmas about functions used to find queries 
+   *)
   Section Find.
     Variable (s : @wfGraphQLSchema Vals).
 
+    (** ---- *)
     (**
        This lemma states that the size of the queries found via [find_queries_with_label] is
        less or equal to the original queries list.
@@ -127,6 +183,7 @@ Section Theory.
         by funelim (find_queries_with_label _ _ _ qs) => //=; simp query_size; rewrite ?queries_size_cat; ssromega.
     Qed.
 
+    (** ---- *)
     (**
        This lemma states that that [find_queries_with_label] distributes over list concatenation.
      *)
@@ -138,7 +195,7 @@ Section Theory.
         by simp find_queries_with_label; rewrite Heq /= H0 catA.
     Qed.
 
-
+    (** ---- *)
     (**
        This lemma states that the size of the queries found via [find_fields_with_response_name] is
        less or equal to the original queries list.
@@ -150,6 +207,7 @@ Section Theory.
         by rewrite queries_size_cat; ssromega.
     Qed.
 
+    (** ---- *)
     (**
        This lemma states that
      *)
@@ -162,13 +220,16 @@ Section Theory.
       elim: ptys => //= t' ptys IH /andP [Hnin Huniq] /andP [Hobj Hinobj] Htnin.
       simp find_queries_with_label.
       have -> /= : does_fragment_type_apply s t t' = false.
-      rewrite /does_fragment_type_apply Hobj /=. 
-        by move/memPn: Htnin => /(_ t' (mem_head t' ptys)) /negbTE; rewrite eq_sym.
-        apply: IH => //=.
+        by apply: object_diff_name_N_applies => //; move/memPn: Htnin => /(_ t' (mem_head t' ptys)).
+      apply: IH => //=.
           by move: Htnin; rewrite /negb; case: ifP => //=; case: ifP => //= Hcontr <- _; apply: mem_tail.
     Qed.
 
-    
+
+    (** ---- *)
+    (**
+       This lemma states that
+     *)
     Lemma find_map_inline_nil rname t ptys φ :
       uniq ptys ->
       all (is_object_type s) ptys ->
@@ -179,12 +240,13 @@ Section Theory.
       elim: ptys => //= t' ptys IH /andP [Hnin Huniq] /andP [Hobj Hinobj] Htnin.
       simp find_queries_with_label.
       have -> /= : does_fragment_type_apply s t t' = false.
-      rewrite /does_fragment_type_apply Hobj /=. 
-        by move/memPn: Htnin => /(_ t' (mem_head t' ptys)) /negbTE; rewrite eq_sym.
-        apply: IH => //=.
+          by apply: object_diff_name_N_applies => //; move/memPn: Htnin => /(_ t' (mem_head t' ptys)).
+      apply: IH => //=.
           by move: Htnin; rewrite /negb; case: ifP => //=; case: ifP => //= Hcontr <- _; apply: mem_tail.
     Qed.
 
+    
+    (** ---- *)
     (**
        This lemma states that if two response names are not equal, then you 
        can swap the order of filtering and finding queries with each respective response name,
@@ -207,6 +269,7 @@ Section Theory.
     Qed.
           
 
+    (** ---- *)
     (**
        This lemma states that if you try to find queries with a given response name after 
        you filtered those queries, then the result is empty.
@@ -218,7 +281,8 @@ Section Theory.
         by simp find_queries_with_label; case: does_fragment_type_apply => //=; rewrite H H0 /=.
     Qed.
 
-    
+
+    (** ---- *)
     (**
        This lemma states that if you try to find every field with a given response name after 
        you filtered those queries, then the result is empty.
@@ -231,6 +295,7 @@ Section Theory.
     Qed.
 
 
+    (** ---- *)
     (**
        This lemma states that queries found via [find_queries_with_label] is a subsequence of 
        the fields found via [find_fields_with_response_name].
@@ -249,6 +314,8 @@ Section Theory.
           by apply: sub0seq.
     Qed.
 
+
+    (** ---- *)
     (**
        This lemma states that if no field is found via [find_fields_with_response_name] then
        no field will be found via [find_queries_with_label] (because the latter is a subsequence of the former).
@@ -262,7 +329,7 @@ Section Theory.
         by rewrite Hnil subseq0 => /eqP ->.
     Qed.
       
-    
+    (** ---- *)
     (**
        This lemma states that projecting the second element of each element obtained
        with [find_pairs_with_response_name] is the same as first projecting the second element 
@@ -284,15 +351,11 @@ Section Theory.
       by ssromega.
     Qed.
 
-
+    (** ---- *)
     (**
        This lemma states that inlining queries with type conditions and then searching for
        fragments with a type condition that was not in the original list of type conditions
        results in a empty list.
-
-       See also:
-       - [normalize_are_non_redundant]
-       - [normalize_queries_are_non_redundant]
      *)
     Lemma find_fragment_inlined_nil_func t ptys (f : Name -> seq (@Query Vals) -> seq (@Query Vals)) φ :
       t \notin ptys ->
@@ -303,14 +366,13 @@ Section Theory.
         by move/negbTE in Hb1; rewrite Hb1 /=; apply: IH.
     Qed.
 
+    
+    (** ---- *)
     (**
        This lemma states that if every inline fragment in a list 
        of inline fragments does not apply to a type [ty], then 
        [find_queries_with_label] will result in an empty list
        if [ty] is used to search.
-
-       See also :
-       - [exec_grounded_inlines_nil]
      *)
     Lemma find_fragment_not_applies_is_nil rname ty φ :
       all (fun q => q.(is_inline_fragment)) φ ->
@@ -327,10 +389,16 @@ Section Theory.
     
   End Find.
 
+
+  (** *** Filter 
+
+      Lemmas about filtering queries.
+   *)
   Section Filter.
     Hint Resolve found_queries_leq_size.
 
-      
+    
+    (** ---- *)  
     (**
        This lemma states that the size of filtered queries is less or 
        equal than the size of the original list of queries.
@@ -341,7 +409,8 @@ Section Theory.
       funelim (filter_queries_with_label l φ) => //=; do ?[simp query_size; ssromega]. 
     Qed.
 
-
+    
+    (** ---- *)
     (**
        This lemma states that [filter_queries_with_label] distributes over list concatenation.
      *)
@@ -353,7 +422,8 @@ Section Theory.
         by rewrite IH.
     Qed.
 
-
+    
+    (** ---- *)
     (**
        This lemma states that the order of filtering with two response names does not affect the result.
      *)
@@ -365,6 +435,8 @@ Section Theory.
       by simp filter_queries_with_label; rewrite H H0.
     Qed.
 
+    
+    (** ---- *)
     (**
        This lemma states that filtering twice with the same response name is the same 
        as filtering once.
@@ -375,8 +447,9 @@ Section Theory.
       funelim (filter_queries_with_label rname φ) => //=; simp filter_queries_with_label; do ? by rewrite Heq /= H.
         by rewrite H H0.
     Qed.
-     
 
+    
+    (** ---- *)
     (**
        This lemma states that
      *)
@@ -387,6 +460,8 @@ Section Theory.
         by elim: ptys => //= t ptys IH; simp filter_queries_with_label; rewrite IH.
     Qed.
 
+    
+    (** ---- *)
     (**
        This lemma states that
      *)
@@ -398,18 +473,14 @@ Section Theory.
     Qed.
 
 
-   
-    
-
+     
+    (** ---- *)
     (**
        This lemma states that if there is no field with response name [rname],
        then filtering a list of fields by that response name will have no effect.
 
        This is not valid if there is an inline fragment, because filtering may 
        remove some of its subqueries.
-
-       See also:
-       - [exec_equivalence]
      *)
     Lemma filter_find_fields_nil_is_nil rname φ :
       all (fun q => q.(is_field)) φ ->
@@ -419,14 +490,13 @@ Section Theory.
       funelim (filter_queries_with_label rname φ) => //; simp find_fields_with_response_name.
       all: do ? [by move/negbTE in Heq; rewrite Heq /=; intros; rewrite H].
       all: do ? [by move/negbFE in Heq; rewrite Heq /=;intros; rewrite H].
-    Qed.                                                                                                 
-     
+    Qed.
+
+    
+    (** ---- *) 
     (**
        This lemma states that filtering inline fragments via response name 
        preserves the fact that they are all inline fragments.
-
-       See also:
-       - [exec_grounded_inlines_nil]
      *)
     Lemma filter_preserves_inlines rname φ :
       all (fun q => q.(is_inline_fragment)) φ ->
@@ -435,15 +505,15 @@ Section Theory.
         by funelim (filter_queries_with_label rname φ) => //=.
     Qed.
 
+    
     Variable (s : @wfGraphQLSchema Vals).
 
+    
+    (** ---- *)
     (**
-       This lemma states that if any inline fragment in a list [φ] does 
+       This lemma states that if every inline fragment in a list [φ] does 
        not apply to a type [ty], then filtering that list will preserve 
        the fact that inline fragments do not apply to [ty].
-
-       See also:
-       - [exec_grounded_inlines_nil]
      *)
     Lemma filter_preserves_fragment_not_applies ty rname φ :
       all (fun q : Query => match q with
@@ -459,13 +529,12 @@ Section Theory.
         by apply_andP; apply: H0.
     Qed.
 
-     (**
+    
+    (** ---- *)
+    (**
        This lemma states that if there is no field with response name [rname1], 
        then filtering will preserve the fact that there is no query with 
        response name [rname1].
-
-       See also:
-       - [filter_preserves_non_redundancy]
      *)
     Lemma filter_preserves_find_fields_nil rname1 rname2 φ :
       find_fields_with_response_name rname1 φ = [::] ->
@@ -475,14 +544,12 @@ Section Theory.
       move/cat_nil=> [Hnil1 Hnil2]; rewrite H // H0 //.
       all: do [by case: eqP => //= _; apply: H].
     Qed.
-      
-      
-    (**
-       This lemma states that if no inline fragment matches the type condition [t] then 
-       [filter_queries_with_label] won't have any effect on this.
 
-       See also:                  
-       - [filter_preserves_non_redundancy]
+    
+    (** ---- *)  
+    (**
+       This lemma states that if there is no inline fragment that matches the type condition [t] then 
+       [filter_queries_with_label] will preserve this fact.
      *)
     Lemma filter_preserves_find_frags_nil rname ty φ :
       find_fragment_with_type_condition ty φ = [::] ->
@@ -491,7 +558,9 @@ Section Theory.
       funelim (filter_queries_with_label rname φ) => //=; simp find_fragment_with_type_condition.
         by case: eqP => //= _; apply: H0.
     Qed.
-      
+
+    
+    (** ---- *)  
     (**
        This lemma states that
      *)
@@ -508,8 +577,16 @@ Section Theory.
       
   End Filter.
 
+
+  (** ---- *)
+  (** *** Merging 
+
+      Lemmas about merging subqueries of queries.
+   *)
   Section Merging.
 
+    
+    (** ---- *)
     (**
        This lemma states that [merge_selection_sets] distributes over list concatenation.
      *)
@@ -518,7 +595,9 @@ Section Theory.
     Proof.
         by rewrite /merge_selection_sets map_cat flatten_cat.
     Qed.
+
     
+    (** ---- *)
     (**
        This lemma states that the size of queries obtained via [merge_selection_sets]
        is less or equal than the size of the original list of queries.
@@ -533,6 +612,8 @@ Section Theory.
 
     Variable (s : @wfGraphQLSchema Vals).
 
+
+    (** ---- *)
      (**
        This lemma states that the size of queries obtained via [merge_pairs_selection_sets]
        is less or equal than the size of the original list of queries.
@@ -550,196 +631,3 @@ Section Theory.
 
 End Theory.
 
-
-
-
-
-
-
-
-
-(* Unused lemmas *)
-
- (* Lemma query_size_gtn_0 query : *)
-    (*   0 < query_size query. *)
-    (* Proof. *)
-    (*     by case: query. *)
-    (* Qed. *)
-
-    (* Lemma subqueries_lt_query query : *)
-    (*   queries_size query.(qsubqueries) < query_size query. *)
-    (* Proof. *)
-    (*     by case: query. *)
-    (* Qed. *)
-
-
-    
-    (* Lemma in_queries_lt query φ : *)
-    (*   query \in φ -> *)
-    (*         query_size query <= queries_size φ. *)
-    (* Proof. *)
-    (*   elim: φ => //= q φ IH. *)
-    (*   rewrite inE => /orP [/eqP -> | Hin]. *)
-    (*     by ssromega. *)
-    (*       by move: (IH Hin) => Hlt; ssromega. *)
-    (* Qed. *)
-
-    (* Lemma in_subqueries_size_lt query1 query : *)
-    (*   query1 \in query.(qsubqueries) -> *)
-    (*          query_size query1 < query_size query. *)
-    (* Proof. *)
-    (*   move=> Hin. *)
-    (*   have Hlt := (subqueries_lt_query query). *)
-    (*   have Hleq := (in_queries_lt Hin). *)
-    (*   ssromega. *)
-    (* Qed. *)
-
-
- (* Section DefPreds. *)
-    
-  (*   Variable (s : @wfSchema Vals). *)
-    
-  (*   Lemma is_definedE q (Hfield : q.(is_field)) ty : *)
-  (*     is_defined s q Hfield ty -> *)
-  (*     exists fld, lookup_field_in_type s ty (qname q Hfield) = Some fld. *)
-  (*   Proof. *)
-  (*     funelim (is_defined _ _ _ _) => //=. *)
-  (*       by rewrite /isSome; case lookup_field_in_type => //= fld _; exists fld. *)
-  (*   Qed. *)
-
-  (*   Lemma are_defined_cat φ1 φ2 ty : *)
-  (*     are_defined s (φ1 ++ φ2) ty = are_defined s φ1 ty && are_defined φ2 ty. *)
-  (*   Proof. *)
-  (*     funelim (are_defined φ1 ty) => //=; simp are_defined is_defined => /=; rewrite ?H ?H0 ?andbA //. *)
-  (*   Qed. *)
-(* End DefPreds. *)
-
-
-
-    (* Lemma found_queries_are_fields k O__t qs : *)
-    (*   all (fun q => q.(is_field)) (find_queries_with_label s k O__t qs). *)
-    (* Proof. *)
-    (*   by funelim (find_queries_with_label s k O__t qs) => //=; rewrite all_cat; apply_andP. *)
-    (* Qed. *)
-
-   (* Lemma found_queries_have_response_name rname O__t qs : *)
-    (*   forall q, q \in find_queries_with_label s rname O__t qs -> *)
-    (*              q.(oqresponse_name) = Some rname. *)
-    (* Proof. *)
-    (*   funelim (find_queries_with_label s rname O__t qs) => //= q; rewrite ?inE. *)
-
-    (*   all: do ? [move=> /orP [/eqP -> /= | Hin] ]. *)
-    (*   all: do ? [by simpl in Heq; move/eqP in Heq; congr Some]. *)
-    (*   all: do ?[by apply: H].     *)
-    (*     by rewrite mem_cat => /orP [Hin1 | Hin2]; [apply: H | apply: H0]. *)
-    (* Qed. *)
-    
-
-    
-    (* Lemma all_found_fields_are_fields k φ : *)
-    (*   all (fun query => query.(is_field)) (find_fields_with_response_name k φ).                   *)
-    (* Proof. *)
-    (*   funelim (find_fields_with_response_name k φ) => //=. *)
-    (*     by rewrite all_cat; apply_andP. *)
-(* Qed. *)
-
- (* Lemma find_map_inline_nil_get_types rname t ty φ : *)
-    (*   t \notin get_possible_types s ty -> *)
-    (*   find_queries_with_label s rname t [seq InlineFragment t' φ | t' <- get_possible_types s ty] = [::]. *)
-    (* Proof. *)
-    (*     by move=> Hnin; apply: find_map_inline_nil => //=; [apply: uniq_get_possible_types | apply/allP; apply: in_possible_types_is_object]. *)
-    (* Qed. *)
-
-    
-    (* Lemma find_all_q_equiv_to_sf_are_simple α f ty φ : *)
-    (*   all (are_equivalent (SingleField f α)) (find_queries_with_label s f ty φ) -> *)
-    (*   all (fun query => query.(is_simple_field_selection)) (find_queries_with_label s f ty φ). *)
-    (* Proof. *)
-    (*   funelim (find_queries_with_label s f ty φ) => //=. *)
-
-    (*   all: do ? by case/andP=> *; apply_andP; apply: (H α). *)
-    (*   all: do ? by move=> *; apply: (H α). *)
-
-    (*     by rewrite 2!all_cat => /andP [Hall1 Hall2]; apply_andP; [apply: (H α) | apply: (H0 α)]. *)
-
-    (* Qed. *)
-
-    
-    (* Lemma find_all_f_equiv_to_sf_are_simple ty f α (φ : seq (@Query Vals)) : *)
-    (*   all (are_equivalent (SingleField f α)) (find_fields_with_response_name f φ) -> *)
-    (*   all (fun q => q.(is_simple_field_selection)) (find_queries_with_label s f ty φ). *)
-    (* Proof. *)
-    (*   funelim (find_queries_with_label s f ty φ) => //=. *)
-
-    (*   all: do ?[by simp find_fields_with_response_name; rewrite Heq /= => /andP [Hequiv Hequivs]; apply_andP; apply: (H α)]. *)
-
-    (*   all: do ? by simp find_fields_with_response_name; rewrite Heq /= => *; apply: (H α). *)
-
-    (*   - by simp find_fields_with_response_name; rewrite 2!all_cat => /andP [Hequiv Hequivs]; apply_andP; [apply: (H α) | apply: (H0 α)]. *)
-    (*   - by simp find_fields_with_response_name; rewrite all_cat => /andP [Hequiv Hequivs]; apply: (H α). *)
-        
-    (* Qed. *)
-
-
-
-   
-
-    
-    (* Lemma find_fields_cat rname φ1 φ2 : *)
-    (*   find_fields_with_response_name rname (φ1 ++ φ2) = *)
-    (*   find_fields_with_response_name rname φ1 ++ find_fields_with_response_name rname φ2. *)
-(* Admitted. *)
-
-  (* Lemma filter_fields_spec l φ : *)
-    (*   all (fun q => q.(is_field)) φ -> *)
-    (*   filter_queries_with_label l φ = [seq q <- φ | match q with *)
-    (*                                                | SingleField f _ *)
-    (*                                                | NestedField f _ _ => f != l *)
-    (*                                                | LabeledField l' _ _ *)
-    (*                                                | NestedLabeledField l' _ _ _ => l' != l *)
-    (*                                                | _ => false *)
-    (*                                                end ]. *)
-    (* Proof. *)
-    (*     by funelim (filter_queries_with_label l φ) => //= /andP [Hf Hflds]; rewrite Heq H. *)
-    (* Qed. *)
-
-
- 
-    (* Lemma filter_find_nil f ty φ : *)
-    (*   filter_queries_with_label f (find_queries_with_label s f ty φ) = [::]. *)
-    (* Admitted. *)
-
-    (* Lemma filter_find_swap f1 f2 ty φ : *)
-    (*   filter_queries_with_label f1 (find_queries_with_label f2 ty φ) = find_queries_with_label f2 ty (filter_queries_with_label f1 φ). *)
-(* Admitted.  *)
-
-
-    
-    (* Lemma merge_simple_fields_is_empty φ : *)
-    (*   all (fun query => query.(is_simple_field_selection)) φ -> *)
-    (*   merge_selection_sets φ = [::]. *)
-    (* Proof. *)
-    (*     by elim: φ => //=; case. *)
-    (* Qed. *)
-
-
-
-    (* Lemma filter_all rname (φ : seq (@Query Vals)) : *)
-    (*   all (has_response_name rname) φ -> *)
-    (*   filter_queries_with_label rname φ = [::]. *)
-    (* Proof. *)
-    (*     by elim: φ => //=; case=> //= [f' α | l f' α | f' α β | l f' α β] φ IH; simp has_response_name => /= /andP [/eqP Heq Hsame]; *)
-    (*                                                                                                      simp filter_queries_with_label => /=;  *)
-    (*                                                                                                                                         rewrite Heq /=; case: eqP => //= _; apply: IH. *)
-    (* Qed. *)
-    
-    
-    (* Lemma filter_frag (ptys : seq Name) f φ : *)
-    (*   all (has_response_name f) φ -> *)
-    (*   filter_queries_with_label f [seq InlineFragment t φ | t <- ptys] = *)
-    (*   [seq InlineFragment t [::] | t <- ptys]. *)
-    (* Proof. *)
-    (*   move=> /filter_all Heq. *)
-    (*   elim: ptys => //= q qs IHqs; simp filter_queries_with_label => /=. *)
-    (*     by rewrite Heq IHqs. *)
-    (* Qed. *)

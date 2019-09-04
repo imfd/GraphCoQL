@@ -16,15 +16,31 @@ Require Import SeqExtra.
 
 (* end hide *)
 
+(**
+   #<div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">GraphQL Schema Auxiliary</h1>
+        <p class="lead">
+         This file contains auxiliary definitions used with a GraphQL Schema.
+        </p>
+
+        <p>
+         Some of these are: extractors for type definitions, lookup functions, subtype relation, etc.
+        </p>
+  </div>
+</div>#
+ *)
+
 
 Section SchemaAux.
 
 
   Section TypeDefExtractors.
     
-    (** Extractors for type definitions **)
-
-    (** Get type definition's name **)
+    (** *** Extractors for type definitions *)
+    
+    (** ---- *)
+    (** Get type definition's name *)
     Definition tdname tdef : Name :=
       match tdef with
       | Scalar name
@@ -34,7 +50,8 @@ Section SchemaAux.
       | Enum name { _ } => name
       end.
 
-    (** Get type definition's field **)
+    (** ---- *)
+    (** Get type definition's field *)
     Definition tfields tdef : seq FieldDefinition :=
       match tdef with 
       | Object _ implements _ { flds }
@@ -42,65 +59,136 @@ Section SchemaAux.
       | _ => [::]
       end.
 
-    (** Get type definition's declared interfaces **)
+    
+    (** ---- *)
+    (** Get type definition's declared interfaces *)
     Definition tintfs tdef : seq Name :=
       match tdef with
       | Object _ implements intfs { _ } => intfs
       | _ => [::]
       end.
 
-    (** Get type definition's members (only valid for union type) **)
+    
+    (** ---- *)
+    (** Get type definition's members (only valid for union type) *)
     Definition tmbs tdef : seq Name :=
       match tdef with
       | Union _ { mbs }=> mbs
       | _ => [::]
       end.
 
-    (** Get type definition's members (only valid for enum type) **) 
+    
+    (** ---- *)
+    (** Get type definition's members (only valid for enum type) *) 
     Definition tenums tdef : seq EnumValue :=
       match tdef with
       | Enum _ { enums } => enums
       | _ => [::]
       end.
 
-    
-    (* (** Get all unduplicated field names from a type definition **) *)
-    (* Definition tdef_field_names (tdef : TypeDefinition) : seq Name := undup [seq fld.(fname) | fld <- tdef.(tfields)]. *)
+
+    Variable schema : graphQLSchema.
+
+    (** ---- *)
+    (** Get all type definitions' names from a schema *)
+    Definition schema_names : seq Name := [seq tdef.(tdname) | tdef <- schema.(type_definitions)]. 
 
 
   End TypeDefExtractors.
   
+  (** ---- *)
+  (** *** General purpose predicates *)
+  Section Predicates.
+
+    Variable schema : graphQLSchema.
+
+    (** ---- *)
+    (** Checks whether the given type definition has the given name *)
+    Definition has_name (name : Name) (tdef : TypeDefinition) : bool :=
+      name == tdef.(tdname).
+
+    (** ---- *)
+    (** Checks whether a given name is declared in the schema, as a type definition *)
+    Definition is_declared (name : Name) : bool := name \in schema.(schema_names).
 
 
+    (** ---- *)
+    (** Checks whether the field definition has the given name *)
+    Definition has_field_name (name : Name) (fld : FieldDefinition) :=
+      name == fld.(fname).
 
-  (** Checks whether the given type definition has the given name **)
-  Definition has_name (name : Name) (tdef : TypeDefinition) : bool :=
-    name == tdef.(tdname).
+  End Predicates.
+
   
 
   
   Variable schema : graphQLSchema.
 
-  (* (** Finds the first type definitions that has the given name **) *)
-  (* Equations find_tdef_with_name (tdefs : seq TypeDefinition) (ty : Name) : option TypeDefinition := *)
-  (*   { *)
-  (*     find_tdef_with_name [::] _ := None; *)
-  (*     find_tdef_with_name (tdef :: tdefs) ty *)
-  (*       with tdef.(tdname) == ty := *)
-  (*       { *)
-  (*       | true := Some tdef; *)
-  (*       | _ := find_tdef_with_name tdefs ty *)
-  (*       } *)
-  (*   }. *)
-  
-  Definition lookup_type (ty : Name) :=
-    get_first (fun tdef => tdef.(tdname) == ty) schema.(type_definitions).
+  (** ---- *)
+  (** *** Lookup functions *)
+  Section Lookup.
 
-  
-  
-  Section TypePredicates.
+    (** ---- *)
+    (**
+       Looks up for a type definition with the given name.
+     *)
+    Definition lookup_type (ty : Name) :=
+      get_first (fun tdef => tdef.(tdname) == ty) schema.(type_definitions).
     
-    (** Checks whether the given type is defined as a Scalar in the Schema **)
+
+    (** ---- *)
+    (**
+     Gets the first field definition from a given type that matches the given field name. 
+     *)
+    Definition lookup_field_in_type (ty : Name) (fname : Name) : option FieldDefinition :=
+      if lookup_type ty is Some tdef then
+        get_first (has_field_name fname) tdef.(tfields)
+      else
+        None.
+
+
+    (** ---- *)
+    (** 
+      Gets the type of the first field definition from a given type that matches the given field name. 
+     *)
+    Definition lookup_field_type (ty : Name) (fname : Name)  : option type :=
+      match lookup_field_in_type ty fname with
+      | Some fld => Some fld.(return_type)
+      | None => None
+      end.
+
+
+    (** ---- *)
+    (**
+     Gets the first argument definition that matches the given argument name, from the
+     given type and field. 
+     *)
+    Definition lookup_argument_in_type_and_field (ty : Name) (fname aname : Name) : option FieldArgumentDefinition :=
+      match lookup_field_in_type ty fname with
+      | Some (Field fname args _) => get_first (fun arg => arg.(argname) == aname) args
+      | _ => None
+      end.
+
+    (** ---- *)
+    (**
+       Gets the list of fields declared in an Object or Interface type definition
+     *)
+    Definition fields (ty : Name) : seq FieldDefinition :=
+      match lookup_type ty with
+      | Some (Object _ implements _ { flds })
+      | Some (Interface _ { flds }) => flds
+      | _ => [::]
+      end.
+    
+  End Lookup.
+
+
+  (** ---- *)
+  (** *** Predicates about types *)
+  Section TypePredicates.
+
+    (** ---- *)
+    (** Checks whether the given type is defined as a Scalar in the Schema *)
     Definition is_scalar_type (ty : Name) : bool :=
       match lookup_type ty with
       | Some (Scalar _) => true
@@ -108,8 +196,8 @@ Section SchemaAux.
       end.
 
 
-    
-    (** Checks whether the given type is defined as an Object in the Schema **)
+    (** ---- *)
+    (** Checks whether the given type is defined as an Object in the Schema *)
     Equations is_object_type (ty : Name) : bool :=
       is_object_type ty with lookup_type ty :=
         {
@@ -118,8 +206,8 @@ Section SchemaAux.
         }.
 
 
-
-    (** Checks whether the given type is defined as an Interface in the Schema **)
+    (** ---- *)
+    (** Checks whether the given type is defined as an Interface in the Schema *)
     Equations is_interface_type (ty : Name) : bool :=
       is_interface_type ty with lookup_type ty :=
         {
@@ -128,8 +216,8 @@ Section SchemaAux.
         }.
 
     
-    
-    (** Checks whether the given type is defined as a Union in the Schema **)
+    (** ---- *)
+    (** Checks whether the given type is defined as a Union in the Schema *)
     Equations is_union_type (ty : Name) : bool :=
       is_union_type ty with lookup_type ty :=
         {
@@ -137,64 +225,70 @@ Section SchemaAux.
         | _ := false
         }.
 
-    
-    (** Checks whether the given type is defined as an Enum in the Schema **)
+
+    (** ---- *)
+    (** Checks whether the given type is defined as an Enum in the Schema *)
     Definition is_enum_type (ty : Name) : bool :=
       match lookup_type ty with
       | Some (Enum _ { _ }) => true
       | _ => false
       end.
 
-    (** Checks whether the given type is a list type (does not care for the wrapped type) **)
+
+    (** ---- *)
+    (** Checks whether the given type is a list type. *)
     Definition is_list_type (ty : type) : bool :=
       match ty with
       | [ ty' ] => true
       | _ => false
       end.
 
+    
+    (** ---- *)
+    (**
+       Checks whether the given type is an abstract type.
+     *)
     Definition is_abstract_type (ty : Name) : bool :=
       is_interface_type ty ||  is_union_type ty.
 
+
+    (** ---- *)
+    (**
+       Checks whether the given type is a composite type.
+     *)
     Definition is_composite_type (ty : Name) : bool :=
       [|| is_object_type ty, is_interface_type ty | is_union_type ty].
 
+    
+    (** ---- *)
+    (**
+       Checks whether the given type is a leaf type.
+     *)
     Definition is_leaf_type (ty : Name) : bool :=
       is_scalar_type ty || is_enum_type ty.
 
 
+    
+  End TypePredicates.
+  
 
+  (** ---- *)
+  (** *** Definitions related to subtyping
+      
+      This includes the definition of the subtyping relation.
+   *)
+  Section Subtypes.
+
+    (** ---- *)
     (** *** Subtyping relation.
-        Using Schema as the lookup function in the schema (Schema : Name -> TypeDefinition).
+       
+       Some observations:
 
-   
-                 [―――――――――――――――――] (ST_Refl) #<br>#
-                       ty <: ty
+        - Subtyping is strictly between objects and interfaces.
+          There cannot be an object that is subtype of another, as well as an
+          interface implementing another interface.
 
-                  
-        Schema(O) = type O implements ... I ... { ... }  #<br>#
-                Schema(I) = interface I { ...}           #<br>#
-       [――――――――――――――――――――――――――――――――――――――――――――――] (ST_Object) #<br>#
-                         O <: I
-
-           
-                         T <: U                         #<br>#
-                [―――――――――――――――――――――] (ST_ListType)   #<br>#
-                       [T] <: [U]
-                       
-
-    ----
-    **** Observations
-
-        1. Limitations : Subtyping is strictly between objects and interfaces.
-           There cannot be an object that is subtype of another, as well as an
-           interface implementing another interface.
-
-        2. Transitivity : Because of the limitation, there is no need to specify
-           or worry about transitivity of the relation.
-
-        #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Objects'> See also: Object Type Validation subsection </a>#
-
-        #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Interfaces'> See also: Interface Type Validation subsection </a>#
+        - Because of the previous limitation, there is no need to specify or worry about transitivity of the relation.
     *)
     Reserved Infix "<:" (at level 60).
     Fixpoint is_subtype (ty ty' : type) : bool :=
@@ -218,123 +312,35 @@ Section SchemaAux.
 
     where "ty1 <: ty2" := (is_subtype ty1 ty2).
 
-    
-  End TypePredicates.
-  
 
-  
-
-  (** Get all type definitions' names from a schema **)
-  Definition schema_names : seq Name := [seq tdef.(tdname) | tdef <- schema.(type_definitions)]. 
-
-
-  (** Check whether a given name is declared in the schema, as a type definition **)
-  Definition is_declared (name : Name) : bool := name \in schema_names.
-
-
-  (** Checks whether the field has the given name **)
-  Definition has_field_name (name : Name) (fld : FieldDefinition) :=
-    name == fld.(fname).
-
-
-
-  Section Lookup.
-    
+    (** ---- *)
     (**
-     Gets the first field definition from a given type that matches the given field name. 
-     If the type is not declared in the Schema or the field does not belong to the type, then it returns None.
-     **)
-    Definition lookup_field_in_type (ty : Name) (fname : Name) : option FieldDefinition :=
-      if lookup_type ty is Some tdef then
-        get_first (has_field_name fname) tdef.(tfields)
-      else
-        None.
-
-
-    
-    (** 
-      Gets the type of the first field definition from a given type that matches the given field name. 
-      If the type is not declared in the Schema or the field does not belong to the type, then it returns None.
-
-     **)
-    Definition lookup_field_type (ty : Name) (fname : Name)  : option type :=
-      match lookup_field_in_type ty fname with
-      | Some fld => Some fld.(return_type)
-      | None => None
-      end.
-
-    (**
-     Gets the first argument definition that matches the given argument name, from the
-     given type and field. If the argument is not defined then it returns None.
-     If the field is not declared in that type, then it returns None.
-     **)
-    Definition lookup_argument_in_type_and_field (ty : Name) (fname aname : Name) : option FieldArgumentDefinition :=
-      match lookup_field_in_type ty fname with
-      | Some (Field fname args _) => get_first (fun arg => arg.(argname) == aname) args
-      | _ => None
-      end.
-
-    (** Get list of fields declared in an Object or Interface type definition **)
-    Definition fields (ty : Name) : seq FieldDefinition :=
-      match lookup_type ty with
-      | Some (Object _ implements _ { flds })
-      | Some (Interface _ { flds }) => flds
-      | _ => [::]
-      end.
-    
-  End Lookup.
-
-
-  Section Subtypes.
-    
-    (**
-     Get the union's types' names.
-     If the type is not declared as Union in the Schema, then returns None.
-     **)
+       Gets the union's members.
+     *)
     Definition union_members (ty : Name) : seq Name :=
       match lookup_type ty with
       | Some (Union _ { mbs }) => mbs
       | _ => [::]
       end.
-
     
+    
+    (** ---- *)
     (**
-     Checks whether the given type declares implementation of another type.
-     **)
-    Definition declares_implementation (ty ty' : Name) : bool :=
-      match lookup_type ty with
-      | Some (Object _ implements intfs { _ }) => ty' \in intfs
-      | _ => false
-      end.
-
-
-    
-    Definition implements_interface (iname : Name) (tdef : TypeDefinition) : bool :=
-      iname \in tdef.(tintfs).
-
-
-
-    
-    
-
+       Gets all object types that implement the given interface.
+     *)
     Definition implementation (ty : Name) : seq Name :=
-      undup [seq tdef.(tdname) | tdef <- schema.(type_definitions) & implements_interface ty tdef].
+      undup [seq tdef.(tdname) | tdef <- schema.(type_definitions) & ty \in tdef.(tintfs)].
 
-    
+    (** ---- *)
     (**
-     Gets "possible" types from a given type, as defined in the GraphQL Spec
-     (https://facebook.github.io/graphql/June2018/#GetPossibleTypes())
+       Gets "possible" types from a given type, as #<a href='https://graphql.github.io/graphql-spec/June2018/#GetPossibleTypes()'>defined in the GraphQL Spec</a>#.
 
-     If the type is:
-     1. Object : Possible types are only the type itself.
-     2. Interface : Possible types are all types that declare implementation of this interface.
-     3. Union : Possible types are all members of the union.
-
-     ---- 
-     See also:
-
-     https://graphql.github.io/graphql-spec/June2018/#GetPossibleTypes()
-     **)
+       If the type is:
+       - Object : Possible types are only the type itself.
+       - Interface : Possible types are all types that declare implementation of this interface.
+       - Union : Possible types are all members of the union.
+    
+     *)
     Equations get_possible_types (ty : Name) : seq Name :=
       {
         get_possible_types ty with lookup_type ty :=
@@ -357,3 +363,13 @@ End SchemaAux.
 
 
 Notation "s ⊢ ty1 <: ty2" := (is_subtype s ty1 ty2) (at level 50, ty1 at next level) : schema_scope.
+
+
+(** ---- *)
+
+(** 
+    #<div>
+        <a href='GraphCoQL.Schema.html' class="btn btn-light" role='button'> Previous ← Schema  </a>
+        <a href='GraphCoQL.SchemaWellFormedness.html' class="btn btn-info" role='button'>Next → Schema Well-Formedness </a>
+    </div>#
+*)

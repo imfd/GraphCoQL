@@ -14,160 +14,261 @@ Require Import Schema.
 Require Import SchemaWellFormedness.
 Require Import SchemaAux.
 Require Import Graph.
-Require Import GraphAux.
 
 (* end hide *)
 
+(**
+   #<div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">Graph Conformance</h1>
+        <p class="lead">
+         This file contains the necessary definitions to validate when a GraphQL Graph
+         is valid wrt. to a Schema. 
+        </p>
+         <p>
+         This notion includes things such as: 
+          <ul>
+           <li> Root node's type is same as the root query operation type. </li>
+           <li> Fields in edges are defined in the Schema. </li>
+           <li> Values for arguments and properties correspond to the expected type in the Schema. </li>
+           <li> Etc. </li>
+         </ul>
+        </p>
+         <p>
+         We will progressively define predicates that check different aspects of a graph.
+         From these we will ultimately define the predicate and structure for conformed graphs.
+        </p>
+  </div>
+</div>#
+ *)
 
+
+(** * Conformance *)
 Section Conformance.
 
 
   Variables (Vals: eqType).
 
+  (** ---- *)
+  (** ** Auxiliary definitions 
+
+      In this section we define some auxiliary definitions.
+   *)
+  (** ---- *)
+  Section GraphAux.
+
+    Variable (graph :  @graphQLGraph Vals).
+    Implicit Type edge : @node Vals * @fld Vals * @node Vals.
+
+    
+    
+    (** *** Extractors for an edge *)
+
+    (** ---- *)
+    (**
+       Returns an edge's target node.
+     *)
+    Definition etarget edge : node :=
+      let: (_, _, v) := edge in v.
+
+    (** ---- *)
+    (**
+       Returns an edge's source node.
+     *)
+    Definition esource edge : node :=
+      let: (u, _, _) := edge in u.
+
+    (** ---- *)
+    (**
+       Returns an edge's field (label).
+     *)
+    Definition efield edge : fld :=
+      let: (_, f, _) := edge in f.
+
+    (** ---- *)
+    (**
+       Returns the nodes of an edge (source and target).
+     *)
+    Definition enodes edge : seq node := [:: edge.(esource) ; edge.(etarget)].
+    
+    (** ---- *)
+    (** 
+        Returns all nodes from a graph.
+     *)
+    Definition nodes graph : seq node :=
+      undup (graph.(root) ::  flatten [seq edge.(enodes) | edge <- graph.(E)]).
+
+
+    (** ---- *)
+    (**
+       Returns a node's neighbours.
+     *)
+    Definition neighbours (u : node) (edges : seq (node * fld * node)) : seq node :=
+      undup [seq edge.(etarget) | edge <- edges & edge.(esource) == u]. 
+
+    
+
+    (** ---- *)
+    (**
+       Get a node's neighbours connected via an edge with a given field. 
+     *)
+    Definition neighbours_with_field (u : node) (f : fld) : seq node :=
+      undup [seq edge.(etarget) |  edge <- [seq edge <- graph.(E) | (esource edge == u) & (efield edge == f)]].
+
+
+    (** ---- *)
+    (** 
+      This predicate checks whether there is only one edge coming out of the source node and 
+      having the given field.
+     *)
+    Definition is_field_unique_for_src_node graph (src_node : node) (f : fld) : bool :=
+      uniq [seq edge <- graph.(E) | (esource edge == src_node) & (efield edge == f)].
+    
+    
+    
+
+  End GraphAux.
+  (** ---- *)
   
+
   Implicit Type schema : @wfGraphQLSchema Vals.
   Implicit Type graph : @graphQLGraph Vals. 
 
+  (** ** Conformance predicates 
+      
+      In this section we define predicates to establish when a graph conforms 
+      to a given schema.
+   *)
+  
+  (** ---- *)
+  (** *** Root type conforms
 
-  (** 
-      It states that a Graph's root must have the same type as the Schema's root
+      #<strong>root_type_conforms</strong># : wfGraphQLSchema → graphQLSchema → Bool
+
+      This predicate checks that a Graph's root node must have the same type as the Schema's query type.
    **)
   Definition root_type_conforms schema graph : bool := graph.(root).(ntype) == schema.(query_type).
   
 
+  (** ---- *)
+  (** *** Arguments conform
 
-  (** 
-      It states whether a given field's argument conforms to 
-      what the Schema requires of it.
+      #<strong>arguments_conform</strong># : wfGraphQLSchema → graphQLSchema → fld → Bool
 
-      Given a node's type 'ty', one of the nodes' field name 'f' and an argument (argname, value).
-     
-     1. argname ∈ args (src, f) : The argument must be declared in the given type for that given field.
-     2. value ∈ values (type (arg)) : The value must be of the type declared for that argument in the schema.  
+      This predicate checks a field's arguments conform to 
+      what the Schema requires of them.
+      - The arguments must be declared in the given type for that given field.
+      - The arguments' values must be of the type declared for each argument in the schema.  
  
-   **)     
-  Definition argument_conforms schema (ty fname : Name) (arg : Name * Vals) : bool :=
-    let: (argname, value) := arg in
-    match lookup_argument_in_type_and_field schema ty fname argname with
-    | Some field_arg => (has_type schema) field_arg.(argtype) value    (* If the argument is declared then check its value's type *)
-    | _ => false
-    end.
-
-
-  (** Checks whether all of the field's arguments conform to the schema **)
+      This is used when validating edges' fields and nodes' properties.
+   **)
+  
   Definition arguments_conform schema ty (f : fld) : bool :=
-    all (argument_conforms schema ty f.(label)) f.(args).
+    let argument_conforms (fname : Name) (arg : Name * Vals) : bool :=
+        let: (argname, value) := arg in
+        match lookup_argument_in_type_and_field schema ty fname argname with
+        | Some field_arg => (has_type schema) field_arg.(argtype) value    (* If the argument is declared then check its value's type *)
+        | _ => false
+        end
+    in
+    all (argument_conforms f.(label)) f.(args).
  
 
     
 
 
   
-  (** 
-      It checks whether a field's unwrapped type (if it's List type) and a type 
-      conform.
 
-      This is used when checking that an edge conforms to a Schema (see next definition).
+
+  (** ---- *)
+  (** *** Edges conform 
+     #<strong>edges_conform</strong># : wfGraphQLSchema → graphQLSchema → Bool
+
+     This predicate checks whether a graph's edges conform to a Schema.
+     
+     This checks the following:
+     - There are no repeated edges. 
+     - Each edge conforms.
+
+     And the latter is done by checking that:
+     - The edge's field is defined is defined in source node.
+     - The target node's type is a subtype of the return type associated to the field of the edge.
+     - If the field's return type is not a List type, then this is the only edge connecting the source node 
+       with the target node using the given field. 
+     - The field's arguments conform.
    **)
-  Definition field_type_conforms schema (field_type target_type : Name) : bool :=
-    schema ⊢ NamedType target_type <: NamedType field_type.
-
-
-  
-  (**
-     It states whether an edge conforms to the Schema.
-     An edge corresponds to a type's field whose type is another Object, Interface or Union type.
-
-     ∀ u v ∈ N, f[α] ∈ fld, (u, f[α], v) ∈ E:
-
-     1. f ∈ fields (τ(u)) :
-          field 'f' has to be a field of that node's type in the Schema.
-
-     2. type (f) = τ(v) ∨ τ(v) ∈ implementation (type (f)) ∨ τ(v) ∈ union (type (f)) , ie, is a subtype :
-          The type associated to 'f' in the schema has to be the same type associated to node 'v'
-       OR the type of 'f' is an Interface type therefore the type of 'v' has to be of an 
-            object which implements this interface
-       OR the type of 'f' is a Union type, therefore the type of 'v' has to be an Object type
-            which is included in that union type.
-
-     3. type (f) ∉ Lt → ∀ w ∈ N, (u, f[α], w) ∈ E → w = v : 
-          If the type associated to field 'f' is not of List type,
-          then node 'v' is the only node associated to 'u' via an edge with 'f'.
-
-     4. The arguments of 'f' must conform to what the Schema requires of them, for
-        that given field.
-
-   **)
-  Definition edge_conforms schema graph (edge : node * fld * @node Vals) : bool :=
-    let: (src, fld, target) := edge in
-    match lookup_field_in_type schema src.(ntype) fld.(label) with
-    | Some fdef => [&& (* is_subtype schema (NT target.(type)) fdef.(return_type), *) (* wrong... right? *)
-                     target.(ntype) \in get_possible_types schema fdef.(return_type),
-                   (is_list_type fdef.(return_type) || is_field_unique_for_src_node graph src fld) &
-                   arguments_conform schema src.(ntype) fld]
-    | _ => false
-    end.
-
-  
+ 
   Definition edges_conform schema graph :=
-    uniq graph.(E) && all (edge_conforms schema graph) graph.(E).
+    let edge_conforms (edge : node * fld * @node Vals) : bool :=
+        let: (src, fld, target) := edge in
+        match lookup_field_in_type schema src.(ntype) fld.(label) with
+        | Some fdef =>
+          if ~~is_list_type fdef.(return_type) then
+            [&& target.(ntype) \in get_possible_types schema fdef.(return_type),
+                is_field_unique_for_src_node graph src fld &
+                arguments_conform schema src.(ntype) fld]
+          else
+            (target.(ntype) \in get_possible_types schema fdef.(return_type)) && arguments_conform schema src.(ntype) fld
+        | _ => false     
+        end
+    in
+    uniq graph.(E) && all edge_conforms graph.(E).
+
 
   
-  (**
-     It states whether a field conforms to the Schema.
+  (** ---- *)
+  (** *** Nodes conform
+     #<strong>nodes_conform</strong># : wfGraphQLSchema → graphQLGraph → Bool 
 
-     ∀ u ∈ N, f ∈ fld, v ∈ Vals ⋃ [Vals], λ (u, f[α]) = v 
-     then it must be that:
-     1. f ∈ fields (τ(u)) : 
-          Field 'f' must be declared in the type associated to node 'u' in the Schema.
+     The following predicate checks whether a graph's nodes conform to a given Schema.
+     This is done by checking that:
+     - Every node's type is an Object type.
+     - Every property conforms.
 
-     2. v ∈ values (type (f)) :
-          The value must be of the type declared for that field in the Schema.
-    
-     3. The arguments of 'f' must conform to what the Schema requires of them.
-
+     The latter is done by checking that:
+     - The properties are actually defined in the type of the node.
+     - The field's arguments conform.
+     - The properties values have a valid type wrt. to what is expected in the Schema 
+       (If we expect a field to have Int type then the value should ressemble an Int).
    **)
-
-  Definition field_conforms schema ty (fd : fld * (Vals + seq Vals)) : bool :=
-    match lookup_field_in_type schema ty fd.1.(label) with
-    | Some fdef =>
-      arguments_conform schema ty fd.1 &&
-      match fd.2 with
-      | (inl value) => schema.(has_type) fdef.(return_type) value
-      | (inr values) => all (schema.(has_type) fdef.(return_type)) values
-      end
-    | _ => false
-    end.
   
-  Definition node_fields_conform schema (u : node) :=
-    all (field_conforms schema u.(ntype)) u.(nfields).
+  Definition nodes_conform schema graph :=
+    let property_conforms ty (fd : fld * (Vals + seq Vals)) : bool :=
+        match lookup_field_in_type schema ty fd.1.(label) with
+        | Some fdef =>
+          arguments_conform schema ty fd.1 &&
+                            match fd.2 with
+                            | (inl value) => schema.(has_type) fdef.(return_type) value
+                            | (inr values) => all (schema.(has_type) fdef.(return_type)) values
+                            end
+        | _ => false
+        end
+    in
+    let node_conforms (u : node) :=
+        is_object_type schema u.(ntype) &&
+        all (property_conforms u.(ntype)) u.(nprops)
+    in
+    all node_conforms graph.(nodes).
 
-  
-  Definition fields_conform schema graph :=
-    all (node_fields_conform schema) graph.(nodes).
 
-  
-  Definition nodes_have_object_type schema graph : bool :=
-    all (fun node : node => is_object_type schema node.(ntype)) graph.(nodes).
 
-  
+  (** ** Conformed Graph *)
+  (** ---- *)
   (**
      A GraphQL graph conforms to a given Schema if:
-     1. Its root conforms to the Schema.
-     2. Its edges conform to the Schema.
-     3. Its fields conform to the Schema.
-     4. Its nodes conform to the Schema.
+     - Its root conforms to the Schema.
+     - Its edges conform to the Schema.
+     - Its nodes conform to the Schema.
 
    **)
   Record conformedGraph schema := ConformedGraph {
                                                 graph;
                                                 _ : root_type_conforms schema graph;
                                                 _ : edges_conform schema graph;
-                                                _ : fields_conform schema graph;
-                                                _ : nodes_have_object_type schema graph
+                                                _ : nodes_conform schema graph
                                       }.
 
-  Coercion graph_of_conformed_graph schema (g : conformedGraph schema) := let: ConformedGraph g _ _ _ _ := g in g.
+  Coercion graph_of_conformed_graph schema (g : conformedGraph schema) := let: ConformedGraph g _ _ _ := g in g.
 
 
                
@@ -175,4 +276,12 @@ Section Conformance.
 
 End Conformance.
 
-Arguments conformedGraph [Vals]. 
+
+
+(** ---- *)
+(** 
+    #<div>
+        <a href='GraphCoQL.Graph.html' class="btn btn-light" role='button'> Previous ← GraphQL Graph</a>
+        <a href='GraphCoQL.Response.html' class="btn btn-info" role='button'>Continue Reading → GraphQL Response </a>
+    </div>#
+*)

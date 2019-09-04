@@ -28,7 +28,7 @@ Require Import Ssromega.
       <div class="container">
         <h1 class="display-4">Query Conformance</h1>
         <p class="lead">
-         This file contains the necessarty definitions to validate when a GraphQL Query
+         This file contains the necessary definitions to validate when a GraphQL Query
          is valid wrt. to a Schema. 
         </p>
          <p>
@@ -49,6 +49,7 @@ Require Import Ssromega.
 </div>#
  *)
 
+
 Section QueryConformance.
 
   Variables Vals : eqType.
@@ -60,16 +61,22 @@ Section QueryConformance.
 
   Variable s : @wfGraphQLSchema Vals.
  
-  
+  (** * Conformance Predicates *)
   (** ---- *)
-  (** *** Arguments conform 
-
+  
+  (** ** Are queries consistent ?
+      
+      First we define the necessary predicates to establish that a query is consistent 
+      by itself.
+   *)
+  (** ---- *)
+  (** 
       #<strong>arguments_conform</strong># : List FieldArgumentDefinition → List (Name * Vals) → Bool
 
       The following predicate checks whether a list of arguments (described as a pairing between names and values)
       conform to a list of field arguments.
       
-      This is used when checking whether a field selection conforms to a type in the schema.
+      This is used when checking whether a field selection is consistent with a type in the schema.
 
       For a query argument to be valid it must satisfy the following:
       - There exists an argument definition with the same name.
@@ -95,12 +102,12 @@ Section QueryConformance.
 
   (** ---- *)
   (**
-     is_fragment_spread_possible : Name → Name → Bool 
+     #<strong>is_fragment_spread_possible</strong># : Name → Name → Bool 
      
      Checks whether a given type can be used as an inline fragment's type condition 
      in a given context with another type in scope (parent type).
 
-     It basically amounts to intersecting the possible types of each
+     It basically amounts to intersecting the possible subtypes of each
      and checking that the intersection is not empty.     
    *)
   Definition is_fragment_spread_possible parent_type fragment_type : bool :=
@@ -110,45 +117,31 @@ Section QueryConformance.
     applicable_types != [::].
 
 
-   (** ---- *)
- (** 
-      query_conforms : Name → Query → Bool 
+  (** ---- *)
+  (** 
+     #<strong>is_consistent</strong># : Name → Query → Bool 
 
-      Checks whether a query conforms to a given type in the schema.
-      
-      The first parameter corresponds to the type in context where
-      the queries might live.
-
+      Checks whether a query is consistent to a given type in the schema.
 
       This checks the following things specified in the spec :
 
-      1. Fields are defined in the type in context.
-      
-      2. If return type is a Scalar or Enum, then it doesn't have subqueries.
+      - Fields are defined (if we lookup the field selection's name in our type in context, we must find a field definition).
 
-      3. If return type is an Object, Interface or Union, then it must have non-empty subqueries.
+      - Field selection's arguments should conform to the arguments declared in the field definition obtained previously.
 
-      4. Arguments conform to the type in context.
+      - Leaf field selections should have Scalar or Enum return type.
 
-      6. Inline fragments can be spread in the given type in context.
+      - Node field selections should have Object, Interface or Union return type.
 
-      
-      #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-      **** Observations 
-      
-      - Fragments on composite types : The spec states that a fragment's type condition must 
-        be an Object, Interface or Union type. We argue that adding this check is a bit 
-        redundant along with [is_fragment_spread_possible], because if the type condition 
-        is not any of the previous one, then its possible types would be empty (meaning 
-        the previous predicate would be false).
+      - Nested subqueries should not be empty.
 
-      - Fragment spread type existence : Similar to the previous one, the spec states that 
-        the type condition must exist in the schema. We argue again that adding this check 
-        would be a bit redundant, for similar reasons.
+      - Nested subqueries should be consistent wrt. to its parent type (return type for fields or type condition for fragments).
+
+      - Fragments' type condition must spread in the type in context.
      
    *)
  (* TODO: Rename? It is only a part of the whole validation process *)
-  Fixpoint query_conforms (type_in_scope : Name) query : bool :=
+  Fixpoint is_consistent (type_in_scope : Name) query : bool :=
     match query with
     | f[[α]] =>
       if lookup_field_in_type s type_in_scope f is Some fld then
@@ -167,7 +160,7 @@ Section QueryConformance.
         [&& (is_object_type s fld.(return_type) || is_abstract_type s fld.(return_type)),
          arguments_conform fld.(fargs) α,
          φ != [::] &
-         all (query_conforms fld.(return_type)) φ]
+         all (is_consistent fld.(return_type)) φ]
       else
         false 
 
@@ -176,19 +169,25 @@ Section QueryConformance.
         [&& (is_object_type s fld.(return_type) || is_abstract_type s fld.(return_type)),
          arguments_conform fld.(fargs) α,
          φ != [::] &
-         all (query_conforms fld.(return_type)) φ]
+         all (is_consistent fld.(return_type)) φ]
       else
         false 
 
     | on t { φ } => [&& is_fragment_spread_possible type_in_scope t,
                     φ != [::] &
-                    all (query_conforms t) φ]
+                    all (is_consistent t) φ]
     end.
   
 
   (** ---- *)
+  (** ** Do queries have compatible response shapes ?
+
+      In this segment we define the necessary predicates to establish if the queries 
+      have compatible response shapes.
+   *)
+  (** ---- *)
   (**
-    are_compatible_types : Type → Type → Bool
+    #<strong>are_compatible_types</strong># : Type → Type → Bool
 
     Checks whether two types are compatible. 
     This is posteriorly used to check if two queries have compatible response shapes.
@@ -210,7 +209,7 @@ Section QueryConformance.
   
  (** ---- *)
  (**
-    has_compatible_type : Name → Type → Query → Bool 
+    #<strong>has_compatible_type</strong># : Name → Type → Query → Bool 
 
     Checks whether a given query has a return type compatible to the 
     one given as parameter. This is posteriorly used to check whether
@@ -253,44 +252,23 @@ Section QueryConformance.
     | (_, on _ { _ }) => false
     end.
 
- (** ---- *)
- (**
-    have_compatible_response_shapes : Name → List Query → Bool 
+  
+  (** ---- *)
+  (**
+    #<strong>have_compatible_response_shapes</strong># : Name → List (Name * Query) → Bool 
 
     Checks whether a list of queries have compatible return types.
+    This means that queries with the same response name should have types that are 
+    somewhat "similar". This ensures that their outputs will also be consistent.
 
-    The spec works directly with a list of queries that share a given 
-    response name, but in this case we work with any list of queries, 
-    which might not share response names.
+    For example, it doesn't make sense to have two queries with response name "age" but 
+    one is an Int and the other is a String. Both should be Int or Float.
 
-    Due to this, we first collect queries which share the response name 
-    ([find_fields_with_response_name] and [filter_queries_with_label])
-    and proceed to check that their types are compatible to the return 
-    type of the first query found. 
-
-    We renamed it to _compatible response shapes_ because of the fact 
-    we are not working with queries with the same response name and because 
-    it seems more adequate to say that their shapes are compatible rather than
-    the same. 
-
-    The first parameter corresponds to the type in context where the queries 
-    might live.
-
-    #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-    **** Observations
+    We have to wrap each query with its parent type in order to find their appropriate return type.
     
-    - Redundant recursion : We argue that the definitions given in the spec for _FieldsInSetCanMerge_ and _SameResponseShape_
-       make two recursive calls that are redundant (Section 2.iv and 9.a respectively). You can separate this 
-       calls and work separately, checking equality of names and arguments on one hand and checking types on the 
-       other (or try and mix both to optimize calls - in this case we prefer to split to facilitate reasoning).
-
-    - Redundant pair-check : The spec checks _SameResponseShape_ for every pair of queries sharing a response name.
-       We argue that it should suffice to check every query against a single one (as we do here) and via transitivity 
-       validate that they all have compatible return types. 
   *)
- (* I am pretty sure about claim (2) but we should confirm it somehow.. right xd? *)
- (* Equations is not able to build the graph *)
- Equations(noind) have_compatible_response_shapes (* (type_in_scope : Name) *) (queries : seq (Name * @Query Vals)) :
+ (* Equations is not able to build the graph - hence we use noind *)
+ Equations(noind) have_compatible_response_shapes (queries : seq (Name * @Query Vals)) :
    bool by wf (queries_size_aux queries) :=
    {
      have_compatible_response_shapes [::] := true ;
@@ -368,48 +346,25 @@ Section QueryConformance.
      by ssromega.
  Qed.
 
+
+
+ (** ---- *)
+ (** ** Is field merging possible ?
+     In this section we define the predicate that checks if field merging is possible.
+  *)
  (** ---- *)
  (**
-    is_field_merging_possible : Name → List Query → Bool
+    #<strong>is_field_merging_possible</strong># : Name → List Query → Bool
 
     Checks whether a list of queries are mergeable.
 
-    The first parameter corresponds to the type in context where
-    the queries might live.
+    In a nutshell, what we do is look for fields with the same _response name_ and then check that:
+    - They are all leaf fields or all node fields.
+    - They all have the same _field name_.
+    - They all have the same arguments.
 
-    Our definition differs in three main aspects and a minor one with respect
-    to the spec's definition (_FieldsInSetCanMerge_):
-
-    The first difference is that the spec's definition works directly with a list of queries
-    that share a given response name. In our case we work with any list of queries, 
-    which might not share response names.
-
-    The second difference comes from the fact that the spec's definition is too conservative in our 
-    opinion. Due to this, valid queries might be considered invalid (https://tinyurl.com/y4zkoofg).
-    The main issue comes from the fact that invalid inline fragments may be introduced,
-    causing the check to fail even though those subqueries will never be evaluated
-    (https://github.com/graphql/graphql-spec/issues/367). Our definition ignores this invalid 
-    fragments and, supposedly, provides a more accurate validation.
-
-    The third difference is that we separate the notion of _mergeable_
-    from the one checking that their types are compatible (See [have_compatible_response_shapes] 
-    observation on redundant pair-check).
-
-    The fourth difference is that we do not directly perform the check in point 2.b of the 
-    spec's definition. This is a side effect of the previous differences.
-
-    All of these difference are reflected in the definition, in particular when checking 
-    that the type in context is an object type or not. Depending on this, we might 
-    collect queries with either [find_queries_with_label] or [find_fields_with_response_name], 
-    respectively. This way, we can actually check merging on fields that make sense 
-    and not on all fields that share a response name.
-
-    #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-    **** Observations
-
-    - Implicit type : The spec refers to the _parent types_ of each field but they 
-       are not given as parameter.
-    
+    We use the type in context to find only the fields that make sense 
+    (because with fragments we can create queries that don't make sense).
   *)
  Equations? is_field_merging_possible (type_in_scope : Name) queries : bool by wf (queries_size queries)  :=
    {
@@ -507,50 +462,44 @@ Section QueryConformance.
  Defined.
  
 
-
-  (** ---- *)
-  (**
-     queries_conform : Name -> List Query -> Bool 
+ (** ---- *)
+ (** * Query Conformance *)
+ (** ---- *)
+ (**
+     #<strong>queries_conform</strong># : Name -> List Query -> Bool 
 
      Check whether a list of queries conform to a given type in the schema.
      
      This definition captures the previous validation predicates:
 
-     - ∀ query ∈ queries, query conforms to type in scope.
+     - ∀ query ∈ queries, query is consistent to the type in scope.
 
-     - queries have compatible response shapes.
+     - Queries have compatible response shapes.
 
-     - field merging is possible.
-
-     #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-     **** Observations
-     
-     - Empty lists : Our definition allows for a list of queries to be empty.
-       We argue that this is not an issue, since we do check that subqueries 
-       are not empty. If this list is empty and then evaluated, it would just 
-       result in an empty list of results.
+     - Field merging is possible.
 
    *)
   Definition queries_conform (ty : Name) queries : bool :=
-    [&& all (query_conforms ty) queries,
+    [&& all (is_consistent ty) queries,
         have_compatible_response_shapes [seq (ty, q) | q <- queries] &
         is_field_merging_possible ty queries].
     
   
  
 End QueryConformance.
+(** ---- *)
 
 Arguments arguments_conform [Vals].
-
 Arguments is_fragment_spread_possible [Vals].
 Arguments have_compatible_response_shapes [Vals].
 Arguments is_field_merging_possible [Vals].
-Arguments query_conforms [Vals].
+Arguments is_consistent [Vals].
 Arguments queries_conform [Vals].
 
+(** ---- *)
 (** 
     #<div>
         <a href='GraphCoQL.Query.html' class="btn btn-light" role='button'> Previous ← Query  </a>
-        <a href='GraphCoQL.QuerySemantic.html' class="btn btn-info" role='button'>Continue Reading → QuerySemantics </a>
+        <a href='GraphCoQL.QueryNormalForm.html' class="btn btn-info" role='button'>Continue Reading → Normal Form </a>
     </div>#
 *)

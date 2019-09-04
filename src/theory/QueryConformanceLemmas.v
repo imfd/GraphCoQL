@@ -12,9 +12,8 @@ Require Import QString.
 
 Require Import Schema.
 Require Import SchemaAux.
-Require Import SchemaAuxLemmas.
+Require Import SchemaLemmas.
 Require Import SchemaWellFormedness.
-Require Import SchemaWFLemmas.
 
 Require Import Query.
 Require Import QueryAux.
