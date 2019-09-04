@@ -35,7 +35,7 @@ Require Import QueryNormalForm.
 (**
    #<div class="jumbotron">
       <div class="container">
-        <h1 class="display-4">Normal Form</h1>
+        <h1 class="display-4">Normal Form Theory</h1>
         <p class="lead">
          This file contains lemmas and theory about non-redundancy, groundness and the normalisation procedure.
         </p>         
