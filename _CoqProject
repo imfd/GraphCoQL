@@ -17,7 +17,7 @@
 ./src/SchemaAux.v
 ./src/SchemaWellFormedness.v
 
-./src/theory/SchemaAuxLemmas.v
+./src/theory/SchemaLemmas.v
 
 ./src/Query.v
 ./src/QueryAux.v

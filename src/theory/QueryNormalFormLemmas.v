@@ -13,7 +13,7 @@ Require Import GeneralTactics.
 
 Require Import Schema.
 Require Import SchemaAux.
-Require Import SchemaAuxLemmas.
+Require Import SchemaLemmas.
 Require Import SchemaWellFormedness.
 
 Require Import Query.
