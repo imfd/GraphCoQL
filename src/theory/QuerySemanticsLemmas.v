@@ -17,7 +17,7 @@ Require Import SchemaWellFormedness.
 
 Require Import Graph.
 Require Import GraphConformance.
-Require Import GraphConformanceLemmas.
+Require Import GraphLemmas.
 
 Require Import Query.
 Require Import QueryAux.

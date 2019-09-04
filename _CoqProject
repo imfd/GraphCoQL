@@ -31,7 +31,7 @@
 
 ./src/Graph.v
 ./src/GraphConformance.v
-./src/theory/GraphConformanceLemmas.v
+./src/theory/GraphLemmas.v
 
 ./src/Response.v
 
