@@ -3,15 +3,14 @@
 -R ./lib Lib
 
 ./lib/QString.v
-./lib/treeordtype.v
+./lib/GeneralTactics.v
+./lib/Ssromega.v
+./lib/SeqExtra.v
 
 
 -R ./src GraphCoQL
 
-./src/theory/GeneralTactics.v
 
-./src/Ssromega.v
-./src/SeqExtra.v
 
 ./src/Schema.v
 ./src/SchemaAux.v
@@ -41,11 +40,6 @@
 
 
 ./src/Example.v
-
-
-
-
-
 
 
 
