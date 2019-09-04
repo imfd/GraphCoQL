@@ -55,7 +55,7 @@ Section GraphQLGraph.
    *)
   Structure node := Node {
                        ntype : Name;
-                       nprops : seq (fld * (Vals + seq Vals)%type)  (* Vals could include list values? *)
+                       nprops : seq (fld * Vals)
                      }.
 
 
@@ -120,7 +120,7 @@ Section Equality.
   
   (** Packing and unpacking of graph nodes, needed for canonical instances **)
   Definition prod_of_node (n : @node Vals) := let: Node t f := n in (t, f).
-  Definition node_of_prod (p : string * seq (fld * (Vals + seq Vals)%type)) :=
+  Definition node_of_prod (p : string * seq (fld * Vals)) :=
     let: (t, f) := p in Node t f.
 
   (** Cancelation lemma for a node **)
@@ -131,7 +131,7 @@ Section Equality.
   Canonical node_eqType := EqType node (CanEqMixin prod_of_nodeK).
   
   
-  Fixpoint mem_seq_field (flds :  seq (fld * (Vals + seq Vals)%type)) f : bool :=
+  Fixpoint mem_seq_field (flds :  seq (fld * Vals)) f : bool :=
     match flds with
     | [::] => false
     | (fld, _) :: flds => (f == fld) || mem_seq_field flds f
@@ -147,7 +147,7 @@ Section Equality.
 
   
 
-  Fixpoint field_seq_value (flds :  seq (fld * (Vals + seq Vals)%type)) f : option (Vals + seq Vals) :=
+  Fixpoint field_seq_value (flds :  seq (fld * Vals)) f : option Vals :=
     match flds with
     | [::] => None
     | (fld, vals) :: flds => if f == fld then

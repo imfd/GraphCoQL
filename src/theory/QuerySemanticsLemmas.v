@@ -78,35 +78,35 @@ Section Theory.
         let Hv := fresh "Hv" in
         let v := fresh "v" in
         let vs := fresh "vs" in
-        case Hv : (field_seq_value u.(nprops) _) => [ [v | vs] |] /=
+        case Hv : (field_seq_value u.(nprops) _) => [ v |] /=
 
       | [H : (return_type ?f) = _ |- context [ return_type ?f ] ] => rewrite H /=
 
-      | [|- context[ execute_selection_set_unfold_clause_4_clause_1 _ _ _ _ (return_type ?fld)] ] =>
+      | [|- context[ execute_selection_set_unfold_clause_4_clause_1 _ _ _ _ _ (return_type ?fld)] ] =>
         let Hrty := fresh "Hrty" in
         let rty := fresh "rty" in
         case Hrty : fld.(return_type) => [rty | rty] /=
 
-      | [|- context[ execute_selection_set_unfold_clause_4_clause_1_clause_2 _ _ _ _ _ _ (ohead _)] ] =>
+      | [|- context[ execute_selection_set_unfold_clause_4_clause_1_clause_2 _ _ _ _ _ _ _ (ohead _)] ] =>
         let Hv := fresh "Hv" in
         case Hv : ohead => [v|] //=
                                
-      | [|- context[ execute_selection_set_unfold_clause_5_clause_1 _ _ _ _ (return_type ?fld)] ] =>
+      | [|- context[ execute_selection_set_unfold_clause_5_clause_1 _ _ _ _ _ (return_type ?fld)] ] =>
         let Hrty := fresh "Hrty" in
         let rty := fresh "rty" in
         case Hrty : fld.(return_type) => [rty | rty] /=
 
-      | [|- context[ execute_selection_set_unfold_clause_5_clause_1_clause_2 _ _ _ _ _ _ (ohead _)] ] =>
+      | [|- context[ execute_selection_set_unfold_clause_5_clause_1_clause_2 _ _ _ _ _ _ _ (ohead _)] ] =>
         let Hv := fresh "Hv" in
         case Hv : ohead => [v|] //=
                                
       | [ H : does_fragment_type_apply _ _ _ = _ |- context [ does_fragment_type_apply _ _ _] ] => rewrite H /=
 
-      | [|- context [execute_selection_set_unfold_clause_6 _ _ _ _ _ (does_fragment_type_apply _ _ _)] ] =>
+      | [|- context [execute_selection_set_unfold_clause_6 _ _ _ _ _ _ (does_fragment_type_apply _ _ _)] ] =>
         let Hfapplies := fresh "Hfapplies" in
         case Hfapplies : does_fragment_type_apply => //=
    
-      | [ |- context [ _, _ ⊢ ⟦ _ ⟧ˢ in _ ] ] => simp execute_selection_set
+      | [ |- context [ _, _ ⊢ ⟦ _ ⟧ˢ in _ with _] ] => simp execute_selection_set
       end.
 
   Ltac exec2 :=
@@ -120,38 +120,38 @@ Section Theory.
         let Hv := fresh "Hv" in
         let v := fresh "v" in
         let vs := fresh "vs" in
-        case Hv : (field_seq_value u.(nprops) _) => [ [v | vs] |] /=
+        case Hv : (field_seq_value u.(nprops) _) => [ v |] /=
 
       | [H : (return_type ?f) = _ |- context [ return_type ?f ] ] => rewrite H /=
 
       | [H : (return_type ?f) = _ |- context [ return_type ?f ] ] => rewrite H /=
 
-      | [|- context[ execute_selection_set2_unfold_clause_4_clause_1 _ _ _ _ (return_type ?fld)] ] =>
+      | [|- context[ execute_selection_set2_unfold_clause_4_clause_1 _ _ _ _ _ (return_type ?fld)] ] =>
         let Hrty := fresh "Hrty" in
         let rty := fresh "rty" in
         case Hrty : fld.(return_type) => [rty | rty] /=
 
-      | [|- context[ execute_selection_set2_unfold_clause_4_clause_1_clause_2 _ _ _ _ _ _ (ohead _)] ] =>
+      | [|- context[ execute_selection_set2_unfold_clause_4_clause_1_clause_2 _ _ _ _ _ _ _ (ohead _)] ] =>
         let Hv := fresh "Hv" in
         case Hv : ohead => [v|] //=
      
-      | [|- context[ execute_selection_set2_unfold_clause_5_clause_1 _ _ _ _ (return_type ?fld)] ] =>
+      | [|- context[ execute_selection_set2_unfold_clause_5_clause_1 _ _ _ _ _ (return_type ?fld)] ] =>
         let Hrty := fresh "Hrty" in
         let rty := fresh "rty" in
         case Hrty : fld.(return_type) => [rty | rty] /=
 
-      | [|- context[ execute_selection_set2_unfold_clause_5_clause_1_clause_2 _ _ _ _ _ _ (ohead _)] ] =>
+      | [|- context[ execute_selection_set2_unfold_clause_5_clause_1_clause_2 _ _ _ _ _ _ _ (ohead _)] ] =>
         let Hv := fresh "Hv" in
         case Hv : ohead => [v|] //=
      
       | [H : (ohead (neighbours_with_field _ _ _)) = _ |- context [ ohead (neighbours_with_field _ _ _)] ] =>
         rewrite H /=
       | [ H : does_fragment_type_apply _ _ _ = _ |- context [ does_fragment_type_apply _ _ _] ] => rewrite H /=
-      | [ |- context [ _, _ ⊢ ≪ _ ≫ in _ ] ] => simp execute_selection_set2
+      | [ |- context [ _, _ ⊢ ≪ _ ≫ in _ with _] ] => simp execute_selection_set2
       end.
 
 
-  Variables (Vals : eqType) (s : @wfGraphQLSchema Vals) (g : conformedGraph s).
+  Variables (Vals : eqType) (s : @wfGraphQLSchema Vals) (g : conformedGraph s) (coerce : Vals -> @ResponseNode (option Vals)).
 
 
   
@@ -159,7 +159,7 @@ Section Theory.
     uniq ptys ->
     all (is_object_type s) ptys ->
     u.(ntype) \notin ptys ->
-    s, g ⊢ ⟦ [seq InlineFragment t (f t φ) | t <- ptys] ⟧ˢ in u = [::].
+    s, g ⊢ ⟦ [seq InlineFragment t (f t φ) | t <- ptys] ⟧ˢ in u with coerce = [::].
   Proof.
     elim: ptys => //= t ptys IH /andP [Hnin Huniq] /andP [Hobj Hinobj].
     rewrite /negb; case: ifP => //=.
@@ -178,7 +178,7 @@ Section Theory.
     uniq ptys ->
     all (is_object_type s) ptys ->
     u.(ntype) \notin ptys ->
-    s, g ⊢ ⟦ [seq InlineFragment t φ | t <- ptys] ⟧ˢ in u = [::].
+    s, g ⊢ ⟦ [seq InlineFragment t φ | t <- ptys] ⟧ˢ in u with coerce = [::].
   Proof.
       by apply: (exec_frags_nil_func (fun t qs => qs)).
   Qed.
@@ -189,7 +189,7 @@ Section Theory.
     uniq ptys ->
     all (is_object_type s) ptys ->
     u.(ntype) \notin ptys ->
-    s, g ⊢ ⟦ φ1 ++ [seq InlineFragment t (f t φ2) | t <- ptys] ⟧ˢ in u = s, g ⊢ ⟦ φ1 ⟧ˢ in u.   
+    s, g ⊢ ⟦ φ1 ++ [seq InlineFragment t (f t φ2) | t <- ptys] ⟧ˢ in u with coerce = s, g ⊢ ⟦ φ1 ⟧ˢ in u with coerce.
   Proof.
     move=> Hfilterswap.
     move=> Hnin.
@@ -220,15 +220,15 @@ Section Theory.
     uniq ptys ->
     all (is_object_type s) ptys ->
     u.(ntype) \notin ptys ->
-    s, g ⊢ ⟦ φ1 ++ [seq InlineFragment t φ2 | t <- ptys] ⟧ˢ in u = s, g ⊢ ⟦ φ1 ⟧ˢ in u.                                                            
+    s, g ⊢ ⟦ φ1 ++ [seq InlineFragment t φ2 | t <- ptys] ⟧ˢ in u with coerce = s, g ⊢ ⟦ φ1 ⟧ˢ in u with coerce.
   Proof.
       by apply: (exec_cat_frags_func (fun t qs => qs)).
   Qed.
 
   Lemma exec_cat_frags_get_types ty u φ1 φ2 :
     u.(ntype) \notin get_possible_types s ty ->
-    s, g ⊢ ⟦ φ1 ++ [seq InlineFragment t φ2 | t <- get_possible_types s ty] ⟧ˢ in u =
-                                                                          s, g ⊢ ⟦ φ1 ⟧ˢ in u.                                                                      
+    s, g ⊢ ⟦ φ1 ++ [seq InlineFragment t φ2 | t <- get_possible_types s ty] ⟧ˢ in u with coerce =
+                                                                          s, g ⊢ ⟦ φ1 ⟧ˢ in u with coerce.
   Proof.
       by move=> Hnin; apply: exec_cat_frags => //; [apply: uniq_get_possible_types | apply/allP; apply: in_possible_types_is_object].
   Qed.
@@ -240,7 +240,7 @@ Section Theory.
     uniq ptys ->
     all (is_object_type s) ptys ->
     u.(ntype) \in ptys ->
-                 s, g ⊢ ⟦ [seq InlineFragment t (f t φ) | t <- ptys] ⟧ˢ in u =  s, g ⊢ ⟦ [:: InlineFragment u.(ntype) (f u.(ntype) φ) ] ⟧ˢ in u.
+                 s, g ⊢ ⟦ [seq InlineFragment t (f t φ) | t <- ptys] ⟧ˢ in u with coerce =  s, g ⊢ ⟦ [:: InlineFragment u.(ntype) (f u.(ntype) φ) ] ⟧ˢ in u with coerce. 
   Proof.
     move=> Hswap.
     elim: ptys => //= t ptys IH /andP [Hnin Huniq] /andP [/is_object_type_wfP [intfs [flds Hlook] ] Hinobj].
@@ -264,7 +264,7 @@ Section Theory.
     uniq ptys ->
     all (is_object_type s) ptys ->
     u.(ntype) \in ptys ->
-                 s, g ⊢ ⟦ [seq InlineFragment t φ | t <- ptys] ⟧ˢ in u =  s, g ⊢ ⟦ [:: InlineFragment u.(ntype) φ ] ⟧ˢ in u.
+                 s, g ⊢ ⟦ [seq InlineFragment t φ | t <- ptys] ⟧ˢ in u with coerce =  s, g ⊢ ⟦ [:: InlineFragment u.(ntype) φ ] ⟧ˢ in u with coerce. 
   Proof.
       by apply: (exec_inlined_func (fun t qs => qs)).
   Qed.
@@ -280,7 +280,7 @@ Section Theory.
    *)
   Lemma normalize_exec φ u :
     u \in g.(nodes) ->
-          s, g ⊢ ⟦ normalize s u.(ntype) φ ⟧ˢ in u =  s, g ⊢ ⟦ φ ⟧ˢ in u.
+          s, g ⊢ ⟦ normalize s u.(ntype) φ ⟧ˢ in u with coerce =  s, g ⊢ ⟦ φ ⟧ˢ in u with coerce. 
   Proof.    
     funelim (normalize s u.(ntype) φ) => //=; do ? by exec.
     all: do ? [by intros; exec; rewrite filter_normalize_swap filter_filter_absorb // H]; exec => Huin.
@@ -429,13 +429,13 @@ Section Theory.
   Theorem normalize_queries_exec ty φ u :
     u \in g.(nodes) ->
           u.(ntype) \in get_possible_types s ty ->
-                       s, g ⊢ ⟦ normalize_queries s ty φ ⟧ˢ in u = s, g ⊢ ⟦ φ ⟧ˢ in u.
+                       s, g ⊢ ⟦ normalize_queries s ty φ ⟧ˢ in u with coerce = s, g ⊢ ⟦ φ ⟧ˢ in u with coerce. 
   Proof.
     funelim (normalize_queries s ty φ) => //= Huin Hin.
     - by have <- /= := (in_object_possible_types Heq Hin); apply: normalize_exec.
     - have -> /= :
-        s, g ⊢ ⟦ [seq InlineFragment t (normalize s t queries) | t <- get_possible_types s type_in_scope] ⟧ˢ in u =
-        s, g ⊢ ⟦ [:: InlineFragment u.(ntype) (normalize s u.(ntype) queries)] ⟧ˢ in u.
+        s, g ⊢ ⟦ [seq InlineFragment t (normalize s t queries) | t <- get_possible_types s type_in_scope] ⟧ˢ in u with coerce =
+        s, g ⊢ ⟦ [:: InlineFragment u.(ntype) (normalize s u.(ntype) queries)] ⟧ˢ in u with coerce. 
       apply: exec_inlined_func => //=.
         by apply: filter_normalize_swap.
           by apply: uniq_get_possible_types.
@@ -460,7 +460,7 @@ Section Theory.
      the previous theorem *)
   Theorem exec_normalize_from_root φ :
     queries_conform s s.(query_type) φ ->
-    s, g ⊢ ⟦ normalize_queries s s.(query_type) φ ⟧ˢ in g.(root) = s, g ⊢ ⟦ φ ⟧ˢ in g.(root).
+    s, g ⊢ ⟦ normalize_queries s s.(query_type) φ ⟧ˢ in g.(root) with coerce = s, g ⊢ ⟦ φ ⟧ˢ in g.(root) with coerce.
   Proof.
     intros; apply: normalize_queries_exec.
     - by apply: root_in_nodes.
@@ -479,7 +479,7 @@ Section Theory.
      This lemma states that [execute_selection_set2] distributes over list concatenation.
    *)
   Lemma exec2_cat u φ β :
-    s, g ⊢ ≪ φ ++ β ≫ in u = s, g ⊢ ≪ φ ≫ in u ++ s, g ⊢ ≪ β ≫ in u.
+    s, g ⊢ ≪ φ ++ β ≫ in u with coerce = s, g ⊢ ≪ φ ≫ in u with coerce ++ s, g ⊢ ≪ β ≫ in u with coerce. 
   Proof.
     move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
     elim: n φ β => /= [| n IH] φ β; first by rewrite leqn0 => /queries_size_0_nil ->.
@@ -501,9 +501,9 @@ Section Theory.
                  ~~ does_fragment_type_apply s u.(ntype) t
                else
                  true) φ ->
-    s, g ⊢ ⟦ φ ⟧ˢ in u = [::].
+    s, g ⊢ ⟦ φ ⟧ˢ in u with coerce = [::].
   Proof.
-    funelim (s, g ⊢ ⟦ φ ⟧ˢ in u) => //=; bcase.
+    funelim (s, g ⊢ ⟦ φ ⟧ˢ in u with coerce) => //=; bcase.
       by rewrite Heq in Hb0.
     by apply: H => //; intros; apply: (Hnappl q) => //; apply: mem_tail.
   Qed.
@@ -520,9 +520,9 @@ Section Theory.
                  ~~ does_fragment_type_apply s u.(ntype) t
                else
                  true) φ ->
-    s, g ⊢ ≪ φ ≫ in u = [::].
+    s, g ⊢ ≪ φ ≫ in u with coerce = [::].
   Proof.
-    funelim (s, g ⊢ ≪ φ ≫ in u) => //=; bcase.
+    funelim (s, g ⊢ ≪ φ ≫ in u with coerce) => //=; bcase.
       by rewrite Heq in Hb0.
     by apply: H => //; intros; apply: (Hnappl q) => //; apply: mem_tail.
   Qed.
@@ -547,7 +547,7 @@ Section Theory.
                  ~~ does_fragment_type_apply s u.(ntype) t
                else
                  true) β ->
-    s, g ⊢ ⟦ φ ++ β ⟧ˢ in u = s, g ⊢  ⟦ φ ⟧ˢ in u.
+    s, g ⊢ ⟦ φ ++ β ⟧ˢ in u with coerce = s, g ⊢  ⟦ φ ⟧ˢ in u with coerce. 
   Proof.
     move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
     elim: n φ β u => /= [| n IH] φ β u; first by rewrite leqn0 => /queries_size_0_nil -> /=; apply: exec_inlines_nil.
@@ -604,7 +604,7 @@ Section Theory.
   Theorem exec_equivalence u φ :
     are_grounded s φ ->
     are_non_redundant φ -> 
-    s, g ⊢ ⟦ φ ⟧ˢ in u = s, g ⊢ ≪ φ ≫ in u.
+    s, g ⊢ ⟦ φ ⟧ˢ in u with coerce = s, g ⊢ ≪ φ ≫ in u with coerce. 
   Proof.
     move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
     elim: n φ u => /= [| n IH] φ u; first by rewrite leqn0 => /queries_size_0_nil ->.

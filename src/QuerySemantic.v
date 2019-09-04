@@ -49,6 +49,7 @@ Section QuerySemantic.
   
   Variable s : @wfGraphQLSchema Vals.
   Variable g : @conformedGraph Vals s.
+  Variable coerce : Vals -> @ResponseNode (option Vals).
   
   Implicit Type u : @node Vals.
   Implicit Type query : @Query Vals.
@@ -78,8 +79,7 @@ Section QuerySemantic.
         | Some _
             with field_seq_value u.(nprops) (Field f α) :=
             {
-            | Some (inl value) => (f, Leaf (Some value)) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
-            | Some (inr values) => (f, Array (map (fun value => Leaf (Some value)) values)) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
+            | Some value => (f, coerce value) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
             | None => (f, Leaf None) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u  (* Should throw error? *)
             };
         | _ := ⟦ φ ⟧ˢ in u (* Should throw error *)
@@ -91,8 +91,7 @@ Section QuerySemantic.
         | Some _
             with field_seq_value u.(nprops) (Field f α) :=
             {
-            | Some (inl value) => (l, Leaf (Some value)) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
-            | Some (inr values) => (l, Array (map (fun value => Leaf (Some value)) values)) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
+            | Some value => (l, coerce value) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
             | None => (l, Leaf None) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u (* Should throw error? *)
             };
 
@@ -184,8 +183,7 @@ Section QuerySemantic.
         | Some _ 
             with field_seq_value u.(nprops) (Field f α) :=
             {
-            | Some (inl value) => (f, Leaf (Some value)) :: ≪ φ ≫ in u;
-            | Some (inr values) => (f, Array (map (fun value => Leaf (Some value)) values)) :: ≪ φ ≫ in u;
+            | Some value => (f, coerce value) :: ≪ φ ≫ in u;
             | None => (f, Leaf None) :: ≪ φ ≫ in u
             };
         | _ := ≪ φ ≫ in u (* Error *)
@@ -197,8 +195,7 @@ Section QuerySemantic.
         | Some _ 
             with field_seq_value u.(nprops) (Field f α) :=
             {
-            | Some (inl value) => (l, Leaf (Some value)) :: ≪ φ ≫ in u;
-            | Some (inr values) => (l, Array (map (fun value => Leaf (Some value)) values)) :: ≪ φ ≫ in u;
+            | Some value => (l, coerce value) :: ≪ φ ≫ in u;
             | None => (l, Leaf None) :: ≪ φ ≫ in u
             };
         | _ := ≪ φ ≫ in u (* Error *)
@@ -280,7 +277,7 @@ Section QuerySemantic.
      **** See also
      - #<a href='https://graphql.github.io/graphql-spec/June2018/##ResolveFieldValue()'>ResolveFieldValue()</a># 
    *)
-  Equations resolve_field_value u (field_name : Name) (argument_values : seq (Name * Vals)) : option ((Vals + seq Vals) + (@node Vals) + seq (@node Vals)) :=
+  Equations resolve_field_value u (field_name : Name) (argument_values : seq (Name * Vals)) : option (Vals + (@node Vals) + seq (@node Vals)) :=
     {
       resolve_field_value u f α
         with field_seq_value u.(nprops) (Field f α) :=
@@ -525,8 +522,8 @@ Delimit Scope query_eval with QEVAL.
 Open Scope query_eval.
 
 (* This notation collides with the pairs notation (_ , _) ...  *)
-Notation "s , g ⊢ ⟦ φ ⟧ˢ 'in' u" := (execute_selection_set s g u φ) (at level 30, g at next level, φ at next level) : query_eval.
-Notation "s , g ⊢ ≪ φ ≫ 'in' u" := (execute_selection_set2 s g u φ) (at level 30, g at next level, φ at next level) : query_eval.
+Notation "s , g ⊢ ⟦ φ ⟧ˢ 'in' u 'with' coerce" := (execute_selection_set s g coerce u φ) (at level 30, g at next level, φ at next level) : query_eval.
+Notation "s , g ⊢ ≪ φ ≫ 'in' u 'with' coerce" := (execute_selection_set2 s g coerce u φ) (at level 30, g at next level, φ at next level) : query_eval.
 
 
 (** ---- *)

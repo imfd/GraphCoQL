@@ -233,14 +233,9 @@ Section Conformance.
    **)
   
   Definition nodes_conform schema graph :=
-    let property_conforms ty (fd : fld * (Vals + seq Vals)) : bool :=
+    let property_conforms ty (fd : fld * Vals) : bool :=
         match lookup_field_in_type schema ty fd.1.(label) with
-        | Some fdef =>
-          arguments_conform schema ty fd.1 &&
-                            match fd.2 with
-                            | (inl value) => schema.(has_type) fdef.(return_type) value
-                            | (inr values) => all (schema.(has_type) fdef.(return_type)) values
-                            end
+        | Some fdef => arguments_conform schema ty fd.1 && schema.(has_type) fdef.(return_type) fd.2
         | _ => false
         end
     in
