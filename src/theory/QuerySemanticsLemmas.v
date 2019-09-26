@@ -172,7 +172,7 @@ Section Theory.
       end.
 
 
-  Variables (Vals : eqType) (s : @wfGraphQLSchema Vals) (g : conformedGraph s) (coerce : Vals -> @ResponseNode (option Vals)).
+  Variables (Vals : eqType) (s : @wfGraphQLSchema Vals) (g : conformedGraph s) (coerce : @wfCoercion Vals).
 
 
   
@@ -328,10 +328,10 @@ Section Theory.
     funelim (s, g ⊢  ⟦ φ ⟧ˢ in u with coerce) => //=.
     all: do ? [by apply_and3P; apply: exec_filter_no_repeat].
     - case: ifP => //= _; apply_and3P; do ? first [ by apply: exec_filter_no_repeat | by apply: H].
-      admit. (* coercion preserves non-red *)
-    
+        by case: coerce.
+        
     - case: ifP => //= _; apply_and3P; do ? first [ by apply: exec_filter_no_repeat | by apply: H].
-      admit. (* coercion preserves non-red *)
+        by case: coerce. 
       
     - apply_and3P.
       * simp is_non_redundant.
@@ -346,7 +346,7 @@ Section Theory.
         simp is_non_redundant.
           by apply: H.
       * by apply: exec_filter_no_repeat.
-  Admitted.
+  Admitted. (* Error again :/ ... No subgoals *)
   
       
   (** * Normalisation proofs *)

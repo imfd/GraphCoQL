@@ -5,6 +5,9 @@ From mathcomp Require Import all_ssreflect.
 Require Import String.
 Require Import QString.
 
+From Equations Require Import Equations.
+Require Import GeneralTactics.
+
 Require Import Schema.
 Require Import SchemaAux.
 Require Import SchemaWellFormedness.
@@ -44,6 +47,7 @@ Open Scope string_scope.
 *)
 Section Values.
 
+  Unset Elimination Schemes.
   (** ---- *)
   (** *** Value 
      
@@ -55,8 +59,62 @@ Section Values.
   | VFloat : nat -> nat -> Value
   | VList : seq Value -> Value.
 
+  Set Elimination Schemes.
 
   (* begin hide *)
+  
+  (** ---- *)
+  (**
+     Defining the induction principle for Value.
+   *)
+  Definition Value_rect (P : Value -> Type)
+             (Pl : seq Value -> Type)
+             (IH_Int : forall n, P (VInt n))
+             (IH_Str : forall s, P (VString s))
+             (IH_Float : forall f1 f2, P (VFloat f1 f2))
+             (IH_List : forall l, Pl l -> P (VList l))
+             (IH_Nil : Pl [::])
+             (IH_Cons : forall v, P v -> forall vs, Pl vs -> Pl (v :: vs))
+    :=
+    fix loop value : P value :=
+      let fix F (qs : seq Value) : Pl qs :=
+          match qs with
+          | [::] => IH_Nil
+          | hd :: tl => IH_Cons hd (loop hd) tl (F tl)
+          end
+      in
+      match value with
+      | VInt n => IH_Int n
+      | VString s => IH_Str s
+      | VFloat f1 f2 => IH_Float f1 f2
+      | VList l => IH_List l (F l)
+      end.
+
+  Definition Value_rec (P : Value -> Set) := @Value_rect P.
+
+  Definition Value_ind (P : Value -> Prop)
+           (Pl : seq Value -> Type)
+             (IH_Int : forall n, P (VInt n))
+             (IH_Str : forall s, P (VString s))
+             (IH_Float : forall f1 f2, P (VFloat f1 f2))
+             (IH_List : forall l, Pl l -> P (VList l))
+             (IH_Nil : Pl [::])
+             (IH_Cons : forall v, P v -> forall vs, Pl vs -> Pl (v :: vs))
+    :=
+        fix loop value : P value :=
+      let fix F (qs : seq Value) : Pl qs :=
+          match qs with
+          | [::] => IH_Nil
+          | hd :: tl => IH_Cons hd (loop hd) tl (F tl)
+          end
+      in
+      match value with
+      | VInt n => IH_Int n
+      | VString s => IH_Str s
+      | VFloat f1 f2 => IH_Float f1 f2
+      | VList l => IH_List l (F l)
+      end.
+
 
   (** We need to prove that Value has a decidable equality procedure,
       we hide it to unclutter the docs
@@ -100,7 +158,7 @@ Section Values.
       This is the function used in the semantics to coerce 
       results into JSON values.
 
-      Scalar values are  simply translated as leaf values, while 
+      Scalar value are  simply translated as leaf values, while 
       list values have to be properly formatted as array values.
    *)
   Fixpoint coerce (v : Value) : @ResponseNode (option Value) :=
@@ -157,6 +215,24 @@ Section Values.
     end.
 
 End Values.
+
+
+  (** ---- *)
+  (**
+     We prove here that the coercion is ok, simply for scope...
+   *)
+  Let wf_coerce : forall v, is_non_redundant (coerce v).
+  Proof.
+    move=> v.
+    elim v using Value_ind  with
+        (Pl := fun vs => all (fun v => is_non_redundant (coerce v)) vs) => //=.
+    - intros; simp is_non_redundant.
+      rewrite all_map; apply/allP => v' Hin /=.
+        by move/allP: H => /(_ v' Hin).
+    - intros; simp is_non_redundant; apply_andP.
+  Qed.
+   
+  Let wf_coercion := WFCoercion value_eqType coerce wf_coerce.
 
 
 
@@ -481,12 +557,12 @@ Section Example.
     ].
   
 
-
+  
   (** ---- *)
   (**
      Finally, we show that executing the previous query in the context of the well-formed schema, and over the conformed graph, starting from the root node, gives us the expected response.
    *)
-  Example ev_query_eq_response :  wf_schema, wf_graph ⊢  ⟦ q ⟧ˢ in wf_graph.(root) with coerce = query_response.
+  Example ev_query_eq_response :  wf_schema, wf_graph ⊢  ⟦ q ⟧ˢ in wf_graph.(root) with wf_coercion = query_response.
   Proof.
       by [].
   Qed.

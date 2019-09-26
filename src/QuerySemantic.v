@@ -49,7 +49,26 @@ Section QuerySemantic.
   
   Variable s : @wfGraphQLSchema Vals.
   Variable g : @conformedGraph Vals s.
-  Variables (coerce : Vals -> @ResponseNode (option Vals)).
+
+  (** ---- *)
+  (** *** Coercion
+      
+      The semantics require an unspecified coercion function. 
+      We define it as a function from Vals (scalar values) to 
+      a JSON value. Since this transformation can introduce 
+      redundancy, we include a proof that the coerced result is 
+      non-redundant.
+   *)
+  Record wfCoercion :=
+    WFCoercion {
+        fn :> Vals -> @ResponseNode (option Vals);
+        _ : forall (value : Vals), Response.is_non_redundant (fn value)
+      }.
+  
+  
+  Variable (coerce : wfCoercion).
+
+  (** ---- *)
   
   Implicit Type u : @node Vals.
   Implicit Type query : @Query Vals.
