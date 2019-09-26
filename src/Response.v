@@ -108,6 +108,9 @@ Section Response.
 (** ---- *)    
 End Response.
 
+Arguments is_non_redundant [A].
+Arguments are_non_redundant [A].
+
 
 Section GraphQLResponse.
   

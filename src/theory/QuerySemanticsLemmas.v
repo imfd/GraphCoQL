@@ -290,9 +290,65 @@ Section Theory.
       by apply: (exec_inlined_func (fun t qs => qs)).
   Qed.
 
-  (* end hide *)
-  
 
+  Lemma exec_filter_no_repeat rname φ u :
+    all (fun kq => kq.1 != rname)
+        (s, g ⊢ ⟦ filter_queries_with_label rname φ ⟧ˢ in u with coerce).
+  Proof.
+    move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
+    elim: n φ rname => /= [| n IH] φ rname; first by rewrite leqn0 => /queries_size_0_nil ->.
+    case: φ => //= q φ.
+    case_query q => //=; simp query_size => Hleq; simp filter_queries_with_label.
+    
+    - case: eqP => //= /eqP Hneq; exec; apply_andP; rewrite filter_swap; apply: IH; leq_queries_size.
+    - case: eqP => //= /eqP Hneq; exec; apply_andP; rewrite filter_swap; apply: IH; leq_queries_size.
+      
+    - case: eqP => //= /eqP Hneq; first by apply: IH; leq_queries_size.
+      exec; do ? [apply_andP; rewrite filter_swap]; apply: IH; leq_queries_size.    
+    - case: eqP => //= /eqP Hneq; first by apply: IH; leq_queries_size.
+      exec; do ? [apply_andP; rewrite filter_swap]; apply: IH; leq_queries_size.
+    - exec; rewrite -?filter_queries_with_label_cat; apply: IH; leq_queries_size.
+  Qed.
+      
+  (* end hide *)
+
+
+  (** * Non-redundancy of responses *)
+  (** ---- *)
+  (**
+     This lemma states that the results of evaluating queries is non-redundant. 
+     This means that there are no duplicated names in the response.
+
+     The proof actually requires that the coercion function gives a non-redundant
+     value.
+   *)
+  Lemma exec_non_redundant φ u :
+    Response.are_non_redundant (s, g ⊢  ⟦ φ ⟧ˢ in u with coerce).
+  Proof.
+    funelim (s, g ⊢  ⟦ φ ⟧ˢ in u with coerce) => //=.
+    all: do ? [by apply_and3P; apply: exec_filter_no_repeat].
+    - case: ifP => //= _; apply_and3P; do ? first [ by apply: exec_filter_no_repeat | by apply: H].
+      admit. (* coercion preserves non-red *)
+    
+    - case: ifP => //= _; apply_and3P; do ? first [ by apply: exec_filter_no_repeat | by apply: H].
+      admit. (* coercion preserves non-red *)
+      
+    - apply_and3P.
+      * simp is_non_redundant.
+        elim: neighbours_with_field => //= v neighbors IH; apply_andP.
+        simp is_non_redundant.
+          by apply: H.
+      * by apply: exec_filter_no_repeat.
+
+    - apply_and3P.
+      * simp is_non_redundant.
+        elim: neighbours_with_field => //= v neighbors IH; apply_andP.
+        simp is_non_redundant.
+          by apply: H.
+      * by apply: exec_filter_no_repeat.
+  Admitted.
+  
+      
   (** * Normalisation proofs *)
   (** ---- *)
   (**
