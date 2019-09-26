@@ -452,11 +452,11 @@ Section Theory.
           u.(ntype) \in get_possible_types s ty ->
                        s, g ⊢ ⟦ normalize_queries s ty φ ⟧ˢ in u with coerce = s, g ⊢ ⟦ φ ⟧ˢ in u with coerce. 
   Proof.
-    funelim (normalize_queries s ty φ) => //= Huin Hin.
-    - by have <- /= := (in_object_possible_types Heq Hin); apply: normalize_exec.
+    rewrite /normalize_queries; case: ifP => /= Hscope Huin Hin.
+    - by have <- /= := (in_object_possible_types Hscope Hin); apply: normalize_exec.
     - have -> /= :
-        s, g ⊢ ⟦ [seq InlineFragment t (normalize s t queries) | t <- get_possible_types s type_in_scope] ⟧ˢ in u with coerce =
-        s, g ⊢ ⟦ [:: InlineFragment u.(ntype) (normalize s u.(ntype) queries)] ⟧ˢ in u with coerce. 
+        s, g ⊢ ⟦ [seq InlineFragment t (normalize s t φ) | t <- get_possible_types s ty] ⟧ˢ in u with coerce =
+        s, g ⊢ ⟦ [:: InlineFragment u.(ntype) (normalize s u.(ntype) φ)] ⟧ˢ in u with coerce. 
       apply: exec_inlined_func => //=.
         by apply: filter_normalize_swap.
           by apply: uniq_get_possible_types.

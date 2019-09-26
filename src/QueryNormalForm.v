@@ -334,17 +334,13 @@ Section Normalisation.
      in fragments with type conditions equal to the given type's subtypes 
      (minus the abstract type itself).
    *)
-  Equations normalize_queries (type_in_scope : Name) (queries : seq (@Query Vals)) :
+  Definition normalize_queries (type_in_scope : Name) (queries : seq (@Query Vals)) :
     seq (@Query Vals) :=
-    {
-      normalize_queries ty qs
-        with is_object_type s ty :=
-        {
-              | true := normalize ty qs;
-              | _ := [seq on t { normalize t qs } | t <- get_possible_types s ty]
-        }
-    }.
-
+    if is_object_type s type_in_scope then
+      normalize type_in_scope queries
+    else
+      [seq on t { normalize t queries } | t <- get_possible_types s type_in_scope].
+  
 
   (** ---- *)
 End Normalisation.

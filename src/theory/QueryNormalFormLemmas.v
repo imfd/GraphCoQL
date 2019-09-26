@@ -395,7 +395,8 @@ Section Normalisation.
             by apply: IHptys => t' Hin'; apply: Hinobj; apply: mem_tail.     
   Qed.
 
-
+  
+    
   (**
      This corollary states that the result of [normalize] are grounded.
    *)
@@ -412,14 +413,12 @@ Section Normalisation.
   Lemma normalize_queries_are_grounded2 ty φ :
     are_grounded2 s ty (normalize_queries s ty φ).
   Proof.
-    apply_funelim (normalize_queries s ty φ) => /=; clear ty φ.
-    - by move=> ty φ Hscope; apply: normalize_are_grounded2.
-    - move=> ty φ Hscope.
-      have := (@in_possible_types_is_object Vals s ty).
-      elim: get_possible_types => //= t ptys IH Hinobj.
-      rewrite Hscope /=; apply_and3P.
-      * simp is_grounded2; apply_andP; [| apply: normalize_are_grounded2]; by apply: Hinobj; apply: mem_head.
-      * by apply: IH => t' Hin; apply: Hinobj; apply: mem_tail.
+    rewrite  /normalize_queries; case: ifP  => //= Hscope; first by apply: normalize_are_grounded2.
+    have := (@in_possible_types_is_object Vals s ty).
+    elim: get_possible_types => //= t ptys IH Hinobj.
+    rewrite Hscope /=; apply_and3P.
+    - simp is_grounded2; apply_andP; [| apply: normalize_are_grounded2]; by apply: Hinobj; apply: mem_head.
+    - by apply: IH => t' Hin; apply: Hinobj; apply: mem_tail.
   Qed.
 
 
@@ -458,8 +457,7 @@ Section Normalisation.
   Lemma normalize_queries_are_non_redundant ty φ :
     are_non_redundant (normalize_queries s ty φ).
   Proof.
-    apply_funelim (normalize_queries s ty φ) => //=; clear ty φ; first by intros; apply: normalize_are_non_redundant.
-    move=> ty φ Hscope.
+    rewrite /normalize_queries => /=; case: ifP => /= Hscope; first by apply: normalize_are_non_redundant.
     have  := (@in_possible_types_is_object Vals s ty).
     have  := (uniq_get_possible_types s ty).
     elim: get_possible_types => //= t ptys IH /andP [Hnin Huniq] Hinobj.
