@@ -39,16 +39,6 @@
 
 
 
-./src/Example.v
-./src/SpecExamples.v
-./src/OtherExamples.v
-
-
-
-
-
-
-
-
-
-
+./src/examples/Example.v
+./src/examples/SpecExamples.v
+./src/examples/OtherExamples.v
