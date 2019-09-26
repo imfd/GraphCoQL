@@ -39,6 +39,6 @@
 
 
 
-./src/examples/Example.v
+./src/examples/HPExample.v
 ./src/examples/SpecExamples.v
 ./src/examples/OtherExamples.v
