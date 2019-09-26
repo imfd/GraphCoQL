@@ -240,7 +240,7 @@ Section WellFormedness.
       A well-formed GraphQL Schema is a Schema which satisfies the well-formedness property.
    
    *)
-  Structure wfGraphQLSchema := WFGraphQLSchema {
+  Record wfGraphQLSchema := WFGraphQLSchema {
                            schema : graphQLSchema;
                            _ : is_wf_schema schema;
                            is_valid_value : type -> Vals -> bool;

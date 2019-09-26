@@ -37,7 +37,7 @@ Section GraphQLGraph.
 
       It corresponds to an edge's label or a property's key.
    **)
-  Structure fld := Field {
+  Record fld := Field {
                       label : string;
                       args : seq (string * Vals)
                     }.
@@ -53,7 +53,7 @@ Section GraphQLGraph.
       It contains its type and its properties (as a partial mapping between
       fields and values).
    *)
-  Structure node := Node {
+  Record node := Node {
                        ntype : Name;
                        nprops : seq (fld * Vals)
                      }.
@@ -64,7 +64,7 @@ Section GraphQLGraph.
   (** *** GraphQL Graph 
       The collection of edges and a root node.
    *)
-  Structure graphQLGraph := GraphQLGraph {
+  Record graphQLGraph := GraphQLGraph {
                             root : node;
                             E : seq (node * fld * node)
                           }.

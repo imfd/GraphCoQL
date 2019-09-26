@@ -103,7 +103,7 @@ Section Schema.
         They contain a name and a type.
 
      *)
-    Structure FieldArgumentDefinition := FieldArgument {
+    Record FieldArgumentDefinition := FieldArgument {
                                             argname : Name;
                                             argtype : type
                                           }.
@@ -117,7 +117,7 @@ Section Schema.
         They ultimately represent the things we can query in our system.
 
     *)
-    Structure FieldDefinition := Field {
+    Record FieldDefinition := Field {
                                     fname : Name;
                                     fargs : seq FieldArgumentDefinition;
                                     return_type : type
@@ -174,7 +174,7 @@ Section Schema.
         - Mutation and Subscription are not currently implemented.
         
     *)
-    Structure graphQLSchema := GraphQLSchema {
+    Record graphQLSchema := GraphQLSchema {
                                   query_type : Name;
                                   type_definitions : seq TypeDefinition
                                 }.
