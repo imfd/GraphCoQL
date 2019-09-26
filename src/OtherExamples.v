@@ -198,9 +198,6 @@ Section WrongGraph.
   
   Let g := GraphQLGraph r1 edges1.
 
-  Example rtNc : ~ root_type_conforms wf_schema g.
-  Proof. by []. Qed.
-
 
 
   
@@ -302,7 +299,7 @@ Section WrongGraph.
     Let g5 := GraphQLGraph r edges5.
 
     
-    Example fNc : ~ nodes_conform wf_schema g5.
+    Example fNc : ~ nodes_conform wf_schema g5.(nodes).
     Proof. by [].
     Qed.
     

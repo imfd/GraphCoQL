@@ -284,23 +284,13 @@ Section Example.
     
     Let g := GraphQLGraph r edges.
 
-
-    Lemma rtc : root_type_conforms wf_schema g.
-    Proof.    by [].  Qed.
-
-    
-    Lemma ec : edges_conform wf_schema g.
+    Lemma cgraph : is_a_conforming_graph wf_schema g.
     Proof.
-      by [].
-    Qed.
-
-    Lemma fc : nodes_conform wf_schema g.
-    Proof.
-      by []. 
+        by [].
     Qed.
     
 
-    Let wf_graph := ConformedGraph rtc ec fc.
+    Let wf_graph := ConformedGraph cgraph.
 
 
     

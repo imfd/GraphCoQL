@@ -105,7 +105,7 @@ Section Theory.
     Lemma root_query_type :
       g.(root).(ntype) = s.(query_type).
     Proof.
-        by case: g => g'; rewrite /root_type_conforms => /= /eqP.
+        by case: g => g'; rewrite /is_a_conforming_graph /= /root_type_conforms; case/and3P => /eqP.
     Qed.
 
     (** ---- *)
@@ -113,7 +113,7 @@ Section Theory.
        This lemma states that conformed nodes must have object type.
      *)
     Lemma nodes_conform_have_object_type :
-      nodes_conform s g -> forall u, u \in g.(nodes) -> is_object_type s u.(ntype).
+      nodes_conform s g.(nodes) -> forall u, u \in g.(nodes) -> is_object_type s u.(ntype).
     Proof.
       rewrite /nodes_conform /= => /allP Hconf u Hin.
         by case/andP : (Hconf u Hin).
@@ -129,7 +129,7 @@ Section Theory.
       forall u, u \in g.(nodes) -> is_object_type s u.(ntype).
     Proof.
       apply: nodes_conform_have_object_type.
-        by case: g.
+        by case: g => g'; rewrite /is_a_conforming_graph /=; case/and3P.
     Qed.
 
 
@@ -145,7 +145,7 @@ Section Theory.
                  v.(ntype) \in get_possible_types s fdef.(return_type).
     Proof.
       move=> Hlook.
-      case: g => g' Hroot Hedges Hnodes v.
+      case: g => g'; rewrite /is_a_conforming_graph /= => /and3P [Hroot Hedges Hnodes] v.
       rewrite /neighbours_with_field -in_undup => /mapP [v'].
       case: v' => [[src' fld'] target].
       rewrite mem_filter => /andP [/andP [/eqP /= Hsrc /eqP Hfld] Hin] Htrgt.
