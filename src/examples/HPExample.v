@@ -322,7 +322,7 @@ Section Example.
   (**
      We prove that the schema is well-formed by simple computation.
    *)
-  Lemma sdf : schema.(is_wf_schema).
+  Lemma sdf : schema.(is_a_wf_schema).
   Proof. by []. Qed.
   
 

@@ -178,7 +178,7 @@ Section WrongGraph.
   Let schema  := GraphQLSchema "Query"  [:: IDType; StringType; FloatType;  StarshipType;  CharacterType; DroidType; HumanType; EpisodeType; SearchResultType; QueryType].
 
 
-  Lemma sdf : schema.(is_wf_schema).
+  Lemma sdf : schema.(is_a_wf_schema).
   Proof. by []. Qed.
   
 

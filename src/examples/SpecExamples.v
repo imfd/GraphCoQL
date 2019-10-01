@@ -203,7 +203,7 @@ Section GraphQLSpecExamples.
                                        CatCommandEnum; CatType;
                                          CatOrDogUnion; DogOrHumanUnion; HumanOrAlienUnion].
 
-  Let schwf : schema.(is_wf_schema).
+  Let schwf : schema.(is_a_wf_schema).
   Proof. by []. Qed.
 
   Let wf_schema : wfGraphQLSchema := WFGraphQLSchema schwf (is_valid_value schema).
@@ -487,7 +487,7 @@ Section GraphQLSpecExamples.
                                                    CatCommandEnum; CatType;
                                                      CatOrDogUnion; DogOrHumanUnion; HumanOrAlienUnion].
 
-      Let extended_schwf : extended_schema.(is_wf_schema).
+      Let extended_schwf : extended_schema.(is_a_wf_schema).
       Proof. by []. Qed.
 
       Let extended_wf_schema : @wfGraphQLSchema value_eqType   := WFGraphQLSchema extended_schwf (is_valid_value extended_schema).
@@ -632,10 +632,10 @@ Section GraphQLSpecExamples.
                                            ArgumentsType
                                         ].
 
-    Let extended_schwf : extended_schema.(is_wf_schema).
+    Let extended_schwf : extended_schema.(is_a_wf_schema).
     Proof.
       (* For some reason just computing gets stuck - using by [] *)
-      rewrite /is_wf_schema /= ?andbT //. 
+      rewrite /is_a_wf_schema /= ?andbT //. 
     Qed.
 
     Let extended_wf_schema : @wfGraphQLSchema value_eqType   := WFGraphQLSchema extended_schwf (is_valid_value extended_schema).

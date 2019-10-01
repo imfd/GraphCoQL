@@ -79,7 +79,7 @@ Section WellFormedness.
 
       - Non-Null type : Similarly as the previous point.
      *)
-    Definition is_wf_field_argument (arg : FieldArgumentDefinition) : bool :=
+    Definition is_a_wf_field_argument (arg : FieldArgumentDefinition) : bool :=
       let fix is_valid_argument_type (ty : type) : bool :=
           match ty with
           | ListType ty' => is_valid_argument_type ty'
@@ -117,7 +117,7 @@ Section WellFormedness.
         but we are including this notion in this definition (although there is
         one when checking the validity of a query).
      *)
-    Definition is_wf_field (fld : FieldDefinition) : bool :=
+    Definition is_a_wf_field (fld : FieldDefinition) : bool :=
       let fix is_valid_field_type (ty : type) : bool :=
           match ty with
           | ListType ty' => is_valid_field_type ty'
@@ -126,7 +126,7 @@ Section WellFormedness.
       in
       [&& is_valid_field_type fld.(return_type),
           uniq [seq arg.(argname) | arg <- fld.(fargs)] &  (* Not currently in the spec *)
-          all is_wf_field_argument fld.(fargs)].
+          all is_a_wf_field_argument fld.(fargs)].
 
 
     
@@ -188,14 +188,14 @@ Section WellFormedness.
        defined Enum type). We follow the same approach.
      
      *)
-    Fixpoint is_wf_type_def (tdef : TypeDefinition) : bool :=
+    Fixpoint is_a_wf_type_def (tdef : TypeDefinition) : bool :=
       match tdef with
       | Scalar _ => true
                                    
       | Object name implements interfaces { fields } =>
         [&& fields != [::],
             uniq [seq fld.(fname) | fld <- fields],
-            all is_wf_field fields,
+            all is_a_wf_field fields,
             uniq interfaces,
             all (is_interface_type s) interfaces &
             all (implements_interface_correctly tdef) interfaces]
@@ -203,7 +203,7 @@ Section WellFormedness.
       | Interface _ { fields } =>
         [&& fields != [::],
             uniq [seq fld.(fname) | fld <- fields] &
-            all is_wf_field fields]
+            all is_a_wf_field fields]
 
       | Union name { members } =>
         [&& members != [::],
@@ -221,10 +221,10 @@ Section WellFormedness.
     The following predicate checks whether a Schema is well-formed.
 
     *)
-    Definition is_wf_schema : bool :=
+    Definition is_a_wf_schema : bool :=
       [&& is_object_type s s.(query_type),
           uniq s.(schema_names) &
-          all is_wf_type_def s.(type_definitions)].
+          all is_a_wf_type_def s.(type_definitions)].
 
 
     (**
@@ -242,7 +242,7 @@ Section WellFormedness.
    *)
   Record wfGraphQLSchema := WFGraphQLSchema {
                            schema : graphQLSchema;
-                           _ : is_wf_schema schema;
+                           _ : is_a_wf_schema schema;
                            is_valid_value : type -> Vals -> bool;
                          }.
 

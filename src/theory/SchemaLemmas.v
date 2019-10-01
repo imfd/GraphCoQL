@@ -126,7 +126,7 @@ Section WellFormedness.
     let Hqobj := fresh "Hqboj" in
     let Huniq := fresh "Huniq" in
     let Hok := fresh "Hok" in
-    case: s => sch; rewrite /is_wf_schema => /=  /and3P [Hqobj Huniq /allP Hok] Hhty.
+    case: s => sch; rewrite /is_a_wf_schema => /=  /and3P [Hqobj Huniq /allP Hok] Hhty.
 
 
   (** ---- *)
