@@ -165,7 +165,7 @@ Section Theory.
         let Hv := fresh "Hv" in
         case Hv : ohead => [v|] //=
      
-      | [H : (ohead (neighbours_with_field _ _ _)) = _ |- context [ ohead (neighbours_with_field _ _ _)] ] =>
+      | [H : (ohead (neighbors_with_field _ _ _)) = _ |- context [ ohead (neighbors_with_field _ _ _)] ] =>
         rewrite H /=
       | [ H : does_fragment_type_apply _ _ _ = _ |- context [ does_fragment_type_apply _ _ _] ] => rewrite H /=
       | [ |- context [ _, _ ⊢ ≪ _ ≫ in _ with _] ] => simp execute_selection_set2
@@ -335,14 +335,14 @@ Section Theory.
       
     - apply_and3P.
       * simp is_non_redundant.
-        elim: neighbours_with_field => //= v neighbors IH; apply_andP.
+        elim: neighbors_with_field => //= v neighbors IH; apply_andP.
         simp is_non_redundant.
           by apply: H.
       * by apply: exec_filter_no_repeat.
 
     - apply_and3P.
       * simp is_non_redundant.
-        elim: neighbours_with_field => //= v neighbors IH; apply_andP.
+        elim: neighbors_with_field => //= v neighbors IH; apply_andP.
         simp is_non_redundant.
           by apply: H.
       * by apply: exec_filter_no_repeat.
@@ -369,13 +369,13 @@ Section Theory.
       have Hvin : v \in g.(nodes).
         apply: ohead_in_nodes; last by apply: Hv.
         apply/allP.
-          by apply: neighbours_are_in_nodes.
+          by apply: neighbors_are_in_nodes.
       have Hvtype : v.(ntype) = rty.
         rewrite Hrty /= in Heq.
         apply: (in_object_possible_types Heq).
         have Hlook : lookup_field_in_type s u.(ntype) (Field name1 arguments1) = Some f by [].
         move/ohead_in: Hv => Hin.
-        move: (@neighbours_are_subtype_of_field Vals s g u (Field name1 arguments1) f Hlook v Hin).
+        move: (@neighbors_are_subtype_of_field Vals s g u (Field name1 arguments1) f Hlook v Hin).
           by rewrite Hrty.
       by apply: H => //; rewrite Hvtype.
       
@@ -384,11 +384,11 @@ Section Theory.
       simp merge_selection_sets => /=; rewrite cats0.
       rewrite Hrty /= in H.
       have Hvin : v \in g.(nodes).
-        apply: neighbours_are_in_nodes; exact: Hin.
+        apply: neighbors_are_in_nodes; exact: Hin.
       have Hvtype : v.(ntype) = rty.
         rewrite Hrty in Heq; apply: (in_object_possible_types Heq).
         have Hlook : lookup_field_in_type s u.(ntype) (Field name1 arguments1) = Some f by [].
-        move: (@neighbours_are_subtype_of_field Vals s g u (Field name1 arguments1) f Hlook v Hin).
+        move: (@neighbors_are_subtype_of_field Vals s g u (Field name1 arguments1) f Hlook v Hin).
           by rewrite Hrty /=. (* ?? *)
       by apply: H => //; rewrite Hvtype.
             
@@ -398,7 +398,7 @@ Section Theory.
         simp execute_selection_set.
         have Hvin : v \in g.(nodes).
         apply: ohead_in_nodes; last by apply: Hv.
-          by apply/allP; apply: neighbours_are_in_nodes.
+          by apply/allP; apply: neighbors_are_in_nodes.
           have Hvobj := (node_in_graph_has_object_type Hvin).
           have -> /= : does_fragment_type_apply s v.(ntype) v.(ntype) by apply: object_applies_to_itself.
           rewrite cats0.
@@ -409,14 +409,14 @@ Section Theory.
                   by apply/allP; apply: in_possible_types_is_object.
 
                   move/ohead_in: Hv => Hin.
-                  move: (@neighbours_are_subtype_of_field Vals s g u (Field name1 arguments1) f Heq0 v Hin).
+                  move: (@neighbors_are_subtype_of_field Vals s g u (Field name1 arguments1) f Heq0 v Hin).
                     by rewrite Hrty.
                     
       * congr cons; congr pair; congr Array.
         apply/eq_in_map => v Hin; congr Response.Object.
         simp merge_selection_sets => /=; rewrite cats0 exec_inlined_func.
         simp execute_selection_set.
-        have Hvin : v \in g.(nodes) by apply: neighbours_are_in_nodes; exact: Hin.
+        have Hvin : v \in g.(nodes) by apply: neighbors_are_in_nodes; exact: Hin.
         have Hvobj := (node_in_graph_has_object_type Hvin).
         have -> /= : does_fragment_type_apply s v.(ntype) v.(ntype) by apply: object_applies_to_itself.
         rewrite cats0.
@@ -425,7 +425,7 @@ Section Theory.
               by apply: uniq_get_possible_types.
                 by apply/allP; apply: in_possible_types_is_object.  
 
-                move: (@neighbours_are_subtype_of_field Vals s g u (Field name1 arguments1) f Heq0 v Hin).
+                move: (@neighbors_are_subtype_of_field Vals s g u (Field name1 arguments1) f Heq0 v Hin).
                   by rewrite Hrty.
                   
 
@@ -435,13 +435,13 @@ Section Theory.
       have Hvin : v \in g.(nodes).
       apply: ohead_in_nodes; last by apply: Hv.
       apply/allP.
-        by apply: neighbours_are_in_nodes.
+        by apply: neighbors_are_in_nodes.
       have Hvtype : v.(ntype) = rty.
       rewrite Hrty /= in Heq.
       apply: (in_object_possible_types Heq).
       have Hlook : lookup_field_in_type s u.(ntype) (Field name2 arguments2) = Some f by [].
       move/ohead_in: Hv => Hin.
-      move: (@neighbours_are_subtype_of_field Vals s g u (Field name2 arguments2) f Hlook v Hin).
+      move: (@neighbors_are_subtype_of_field Vals s g u (Field name2 arguments2) f Hlook v Hin).
         by rewrite Hrty.
           by apply: H => //; rewrite Hvtype.
               
@@ -451,11 +451,11 @@ Section Theory.
       simp merge_selection_sets => /=; rewrite cats0.
       rewrite Hrty /= in H.
       have Hvin : v \in g.(nodes).
-      apply: neighbours_are_in_nodes; exact: Hin.
+      apply: neighbors_are_in_nodes; exact: Hin.
       have Hvtype : v.(ntype) = rty.
       rewrite Hrty in Heq; apply: (in_object_possible_types Heq).
       have Hlook : lookup_field_in_type s u.(ntype) (Field name2 arguments2) = Some f by [].
-      move: (@neighbours_are_subtype_of_field Vals s g u (Field name2 arguments2) f Hlook v Hin).
+      move: (@neighbors_are_subtype_of_field Vals s g u (Field name2 arguments2) f Hlook v Hin).
         by rewrite Hrty /=. (* ?? *)
           by apply: H => //; rewrite Hvtype.
             
@@ -465,7 +465,7 @@ Section Theory.
       simp execute_selection_set.
       have Hvin : v \in g.(nodes).
       apply: ohead_in_nodes; last by apply: Hv.
-        by apply/allP; apply: neighbours_are_in_nodes.
+        by apply/allP; apply: neighbors_are_in_nodes.
         have Hvobj := (node_in_graph_has_object_type Hvin).
         have -> /= : does_fragment_type_apply s v.(ntype) v.(ntype) by apply: object_applies_to_itself.
         rewrite cats0.
@@ -476,7 +476,7 @@ Section Theory.
                 by apply/allP; apply: in_possible_types_is_object.
                 
                 move/ohead_in: Hv => Hin.
-                move: (@neighbours_are_subtype_of_field Vals s g u (Field name2 arguments2) f Heq0 v Hin).
+                move: (@neighbors_are_subtype_of_field Vals s g u (Field name2 arguments2) f Heq0 v Hin).
                   by rewrite Hrty.
                   
 
@@ -484,7 +484,7 @@ Section Theory.
       apply/eq_in_map => v Hin; congr Response.Object.
       simp merge_selection_sets => /=; rewrite cats0 exec_inlined_func.
       simp execute_selection_set.
-      have Hvin : v \in g.(nodes) by apply: neighbours_are_in_nodes; exact: Hin.
+      have Hvin : v \in g.(nodes) by apply: neighbors_are_in_nodes; exact: Hin.
       have Hvobj := (node_in_graph_has_object_type Hvin).
       have -> /= : does_fragment_type_apply s v.(ntype) v.(ntype) by apply: object_applies_to_itself.
       rewrite cats0.
@@ -493,7 +493,7 @@ Section Theory.
             by apply: uniq_get_possible_types.
               by apply/allP; apply: in_possible_types_is_object.  
               
-              move: (@neighbours_are_subtype_of_field Vals s g u (Field name2 arguments2) f Heq0 v Hin).
+              move: (@neighbors_are_subtype_of_field Vals s g u (Field name2 arguments2) f Heq0 v Hin).
                 by rewrite Hrty.
   Qed.
 

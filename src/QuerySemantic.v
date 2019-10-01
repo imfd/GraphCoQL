@@ -141,10 +141,10 @@ Section QuerySemantic.
         | Some fld
             with fld.(return_type) :=
             {
-            | [ _ ] := (f, Array [seq {- (⟦ β ++ merge_selection_sets (find_queries_with_label s f u.(ntype) φ) ⟧ˢ in v) -} | v <- neighbours_with_field g u (Field f α)])
+            | [ _ ] := (f, Array [seq {- (⟦ β ++ merge_selection_sets (find_queries_with_label s f u.(ntype) φ) ⟧ˢ in v) -} | v <- neighbors_with_field g u (Field f α)])
                               :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
             | NamedType _
-                with ohead (neighbours_with_field g u (Field f α)) :=
+                with ohead (neighbors_with_field g u (Field f α)) :=
                 {
                 | Some v => (f, {- (⟦ β ++ merge_selection_sets (find_queries_with_label s f u.(ntype) φ) ⟧ˢ in v) -}) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
                 
@@ -161,10 +161,10 @@ Section QuerySemantic.
         | Some fld
             with fld.(return_type) :=
             {
-            | [ _ ] := (l, Array [seq {- (⟦ β ++ merge_selection_sets (find_queries_with_label s l u.(ntype) φ) ⟧ˢ in v) -} | v <- neighbours_with_field g u (Field f α)])
+            | [ _ ] := (l, Array [seq {- (⟦ β ++ merge_selection_sets (find_queries_with_label s l u.(ntype) φ) ⟧ˢ in v) -} | v <- neighbors_with_field g u (Field f α)])
                               :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
             | NamedType _
-                with ohead (neighbours_with_field g u (Field f α)) :=
+                with ohead (neighbors_with_field g u (Field f α)) :=
                 {
                 | Some v => (l, {- (⟦ β ++ merge_selection_sets (find_queries_with_label s l u.(ntype) φ) ⟧ˢ in v) -}) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
                 
@@ -254,10 +254,10 @@ Section QuerySemantic.
         | Some fld
             with fld.(return_type) :=
             {
-            | ListType _ => (f, Array [seq {- ≪ β ≫ in v -} | v <- neighbours_with_field g u (Field f α)]) :: ≪ φ ≫ in u;
+            | ListType _ => (f, Array [seq {- ≪ β ≫ in v -} | v <- neighbors_with_field g u (Field f α)]) :: ≪ φ ≫ in u;
         
             | NamedType ty
-                with ohead (neighbours_with_field g u (Field f α)) :=
+                with ohead (neighbors_with_field g u (Field f α)) :=
                 {
                 | Some v => (f, {- ≪ β ≫ in v -}) :: ≪ φ ≫ in u;
                 
@@ -273,10 +273,10 @@ Section QuerySemantic.
         | Some fld
             with fld.(return_type) :=
             {
-            | ListType _ => (l, Array [seq {- ≪ β ≫ in v -} | v <- neighbours_with_field g u (Field f α)]) :: ≪ φ ≫ in u;
+            | ListType _ => (l, Array [seq {- ≪ β ≫ in v -} | v <- neighbors_with_field g u (Field f α)]) :: ≪ φ ≫ in u;
         
             | NamedType ty
-                with ohead (neighbours_with_field g u (Field f α)) :=
+                with ohead (neighbors_with_field g u (Field f α)) :=
                 {
                 | Some v => (l, {- ≪ β ≫ in v -}) :: ≪ φ ≫ in u;
                 
@@ -329,7 +329,7 @@ Section QuerySemantic.
         with field_seq_value u.(nprops) (Field f α) :=
         {
         | Some value := Some (inl (inl value));
-        | _ with neighbours_with_field g u (Field f α) :=
+        | _ with neighbors_with_field g u (Field f α) :=
             {
             | [::] := None;
             | [:: v] => Some (inl (inr v));

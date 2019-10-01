@@ -55,13 +55,13 @@ Section Theory.
 
     (** ---- *)
     (**
-       This lemma states that neighbours of a node are also
+       This lemma states that neighbors of a node are also
        nodes in the graph.
      *)
-    Lemma neighbours_are_in_nodes u fld:
-      forall x, x \in neighbours_with_field graph u fld -> x \in graph.(nodes).
+    Lemma neighbors_are_in_nodes u fld:
+      forall x, x \in neighbors_with_field graph u fld -> x \in graph.(nodes).
     Proof.
-      rewrite /neighbours_with_field /nodes => x.
+      rewrite /neighbors_with_field /nodes => x.
       rewrite -?in_undup => /mapP [v].
       rewrite mem_filter => /andP [/andP [/eqP Hsrc /eqP Hfld] Hin] /= Heq.
       apply/orP; right.
@@ -139,14 +139,14 @@ Section Theory.
      must have a type that is subtype of the type associated to the 
      field used in the edge.
      *)
-    Lemma neighbours_are_subtype_of_field u fld fdef  :
+    Lemma neighbors_are_subtype_of_field u fld fdef  :
       lookup_field_in_type s u.(ntype) fld.(label) = Some fdef ->
-      forall v, v \in neighbours_with_field g u fld ->
+      forall v, v \in neighbors_with_field g u fld ->
                  v.(ntype) \in get_possible_types s fdef.(return_type).
     Proof.
       move=> Hlook.
       case: g => g'; rewrite /is_a_conforming_graph /= => /and3P [Hroot Hedges Hnodes] v.
-      rewrite /neighbours_with_field -in_undup => /mapP [v'].
+      rewrite /neighbors_with_field -in_undup => /mapP [v'].
       case: v' => [[src' fld'] target].
       rewrite mem_filter => /andP [/andP [/eqP /= Hsrc /eqP Hfld] Hin] Htrgt.
       simpl in Hin.

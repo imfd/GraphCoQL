@@ -101,18 +101,18 @@ Section Conformance.
 
     (** ---- *)
     (**
-       Returns a node's neighbours.
+       Returns a node's neighbors.
      *)
-    Definition neighbours (u : node) (edges : seq (node * fld * node)) : seq node :=
+    Definition neighbors (u : node) (edges : seq (node * fld * node)) : seq node :=
       undup [seq edge.(etarget) | edge <- edges & edge.(esource) == u]. 
 
     
 
     (** ---- *)
     (**
-       Get a node's neighbours connected via an edge with a given field. 
+       Get a node's neighbors connected via an edge with a given field. 
      *)
-    Definition neighbours_with_field (u : node) (f : fld) : seq node :=
+    Definition neighbors_with_field (u : node) (f : fld) : seq node :=
       undup [seq edge.(etarget) |  edge <- [seq edge <- graph.(E) | (esource edge == u) & (efield edge == f)]].
 
 
