@@ -49,7 +49,7 @@ Require Import GeneralTactics.
 (**
    This tactic breaks down a query and introduces its contents.
  *)
-Ltac case_query q :=
+Ltac case_selection q :=
   repeat match goal with
          | [H : context [q] |- _] => move: H
          | [|- _] =>
@@ -67,8 +67,8 @@ Section Theory.
 
   Variables Vals : eqType.
 
-  Implicit Type φ : seq (@Query Vals).
-  Implicit Type query : @Query Vals.
+  Implicit Type φ : seq (@Selection Vals).
+  Implicit Type selection : @Selection Vals.
 
   (** ---- *)
   (** *** Other types of predicates *)
@@ -111,7 +111,7 @@ Section Theory.
   End DefPreds.
 
   (** ---- *)
-  (** *** Query size 
+  (** *** Selection size 
       
       In this section we define lemmas about queries size.
    *)
@@ -123,9 +123,9 @@ Section Theory.
        It shows equality to the [sumn] function defined in SSreflect.
      *)
     Lemma queries_size_sumn φ :
-      queries_size φ = sumn [seq query_size q | q <- φ].
+      queries_size φ = sumn [seq selection_size q | q <- φ].
     Proof.
-        by elim: φ => //= q φ IH; case: q => /= *; simp query_size; rewrite IH.
+        by elim: φ => //= q φ IH; case: q => /= *; simp selection_size; rewrite IH.
     Qed.
 
 
@@ -145,7 +145,7 @@ Section Theory.
     (**
        This lemma states that if the size of queries is 0, that means the list is empty.
      *)
-    Lemma queries_size_0_nil (qs : seq (@Query Vals)) : queries_size qs == 0 -> qs = [::].
+    Lemma queries_size_0_nil (qs : seq (@Selection Vals)) : queries_size qs == 0 -> qs = [::].
     Proof.
         by case: qs => //=; case.
     Qed.
@@ -155,7 +155,7 @@ Section Theory.
     (**
        This lemma states that if the size of queries is 0, that means the list is empty.
      *)
-    Lemma queries_size_aux_0_nil (nq : seq (Name * @Query Vals)) : queries_size_aux nq == 0 -> nq = [::].
+    Lemma queries_size_aux_0_nil (nq : seq (Name * @Selection Vals)) : queries_size_aux nq == 0 -> nq = [::].
     Proof.
         by case: nq => //=; case=> ty; case.
     Qed.
@@ -180,14 +180,14 @@ Section Theory.
     Lemma found_queries_leq_size l O__t qs :
       queries_size (find_queries_with_label s l O__t qs) <= queries_size qs.
     Proof.
-        by funelim (find_queries_with_label _ _ _ qs) => //=; simp query_size; rewrite ?queries_size_cat; ssromega.
+        by funelim (find_queries_with_label _ _ _ qs) => //=; simp selection_size; rewrite ?queries_size_cat; ssromega.
     Qed.
 
     (** ---- *)
     (**
        This lemma states that that [find_queries_with_label] distributes over list concatenation.
      *)
-    Lemma find_queries_with_label_cat l ty (qs1 qs2 : seq (@Query Vals)):
+    Lemma find_queries_with_label_cat l ty (qs1 qs2 : seq (@Selection Vals)):
       find_queries_with_label s l ty (qs1 ++ qs2) = find_queries_with_label s l ty qs1 ++ find_queries_with_label s l ty qs2.
     Proof.
       funelim (find_queries_with_label s l ty qs1) => //=.
@@ -203,7 +203,7 @@ Section Theory.
     Lemma found_fields_leq_size k φ :
       queries_size (find_fields_with_response_name k φ) <= queries_size φ.
     Proof.
-      funelim (find_fields_with_response_name k φ) => //=; simp query_size; do ? ssromega.
+      funelim (find_fields_with_response_name k φ) => //=; simp selection_size; do ? ssromega.
         by rewrite queries_size_cat; ssromega.
     Qed.
 
@@ -211,7 +211,7 @@ Section Theory.
     (**
        This lemma states that
      *)
-    Lemma find_map_inline_nil_func (f : Name -> seq (@Query Vals) -> seq Query) rname t ptys φ :
+    Lemma find_map_inline_nil_func (f : Name -> seq (@Selection Vals) -> seq Selection) rname t ptys φ :
       uniq ptys ->
       all (is_object_type s) ptys ->
       t \notin ptys ->
@@ -258,7 +258,7 @@ Section Theory.
     Proof.
       move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
       elim: n φ => /= [| n IH] φ; first by rewrite leqn0 => /queries_size_0_nil ->.
-      case: φ => //= q φ; case_query q; simp query_size => Hleq Hneq; simp filter_queries_with_label; simp find_queries_with_label => /=; last first.
+      case: φ => //= q φ; case_selection q; simp selection_size => Hleq Hneq; simp filter_queries_with_label; simp find_queries_with_label => /=; last first.
 
       - by case does_fragment_type_apply => /=; [congr cat|]; apply: IH => //; ssromega.
 
@@ -335,14 +335,14 @@ Section Theory.
        with [find_pairs_with_response_name] is the same as first projecting the second element 
        and then applying [find_fields_with_response_name].
      *)
-    Lemma find_pairs_spec rname (nq : seq (Name * @Query Vals)) :
+    Lemma find_pairs_spec rname (nq : seq (Name * @Selection Vals)) :
       [seq q.2 | q <- find_pairs_with_response_name rname nq] = find_fields_with_response_name rname [seq q.2 | q <- nq].
     Proof.
       move: {2}(queries_size_aux _) (leqnn (queries_size_aux nq)) => n.
       rewrite /queries_size_aux.
       elim: n nq => /= [| n IH] nq; first by rewrite leqn0 => /queries_size_aux_0_nil ->.
-      case: nq => //=; case=> /= ty q φ; case_query q;
-                              rewrite /queries_size_aux /=; simp query_size => Hleq;
+      case: nq => //=; case=> /= ty q φ; case_selection q;
+                              rewrite /queries_size_aux /=; simp selection_size => Hleq;
                               simp find_pairs_with_response_name;
                               simp find_fields_with_response_name => /=; do ? case: eqP => //= _; rewrite ?IH //; do ? ssromega.
       rewrite map_cat; congr cat; rewrite IH //=; do ? ssromega.
@@ -357,7 +357,7 @@ Section Theory.
        fragments with a type condition that was not in the original list of type conditions
        results in a empty list.
      *)
-    Lemma find_fragment_inlined_nil_func t ptys (f : Name -> seq (@Query Vals) -> seq (@Query Vals)) φ :
+    Lemma find_fragment_inlined_nil_func t ptys (f : Name -> seq (@Selection Vals) -> seq (@Selection Vals)) φ :
       t \notin ptys ->
       find_fragment_with_type_condition t [seq InlineFragment t' (f t' φ) | t' <- ptys] = [::].
     Proof.
@@ -406,7 +406,7 @@ Section Theory.
     Lemma filter_queries_with_label_leq_size l φ :
       queries_size (filter_queries_with_label l φ) <= queries_size φ.
     Proof.
-      funelim (filter_queries_with_label l φ) => //=; do ?[simp query_size; ssromega]. 
+      funelim (filter_queries_with_label l φ) => //=; do ?[simp selection_size; ssromega]. 
     Qed.
 
     
@@ -414,7 +414,7 @@ Section Theory.
     (**
        This lemma states that [filter_queries_with_label] distributes over list concatenation.
      *)
-    Lemma filter_queries_with_label_cat l (qs1 qs2 : seq (@Query Vals)) :
+    Lemma filter_queries_with_label_cat l (qs1 qs2 : seq (@Selection Vals)) :
       filter_queries_with_label l (qs1 ++ qs2) = filter_queries_with_label l qs1 ++ filter_queries_with_label l qs2.
     Proof.
       elim: qs1  => //= hd tl IH.
@@ -427,7 +427,7 @@ Section Theory.
     (**
        This lemma states that the order of filtering with two response names does not affect the result.
      *)
-    Lemma filter_swap rname1 rname2 (φ : seq (@Query Vals)) :
+    Lemma filter_swap rname1 rname2 (φ : seq (@Selection Vals)) :
       filter_queries_with_label rname1 (filter_queries_with_label rname2 φ) =
       filter_queries_with_label rname2 (filter_queries_with_label rname1 φ).
     Proof.
@@ -441,7 +441,7 @@ Section Theory.
        This lemma states that filtering twice with the same response name is the same 
        as filtering once.
      *)
-    Lemma filter_filter_absorb rname (φ : seq (@Query Vals)) :
+    Lemma filter_filter_absorb rname (φ : seq (@Selection Vals)) :
       filter_queries_with_label rname (filter_queries_with_label rname φ) = filter_queries_with_label rname φ.
     Proof.
       funelim (filter_queries_with_label rname φ) => //=; simp filter_queries_with_label; do ? by rewrite Heq /= H.
@@ -453,7 +453,7 @@ Section Theory.
     (**
        This lemma states that
      *)
-    Lemma filter_map_inline_func (f : Name -> seq (@Query Vals) -> seq Query) rname φ ptys :
+    Lemma filter_map_inline_func (f : Name -> seq (@Selection Vals) -> seq Selection) rname φ ptys :
       filter_queries_with_label rname [seq InlineFragment t (f t φ) | t <- ptys] =
       [seq @InlineFragment Vals t (filter_queries_with_label rname (f t φ)) | t <- ptys].
     Proof.
@@ -516,11 +516,11 @@ Section Theory.
        the fact that inline fragments do not apply to [ty].
      *)
     Lemma filter_preserves_fragment_not_applies ty rname φ :
-      all (fun q : Query => match q with
+      all (fun q : Selection => match q with
                              | on (t) {(_)} => ~~ does_fragment_type_apply s ty t
                              | _ => true
                          end) φ ->
-      all (fun q : Query => match q with
+      all (fun q : Selection => match q with
                              | on (t) {(_)} => ~~ does_fragment_type_apply s ty t
                              | _ => true
                              end) (filter_queries_with_label rname φ).
@@ -533,7 +533,7 @@ Section Theory.
     (** ---- *)
     (**
        This lemma states that if there is no field with response name [rname1], 
-       then filtering will preserve the fact that there is no query with 
+       then filtering will preserve the fact that there is no selection with 
        response name [rname1].
      *)
     Lemma filter_preserves_find_fields_nil rname1 rname2 φ :
@@ -564,7 +564,7 @@ Section Theory.
     (**
        This lemma states that
      *)
-    Lemma filter_pairs_spec rname (nq : seq (Name * @Query Vals)) :
+    Lemma filter_pairs_spec rname (nq : seq (Name * @Selection Vals)) :
       [seq q.2 | q <- filter_pairs_with_response_name rname nq] = filter_queries_with_label rname [seq q.2 | q <- nq].
     Proof.
       elim: nq => //= q nq IH.
@@ -590,7 +590,7 @@ Section Theory.
     (**
        This lemma states that [merge_selection_sets] distributes over list concatenation.
      *)
-    Lemma merge_selection_sets_cat (qs1 qs2 : seq (@Query Vals)) :
+    Lemma merge_selection_sets_cat (qs1 qs2 : seq (@Selection Vals)) :
       merge_selection_sets (qs1 ++ qs2) = merge_selection_sets qs1 ++ merge_selection_sets qs2.
     Proof.
         by rewrite /merge_selection_sets map_cat flatten_cat.
@@ -606,7 +606,7 @@ Section Theory.
       queries_size (merge_selection_sets φ) <= queries_size φ.
     Proof.
       rewrite /merge_selection_sets.
-        by elim: φ => //=; case=> //= *; simp query_size; rewrite ?queries_size_cat; ssromega.
+        by elim: φ => //=; case=> //= *; simp selection_size; rewrite ?queries_size_cat; ssromega.
     Qed.
 
 
@@ -618,10 +618,10 @@ Section Theory.
        This lemma states that the size of queries obtained via [merge_pairs_selection_sets]
        is less or equal than the size of the original list of queries.
      *)
-    Lemma merge_pair_selections_leq (nq : seq (Name * @Query Vals)) :
+    Lemma merge_pair_selections_leq (nq : seq (Name * @Selection Vals)) :
       queries_size_aux (merge_pairs_selection_sets s nq) <= queries_size_aux nq.
     Proof.
-      rewrite /queries_size_aux; funelim (merge_pairs_selection_sets s nq) => //=; simp query_size; do ? ssromega;
+      rewrite /queries_size_aux; funelim (merge_pairs_selection_sets s nq) => //=; simp selection_size; do ? ssromega;
       have Hpeq : forall xs y, [seq x.2 | x <- [seq (y, q) | q <- xs] ] = xs by intros; elim: xs => //= x xs ->.
       all: do ? [by rewrite map_cat queries_size_cat Hpeq; ssromega].
     Qed.

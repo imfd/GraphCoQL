@@ -46,25 +46,25 @@ Section NormalForm.
   Variables Vals : eqType.
   Variables (s : @wfGraphQLSchema Vals).
   
-  Implicit Type queries : seq (@Query Vals).
-  Implicit Type query : @Query Vals.
+  Implicit Type queries : seq (@Selection Vals).
+  Implicit Type query : @Selection Vals.
   
 
   (** * Definitions *)
   
   (** ** Groundness
       In this section we define the predicates to establish when a 
-      GraphQL Query is grounded.
+      GraphQL Selection is grounded.
    *)
   (** ---- *)
   (**
-     #<strong>is_grounded</strong># : Query → Bool 
+     #<strong>is_grounded</strong># : Selection → Bool 
 
-     #<strong>are_grounded_fields</strong># : List Query → Bool
+     #<strong>are_grounded_fields</strong># : List Selection → Bool
 
-     #<strong>are_grounded_inlines</strong># : List Query → Bool
+     #<strong>are_grounded_inlines</strong># : List Selection → Bool
 
-     #<strong>are_grounded</strong># : List Query → Bool
+     #<strong>are_grounded</strong># : List Selection → Bool
 
      #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
 
@@ -106,9 +106,9 @@ Section NormalForm.
 
   (** ---- *)
   (**
-     #<strong>is_grounded2</strong># : Name → Query → Bool 
+     #<strong>is_grounded2</strong># : Name → Selection → Bool 
 
-     #<strong>are_grounded2</strong># : Name → List Query → Bool
+     #<strong>are_grounded2</strong># : Name → List Selection → Bool
 
      #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
      Checks whether the given query is grounded v.2.0.
@@ -119,7 +119,7 @@ Section NormalForm.
      
    *)
   (* TODO : Rename ! *)
-  Equations is_grounded2 (type_in_scope : Name) (query : @Query Vals) : bool :=
+  Equations is_grounded2 (type_in_scope : Name) (query : @Selection Vals) : bool :=
     {
       is_grounded2 ty (f[[_]] { φ })
         with lookup_field_in_type s ty f :=
@@ -140,7 +140,7 @@ Section NormalForm.
       is_grounded2 _ _ := true
     }
    where
-   are_grounded2 (type_in_scope : Name) (queries : seq (@Query Vals)) : bool :=
+   are_grounded2 (type_in_scope : Name) (queries : seq (@Selection Vals)) : bool :=
      {
        are_grounded2 _ [::] := true;
        
@@ -155,19 +155,19 @@ Section NormalForm.
 
   (** ** Non-redundancy
       
-      In this section we define the predicate to establish when a GraphQL Query 
+      In this section we define the predicate to establish when a GraphQL Selection 
       is non-redundant.
    *)
   (** ---- *)
   (**
-     #<strong>are_non_redundant</strong># : List Query → Bool 
+     #<strong>are_non_redundant</strong># : List Selection → Bool 
 
      Checks whether the list of queries are non-redundant.
      This checks that :
      - There are no inline fragments with the same type condition.
      - There are no field selections with the same response name.
    *)
-  Equations? are_non_redundant (queries : seq (@Query Vals)) : bool
+  Equations? are_non_redundant (queries : seq (@Selection Vals)) : bool
     by wf (queries_size queries) :=
     {
       are_non_redundant [::] := true;
@@ -185,14 +185,14 @@ Section NormalForm.
     }.                 
   Proof.
     all: do ? [case: q].
-    all: do ? intros; simp query_size; ssromega.
+    all: do ? intros; simp selection_size; ssromega.
   Qed.
 
 
   
   (** ---- *)
   (**
-     #<strong>are_in_normal_form</strong># : List Query → Bool 
+     #<strong>are_in_normal_form</strong># : List Selection → Bool 
 
      Checks whether a list of queries are in normal form.
 
@@ -222,7 +222,7 @@ Section Normalisation.
 
   Variables Vals : eqType.
   Implicit Type schema : @wfGraphQLSchema Vals.
-  Implicit Type query : @Query Vals.
+  Implicit Type query : @Selection Vals.
 
 
   Variable s : @wfGraphQLSchema Vals.
@@ -230,13 +230,13 @@ Section Normalisation.
   (** * Normalisation
       
       In this section we will define a normalisation procedure, which 
-      takes a GraphQL Query and outputs another one in normal form.
+      takes a GraphQL Selection and outputs another one in normal form.
       
-      The proof of this is in the file _QueryNormalizationLemmas_.
+      The proof of this is in the file _SelectionNormalizationLemmas_.
    *)
   (** ---- *)
   (**
-     #<strong>normalize</strong># : Name → List Query → List Query 
+     #<strong>normalize</strong># : Name → List Selection → List Selection 
 
      Normalizes the given list of queries. 
      The resulting list of queries are non-redundant and in ground-type 
@@ -260,8 +260,8 @@ Section Normalisation.
 
      This definition assumes that the given type in scope is actually an Object type.
    *)
-  Equations? normalize (type_in_scope : Name) (queries : seq (@Query Vals)) :
-    seq (@Query Vals) by wf (queries_size queries) :=
+  Equations? normalize (type_in_scope : Name) (queries : seq (@Selection Vals)) :
+    seq (@Selection Vals) by wf (queries_size queries) :=
     {
       normalize _ [::] := [::];
 
@@ -324,7 +324,7 @@ Section Normalisation.
 
   (** ---- *)
   (**
-     #<strong>normalize_queries</strong># : Name → List Query → List Query 
+     #<strong>normalize_queries</strong># : Name → List Selection → List Selection 
 
      Normalizes a list of queries.
      
@@ -334,8 +334,8 @@ Section Normalisation.
      in fragments with type conditions equal to the given type's subtypes 
      (minus the abstract type itself).
    *)
-  Definition normalize_queries (type_in_scope : Name) (queries : seq (@Query Vals)) :
-    seq (@Query Vals) :=
+  Definition normalize_queries (type_in_scope : Name) (queries : seq (@Selection Vals)) :
+    seq (@Selection Vals) :=
     if is_object_type s type_in_scope then
       normalize type_in_scope queries
     else
@@ -353,7 +353,7 @@ Arguments normalize_queries [Vals].
 (** ---- *)
 (** 
     #<div>
-        <a href='GraphCoQL.QueryConformance.html' class="btn btn-light" role='button'> Previous ← Query Conformance  </a>
+        <a href='GraphCoQL.SelectionConformance.html' class="btn btn-light" role='button'> Previous ← Selection Conformance  </a>
         <a href='GraphCoQL.Graph.html' class="btn btn-info" role='button'>Continue Reading → GraphQL Graph </a>
     </div>#
 *)

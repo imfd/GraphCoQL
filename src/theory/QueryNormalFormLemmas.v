@@ -83,7 +83,7 @@ Section NormalForm.
       are_grounded_fields s φ ->
       are_grounded s φ.
     Proof.
-        by case: φ => //= q φ; case_query q.
+        by case: φ => //= q φ; case_selection q.
     Qed.
 
 
@@ -107,7 +107,7 @@ Section NormalForm.
       are_grounded_inlines s φ ->
       are_grounded s φ.
     Proof.
-        by case: φ => //= q φ; case_query q.
+        by case: φ => //= q φ; case_selection q.
     Qed.
 
       
@@ -166,7 +166,7 @@ Section NormalForm.
       - move=> q qs IHq IHflds IHinls ty.
         case Hscope : is_object_type => //= /and3P [Htype Hg Hgs].
         * by rewrite Htype; apply_andP; [apply: (IHq ty) | apply: (IHflds ty)].
-        * have : forall (q : @Query Vals), q.(is_inline_fragment) -> q.(is_field) = false by case.
+        * have : forall (q : @Selection Vals), q.(is_inline_fragment) -> q.(is_field) = false by case.
             by move/(_ q Htype) ->; apply_andP; [apply : (IHq ty) | apply: (IHinls ty)].
     Qed.
 
@@ -234,7 +234,7 @@ Section NormalForm.
   Section NonRedundant.
 
     
-    Implicit Type φ : seq (@Query Vals).
+    Implicit Type φ : seq (@Selection Vals).
 
     
     Section Filter.
@@ -315,7 +315,7 @@ Section Normalisation.
     move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
     elim: n φ rname => /= [| n IH] φ rname ; first by rewrite leqn0 => /queries_size_0_nil ->.
     case: φ => //= q φ.
-    case_query q => /=; simp query_size => Hleq; simp normalize.
+    case_selection q => /=; simp selection_size => Hleq; simp normalize.
     - lookup => //=; simp filter_queries_with_label; case: eqP => /= [/= Heq | Hneq].
       * by rewrite Heq -IH // filter_filter_absorb.
       * simp normalize; rewrite Hlook /= IH //; [by rewrite filter_swap | by leq_queries_size].

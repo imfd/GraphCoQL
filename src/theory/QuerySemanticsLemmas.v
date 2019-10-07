@@ -176,7 +176,7 @@ Section Theory.
 
 
   
-  Lemma exec_frags_nil_func (f : Name -> seq (@Query Vals) -> seq Query) u ptys φ :
+  Lemma exec_frags_nil_func (f : Name -> seq (@Selection Vals) -> seq Selection) u ptys φ :
     uniq ptys ->
     all (is_object_type s) ptys ->
     u.(ntype) \notin ptys ->
@@ -205,7 +205,7 @@ Section Theory.
   Qed.
  
 
-  Lemma exec_cat_frags_func (f : Name -> seq (@Query Vals) -> seq Query) ptys u φ1 φ2 :
+  Lemma exec_cat_frags_func (f : Name -> seq (@Selection Vals) -> seq Selection) ptys u φ1 φ2 :
     (forall rname t φ, filter_queries_with_label rname (f t φ) = f t (filter_queries_with_label rname φ)) ->
     uniq ptys ->
     all (is_object_type s) ptys ->
@@ -222,7 +222,7 @@ Section Theory.
       by elim=> //= t' ptys' IH' rname φ; rewrite Hfilterswap IH'.
       
       
-      case_query q; simp query_size => Hleq Hobj Hunin; exec;
+      case_selection q; simp selection_size => Hleq Hobj Hunin; exec;
                                         rewrite ?filter_queries_with_label_cat ?filter_map_inline_func ?Hinlineswap ?IH //; leq_queries_size.
       (* all: do ? by congr cons; apply: IH; leq_queries_size. *)
 
@@ -256,7 +256,7 @@ Section Theory.
   
 
   
-  Lemma exec_inlined_func (f : Name -> seq (@Query Vals) -> seq Query) ptys u φ :
+  Lemma exec_inlined_func (f : Name -> seq (@Selection Vals) -> seq Selection) ptys u φ :
     (forall rname t φ, filter_queries_with_label rname (f t φ) = f t (filter_queries_with_label rname φ)) ->
     uniq ptys ->
     all (is_object_type s) ptys ->
@@ -298,7 +298,7 @@ Section Theory.
     move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
     elim: n φ rname => /= [| n IH] φ rname; first by rewrite leqn0 => /queries_size_0_nil ->.
     case: φ => //= q φ.
-    case_query q => //=; simp query_size => Hleq; simp filter_queries_with_label.
+    case_selection q => //=; simp selection_size => Hleq; simp filter_queries_with_label.
     
     - case: eqP => //= /eqP Hneq; exec; apply_andP; rewrite filter_swap; apply: IH; leq_queries_size.
     - case: eqP => //= /eqP Hneq; exec; apply_andP; rewrite filter_swap; apply: IH; leq_queries_size.
@@ -530,8 +530,8 @@ Section Theory.
   (** ---- *)
   (**
      This theorem states that the semantics are preserved when normalizing 
-     with the Query type, evaluating from the root node and if the queries
-     conform to the Query type. 
+     with the Selection type, evaluating from the root node and if the queries
+     conform to the Selection type. 
    *)
   (* Conformance doesn't affect this at all... This is a particular case of 
      the previous theorem *)
@@ -560,7 +560,7 @@ Section Theory.
   Proof.
     move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
     elim: n φ β => /= [| n IH] φ β; first by rewrite leqn0 => /queries_size_0_nil ->.
-    case: φ => // q φ; case_query q; simp query_size => Hleq; exec2; rewrite -/cat ?IH //; leq_queries_size.    
+    case: φ => // q φ; case_selection q; simp selection_size => Hleq; exec2; rewrite -/cat ?IH //; leq_queries_size.    
       by case does_fragment_type_apply => /=; rewrite ?catA; apply: IH; leq_queries_size.
   Qed.
 
@@ -629,7 +629,7 @@ Section Theory.
     move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
     elim: n φ β u => /= [| n IH] φ β u; first by rewrite leqn0 => /queries_size_0_nil -> /=; apply: exec_inlines_nil.
     case: φ => //= [_ | q φ]; first by apply: exec_inlines_nil.
-    case_query q; simp query_size => Hleq; intros; exec; rewrite ?filter_queries_with_label_cat ?find_queries_with_label_cat ?[find_queries_with_label _ _ _ β]find_fragment_not_applies_is_nil // ?cats0 //.
+    case_selection q; simp selection_size => Hleq; intros; exec; rewrite ?filter_queries_with_label_cat ?find_queries_with_label_cat ?[find_queries_with_label _ _ _ β]find_fragment_not_applies_is_nil // ?cats0 //.
     all: do ? congr cons.
     all: do ? [apply: IH => //; leq_queries_size].
     all: do ? by apply: filter_preserves_inlines.
@@ -657,7 +657,7 @@ Section Theory.
                else
                  true) φ.
   Proof.
-    elim: φ => // q φ IH; case_query q => //.
+    elim: φ => // q φ IH; case_selection q => //.
     simp find_fragment_with_type_condition; case: eqP => //= /eqP Hneq Hfind.
     simp is_grounded; bcase.
     move: Hb2; bcase.
@@ -685,7 +685,7 @@ Section Theory.
   Proof.
     move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
     elim: n φ u => /= [| n IH] φ u; first by rewrite leqn0 => /queries_size_0_nil ->.
-    case: φ => // q φ; case_query q; simp query_size => Hleq; grounding; non_red => /=; bcase; exec; exec2.
+    case: φ => // q φ; case_selection q; simp selection_size => Hleq; grounding; non_red => /=; bcase; exec; exec2.
     
     all: do ?[by apply: IH => //=; grounding].
     

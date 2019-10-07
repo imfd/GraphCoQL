@@ -21,7 +21,7 @@ Require Import Ssromega.
    *)
   Ltac leq_queries_size :=
     repeat match goal with
-           | [|- context [ query_size _]] => simp query_size => /=
+           | [|- context [ selection_size _]] => simp selection_size => /=
            | [|- context [ queries_size_aux _ ]] => rewrite /queries_size_aux /=
            | [|- context [ queries_size (_ ++ _)]] => rewrite queries_size_cat
            | [|- context [ queries_size (merge_selection_sets (find_queries_with_label ?s ?rname ?ty ?qs)) ]] =>

@@ -71,8 +71,8 @@ Section QuerySemantic.
   (** ---- *)
   
   Implicit Type u : @node Vals.
-  Implicit Type query : @Query Vals.
-  Implicit Type queries : seq (@Query Vals).
+  Implicit Type query : @Selection Vals.
+  Implicit Type queries : seq (@Selection Vals).
 
  
   Fixpoint is_valid_response_value (ty : type) (response : @ResponseNode (option Vals)) : bool :=
@@ -89,12 +89,12 @@ Section QuerySemantic.
   (** * Semantics in a Graph setting *)
   (** ---- *)
   (**
-     #<strong>execute_selection_set</strong># : Node → List Query → List (Name * ResponseNode)
+     #<strong>execute_selection_set</strong># : Node → List Selection → List (Name * ResponseNode)
 
      Evaluates the list of queries and returns a GraphQL Response.
 
    *)
-  Equations? execute_selection_set u (queries : seq (@Query Vals)) :
+  Equations? execute_selection_set u (queries : seq (@Selection Vals)) :
     
     seq (Name * ResponseNode) by wf (queries_size queries) :=
     {
@@ -199,7 +199,7 @@ Section QuerySemantic.
   (** * Simplified Semantics *)
   (** ---- *)
   (**
-     #<strong>execute_selection_set2</strong># : Node → List Query → List (Name * ResponseNode)
+     #<strong>execute_selection_set2</strong># : Node → List Selection → List (Name * ResponseNode)
 
      Evaluates a list of queries and returns a GraphQL Response. 
 
@@ -341,7 +341,7 @@ Section QuerySemantic.
 
   (* begin hide *)
   (* Equations' bug ? *)
-  (* Equations? execute_selection_set3 u (queries : seq (@Query Vals)) : *)
+  (* Equations? execute_selection_set3 u (queries : seq (@Selection Vals)) : *)
   (*   seq (Name * ResponseNode) by wf (queries_size queries) := *)
   (*   { *)
   (*     execute_selection_set3 _ [::] := [::]; *)
@@ -405,7 +405,7 @@ Section QuerySemantic.
 
   Reserved Notation "ty '⊢' φ '≡' φ'" (at level 80). 
          
-  Equations? Equiv  (ty : Name) (φ1 φ2 : seq (@Query Vals)) : bool by wf (queries_size φ1 + queries_size φ2) :=
+  Equations? Equiv  (ty : Name) (φ1 φ2 : seq (@Selection Vals)) : bool by wf (queries_size φ1 + queries_size φ2) :=
     {
       _ ⊢ [::] ≡ [::] := true;
 
@@ -577,6 +577,6 @@ Notation "s , g ⊢ ≪ φ ≫ 'in' u 'with' coerce" := (execute_selection_set2 
 (** 
     #<div>
         <a href='GraphCoQL.Response.html' class="btn btn-light" role='button'> Previous ← GraphQL Response </a>
-        <a href='GraphCoQL.theory.QuerySemanticsLemmas.html' class="btn btn-info" role='button'>Continue Reading → Semantics Proofs</a>
+        <a href='GraphCoQL.theory.SelectionSemanticsLemmas.html' class="btn btn-info" role='button'>Continue Reading → Semantics Proofs</a>
     </div>#
 *)
