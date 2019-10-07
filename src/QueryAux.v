@@ -197,7 +197,6 @@ Section QueryAux.
         oqresponse_name (on _ { _ }) := None;
         oqresponse_name q := Some (qresponse_name q _)
       }.
-
     
     (** ---- *)
     (**
@@ -389,6 +388,10 @@ Section QueryAux.
      *)
     Definition queries_size_aux (queries : seq (Name * Selection)) :=
       queries_size [seq nq.2 | nq <- queries].
+
+    Definition query_size (φ : @query Vals) :=
+      queries_size φ.(selection_set).
+      
 
   End Size.
   
@@ -739,6 +742,7 @@ Arguments oqresponse_name [Vals].
 Arguments selection_size [Vals].
 Arguments queries_size [Vals].
 Arguments queries_size_aux [Vals].
+Arguments query_size [Vals].
 
 Arguments has_response_name [Vals].
 Arguments have_same_name [Vals].

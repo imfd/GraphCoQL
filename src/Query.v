@@ -140,6 +140,17 @@ Section Query.
         end.
 
 
+  (** ** Query 
+     
+     A query is one of the three operations executable in a GraphQL service
+     and it is formed by an optional name and a list of selections.
+
+   *)
+  Record query := Query {
+                     qname : option string;
+                     selection_set : seq Selection
+                   }.
+
 
     
 End Query.
@@ -151,6 +162,11 @@ Arguments AliasedField [Vals].
 Arguments NestedField [Vals].
 Arguments NestedAliasedField [Vals].
 Arguments InlineFragment [Vals].
+
+Arguments query [Vals].
+Arguments Query [Vals].
+Arguments qname [Vals].
+Arguments selection_set [Vals].
 
 (** *** Notations 
       
@@ -289,5 +305,12 @@ Section Equality.
   Canonical selection_eqType := EqType Selection (PcanEqMixin tree_of_selectionK).
 
 
+  Definition tuple_of_query (q : @query Vals) := let: (Query n b) := q in (n, b).
+  Definition query_of_tuple (nb : option Name * seq (@Selection Vals)) := let: (n, b) := nb in Query n b.
+
+  Lemma tuple_of_queryK : cancel tuple_of_query query_of_tuple.
+  Proof. by case. Qed.
+
+  Canonical query_eqType := EqType query (CanEqMixin tuple_of_queryK).
 
 End Equality.
