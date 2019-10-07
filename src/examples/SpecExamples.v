@@ -236,7 +236,7 @@ Section GraphQLSpecExamples.
      This is not exactly the same as in the spec, but in that example they are checking 
      defined fragment spreads, not inline fragments.
      *)
-    Example e102 : ~~ (queries_conform wf_schema "Dog" example102 || queries_conform wf_schema "Dog" example102').
+    Example e102 : ~~ (selections_conform wf_schema "Dog" example102 || selections_conform wf_schema "Dog" example102').
     Proof. by []. Qed.
 
 
@@ -249,7 +249,7 @@ Section GraphQLSpecExamples.
                                                   ].
 
     
-    Example e103 : queries_conform wf_schema "Pet" example103.
+    Example e103 : selections_conform wf_schema "Pet" example103.
     Proof. by []. Qed.
 
     
@@ -262,10 +262,10 @@ Section GraphQLSpecExamples.
                                                      (* } *)
                                                   ].
 
-    Example e104 : ~~ queries_conform wf_schema "Pet" example104.
+    Example e104 : ~~ selections_conform wf_schema "Pet" example104.
     Proof. by []. Qed.
 
-    Example e104' : all (fun implementor => queries_conform wf_schema implementor example104) (get_possible_types wf_schema "Pet").
+    Example e104' : all (fun implementor => selections_conform wf_schema implementor example104) (get_possible_types wf_schema "Pet").
     Proof.
         by [].
     Qed.
@@ -288,7 +288,7 @@ Section GraphQLSpecExamples.
                                                         (* } *)
                                                   ].
 
-    Example e105 : queries_conform wf_schema "CatOrDog" example105.
+    Example e105 : selections_conform wf_schema "CatOrDog" example105.
     Proof. by []. Qed.
 
     Let example106 : seq (@Selection value_eqType) := [::
@@ -296,7 +296,7 @@ Section GraphQLSpecExamples.
                                                      "barkVolume" [[ [::] ]]
                                                   ].
 
-    Example e106 : ~~ queries_conform wf_schema "CatOrDog" example106.
+    Example e106 : ~~ selections_conform wf_schema "CatOrDog" example106.
     Proof. by []. Qed.
 
     
@@ -425,7 +425,7 @@ Section GraphQLSpecExamples.
           by [].
       Qed.
 
-      Example e112' : ~~ queries_conform wf_schema "Pet" example112.
+      Example e112' : ~~ selections_conform wf_schema "Pet" example112.
       Proof.
           by [].
       Qed.
@@ -443,7 +443,7 @@ Section GraphQLSpecExamples.
                                                        "barkVolume" [[ [::] ]]
                                                     ].
       
-      Example e113 : queries_conform wf_schema "Dog" example113.
+      Example e113 : selections_conform wf_schema "Dog" example113.
       Proof.
           by [].
       Qed.
@@ -457,7 +457,7 @@ Section GraphQLSpecExamples.
            }
         ].
 
-      Example e114 : ~~ queries_conform wf_schema "Dog" example114.
+      Example e114 : ~~ selections_conform wf_schema "Dog" example114.
       Proof.
           by [].
       Qed.
@@ -497,7 +497,7 @@ Section GraphQLSpecExamples.
            "human" [[ [::] ]]
         ].
 
-      Example e116_1 : ~~queries_conform extended_wf_schema "ExtendedSelection" example116_1.
+      Example e116_1 : ~~selections_conform extended_wf_schema "ExtendedSelection" example116_1.
       Proof.
           by [].
       Qed.
@@ -507,7 +507,7 @@ Section GraphQLSpecExamples.
            "pet" [[ [::] ]]
         ].
 
-      Example e116_2 : ~~queries_conform extended_wf_schema "ExtendedSelection" example116_2.
+      Example e116_2 : ~~selections_conform extended_wf_schema "ExtendedSelection" example116_2.
       Proof.
           by [].
       Qed.
@@ -517,7 +517,7 @@ Section GraphQLSpecExamples.
            "catOrDog" [[ [::] ]]
         ].
 
-      Example e116_3 : ~~queries_conform extended_wf_schema "ExtendedSelection" example116_3.
+      Example e116_3 : ~~selections_conform extended_wf_schema "ExtendedSelection" example116_3.
       Proof.
           by [].
       Qed.
@@ -537,7 +537,7 @@ Section GraphQLSpecExamples.
          "doesKnowCommand" [[ [:: pair "dogCommand" (VString "SIT")] ]]
       ].
 
-    Example e117_1 : queries_conform wf_schema "Dog" example117_1.
+    Example e117_1 : selections_conform wf_schema "Dog" example117_1.
     Proof.
         by [].
     Qed.
@@ -550,7 +550,7 @@ Section GraphQLSpecExamples.
          "isHousetrained" [[ [:: pair "atOtherHomes" (VBool true) ] ]]
       ].
 
-    Example e117_2 : queries_conform wf_schema "Dog" example117_2.
+    Example e117_2 : selections_conform wf_schema "Dog" example117_2.
     Proof.
       by [].
     Qed.
@@ -561,7 +561,7 @@ Section GraphQLSpecExamples.
          "doesKnowCommand" [[ [:: pair "command" (VString "CLEAN_UP_HOUSE") ] ]]
       ].
 
-    Example e118 : ~~queries_conform wf_schema "Dog" example_118.
+    Example e118 : ~~selections_conform wf_schema "Dog" example_118.
     Proof.
         by [].
     Qed.
@@ -645,7 +645,7 @@ Section GraphQLSpecExamples.
          "multipleReqs" [[ [:: (pair "x" (VInt 1)); (pair "y" (VInt 2))] ]]
       ].
 
-    Example e121_1 : queries_conform extended_wf_schema "Arguments" example121_1.
+    Example e121_1 : selections_conform extended_wf_schema "Arguments" example121_1.
     Proof.
         by [].
     Qed.
@@ -655,7 +655,7 @@ Section GraphQLSpecExamples.
          "multipleReqs" [[ [:: (pair "y" (VInt 1)); (pair "x" (VInt 2))] ]]
       ].
 
-    Example e121_2 : queries_conform extended_wf_schema "Arguments" example121_2.
+    Example e121_2 : selections_conform extended_wf_schema "Arguments" example121_2.
     Proof.
         by [].
     Qed.
@@ -692,8 +692,8 @@ Section GraphQLSpecExamples.
          }
       ].
 
-    Example e128 : queries_conform wf_schema "Dog" example128 &&
-                   queries_conform wf_schema "Pet" example128.                
+    Example e128 : selections_conform wf_schema "Dog" example128 &&
+                   selections_conform wf_schema "Pet" example128.                
     Proof.
         by [].
     Qed.
@@ -708,12 +708,12 @@ Section GraphQLSpecExamples.
          }
       ].
 
-    Example e129 : ~~queries_conform wf_schema "Dog" example129.
+    Example e129 : ~~selections_conform wf_schema "Dog" example129.
     Proof.
         by [].
     Qed.
 
-    Example e129' : all (fun name => ~~queries_conform wf_schema name example129) wf_schema.(schema_names).
+    Example e129' : all (fun name => ~~selections_conform wf_schema name example129) wf_schema.(schema_names).
     Proof.
         by [].
     Qed.
@@ -889,7 +889,7 @@ Section GraphQLSpecExamples.
     Qed.
 
     
-    Example e141_1 : queries_conform wf_schema "Pet" example141_1.
+    Example e141_1 : selections_conform wf_schema "Pet" example141_1.
     Proof.
         by [].
     Qed.
@@ -908,7 +908,7 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
     
-    Example e141_2 : queries_conform wf_schema "CatOrDog" example141_2.
+    Example e141_2 : selections_conform wf_schema "CatOrDog" example141_2.
     Proof.
         by [].
     Qed.
@@ -969,7 +969,7 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
 
-    Example e143 : queries_conform wf_schema "Pet" example143.
+    Example e143 : selections_conform wf_schema "Pet" example143.
     Proof.
         by [].
     Qed.

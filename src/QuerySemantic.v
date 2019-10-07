@@ -190,7 +190,9 @@ Section QuerySemantic.
 
   
 
-
+  Definition execute_query (q : query) (u : node) :=
+    execute_selection_set u q.(selection_set).
+  
 
   
 

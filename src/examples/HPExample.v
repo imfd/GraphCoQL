@@ -501,7 +501,7 @@ Section Example.
   (**
        We prove it conforms to the schema by simple computation.     
    *)
-  Lemma qbc : queries_conform  wf_schema wf_schema.(query_type) q.
+  Lemma qbc : selections_conform  wf_schema wf_schema.(query_type) q.
   Proof.
       by [].
   Qed.

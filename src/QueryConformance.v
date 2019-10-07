@@ -55,8 +55,8 @@ Section QueryConformance.
   Variables Vals : eqType.
   
   
-  Implicit Type queries : seq (@Selection Vals).
-  Implicit Type query : @Selection Vals.
+  Implicit Type selections : seq (@Selection Vals).
+  Implicit Type selection : @Selection Vals.
 
 
   Variable s : @wfGraphQLSchema Vals.
@@ -141,8 +141,8 @@ Section QueryConformance.
      
    *)
  (* TODO: Rename? It is only a part of the whole validation process *)
-  Fixpoint is_consistent (type_in_scope : Name) query : bool :=
-    match query with
+  Fixpoint is_consistent (type_in_scope : Name) selection : bool :=
+    match selection with
     | f[[α]] =>
       if lookup_field_in_type s type_in_scope f is Some fld then
         (is_scalar_type s fld.(return_type) || is_enum_type s fld.(return_type)) && arguments_conform fld.(fargs) α
@@ -268,8 +268,8 @@ Section QueryConformance.
     
   *)
  (* Equations is not able to build the graph - hence we use noind *)
- Equations(noind) have_compatible_response_shapes (queries : seq (Name * @Selection Vals)) :
-   bool by wf (queries_size_aux queries) :=
+ Equations(noind) have_compatible_response_shapes (selections : seq (Name * @Selection Vals)) :
+   bool by wf (queries_size_aux selections) :=
    {
      have_compatible_response_shapes [::] := true ;
 
@@ -366,7 +366,7 @@ Section QueryConformance.
     We use the type in context to find only the fields that make sense 
     (because with fragments we can create queries that don't make sense).
   *)
- Equations? is_field_merging_possible (type_in_scope : Name) queries : bool by wf (queries_size queries)  :=
+ Equations? is_field_merging_possible (type_in_scope : Name) selections : bool by wf (queries_size selections)  :=
    {
      is_field_merging_possible _ [::] := true;
 
@@ -452,9 +452,9 @@ Section QueryConformance.
  Qed.
  (* Equations can't build the graph *)
  Next Obligation.
-   move: {2}(queries_size _) (leqnn (queries_size queries)) => n.
-   elim: n type_in_scope queries => /= [| n IH] type_in_scope queries; first by rewrite leqn0 => /queries_size_0_nil ->; constructor.
-   case: queries => /= [| q queries]; first by constructor.
+   move: {2}(queries_size _) (leqnn (queries_size selections)) => n.
+   elim: n type_in_scope selections => /= [| n IH] type_in_scope selections; first by rewrite leqn0 => /queries_size_0_nil ->; constructor.
+   case: selections => /= [| q selections]; first by constructor.
    case_selection q; simp selection_size => Hleq;
    simp is_field_merging_possible; constructor; do ? [lookup; constructor]; last first.
    case is_fragment_spread_possible; constructor; last by apply: IH; leq_queries_size.
@@ -463,12 +463,12 @@ Section QueryConformance.
  
 
  (** ---- *)
- (** * Selection Conformance *)
+ (** ** Selection Conformance *)
  (** ---- *)
  (**
-     #<strong>queries_conform</strong># : Name -> List Selection -> Bool 
+     #<strong>selections_conform</strong># : Name -> List Selection -> Bool 
 
-     Check whether a list of queries conform to a given type in the schema.
+     Check whether a list of selections conform to a given type in the schema.
      
      This definition captures the previous validation predicates:
 
@@ -479,11 +479,19 @@ Section QueryConformance.
      - Field merging is possible.
 
    *)
-  Definition queries_conform (ty : Name) queries : bool :=
-    [&& all (is_consistent ty) queries,
-        have_compatible_response_shapes [seq (ty, q) | q <- queries] &
-        is_field_merging_possible ty queries].
-    
+  Definition selections_conform (ty : Name) selections : bool :=
+    [&& all (is_consistent ty) selections,
+        have_compatible_response_shapes [seq (ty, q) | q <- selections] &
+        is_field_merging_possible ty selections].
+
+
+  (** ---- *)
+  (** * Query conformance
+      
+      A query conforms if its selection set conforms to the Query type.
+   *)
+  Definition query_conforms (q : query) : bool :=
+    selections_conform s.(query_type) q.(selection_set).
   
  
 End QueryConformance.
@@ -494,7 +502,8 @@ Arguments is_fragment_spread_possible [Vals].
 Arguments have_compatible_response_shapes [Vals].
 Arguments is_field_merging_possible [Vals].
 Arguments is_consistent [Vals].
-Arguments queries_conform [Vals].
+Arguments selections_conform [Vals].
+Arguments query_conforms [Vals].
 
 (** ---- *)
 (** 

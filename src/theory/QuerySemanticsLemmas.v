@@ -536,7 +536,7 @@ Section Theory.
   (* Conformance doesn't affect this at all... This is a particular case of 
      the previous theorem *)
   Theorem exec_normalize_from_root φ :
-    queries_conform s s.(query_type) φ ->
+    selections_conform s s.(query_type) φ ->
     s, g ⊢ ⟦ normalize_queries s s.(query_type) φ ⟧ˢ in g.(root) with coerce = s, g ⊢ ⟦ φ ⟧ˢ in g.(root) with coerce.
   Proof.
     intros; apply: normalize_queries_exec.
