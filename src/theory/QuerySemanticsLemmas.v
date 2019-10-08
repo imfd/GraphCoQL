@@ -357,9 +357,9 @@ Section Theory.
    *)
   Lemma normalize_exec φ u :
     u \in g.(nodes) ->
-          s, g ⊢ ⟦ normalize s u.(ntype) φ ⟧ˢ in u with coerce =  s, g ⊢ ⟦ φ ⟧ˢ in u with coerce. 
+          s, g ⊢ ⟦ normalize_selections s u.(ntype) φ ⟧ˢ in u with coerce =  s, g ⊢ ⟦ φ ⟧ˢ in u with coerce. 
   Proof.    
-    funelim (normalize s u.(ntype) φ) => //=; do ? by exec.
+    funelim (normalize_selections s u.(ntype) φ) => //=; do ? by exec.
     all: do ? [by intros; exec; rewrite filter_normalize_swap filter_filter_absorb // H]; exec => Huin.
 
     all: do ? [rewrite filter_normalize_swap filter_filter_absorb // H0 // -?filter_normalize_swap find_queries_filter_nil].
@@ -500,54 +500,19 @@ Section Theory.
 
   (** ---- *)
   (**
-     This theorem states that the semantics is preserved when normalizing with a supertype
-     of the node's type where the queries are evaluated.
+     This theorem states that normalizing preserves the semantics of a query.
    *)
-  Theorem normalize_queries_exec ty φ u :
-    u \in g.(nodes) ->
-          u.(ntype) \in get_possible_types s ty ->
-                       s, g ⊢ ⟦ normalize_queries s ty φ ⟧ˢ in u with coerce = s, g ⊢ ⟦ φ ⟧ˢ in u with coerce. 
+  Theorem normalize_preserves_query_semantics q :
+    execute_query s g coerce (normalize s q) =
+    execute_query s g coerce q.
   Proof.
-    rewrite /normalize_queries; case: ifP => /= Hscope Huin Hin.
-    - by have <- /= := (in_object_possible_types Hscope Hin); apply: normalize_exec.
-    - have -> /= :
-        s, g ⊢ ⟦ [seq InlineFragment t (normalize s t φ) | t <- get_possible_types s ty] ⟧ˢ in u with coerce =
-        s, g ⊢ ⟦ [:: InlineFragment u.(ntype) (normalize s u.(ntype) φ)] ⟧ˢ in u with coerce. 
-      apply: exec_inlined_func => //=.
-        by apply: filter_normalize_swap.
-          by apply: uniq_get_possible_types.
-            by apply/allP; apply: in_possible_types_is_object.
-            
-            simp execute_selection_set.
-            have -> /= : does_fragment_type_apply s u.(ntype) u.(ntype)
-              by apply: object_applies_to_itself; apply: (in_possible_types_is_object Hin).
-            rewrite cats0.
-              by apply: normalize_exec.
+    case: q => n ss; rewrite /execute_query /= -(root_query_type g).    
+      by apply: normalize_exec; apply: root_in_nodes.
   Qed.
 
 
 
-  (** ---- *)
-  (**
-     This theorem states that the semantics are preserved when normalizing 
-     with the Selection type, evaluating from the root node and if the queries
-     conform to the Selection type. 
-   *)
-  (* Conformance doesn't affect this at all... This is a particular case of 
-     the previous theorem *)
-  Theorem exec_normalize_from_root φ :
-    selections_conform s s.(query_type) φ ->
-    s, g ⊢ ⟦ normalize_queries s s.(query_type) φ ⟧ˢ in g.(root) with coerce = s, g ⊢ ⟦ φ ⟧ˢ in g.(root) with coerce.
-  Proof.
-    intros; apply: normalize_queries_exec.
-    - by apply: root_in_nodes.
-    - have -> /= := (root_query_type g).
-      have Hobj := (query_has_object_type s).
-        by rewrite get_possible_types_objectE //= mem_seq1; apply/eqP.
-  Qed.
-
-
-
+  
   (* begin hide *)
   
   Transparent is_field.
@@ -618,7 +583,7 @@ Section Theory.
      See also:
      - [exec_equivalence]
    *)
-  Lemma exec_grounded_inlines_nil φ β u :
+  Lemma exec_inv_inlines_nil φ β u :
     all (fun q => q.(is_inline_fragment)) β ->
     all (fun q => if q is on t { _ } then
                  ~~ does_fragment_type_apply s u.(ntype) t
@@ -649,21 +614,22 @@ Section Theory.
      See also:
      - [exec_equivalence]
    *)
-  Lemma find_frags_nil_then_N_applies φ ty :
+  Lemma find_frags_nil_then_N_applies (φ : seq (@Selection Vals)) ty :
     find_fragment_with_type_condition ty φ = [::] ->
-    are_grounded_inlines s φ ->
-    all (fun q => if q is on t { _ } then
+    all (fun sel => if sel is InlineFragment t _ then
+                   is_object_type s t
+                 else
+                   false) φ ->
+    all (fun sel => if sel is on t { _ } then
                  ~~ does_fragment_type_apply s ty t
                else
                  true) φ.
   Proof.
-    elim: φ => // q φ IH; case_selection q => //.
-    simp find_fragment_with_type_condition; case: eqP => //= /eqP Hneq Hfind.
-    simp is_grounded; bcase.
-    move: Hb2; bcase.
+    elim: φ => // q φ IH; case_selection q => //=.
+    simp find_fragment_with_type_condition; case: eqP => //= /eqP Hneq Hfind; simp is_inline_fragment => /= /andP [Hobj Hinlines].
     apply_andP; last by apply: IH.
     rewrite /does_fragment_type_apply.
-    move/is_object_type_wfP: Hb0 => [intfs [flds ->] ].
+    move/is_object_type_wfP: Hobj => [intfs [flds ->] ].
     by case lookup_type => //=; case.
   Qed.
 
@@ -679,39 +645,54 @@ Section Theory.
      equivalent.
    *)
   Theorem exec_equivalence u φ :
-    are_grounded s φ ->
+    (all (fun s => s.(is_field)) φ || all (fun s => s.(is_inline_fragment)) φ) ->
+    all (is_in_ground_typed_nf s) φ ->
     are_non_redundant φ -> 
     s, g ⊢ ⟦ φ ⟧ˢ in u with coerce = s, g ⊢ ≪ φ ≫ in u with coerce. 
   Proof.
     move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
     elim: n φ u => /= [| n IH] φ u; first by rewrite leqn0 => /queries_size_0_nil ->.
-    case: φ => // q φ; case_selection q; simp selection_size => Hleq; grounding; non_red => /=; bcase; exec; exec2.
-    
-    all: do ?[by apply: IH => //=; grounding].
-    
-    all: do ? [rewrite filter_find_fields_nil_is_nil in IH *; [
-               | by move: Hb2; rewrite are_grounded_fields_E; bcase
-               | by apply/eqP ] ].
+    case: φ => // q φ; case_selection q; simp selection_size => Hleq /=; simp is_inline_fragment => /=; rewrite ?orbF => Hshape; bcase; non_red => /=; bcase; last first.
+
+    - exec; exec2.
+      * have Htyeq : u.(ntype) = t.
+        apply/eqP; move: Hfapplies; rewrite /does_fragment_type_apply.
+        move: Hb1 => /andP [/is_object_type_wfP [intfs [flds ->] ] Hsubg].
+          by case lookup_type => //=; case.
+        rewrite exec_inv_inlines_nil // ?exec2_cat.
+        have -> //= := (exec2_inlines_nil φ).
+        rewrite cats0; apply: IH => //; leq_queries_size.
+        apply/orP; left; apply/allP=> sel Hin.
+        by move: Hb1 => /andP [_ /allP-/(_ sel Hin)]; case/andP.
+        by apply/allP=> sel Hin; move: Hb1 => /andP [_ /allP-/(_ sel Hin)]; case/andP.
+
+        all: do ? [ apply: find_frags_nil_then_N_applies;
+                    [ by rewrite Htyeq; apply/eqP
+                    |  apply/allP=> sel Hin;
+                       have /allP-/(_ sel Hin) := Hshape;
+                       have /allP-/(_ sel Hin) {Hin} := Hb2;
+                        by case: sel => //= t' subs; case/andP
+                    ]
+                  ].
+       
+          
+      * by apply: IH => //; leq_queries_size; apply/orP; right.
+
+        
+      
+      
+        all: do ? exec; exec2.
+    all: do ? [move=> Hg; bcase].
     all: do ? congr cons.
-    all: do ? [by apply: IH; leq_queries_size; [grounding | non_red] ].     
-
-    all: do ? [congr pair; congr Array; apply/eq_in_map=> v Hin; congr Response.Object].
+    all: do ? rewrite filter_find_fields_nil_is_nil //; do ? by apply/eqP.
+    all: do ? apply: IH => //; leq_queries_size.
+    all: do ? [by apply/orP; left].
+    all: do ? congr pair.
+    all: do ? [congr Array; apply/eq_in_map=> v Hin].
+    all: do ? congr Response.Object.
+    
     all: do ? [rewrite find_queries_nil_if_find_fields_nil// /merge_selection_sets /= ?cats0 in IH *; last by apply/eqP].
-    all: do ? by rewrite IH //; leq_queries_size.
-
-    - move: Hb1; simp is_grounded; bcase.
-      have Htyeq : u.(ntype) = t.
-      apply/eqP; move: Hfapplies; rewrite /does_fragment_type_apply.
-      move/is_object_type_wfP: Hb1 => [intfs [flds ->] ].
-        by case lookup_type => //=; case.
-
-      rewrite exec_grounded_inlines_nil ?exec2_cat.
-      have -> /= := (exec2_inlines_nil φ).
-        by rewrite cats0; apply: IH => //; leq_queries_size; grounding.
-
-          all: do ? by move: Hb2; rewrite are_grounded_inlines_E; case/andP.
-
-          all: do ? by rewrite -Htyeq in Hb1 Hb0; apply: find_frags_nil_then_N_applies => //=; apply/eqP.                
+    all: do ? [by apply: IH => //; leq_queries_size; move: Hb1; bcase].              
   Qed.
 
   

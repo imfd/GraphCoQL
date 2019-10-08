@@ -190,8 +190,8 @@ Section QuerySemantic.
 
   
 
-  Definition execute_query (q : query) (u : node) :=
-    execute_selection_set u q.(selection_set).
+  Definition execute_query (q : query) :=
+    execute_selection_set g.(root) q.(selection_set).
   
 
   
@@ -565,6 +565,7 @@ End QuerySemantic.
 
 Arguments is_valid_response_value [Vals].
 Arguments execute_selection_set [Vals].
+Arguments execute_query [Vals].
 Arguments execute_selection_set2 [Vals].
 
 Delimit Scope query_eval with QEVAL.
