@@ -276,21 +276,19 @@ Section Normalisation.
      is an Object type.
    *)
   Lemma normalized_selections_are_non_redundant ty φ :
-    is_object_type s ty ->
     are_non_redundant (normalize_selections s ty φ).
   Proof.
     apply_funelim (normalize_selections s ty φ) => //=.
 
-    all: do ? [by intros; non_red; apply_and3P; [ by rewrite -filter_normalize_swap /= find_fields_filter_nil | by apply: H] ].
-    all: do ? [by intros; non_red; apply_and3P => /=; [ by rewrite -filter_normalize_swap /= find_fields_filter_nil | by apply: H | by apply: H0] ].
 
-    all: do [intros; non_red; apply_and3P => /=; [ by rewrite -filter_normalize_swap /= find_fields_filter_nil | | by apply: H0] ].
+    all: do ? [by intros; non_red; apply_and3P; by rewrite -filter_normalize_swap /= find_fields_filter_nil].
+    
+    all: do [intros; non_red; apply_and3P => /=; [ by rewrite -filter_normalize_swap /= find_fields_filter_nil |] ].
     all: do [have  := (@in_possible_types_is_object Vals s f.(return_type))].
     all: do [have  := (uniq_get_possible_types s f.(return_type))].
     all: do [elim: get_possible_types => //= t ptys IH /andP [Hnin Huniq] Hinobj].
     all: do [non_red; apply_and3P => /=; last by apply: IH => //= t' Hin'; apply: Hinobj; apply: mem_tail].
     all: do ? by apply/eqP; apply: find_fragment_inlined_nil_func.
-    all: do [by apply: H; apply: Hinobj; apply: mem_head].
   Qed.
 
   (* (** ---- *) *)
@@ -323,8 +321,7 @@ Section Normalisation.
     - rewrite /is_a_grounded_typed_nf_query /=.
         by apply: normalized_selections_are_grounded_fields.
     - rewrite /is_non_redundant.
-      apply: normalized_selections_are_non_redundant.
-        by apply: query_has_object_type.
+        by apply: normalized_selections_are_non_redundant.
   Qed.
 
    
