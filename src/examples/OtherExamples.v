@@ -192,7 +192,7 @@ Section WrongGraph.
   Let r : @node value_eqType := Node "Query" [::].
   
   (** Root node does not have same type as query type **)
-  Let edges1 : seq (@node value_eqType * @fld value_eqType * @node value_eqType) := [::].
+  Let edges1 : seq (@node value_eqType * @label value_eqType * @node value_eqType) := [::].
   
   Let r1 : @node value_eqType := Graph.Node "Human" [::].
   
@@ -203,17 +203,17 @@ Section WrongGraph.
   
   (** Arguments are incorrect **)
 
-  Let edges2 : seq (@node value_eqType * @fld value_eqType * @node value_eqType) :=
+  Let edges2 : seq (@node value_eqType * @label value_eqType * @node value_eqType) :=
     [:: (pair
            (pair
               (Node "Query" [::])
 
-              (Graph.Field "search" [:: pair "wrong_Arg" (VString "L")]))          (* <--- Wrong name for argument *)
+              (Label "search" [:: pair "wrong_Arg" (VString "L")]))          (* <--- Wrong name for argument *)
 
            (Node "Starship" [::
-                               (pair (Graph.Field  "id" [::]) (VInt 3000));
-                               (pair (Graph.Field "name" [::]) (VString "Falcon")); 
-                               (pair (Graph.Field "length" [::]) (VFloat 34 37))
+                               (pair (Label  "id" [::]) (VInt 3000));
+                               (pair (Label "name" [::]) (VString "Falcon")); 
+                               (pair (Label "length" [::]) (VFloat 34 37))
                             ]
            )
         )
@@ -229,19 +229,19 @@ Section WrongGraph.
   
   (** Types are incorrect **)
   
-  Let edges3 : seq (@node value_eqType * @fld value_eqType * @node value_eqType) :=
+  Let edges3 : seq (@node value_eqType * @label value_eqType * @node value_eqType) :=
     [:: pair
         (pair (Node "Human" [::
-                               (pair (Graph.Field "id" [::]) (VInt 1000));
-                               (pair (Graph.Field "name" [::]) (VString "Luke"))
+                               (pair (Label "id" [::]) (VInt 1000));
+                               (pair (Label "name" [::]) (VString "Luke"))
                             ]
               )
-              (Graph.Field "friends" [::])
+              (Label "friends" [::])
         )
         (Node "Starship" [::
-                            (pair (Graph.Field "id" [::]) (VInt 2001));
-                            (pair (Graph.Field "name" [::]) (VString "R2-D2"));
-                            (pair (Graph.Field "primaryFunction" [::]) (VString "Astromech"))
+                            (pair (Label "id" [::]) (VInt 2001));
+                            (pair (Label "name" [::]) (VString "R2-D2"));
+                            (pair (Label "primaryFunction" [::]) (VString "Astromech"))
                          ]
         )
     ].
@@ -257,15 +257,15 @@ Section WrongGraph.
 
 
 
-    Let edges4 : seq (@node value_eqType * fld * node) :=
+    Let edges4 : seq (@node value_eqType * label * node) :=
       [:: pair
           (pair (Node "Query" [::])
-                (Graph.Field "search" [:: (pair "wrong_Arg" (VString "L"))])
+                (Label "search" [:: (pair "wrong_Arg" (VString "L"))])
           )
           (Node "Other" [::
-                           (pair (Graph.Field "id" [::]) (VInt 3000)); (* <--- Type is not in union *)
-                           (pair (Graph.Field "name" [::]) (VString "Falcon")); 
-                           (pair (Graph.Field "length" [::]) (VFloat 34 37))
+                           (pair (Label "id" [::]) (VInt 3000)); (* <--- Type is not in union *)
+                           (pair (Label "name" [::]) (VString "Falcon")); 
+                           (pair (Label "length" [::]) (VFloat 34 37))
                         ]
           )
       ].
@@ -280,17 +280,17 @@ Section WrongGraph.
 
 
 
-    (** Field's are incorrect **)
+    (** Label's are incorrect **)
 
-    Let edges5 : seq (@node value_eqType * @fld value_eqType * @node value_eqType) :=
+    Let edges5 : seq (@node value_eqType * @label value_eqType * @node value_eqType) :=
       [:: pair
           (pair (Node "Query" [::])
-                (Graph.Field "search" [:: (pair "wrong_Arg" (VString "L"))])
+                (Label "search" [:: (pair "wrong_Arg" (VString "L"))])
           )
           (Node "Starship" [::
-                              (pair (Graph.Field "id" [::]) (VInt 3000));
-                              (pair (Graph.Field "name" [:: (pair "wrong" (VString "arg"))]) (VString "Falcon")); (* <--- invalid argument in field*) 
-                              (pair (Graph.Field "length" [::]) (VFloat 34 37))
+                              (pair (Label "id" [::]) (VInt 3000));
+                              (pair (Label "name" [:: (pair "wrong" (VString "arg"))]) (VString "Falcon")); (* <--- invalid argument in field*) 
+                              (pair (Label "length" [::]) (VFloat 34 37))
                            ]
           )
       ].

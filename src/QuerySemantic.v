@@ -104,7 +104,7 @@ Section QuerySemantic.
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some fdef
-            with field_seq_value u.(nprops) (Field f α) :=
+            with field_seq_value u.(nprops) (Label f α) :=
             {
             | Some value => let coerced_value := coerce value in
                            if is_valid_response_value fdef.(return_type) coerced_value then
@@ -121,7 +121,7 @@ Section QuerySemantic.
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some fdef
-            with field_seq_value u.(nprops) (Field f α) :=
+            with field_seq_value u.(nprops) (Label f α) :=
             {
             | Some value => let coerced_value := coerce value in
                            if is_valid_response_value fdef.(return_type) coerced_value then
@@ -141,10 +141,10 @@ Section QuerySemantic.
         | Some fld
             with fld.(return_type) :=
             {
-            | [ _ ] := (f, Array [seq {- (⟦ β ++ merge_selection_sets (find_queries_with_label s f u.(ntype) φ) ⟧ˢ in v) -} | v <- neighbors_with_field g u (Field f α)])
+            | [ _ ] := (f, Array [seq {- (⟦ β ++ merge_selection_sets (find_queries_with_label s f u.(ntype) φ) ⟧ˢ in v) -} | v <- neighbors_with_field g u (Label f α)])
                               :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
             | NamedType _
-                with ohead (neighbors_with_field g u (Field f α)) :=
+                with ohead (neighbors_with_field g u (Label f α)) :=
                 {
                 | Some v => (f, {- (⟦ β ++ merge_selection_sets (find_queries_with_label s f u.(ntype) φ) ⟧ˢ in v) -}) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
                 
@@ -161,10 +161,10 @@ Section QuerySemantic.
         | Some fld
             with fld.(return_type) :=
             {
-            | [ _ ] := (l, Array [seq {- (⟦ β ++ merge_selection_sets (find_queries_with_label s l u.(ntype) φ) ⟧ˢ in v) -} | v <- neighbors_with_field g u (Field f α)])
+            | [ _ ] := (l, Array [seq {- (⟦ β ++ merge_selection_sets (find_queries_with_label s l u.(ntype) φ) ⟧ˢ in v) -} | v <- neighbors_with_field g u (Label f α)])
                               :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
             | NamedType _
-                with ohead (neighbors_with_field g u (Field f α)) :=
+                with ohead (neighbors_with_field g u (Label f α)) :=
                 {
                 | Some v => (l, {- (⟦ β ++ merge_selection_sets (find_queries_with_label s l u.(ntype) φ) ⟧ˢ in v) -}) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
                 
@@ -218,7 +218,7 @@ Section QuerySemantic.
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some fdef
-            with field_seq_value u.(nprops) (Field f α) :=
+            with field_seq_value u.(nprops) (Label f α) :=
             {
             | Some value => let coerced_value := coerce value in
                            if is_valid_response_value fdef.(return_type) coerced_value then
@@ -235,7 +235,7 @@ Section QuerySemantic.
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some fdef
-            with field_seq_value u.(nprops) (Field f α) :=
+            with field_seq_value u.(nprops) (Label f α) :=
             {
             | Some value => let coerced_value := coerce value in
                            if is_valid_response_value fdef.(return_type) coerced_value then
@@ -255,10 +255,10 @@ Section QuerySemantic.
         | Some fld
             with fld.(return_type) :=
             {
-            | ListType _ => (f, Array [seq {- ≪ β ≫ in v -} | v <- neighbors_with_field g u (Field f α)]) :: ≪ φ ≫ in u;
+            | ListType _ => (f, Array [seq {- ≪ β ≫ in v -} | v <- neighbors_with_field g u (Label f α)]) :: ≪ φ ≫ in u;
         
             | NamedType ty
-                with ohead (neighbors_with_field g u (Field f α)) :=
+                with ohead (neighbors_with_field g u (Label f α)) :=
                 {
                 | Some v => (f, {- ≪ β ≫ in v -}) :: ≪ φ ≫ in u;
                 
@@ -274,10 +274,10 @@ Section QuerySemantic.
         | Some fld
             with fld.(return_type) :=
             {
-            | ListType _ => (l, Array [seq {- ≪ β ≫ in v -} | v <- neighbors_with_field g u (Field f α)]) :: ≪ φ ≫ in u;
+            | ListType _ => (l, Array [seq {- ≪ β ≫ in v -} | v <- neighbors_with_field g u (Label f α)]) :: ≪ φ ≫ in u;
         
             | NamedType ty
-                with ohead (neighbors_with_field g u (Field f α)) :=
+                with ohead (neighbors_with_field g u (Label f α)) :=
                 {
                 | Some v => (l, {- ≪ β ≫ in v -}) :: ≪ φ ≫ in u;
                 
@@ -320,20 +320,20 @@ Section QuerySemantic.
   (**
      #<strong>resolve_field_value</strong># : Node → Name → List (Name * Vals) ↪ Vals + List Vals 
 
-     Attempt at replicating the specification's definition of _ResolveFieldValue_ 
+     Attempt at replicating the specification's definition of _ResolveLabelValue_ 
      instantiated to the graph setting.
 
      #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
      **** See also
-     - #<a href='https://graphql.github.io/graphql-spec/June2018/##ResolveFieldValue()'>ResolveFieldValue()</a># 
+     - #<a href='https://graphql.github.io/graphql-spec/June2018/##ResolveLabelValue()'>ResolveLabelValue()</a># 
    *)
   Equations resolve_field_value u (field_name : Name) (argument_values : seq (Name * Vals)) : option (Vals + (@node Vals) + seq (@node Vals)) :=
     {
       resolve_field_value u f α
-        with field_seq_value u.(nprops) (Field f α) :=
+        with field_seq_value u.(nprops) (Label f α) :=
         {
         | Some value := Some (inl (inl value));
-        | _ with neighbors_with_field g u (Field f α) :=
+        | _ with neighbors_with_field g u (Label f α) :=
             {
             | [::] := None;
             | [:: v] => Some (inl (inr v));
@@ -413,7 +413,7 @@ Section QuerySemantic.
     {
       _ ⊢ [::] ≡ [::] := true;
 
-      ty ⊢ SingleField f α :: φ1 ≡ SingleField f' α' :: φ2
+      ty ⊢ SingleLabel f α :: φ1 ≡ SingleLabel f' α' :: φ2
         with (f == f') && (α == α') :=
         {
         | true 
@@ -425,7 +425,7 @@ Section QuerySemantic.
         | _ := false
         };
       
-       ty ⊢ SingleField f α :: φ1 ≡ LabeledField l f' α' :: φ2
+       ty ⊢ SingleLabel f α :: φ1 ≡ LabeledLabel l f' α' :: φ2
         with [&& (f == l), (f == f') & (α == α')] :=
         {
         | true 
@@ -437,7 +437,7 @@ Section QuerySemantic.
         | _ := false
         };
 
-       ty ⊢ LabeledField l f α :: φ1 ≡ SingleField f' α' :: φ2
+       ty ⊢ LabeledLabel l f α :: φ1 ≡ SingleLabel f' α' :: φ2
         with [&& (l == f'), (f == f') & (α == α')] :=
         {
         | true 
@@ -449,7 +449,7 @@ Section QuerySemantic.
         | _ := false
         };
           
-       ty ⊢ LabeledField l f α :: φ1 ≡ LabeledField l' f' α' :: φ2
+       ty ⊢ LabeledLabel l f α :: φ1 ≡ LabeledLabel l' f' α' :: φ2
         with [&& (l == l'), (f == f') & (α == α')] :=
         {
         | true 
@@ -461,7 +461,7 @@ Section QuerySemantic.
         | _ := false
         }; 
 
-      ty ⊢ NestedField f α β :: φ1 ≡ NestedField f' α' χ :: φ2
+      ty ⊢ NestedLabel f α β :: φ1 ≡ NestedLabel f' α' χ :: φ2
         with (f == f') && (α == α') :=
         {
         | true
@@ -476,7 +476,7 @@ Section QuerySemantic.
         | _ := false
         };
 
-      ty ⊢ NestedField f α β :: φ1 ≡ NestedLabeledField l f' α' χ :: φ2
+      ty ⊢ NestedLabel f α β :: φ1 ≡ NestedLabeledLabel l f' α' χ :: φ2
         with [&& (f == l), (f == f') & (α == α')] :=
         {
         | true
@@ -491,7 +491,7 @@ Section QuerySemantic.
         | _ := false
         };
 
-      ty ⊢ NestedLabeledField l f α β :: φ1 ≡ NestedField f' α' χ :: φ2
+      ty ⊢ NestedLabeledLabel l f α β :: φ1 ≡ NestedLabel f' α' χ :: φ2
         with [&& (f == l), (f == f') & (α == α')] :=
         {
         | true
@@ -506,7 +506,7 @@ Section QuerySemantic.
         | _ := false
         };
 
-      ty ⊢ NestedLabeledField l f α β :: φ1 ≡ NestedLabeledField l' f' α' χ :: φ2
+      ty ⊢ NestedLabeledLabel l f α β :: φ1 ≡ NestedLabeledLabel l' f' α' χ :: φ2
         with [&& (l == l'), (f == f') & (α == α')] :=
         {
         | true

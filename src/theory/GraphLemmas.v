@@ -39,7 +39,7 @@ Section Theory.
   Section Aux.
 
     Variable (graph :  @graphQLGraph Vals).
-    Implicit Type edge : @node Vals * @fld Vals * @node Vals.
+    Implicit Type edge : @node Vals * @label Vals * @node Vals.
 
   
     (** ---- *)
@@ -58,12 +58,12 @@ Section Theory.
        This lemma states that neighbors of a node are also
        nodes in the graph.
      *)
-    Lemma neighbors_are_in_nodes u fld:
-      forall x, x \in neighbors_with_field graph u fld -> x \in graph.(nodes).
+    Lemma neighbors_are_in_nodes u label:
+      forall x, x \in neighbors_with_field graph u label -> x \in graph.(nodes).
     Proof.
       rewrite /neighbors_with_field /nodes => x.
       rewrite -?in_undup => /mapP [v].
-      rewrite mem_filter => /andP [/andP [/eqP Hsrc /eqP Hfld] Hin] /= Heq.
+      rewrite mem_filter => /andP [/andP [/eqP Hsrc /eqP Hlabel] Hin] /= Heq.
       apply/orP; right.
       apply/flatten_mapP.
       exists v => //=.
@@ -139,20 +139,20 @@ Section Theory.
      must have a type that is subtype of the type associated to the 
      field used in the edge.
      *)
-    Lemma neighbors_are_subtype_of_field u fld fdef  :
-      lookup_field_in_type s u.(ntype) fld.(label) = Some fdef ->
-      forall v, v \in neighbors_with_field g u fld ->
+    Lemma neighbors_are_subtype_of_field u label fdef  :
+      lookup_field_in_type s u.(ntype) label.(lname) = Some fdef ->
+      forall v, v \in neighbors_with_field g u label ->
                  v.(ntype) \in get_possible_types s fdef.(return_type).
     Proof.
       move=> Hlook.
       case: g => g'; rewrite /is_a_conforming_graph /= => /and3P [Hroot Hedges Hnodes] v.
       rewrite /neighbors_with_field -in_undup => /mapP [v'].
-      case: v' => [[src' fld'] target].
-      rewrite mem_filter => /andP [/andP [/eqP /= Hsrc /eqP Hfld] Hin] Htrgt.
+      case: v' => [[src' label'] target].
+      rewrite mem_filter => /andP [/andP [/eqP /= Hsrc /eqP Hlabel] Hin] Htrgt.
       simpl in Hin.
       move: Hedges; rewrite /edges_conform /=.
       case/andP=> _ /allP-/(_ _ Hin).
-      rewrite Hsrc Hfld Htrgt Hlook /=.
+      rewrite Hsrc Hlabel Htrgt Hlook /=.
         by case: ifP => //= _; [case/and3P | case/andP].  
     Qed.
 

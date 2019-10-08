@@ -373,9 +373,9 @@ Section Theory.
       have Hvtype : v.(ntype) = rty.
         rewrite Hrty /= in Heq.
         apply: (in_object_possible_types Heq).
-        have Hlook : lookup_field_in_type s u.(ntype) (Field name1 arguments1) = Some f by [].
+        have Hlook : lookup_field_in_type s u.(ntype) (Label name1 arguments1) = Some f by [].
         move/ohead_in: Hv => Hin.
-        move: (@neighbors_are_subtype_of_field Vals s g u (Field name1 arguments1) f Hlook v Hin).
+        move: (@neighbors_are_subtype_of_field Vals s g u (Label name1 arguments1) f Hlook v Hin).
           by rewrite Hrty.
       by apply: H => //; rewrite Hvtype.
       
@@ -387,8 +387,8 @@ Section Theory.
         apply: neighbors_are_in_nodes; exact: Hin.
       have Hvtype : v.(ntype) = rty.
         rewrite Hrty in Heq; apply: (in_object_possible_types Heq).
-        have Hlook : lookup_field_in_type s u.(ntype) (Field name1 arguments1) = Some f by [].
-        move: (@neighbors_are_subtype_of_field Vals s g u (Field name1 arguments1) f Hlook v Hin).
+        have Hlook : lookup_field_in_type s u.(ntype) (Label name1 arguments1) = Some f by [].
+        move: (@neighbors_are_subtype_of_field Vals s g u (Label name1 arguments1) f Hlook v Hin).
           by rewrite Hrty /=. (* ?? *)
       by apply: H => //; rewrite Hvtype.
             
@@ -409,7 +409,7 @@ Section Theory.
                   by apply/allP; apply: in_possible_types_is_object.
 
                   move/ohead_in: Hv => Hin.
-                  move: (@neighbors_are_subtype_of_field Vals s g u (Field name1 arguments1) f Heq0 v Hin).
+                  move: (@neighbors_are_subtype_of_field Vals s g u (Label name1 arguments1) f Heq0 v Hin).
                     by rewrite Hrty.
                     
       * congr cons; congr pair; congr Array.
@@ -425,7 +425,7 @@ Section Theory.
               by apply: uniq_get_possible_types.
                 by apply/allP; apply: in_possible_types_is_object.  
 
-                move: (@neighbors_are_subtype_of_field Vals s g u (Field name1 arguments1) f Heq0 v Hin).
+                move: (@neighbors_are_subtype_of_field Vals s g u (Label name1 arguments1) f Heq0 v Hin).
                   by rewrite Hrty.
                   
 
@@ -439,9 +439,9 @@ Section Theory.
       have Hvtype : v.(ntype) = rty.
       rewrite Hrty /= in Heq.
       apply: (in_object_possible_types Heq).
-      have Hlook : lookup_field_in_type s u.(ntype) (Field name2 arguments2) = Some f by [].
+      have Hlook : lookup_field_in_type s u.(ntype) (Label name2 arguments2) = Some f by [].
       move/ohead_in: Hv => Hin.
-      move: (@neighbors_are_subtype_of_field Vals s g u (Field name2 arguments2) f Hlook v Hin).
+      move: (@neighbors_are_subtype_of_field Vals s g u (Label name2 arguments2) f Hlook v Hin).
         by rewrite Hrty.
           by apply: H => //; rewrite Hvtype.
               
@@ -454,8 +454,8 @@ Section Theory.
       apply: neighbors_are_in_nodes; exact: Hin.
       have Hvtype : v.(ntype) = rty.
       rewrite Hrty in Heq; apply: (in_object_possible_types Heq).
-      have Hlook : lookup_field_in_type s u.(ntype) (Field name2 arguments2) = Some f by [].
-      move: (@neighbors_are_subtype_of_field Vals s g u (Field name2 arguments2) f Hlook v Hin).
+      have Hlook : lookup_field_in_type s u.(ntype) (Label name2 arguments2) = Some f by [].
+      move: (@neighbors_are_subtype_of_field Vals s g u (Label name2 arguments2) f Hlook v Hin).
         by rewrite Hrty /=. (* ?? *)
           by apply: H => //; rewrite Hvtype.
             
@@ -476,7 +476,7 @@ Section Theory.
                 by apply/allP; apply: in_possible_types_is_object.
                 
                 move/ohead_in: Hv => Hin.
-                move: (@neighbors_are_subtype_of_field Vals s g u (Field name2 arguments2) f Heq0 v Hin).
+                move: (@neighbors_are_subtype_of_field Vals s g u (Label name2 arguments2) f Heq0 v Hin).
                   by rewrite Hrty.
                   
 
@@ -493,7 +493,7 @@ Section Theory.
             by apply: uniq_get_possible_types.
               by apply/allP; apply: in_possible_types_is_object.  
               
-              move: (@neighbors_are_subtype_of_field Vals s g u (Field name2 arguments2) f Heq0 v Hin).
+              move: (@neighbors_are_subtype_of_field Vals s g u (Label name2 arguments2) f Heq0 v Hin).
                 by rewrite Hrty.
   Qed.
 

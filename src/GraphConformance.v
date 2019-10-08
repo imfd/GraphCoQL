@@ -58,7 +58,7 @@ Section Conformance.
   Section GraphAux.
 
     Variable (graph :  @graphQLGraph Vals).
-    Implicit Type edge : @node Vals * @fld Vals * @node Vals.
+    Implicit Type edge : @node Vals * @label Vals * @node Vals.
 
     
     
@@ -82,7 +82,7 @@ Section Conformance.
     (**
        Returns an edge's field (label).
      *)
-    Definition efield edge : fld :=
+    Definition efield edge : label :=
       let: (_, f, _) := edge in f.
 
     (** ---- *)
@@ -103,7 +103,7 @@ Section Conformance.
     (**
        Returns a node's neighbors.
      *)
-    Definition neighbors (u : node) (edges : seq (node * fld * node)) : seq node :=
+    Definition neighbors (u : node) (edges : seq (node * label * node)) : seq node :=
       undup [seq edge.(etarget) | edge <- edges & edge.(esource) == u]. 
 
     
@@ -112,7 +112,7 @@ Section Conformance.
     (**
        Get a node's neighbors connected via an edge with a given field. 
      *)
-    Definition neighbors_with_field (u : node) (f : fld) : seq node :=
+    Definition neighbors_with_field (u : node) (f : label) : seq node :=
       undup [seq edge.(etarget) |  edge <- [seq edge <- graph.(E) | (esource edge == u) & (efield edge == f)]].
 
 
@@ -121,7 +121,7 @@ Section Conformance.
       This predicate checks whether there is only one edge coming out of the source node and 
       having the given field.
      *)
-    Definition is_field_unique_for_src_node graph (src_node : node) (f : fld) : bool :=
+    Definition is_field_unique_for_src_node graph (src_node : node) (f : label) : bool :=
       uniq [seq edge <- graph.(E) | (esource edge == src_node) & (efield edge == f)].
     
     
@@ -157,7 +157,7 @@ Section Conformance.
     (** ---- *)
     (** *** Arguments conform
 
-      #<strong>arguments_conform</strong># : wfGraphQLSchema → graphQLSchema → fld → Bool
+      #<strong>arguments_conform</strong># : wfGraphQLSchema → graphQLSchema → label → Bool
 
       This predicate checks a field's arguments conform to 
       what the Schema requires of them.
@@ -167,7 +167,7 @@ Section Conformance.
       This is used when validating edges' fields and nodes' properties.
      **)
     
-    Definition arguments_conform ty (f : fld) : bool :=
+    Definition arguments_conform ty (f : label) : bool :=
       let argument_conforms (fname : Name) (arg : Name * Vals) : bool :=
           let: (argname, value) := arg in
           match lookup_argument_in_type_and_field s ty fname argname with
@@ -175,7 +175,7 @@ Section Conformance.
           | _ => false
           end
       in
-      all (argument_conforms f.(label)) f.(args).
+      all (argument_conforms f.(lname)) f.(args).
     
 
 
@@ -205,16 +205,16 @@ Section Conformance.
        these types in a graph. More is discussed in the corresponding paper.     
      **)    
     Definition edges_conform graph :=
-      let edge_conforms (edge : node * fld * @node Vals) : bool :=
-          let: (src, fld, target) := edge in
-          match lookup_field_in_type s src.(ntype) fld.(label) with
+      let edge_conforms (edge : node * label * @node Vals) : bool :=
+          let: (src, label, target) := edge in
+          match lookup_field_in_type s src.(ntype) label.(lname) with
           | Some fdef =>
             if ~~is_list_type fdef.(return_type) then
               [&& target.(ntype) \in get_possible_types s fdef.(return_type),
-                                     is_field_unique_for_src_node graph src fld &
-                                     arguments_conform src.(ntype) fld]
+                                     is_field_unique_for_src_node graph src label &
+                                     arguments_conform src.(ntype) label]
             else
-              (target.(ntype) \in get_possible_types s fdef.(return_type)) && arguments_conform src.(ntype) fld
+              (target.(ntype) \in get_possible_types s fdef.(return_type)) && arguments_conform src.(ntype) label
           | _ => false     
           end
       in
@@ -239,8 +239,8 @@ Section Conformance.
        
      **)    
     Definition nodes_conform (nodes : seq (@node Vals)) :=
-      let property_conforms ty (fd : fld * Vals) : bool :=
-          match lookup_field_in_type s ty fd.1.(label) with
+      let property_conforms ty (fd : label * Vals) : bool :=
+          match lookup_field_in_type s ty fd.1.(lname) with
           | Some fdef => arguments_conform ty fd.1 && s.(is_valid_value) fdef.(return_type) fd.2
           | _ => false
           end
