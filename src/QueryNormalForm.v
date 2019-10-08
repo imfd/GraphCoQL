@@ -87,7 +87,7 @@ Section NormalForm.
      in ground-typed normal form.
    *)
   Definition is_a_grounded_typed_nf_query (q : @query Vals) :=
-    all (fun s => s.(is_field) && s.(is_in_ground_typed_nf)) q.(selection_set).
+    all (fun sel => sel.(is_field) && sel.(is_in_ground_typed_nf)) q.(selection_set).
   
 
   (** ---- *)

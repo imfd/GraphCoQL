@@ -209,8 +209,7 @@ Section QuerySemantic.
 
      The definition corresponds to the one given by P&H.
    *)
-  (* TODO : Rename ! *)
-  Equations? execute_selection_set2 u queries :
+  Equations? simpl_execute_selection_set u queries :
     seq (Name * ResponseNode) by wf (queries_size queries) :=
     {
       ≪ [::] ≫ in _ := [::];
@@ -298,11 +297,14 @@ Section QuerySemantic.
         }
 
     }
-  where "≪ queries ≫ 'in' u" := (execute_selection_set2 u queries).
+  where "≪ queries ≫ 'in' u" := (simpl_execute_selection_set u queries).
   Proof.
     all: do [leq_queries_size].
   Qed.
 
+
+  Definition simpl_execute_query (q : @query Vals) :=
+    ≪ q.(selection_set) ≫ in g.(root).
   
  
 
@@ -566,14 +568,15 @@ End QuerySemantic.
 Arguments is_valid_response_value [Vals].
 Arguments execute_selection_set [Vals].
 Arguments execute_query [Vals].
-Arguments execute_selection_set2 [Vals].
+Arguments simpl_execute_selection_set [Vals].
+Arguments simpl_execute_query [Vals].
 
 Delimit Scope query_eval with QEVAL.
 Open Scope query_eval.
 
 (* This notation collides with the pairs notation (_ , _) ...  *)
 Notation "s , g ⊢ ⟦ φ ⟧ˢ 'in' u 'with' coerce" := (execute_selection_set s g coerce u φ) (at level 30, g at next level, φ at next level) : query_eval.
-Notation "s , g ⊢ ≪ φ ≫ 'in' u 'with' coerce" := (execute_selection_set2 s g coerce u φ) (at level 30, g at next level, φ at next level) : query_eval.
+Notation "s , g ⊢ ≪ φ ≫ 'in' u 'with' coerce" := (simpl_execute_selection_set s g coerce u φ) (at level 30, g at next level, φ at next level) : query_eval.
 
 
 (** ---- *)

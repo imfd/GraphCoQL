@@ -147,28 +147,28 @@ Section Theory.
 
       | [H : (return_type ?f) = _ |- context [ return_type ?f ] ] => rewrite H /=
 
-      | [|- context[ execute_selection_set2_unfold_clause_4_clause_1 _ _ _ _ _ (return_type ?fld)] ] =>
+      | [|- context[ simpl_execute_selection_set_unfold_clause_4_clause_1 _ _ _ _ _ (return_type ?fld)] ] =>
         let Hrty := fresh "Hrty" in
         let rty := fresh "rty" in
         case Hrty : fld.(return_type) => [rty | rty] /=
 
-      | [|- context[ execute_selection_set2_unfold_clause_4_clause_1_clause_2 _ _ _ _ _ _ _ (ohead _)] ] =>
+      | [|- context[ simpl_execute_selection_set_unfold_clause_4_clause_1_clause_2 _ _ _ _ _ _ _ (ohead _)] ] =>
         let Hv := fresh "Hv" in
         case Hv : ohead => [v|] //=
      
-      | [|- context[ execute_selection_set2_unfold_clause_5_clause_1 _ _ _ _ _ (return_type ?fld)] ] =>
+      | [|- context[ simpl_execute_selection_set_unfold_clause_5_clause_1 _ _ _ _ _ (return_type ?fld)] ] =>
         let Hrty := fresh "Hrty" in
         let rty := fresh "rty" in
         case Hrty : fld.(return_type) => [rty | rty] /=
 
-      | [|- context[ execute_selection_set2_unfold_clause_5_clause_1_clause_2 _ _ _ _ _ _ _ (ohead _)] ] =>
+      | [|- context[ simpl_execute_selection_set_unfold_clause_5_clause_1_clause_2 _ _ _ _ _ _ _ (ohead _)] ] =>
         let Hv := fresh "Hv" in
         case Hv : ohead => [v|] //=
      
       | [H : (ohead (neighbors_with_field _ _ _)) = _ |- context [ ohead (neighbors_with_field _ _ _)] ] =>
         rewrite H /=
       | [ H : does_fragment_type_apply _ _ _ = _ |- context [ does_fragment_type_apply _ _ _] ] => rewrite H /=
-      | [ |- context [ _, _ ⊢ ≪ _ ≫ in _ with _] ] => simp execute_selection_set2
+      | [ |- context [ _, _ ⊢ ≪ _ ≫ in _ with _] ] => simp simpl_execute_selection_set
       end.
 
 
@@ -644,7 +644,7 @@ Section Theory.
      both the semantics with collection and the simplified semantics are 
      equivalent.
    *)
-  Theorem exec_equivalence u φ :
+  Lemma exec_equivalence u φ :
     (all (fun s => s.(is_field)) φ || all (fun s => s.(is_inline_fragment)) φ) ->
     all (is_in_ground_typed_nf s) φ ->
     are_non_redundant φ -> 
@@ -677,9 +677,7 @@ Section Theory.
        
           
       * by apply: IH => //; leq_queries_size; apply/orP; right.
-
-        
-      
+     
       
         all: do ? exec; exec2.
     all: do ? [move=> Hg; bcase].
@@ -695,6 +693,38 @@ Section Theory.
     all: do ? [by apply: IH => //; leq_queries_size; move: Hb1; bcase].              
   Qed.
 
+  Theorem exec_query_eq_simpl_exec q :
+    is_in_normal_form s q -> 
+    execute_query s g coerce q =
+    simpl_execute_query s g coerce q.
+  Proof.
+    case: q => n ss.
+    rewrite /is_in_normal_form /is_a_grounded_typed_nf_query /is_non_redundant /=.
+    move=> /andP [/allP Hg Hnr].
+    rewrite /simpl_execute_query /execute_query /=.
+    apply: exec_equivalence => //=.
+    apply/orP; left.
+    all: do [by apply/allP=> sel Hin; have := (Hg sel Hin); case/andP].
+  Qed.
+
+
+  Corollary exec_normalized_selections_eq_simpl_exec ss u :
+    s, g ⊢ ⟦ normalize_selections s u.(ntype) ss ⟧ˢ in u with coerce =
+    s, g ⊢ ≪ normalize_selections s u.(ntype) ss ≫ in u with coerce.
+  Proof.
+    apply: exec_equivalence => //=.
+    - by apply/orP; left; apply: normalized_selections_are_fields.
+    - by apply: normalized_selections_are_in_gt_nf.
+    - by apply: normalized_selections_are_non_redundant.
+  Qed.
+
+  Corollary exec_normalized_query_eq_simpl_exec q :
+    execute_query s g coerce (normalize s q) =
+    simpl_execute_query s g coerce (normalize s q).
+  Proof.
+      by apply: exec_query_eq_simpl_exec; apply: normalized_query_is_in_nf.
+  Qed.
+  
   
 (** ---- *)
 End Theory.
