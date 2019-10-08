@@ -42,26 +42,24 @@ Section Query.
   (* Unsetting because the automatically generated induction principle is not good enough. *)
   Unset Elimination Schemes.
 
-  (** *** Query 
+  (** ** Selection 
       
-      A Query corresponds to an atomic selection one may perform in a GraphQL service. 
+      A Selection corresponds to an atomic piece of information one may request from a GraphQL service. 
       It can either be a field selection or an inline fragment.
       
-      A query can be seen as a tree, where fields without subqueries would 
+      A selection can be seen as a tree, where fields without subqueries 
       represent the leaves of the tree and fields with subqueries, as well as 
-      inline fragments with represent inner nodes.
+      inline fragments represent inner nodes.
 
       #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
       **** Observations
 
-      - Naming : In the spec, an atomic query is referred as a "Selection" and 
-        the collective as "Selection Sets". Here, we preferred to give the 
-        name "Query" to the type of an atomic selection instead and a list of Query will 
-        be referred as queries. Both "query" and "queries" might be used interchangeably, 
-        assuming that it is understood by context.
+      - SelectionSets: The Spec defines a mutually inductive type, using 
+      SelectionSets and Selection, where the former represents a non-empty list.
+      We decide to model it simply as a list.
       
   *)
-  Inductive Query : Type :=
+  Inductive Selection : Type :=
   | SingleField (name : Name)
                 (arguments : seq (Name * Vals))
                 
@@ -71,15 +69,15 @@ Section Query.
                  
   | NestedField (name : Name)
                 (arguments : seq (Name * Vals))
-                (subqueries : seq Query)
+                (subqueries : seq Selection)
                 
   | NestedAliasedField (alias : Name)
                        (name : Name)
                        (arguments : seq (Name * Vals))
-                       (subqueries : seq Query)
+                       (subqueries : seq Selection)
 
   | InlineFragment (type_condition : Name)
-                   (subqueries : seq Query).
+                   (subqueries : seq Selection).
 
   
   Set Elimination Schemes.
@@ -87,10 +85,10 @@ Section Query.
   
   (** ---- *)
   (**
-     Defining the induction principle for Query.
+     Defining the induction principle for Selection.
    *)
-  Definition Query_rect (P : Query -> Type)
-             (Pl : seq Query -> Type)
+  Definition Selection_rect (P : Selection -> Type)
+             (Pl : seq Selection -> Type)
              (IH_SF : forall n α, P (SingleField n α))
              (IH_LF : forall l n α, P (AliasedField l n α))
              (IH_NF : forall n α ϕ, Pl ϕ -> P (NestedField n α ϕ))
@@ -99,14 +97,14 @@ Section Query.
              (IH_Nil : Pl [::])
              (IH_Cons : forall q, P q -> forall qs, Pl qs -> Pl (q :: qs))
     :=
-    fix loop query : P query :=
-      let fix F (qs : seq Query) : Pl qs :=
+    fix loop selection : P selection :=
+      let fix F (qs : seq Selection) : Pl qs :=
           match qs with
           | [::] => IH_Nil
           | hd :: tl => IH_Cons hd (loop hd) tl (F tl)
           end
       in
-      match query with
+      match selection with
       | SingleField n α => IH_SF n α
       | AliasedField l n α => IH_LF l n α
       | NestedField n α ϕ => IH_NF n α ϕ (F ϕ)
@@ -114,10 +112,10 @@ Section Query.
       | InlineFragment t ϕ => IH_IF t ϕ (F ϕ)
       end.
 
-  Definition Query_rec (P : Query -> Set) := @Query_rect P.
+  Definition Selection_rec (P : Selection -> Set) := @Selection_rect P.
 
-  Definition Query_ind (P : Query -> Prop)
-             (Pl : seq Query -> Prop)
+  Definition Selection_ind (P : Selection -> Prop)
+             (Pl : seq Selection -> Prop)
             (IH_SF : forall n α, P (SingleField n α))
             (IH_LF : forall l n α, P (AliasedField l n α))
             (IH_NF : forall n α ϕ, Pl ϕ -> P (NestedField n α ϕ))
@@ -126,14 +124,14 @@ Section Query.
             (IH_Nil : Pl [::])
             (IH_Cons : forall q, P q -> forall qs, Pl qs -> Pl (q :: qs))
     :=
-      fix loop query : P query :=
-        let fix F (qs : seq Query) : Pl qs :=
+      fix loop selection : P selection :=
+        let fix F (qs : seq Selection) : Pl qs :=
           match qs with
           | [::] => IH_Nil
           | hd :: tl => IH_Cons hd (loop hd) tl (F tl)
           end
         in
-        match query with
+        match selection with
         | SingleField n α => IH_SF n α
         | AliasedField l n α => IH_LF l n α
         | NestedField n α ϕ => IH_NF n α ϕ (F ϕ)
@@ -142,41 +140,58 @@ Section Query.
         end.
 
 
+  (** ** Query 
+     
+     A query is one of the three operations executable in a GraphQL service
+     and it is formed by an optional name and a list of selections.
+
+   *)
+  Record query := Query {
+                     qname : option string;
+                     selection_set : seq Selection
+                   }.
+
+
     
 End Query.
 (** ---- *)
 
-Arguments Query [Vals].
+Arguments Selection [Vals].
 Arguments SingleField [Vals].
 Arguments AliasedField [Vals].
 Arguments NestedField [Vals].
 Arguments NestedAliasedField [Vals].
 Arguments InlineFragment [Vals].
 
+Arguments query [Vals].
+Arguments Query [Vals].
+Arguments qname [Vals].
+Arguments selection_set [Vals].
+
 (** *** Notations 
       
       Notations follow closely to the ones used in Pérez & Hartig.
 
  *)
-Delimit Scope query_scope with QUERY.
-Open Scope query_scope.
+Delimit Scope selection_scope with QUERY.
+Open Scope selection_scope.
 
 (* Maybe we could add formatting *)
 (* We are using double brackets because there is too much conflict with these notations and
    others already used... And I don't really get how to fix it *)
-Notation "f [[ α ]]" := (SingleField f α) (at level 20, α at next level) : query_scope.
-Notation "l : f [[ α ]]" := (AliasedField l f α) (at level 20, f at next level, α at next level)  : query_scope.
-Notation "f [[ α ]] { φ }" := (NestedField f α φ) (at level 20, α at next level, φ at next level) : query_scope.
+Notation "f [[ α ]]" := (SingleField f α) (at level 20, α at next level) : selection_scope.
+Notation "l : f [[ α ]]" := (AliasedField l f α) (at level 20, f at next level, α at next level)  : selection_scope.
+Notation "f [[ α ]] { φ }" := (NestedField f α φ) (at level 20, α at next level, φ at next level) : selection_scope.
 Notation "l : f [[ α ]] { φ }" := (NestedAliasedField l f α φ)
-                                 (at level 20, f at next level, α at next level, φ at next level)  : query_scope.
-Notation "'on' t { φ }" := (InlineFragment t φ) (t at next level, φ at next level) : query_scope.
+                                 (at level 20, f at next level, α at next level, φ at next level)  : selection_scope.
+Notation "'on' t { φ }" := (InlineFragment t φ) (t at next level, φ at next level) : selection_scope.
 
 (** ---- *)
 
 (** 
     #<div>
         <a href='GraphCoQL.Schema.html' class="btn btn-light" role='button'> Previous ← SchemaWellFormedness  </a>
-        <a href='GraphCoQL.QueryConformance.html' class="btn btn-info" role='button'>Continue Reading → QueryConformance </a>
+        <a href='GraphCoQL.SelectionConformance.html' class="btn btn-info" role='button'>Continue Reading → SelectionConformance </a>
     </div>#
 *)
 
@@ -190,7 +205,7 @@ Section Equality.
   
   (** * Equality 
      This section deals with some SSReflect bureaucratic things, in particular 
-     establishing that a Query has decidable procedure to establish equality (they belong to the 
+     establishing that a Selection has decidable procedure to establish equality (they belong to the 
      SSReflect type - eqType).
 
      This is basically done by establishing isomorphisms between the different structures
@@ -198,8 +213,8 @@ Section Equality.
    *)
   
   (**
-     Declaring functions to establish isomorphism of Query to GenTree, allowing us 
-     to later prove that Query has a decidable equality procedure.
+     Declaring functions to establish isomorphism of Selection to GenTree, allowing us 
+     to later prove that Selection has a decidable equality procedure.
      
      We could define our own procedure but this way we may also benefit from other properties
      defined for GenTree already.
@@ -207,28 +222,28 @@ Section Equality.
   (* Maybe not... we are not really using anything else *)
   
   (**
-     tree_of_query : Query -> GenTree.tree (option Name * Name * List (Name * Vals))
+     tree_of_selection : Selection -> GenTree.tree (option Name * Name * List (Name * Vals))
 
-     Converts a Query into a tree.
+     Converts a Selection into a tree.
    *)
-  Fixpoint tree_of_query query : GenTree.tree (option Name * Name * seq (Name * Vals)):=
-    match query with
+  Fixpoint tree_of_selection selection : GenTree.tree (option Name * Name * seq (Name * Vals)):=
+    match selection with
     | SingleField f α => GenTree.Node 0 [:: GenTree.Leaf  (None, f, α)]
     | AliasedField l f α => GenTree.Node 1 [:: GenTree.Leaf (Some l, f, α)]
-    | NestedField f α φ => GenTree.Node 2  (GenTree.Leaf (None, f, α) :: [seq (tree_of_query subquery) | subquery <- φ])
-    | NestedAliasedField l f α φ => GenTree.Node 3 (GenTree.Leaf (Some l, f, α) :: [seq (tree_of_query subquery) | subquery <- φ])
-    | InlineFragment t φ => GenTree.Node 4 (GenTree.Leaf (None, t, [::]) :: [seq (tree_of_query subquery) | subquery <- φ])
+    | NestedField f α φ => GenTree.Node 2  (GenTree.Leaf (None, f, α) :: [seq (tree_of_selection subselection) | subselection <- φ])
+    | NestedAliasedField l f α φ => GenTree.Node 3 (GenTree.Leaf (Some l, f, α) :: [seq (tree_of_selection subselection) | subselection <- φ])
+    | InlineFragment t φ => GenTree.Node 4 (GenTree.Leaf (None, t, [::]) :: [seq (tree_of_selection subselection) | subselection <- φ])
     end.
 
 
   (**
-     get_subqueries : List (option Query) -> List Query 
+     get_subqueries : List (option Selection) -> List Selection 
 
      Retrieves elements of a list of options which are not None.
 
      This could be generalised.
    *)
-  Fixpoint get_subqueries (queries : seq (option (@Query Vals))) : seq Query :=
+  Fixpoint get_subqueries (queries : seq (option (@Selection Vals))) : seq Selection :=
     match queries with
       | [::] => [::]
       | ((Some q) :: tl) => q :: get_subqueries tl
@@ -236,24 +251,24 @@ Section Equality.
     end.
 
   (**
-     query_of_tree : GenTree.tree -> option Query 
+     selection_of_tree : GenTree.tree -> option Selection 
 
-     Converts a tree into a Query.
+     Converts a tree into a Selection.
 
      If the tree cannot be converted then it returns None.
    *)
-  Fixpoint query_of_tree tree : option Query :=
+  Fixpoint selection_of_tree tree : option Selection :=
     match tree with
     | (GenTree.Node 0 [:: GenTree.Leaf  (None, f, α)]) => Some (SingleField f α)
       | (GenTree.Node 1 [:: GenTree.Leaf (Some l, f, α)]) => Some (AliasedField l f α)
       | (GenTree.Node 2  (GenTree.Leaf (None, f, α) :: subtree)) =>
-        Some (NestedField f α (get_subqueries [seq (query_of_tree t) | t <- subtree]))
+        Some (NestedField f α (get_subqueries [seq (selection_of_tree t) | t <- subtree]))
       
       | (GenTree.Node 3  (GenTree.Leaf (Some l, f, α) :: subtree)) =>
-          Some (NestedAliasedField l f α (get_subqueries [seq (query_of_tree t) | t <- subtree]))
+          Some (NestedAliasedField l f α (get_subqueries [seq (selection_of_tree t) | t <- subtree]))
       
       | (GenTree.Node 4  (GenTree.Leaf (None, t, emptym) :: subtree)) =>
-        Some (InlineFragment t (get_subqueries [seq (query_of_tree t) | t <- subtree]))
+        Some (InlineFragment t (get_subqueries [seq (selection_of_tree t) | t <- subtree]))
          
 
       | _ => None
@@ -261,15 +276,15 @@ Section Equality.
 
 
   (**
-     Proving cancelling lemma, used to establish isomorphism between Query 
-     and GenTree, which can be used to establish that Query is in eqType.
+     Proving cancelling lemma, used to establish isomorphism between Selection 
+     and GenTree, which can be used to establish that Selection is in eqType.
    *)
-  Lemma tree_of_queryK : pcancel tree_of_query query_of_tree.
+  Lemma tree_of_selectionK : pcancel tree_of_selection selection_of_tree.
   Proof.
     move=> q.
-    elim q using Query_ind with
+    elim q using Selection_ind with
         (Pl := fun qs =>
-                Forall (fun q' => query_of_tree (tree_of_query q') = Some q') qs) => //=
+                Forall (fun q' => selection_of_tree (tree_of_selection q') = Some q') qs) => //=
     [ f α φ /Forall_forall H
     | l f α φ /Forall_forall H
     | t φ /Forall_forall H
@@ -285,10 +300,17 @@ Section Equality.
 
   
   (**
-     Defining query_eqType.
+     Defining selection_eqType.
    *)
-  Canonical query_eqType := EqType Query (PcanEqMixin tree_of_queryK).
+  Canonical selection_eqType := EqType Selection (PcanEqMixin tree_of_selectionK).
 
 
+  Definition tuple_of_query (q : @query Vals) := let: (Query n b) := q in (n, b).
+  Definition query_of_tuple (nb : option Name * seq (@Selection Vals)) := let: (n, b) := nb in Query n b.
+
+  Lemma tuple_of_queryK : cancel tuple_of_query query_of_tuple.
+  Proof. by case. Qed.
+
+  Canonical query_eqType := EqType query (CanEqMixin tuple_of_queryK).
 
 End Equality.

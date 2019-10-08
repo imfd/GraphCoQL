@@ -46,69 +46,55 @@ Section NormalForm.
   Variables Vals : eqType.
   Variables (s : @wfGraphQLSchema Vals).
   
-  Implicit Type queries : seq (@Query Vals).
-  Implicit Type query : @Query Vals.
+  Implicit Type queries : seq (@Selection Vals).
+  Implicit Type query : @Selection Vals.
   
 
   (** * Definitions *)
   
-  (** ** Groundness
+  (** ** Groundedness
       In this section we define the predicates to establish when a 
-      GraphQL Query is grounded.
+      GraphQL Selection is grounded.
    *)
   (** ---- *)
   (**
-     #<strong>is_grounded</strong># : Query → Bool 
+     #<strong>is_in_ground_typed_nf</strong># : Selection → Bool 
 
-     #<strong>are_grounded_fields</strong># : List Query → Bool
-
-     #<strong>are_grounded_inlines</strong># : List Query → Bool
-
-     #<strong>are_grounded</strong># : List Query → Bool
-
-     #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-
-     Checks whether the given queries are grounded.
-
-     Differently from Pérez & Hartig, we call this property _groundness_ and not 
-     include the _normal form_ part in the name.
+     Checks whether the given selection is in ground-typed normal form, as described in HP.
    *)
-  Equations is_grounded query : bool  :=
-    {
-      is_grounded (_[[_]] { φ }) := are_grounded φ;
-      
-      is_grounded (_:_[[_]] { φ }) := are_grounded φ;
-      
-      is_grounded (on t { φ }) := (is_object_type s t) && are_grounded_fields φ;
-      
-      is_grounded  _ := true
-    }
- 
-  where are_grounded_fields queries : bool :=
-          {
-            are_grounded_fields [::] := true;
-            are_grounded_fields (q :: φ) := [&& q.(is_field), q.(is_grounded) & are_grounded_fields φ]
-          }
-
-  where are_grounded_inlines queries : bool :=
-          {
-            are_grounded_inlines [::] := true;
-            are_grounded_inlines (q :: φ) := [&& q.(is_inline_fragment), q.(is_grounded) & are_grounded_inlines φ]
-          }
- 
-  where are_grounded queries : bool :=
-          {
-            are_grounded [::] := true;
-            are_grounded (q :: φ) := q.(is_grounded) && if q.(is_field) then are_grounded_fields φ else are_grounded_inlines φ
-                                                                                                                              
-          }.
-
+  Fixpoint is_in_ground_typed_nf (selection : @Selection Vals) : bool :=
+    match selection with
+    | _[[_]] { ss } => (all (fun s => s.(is_field)) ss || all (fun s => s.(is_inline_fragment)) ss) && all is_in_ground_typed_nf ss
+    | _:_[[_]] { ss } => (all (fun s => s.(is_field)) ss || all (fun s => s.(is_inline_fragment)) ss) && all is_in_ground_typed_nf ss  
+    | on t { ss } => is_object_type s t && all (fun s => s.(is_field) && s.(is_in_ground_typed_nf)) ss
+    | _ => true
+    end.
 
   (** ---- *)
   (**
-     #<strong>is_grounded2</strong># : Name → Query → Bool 
+     #<strong>are_in_ground_typed_nf</strong># : List Selection → Bool 
 
-     #<strong>are_grounded2</strong># : Name → List Query → Bool
+     Checks whether the given selection set is in ground-typed normal form, as described in HP.
+   *)
+  Definition are_in_ground_typed_nf (ss : seq (@Selection Vals)) : bool :=
+    (all (fun s => s.(is_field)) ss || all (fun s => s.(is_inline_fragment)) ss) && all is_in_ground_typed_nf ss.
+
+  (** ---- *)
+  (**
+    #<strong>is_a_ground_typed_nf_query</strong># : Query → Bool 
+
+     Checks whether the given query is in ground-typed normal form, by checking that its selection set is
+     in ground-typed normal form.
+   *)
+  Definition is_a_grounded_typed_nf_query (q : @query Vals) :=
+    all (fun sel => sel.(is_field) && sel.(is_in_ground_typed_nf)) q.(selection_set).
+  
+
+  (** ---- *)
+  (**
+     #<strong>is_grounded</strong># : Name → Selection → Bool 
+
+     #<strong>are_grounded2</strong># : Name → List Selection → Bool
 
      #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
      Checks whether the given query is grounded v.2.0.
@@ -118,57 +104,55 @@ Section NormalForm.
      - If the type in context is an Abstract type, then it expects to find only fragments.
      
    *)
-  (* TODO : Rename ! *)
-  Equations is_grounded2 (type_in_scope : Name) (query : @Query Vals) : bool :=
-    {
-      is_grounded2 ty (f[[_]] { φ })
-        with lookup_field_in_type s ty f :=
-        {
-        | Some fld := are_grounded2 fld.(return_type) φ;
-        | _ := false
-        };
+  Fixpoint is_grounded (ts : Name) (selection : @Selection Vals) : bool :=
+    if is_object_type s ts then
+      (* Fields are valid in object scope *)
+      match selection with
+      | _[[_]]
+      | _:_[[_]] => true
+      | f[[_]] { ss } =>
+        if lookup_field_in_type s ts f is Some fld then
+          all (is_grounded fld.(return_type)) ss
+        else
+          false
+            
+      | _:f[[_]] { ss } =>
+        if lookup_field_in_type s ts f is Some fld then
+          all (is_grounded fld.(return_type)) ss
+        else
+          false
+            
+      | _ => false
+      end
+    else
+      (* Only inline fragments are valid in abstract scope *)
+      if selection is on t { ss } then
+        (is_object_type s t) && all (is_grounded t) ss
+      else
+        false.
+                     
+  Definition are_grounded (ts : Name) (ss : seq (@Selection Vals)) : bool :=
+    all (is_grounded ts) ss.
 
-      is_grounded2 ty (_:f[[_]] { φ })
-        with lookup_field_in_type s ty f :=
-        {
-        | Some fld := are_grounded2 fld.(return_type) φ;
-        | _ := false
-        };
-
-      is_grounded2 ty (on t { φ }) := (is_object_type s t) && are_grounded2 t φ;
-      
-      is_grounded2 _ _ := true
-    }
-   where
-   are_grounded2 (type_in_scope : Name) (queries : seq (@Query Vals)) : bool :=
-     {
-       are_grounded2 _ [::] := true;
-       
-       are_grounded2 ty (hd :: tl)
-         with is_object_type s ty :=
-         {
-         | true  := [&& is_field hd, is_grounded2 ty hd & are_grounded2 ty tl];
-         | _ := [&& is_inline_fragment hd, is_grounded2 ty hd & are_grounded2 ty tl]
-         }
-     }.
+    
 
 
   (** ** Non-redundancy
       
-      In this section we define the predicate to establish when a GraphQL Query 
+      In this section we define the predicate to establish when a GraphQL Selection 
       is non-redundant.
    *)
   (** ---- *)
   (**
-     #<strong>are_non_redundant</strong># : List Query → Bool 
+     #<strong>are_non_redundant</strong># : List Selection → Bool 
 
-     Checks whether the list of queries are non-redundant.
+     Checks whether the selection set is non-redundant.
      This checks that :
      - There are no inline fragments with the same type condition.
      - There are no field selections with the same response name.
    *)
-  Equations? are_non_redundant (queries : seq (@Query Vals)) : bool
-    by wf (queries_size queries) :=
+  Equations? are_non_redundant (ss : seq (@Selection Vals)) : bool
+    by wf (queries_size ss) :=
     {
       are_non_redundant [::] := true;
       
@@ -185,36 +169,39 @@ Section NormalForm.
     }.                 
   Proof.
     all: do ? [case: q].
-    all: do ? intros; simp query_size; ssromega.
+    all: do ? intros; simp selection_size; ssromega.
   Qed.
 
+
+  (** ---- *)
+  (**
+     #<strong>is_non_redundant</strong># : Query → Bool 
+
+     Checks whether the query is non-redundant by checking that its selection set is 
+     non-redundant.
+   *)
+  Definition is_non_redundant (q : @query Vals) : bool := q.(selection_set).(are_non_redundant).
 
   
   (** ---- *)
   (**
-     #<strong>are_in_normal_form</strong># : List Query → Bool 
+     #<strong>is_in_normal_form</strong># : Query → Bool 
 
-     Checks whether a list of queries are in normal form.
-
-     We differ from the naming used in J&O, where they use "normal form" 
-     when referring to the _ground-typed normal form_. We use it instead, 
-     to refer to both a query that is non-redundant and in ground form.
-
+     Checks whether a query is in normal form.
    *)
-  Definition are_in_normal_form queries := are_grounded queries && are_non_redundant queries.
+  Definition is_in_normal_form (q : @query Vals) := q.(is_a_grounded_typed_nf_query) && q.(is_non_redundant).
 
 
   (** ---- *)  
 End NormalForm.
 
+Arguments is_in_ground_typed_nf [Vals].
+Arguments are_in_ground_typed_nf [Vals].
 Arguments is_grounded [Vals].
-Arguments are_grounded_fields [Vals].
-Arguments are_grounded_inlines [Vals].
 Arguments are_grounded [Vals].
-Arguments is_grounded2 [Vals].
-Arguments are_grounded2 [Vals].
 Arguments are_non_redundant [Vals].
-Arguments are_in_normal_form [Vals].
+Arguments is_non_redundant [Vals].
+Arguments is_in_normal_form [Vals].
 
 
 
@@ -222,7 +209,7 @@ Section Normalisation.
 
   Variables Vals : eqType.
   Implicit Type schema : @wfGraphQLSchema Vals.
-  Implicit Type query : @Query Vals.
+  Implicit Type query : @Selection Vals.
 
 
   Variable s : @wfGraphQLSchema Vals.
@@ -230,16 +217,16 @@ Section Normalisation.
   (** * Normalisation
       
       In this section we will define a normalisation procedure, which 
-      takes a GraphQL Query and outputs another one in normal form.
+      takes a GraphQL Selection and outputs another one in normal form.
       
-      The proof of this is in the file _QueryNormalizationLemmas_.
+      The proof of this is in the file _SelectionNormalizationLemmas_.
    *)
   (** ---- *)
   (**
-     #<strong>normalize</strong># : Name → List Query → List Query 
+     #<strong>normalize_selections</strong># : Name → List Selection → List Selection 
 
-     Normalizes the given list of queries. 
-     The resulting list of queries are non-redundant and in ground-type 
+     Normalizes the given list of selections. 
+     The resulting list are non-redundant and in ground-type 
      normal form.
      
      Normalization consists of two main processes :
@@ -260,61 +247,61 @@ Section Normalisation.
 
      This definition assumes that the given type in scope is actually an Object type.
    *)
-  Equations? normalize (type_in_scope : Name) (queries : seq (@Query Vals)) :
-    seq (@Query Vals) by wf (queries_size queries) :=
+  Equations? normalize_selections (type_in_scope : Name) (ss : seq (@Selection Vals)) :
+    seq (@Selection Vals) by wf (queries_size ss) :=
     {
-      normalize _ [::] := [::];
+      normalize_selections _ [::] := [::];
 
-      normalize ty (f[[α]] :: φ)
+      normalize_selections ty (f[[α]] :: φ)
         with lookup_field_in_type s ty f :=
         {
-        | Some _ := f[[α]] :: normalize ty (filter_queries_with_label f φ);
-        | _ := normalize ty φ
+        | Some _ := f[[α]] :: normalize_selections ty (filter_queries_with_label f φ);
+        | _ := normalize_selections ty φ
         };
       
-      normalize ty (l:f[[α]] :: φ)
+      normalize_selections ty (l:f[[α]] :: φ)
         with lookup_field_in_type s ty f :=
         {
-        | Some _ := l:f[[α]] :: normalize ty (filter_queries_with_label l φ);
-        | _ := normalize ty φ
+        | Some _ := l:f[[α]] :: normalize_selections ty (filter_queries_with_label l φ);
+        | _ := normalize_selections ty φ
         };
 
-      normalize ty (f[[α]] { β } :: φ)
+      normalize_selections ty (f[[α]] { β } :: φ)
         with lookup_field_in_type s ty f :=
         {
         | Some fld
             with is_object_type s fld.(return_type) :=
             {
-            | true := f[[α]] { normalize fld.(return_type) (β ++ merge_selection_sets (find_queries_with_label s f ty φ)) }
-                                 :: normalize ty (filter_queries_with_label f φ);
-            | _ := f[[α]] { [seq on t { normalize t (β ++ merge_selection_sets (find_queries_with_label s f ty φ)) } | t <- get_possible_types s fld.(return_type)] } ::
-                              normalize ty (filter_queries_with_label f φ)
+            | true := f[[α]] { normalize_selections fld.(return_type) (β ++ merge_selection_sets (find_queries_with_label s f ty φ)) }
+                                 :: normalize_selections ty (filter_queries_with_label f φ);
+            | _ := f[[α]] { [seq on t { normalize_selections t (β ++ merge_selection_sets (find_queries_with_label s f ty φ)) } | t <- get_possible_types s fld.(return_type)] } ::
+                              normalize_selections ty (filter_queries_with_label f φ)
             };
         
-        | _ => normalize ty φ
+        | _ => normalize_selections ty φ
         };
       
-      normalize ty (l:f[[α]] { β } :: φ)
+      normalize_selections ty (l:f[[α]] { β } :: φ)
         with lookup_field_in_type s ty f :=
         {
         | Some fld
             with is_object_type s fld.(return_type) :=
             {
-            | true := l:f[[α]] { normalize fld.(return_type) (β ++ merge_selection_sets (find_queries_with_label s l ty φ)) }
-                                        :: normalize ty (filter_queries_with_label l φ);
-            | _ := l:f[[α]] { [seq on t { normalize t (β ++ merge_selection_sets (find_queries_with_label s l ty φ)) } | t <- get_possible_types s fld.(return_type)] }
-                     :: normalize ty (filter_queries_with_label l φ)
+            | true := l:f[[α]] { normalize_selections fld.(return_type) (β ++ merge_selection_sets (find_queries_with_label s l ty φ)) }
+                                        :: normalize_selections ty (filter_queries_with_label l φ);
+            | _ := l:f[[α]] { [seq on t { normalize_selections t (β ++ merge_selection_sets (find_queries_with_label s l ty φ)) } | t <- get_possible_types s fld.(return_type)] }
+                     :: normalize_selections ty (filter_queries_with_label l φ)
             };
         
-        | _ => normalize ty φ
+        | _ => normalize_selections ty φ
         };
         
       
-      normalize ty (on t { β } :: φ)
+      normalize_selections ty (on t { β } :: φ)
         with does_fragment_type_apply s ty t :=
         {
-        | true := normalize ty (β ++ φ);
-        | _ := normalize ty φ
+        | true := normalize_selections ty (β ++ φ);
+        | _ := normalize_selections ty φ
         }
 
     }.
@@ -324,36 +311,46 @@ Section Normalisation.
 
   (** ---- *)
   (**
-     #<strong>normalize_queries</strong># : Name → List Query → List Query 
+     #<strong>gnormalize_selections</strong># : Name → List Selection → List Selection 
 
-     Normalizes a list of queries.
+     Normalizes a list of selections.
      
-     Unlike [normalize], this definition does not assume that the type given 
-     is an Object type. It only checks the type and either calls [normalize] 
-     on the list of queries if the type is an Object type, or wraps the queries
+     Unlike [normalize_selections], this definition does not assume that the type given 
+     is an object type. It only checks the type and either calls [normalize_selections] 
+     on the list of selections if the type is an object type, or wraps them
      in fragments with type conditions equal to the given type's subtypes 
      (minus the abstract type itself).
    *)
-  Definition normalize_queries (type_in_scope : Name) (queries : seq (@Query Vals)) :
-    seq (@Query Vals) :=
+  Definition gnormalize_selections (type_in_scope : Name) (queries : seq (@Selection Vals)) :
+    seq (@Selection Vals) :=
     if is_object_type s type_in_scope then
-      normalize type_in_scope queries
+      normalize_selections type_in_scope queries
     else
-      [seq on t { normalize t queries } | t <- get_possible_types s type_in_scope].
-  
+      [seq on t { normalize_selections t queries } | t <- get_possible_types s type_in_scope].
 
+
+  (** ---- *)
+  (**
+     #<strong>normalize</strong># : Query → Query 
+
+     Normalizes a query, using the Query type to normalize the selection set.
+   *)
+  Definition normalize (q : @query Vals) : @query Vals :=
+    let: Query n ss := q in
+    Query n (normalize_selections s.(query_type) q.(selection_set)).
+  
   (** ---- *)
 End Normalisation.
 
-
+Arguments normalize_selections [Vals].
+Arguments gnormalize_selections [Vals].
 Arguments normalize [Vals].
-Arguments normalize_queries [Vals].
 
 
 (** ---- *)
 (** 
     #<div>
-        <a href='GraphCoQL.QueryConformance.html' class="btn btn-light" role='button'> Previous ← Query Conformance  </a>
+        <a href='GraphCoQL.SelectionConformance.html' class="btn btn-light" role='button'> Previous ← Selection Conformance  </a>
         <a href='GraphCoQL.Graph.html' class="btn btn-info" role='button'>Continue Reading → GraphQL Graph </a>
     </div>#
 *)

@@ -71,8 +71,8 @@ Section QuerySemantic.
   (** ---- *)
   
   Implicit Type u : @node Vals.
-  Implicit Type query : @Query Vals.
-  Implicit Type queries : seq (@Query Vals).
+  Implicit Type query : @Selection Vals.
+  Implicit Type queries : seq (@Selection Vals).
 
  
   Fixpoint is_valid_response_value (ty : type) (response : @ResponseNode (option Vals)) : bool :=
@@ -89,12 +89,12 @@ Section QuerySemantic.
   (** * Semantics in a Graph setting *)
   (** ---- *)
   (**
-     #<strong>execute_selection_set</strong># : Node → List Query → List (Name * ResponseNode)
+     #<strong>execute_selection_set</strong># : Node → List Selection → List (Name * ResponseNode)
 
      Evaluates the list of queries and returns a GraphQL Response.
 
    *)
-  Equations? execute_selection_set u (queries : seq (@Query Vals)) :
+  Equations? execute_selection_set u (queries : seq (@Selection Vals)) :
     
     seq (Name * ResponseNode) by wf (queries_size queries) :=
     {
@@ -104,7 +104,7 @@ Section QuerySemantic.
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some fdef
-            with field_seq_value u.(nprops) (Field f α) :=
+            with field_seq_value u.(nprops) (Label f α) :=
             {
             | Some value => let coerced_value := coerce value in
                            if is_valid_response_value fdef.(return_type) coerced_value then
@@ -121,7 +121,7 @@ Section QuerySemantic.
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some fdef
-            with field_seq_value u.(nprops) (Field f α) :=
+            with field_seq_value u.(nprops) (Label f α) :=
             {
             | Some value => let coerced_value := coerce value in
                            if is_valid_response_value fdef.(return_type) coerced_value then
@@ -141,10 +141,10 @@ Section QuerySemantic.
         | Some fld
             with fld.(return_type) :=
             {
-            | [ _ ] := (f, Array [seq {- (⟦ β ++ merge_selection_sets (find_queries_with_label s f u.(ntype) φ) ⟧ˢ in v) -} | v <- neighbors_with_field g u (Field f α)])
+            | [ _ ] := (f, Array [seq {- (⟦ β ++ merge_selection_sets (find_queries_with_label s f u.(ntype) φ) ⟧ˢ in v) -} | v <- neighbors_with_field g u (Label f α)])
                               :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
             | NamedType _
-                with ohead (neighbors_with_field g u (Field f α)) :=
+                with ohead (neighbors_with_field g u (Label f α)) :=
                 {
                 | Some v => (f, {- (⟦ β ++ merge_selection_sets (find_queries_with_label s f u.(ntype) φ) ⟧ˢ in v) -}) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
                 
@@ -161,10 +161,10 @@ Section QuerySemantic.
         | Some fld
             with fld.(return_type) :=
             {
-            | [ _ ] := (l, Array [seq {- (⟦ β ++ merge_selection_sets (find_queries_with_label s l u.(ntype) φ) ⟧ˢ in v) -} | v <- neighbors_with_field g u (Field f α)])
+            | [ _ ] := (l, Array [seq {- (⟦ β ++ merge_selection_sets (find_queries_with_label s l u.(ntype) φ) ⟧ˢ in v) -} | v <- neighbors_with_field g u (Label f α)])
                               :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
             | NamedType _
-                with ohead (neighbors_with_field g u (Field f α)) :=
+                with ohead (neighbors_with_field g u (Label f α)) :=
                 {
                 | Some v => (l, {- (⟦ β ++ merge_selection_sets (find_queries_with_label s l u.(ntype) φ) ⟧ˢ in v) -}) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
                 
@@ -190,7 +190,9 @@ Section QuerySemantic.
 
   
 
-
+  Definition execute_query (q : query) :=
+    execute_selection_set g.(root) q.(selection_set).
+  
 
   
 
@@ -199,7 +201,7 @@ Section QuerySemantic.
   (** * Simplified Semantics *)
   (** ---- *)
   (**
-     #<strong>execute_selection_set2</strong># : Node → List Query → List (Name * ResponseNode)
+     #<strong>execute_selection_set2</strong># : Node → List Selection → List (Name * ResponseNode)
 
      Evaluates a list of queries and returns a GraphQL Response. 
 
@@ -207,8 +209,7 @@ Section QuerySemantic.
 
      The definition corresponds to the one given by P&H.
    *)
-  (* TODO : Rename ! *)
-  Equations? execute_selection_set2 u queries :
+  Equations? simpl_execute_selection_set u queries :
     seq (Name * ResponseNode) by wf (queries_size queries) :=
     {
       ≪ [::] ≫ in _ := [::];
@@ -217,7 +218,7 @@ Section QuerySemantic.
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some fdef
-            with field_seq_value u.(nprops) (Field f α) :=
+            with field_seq_value u.(nprops) (Label f α) :=
             {
             | Some value => let coerced_value := coerce value in
                            if is_valid_response_value fdef.(return_type) coerced_value then
@@ -234,7 +235,7 @@ Section QuerySemantic.
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some fdef
-            with field_seq_value u.(nprops) (Field f α) :=
+            with field_seq_value u.(nprops) (Label f α) :=
             {
             | Some value => let coerced_value := coerce value in
                            if is_valid_response_value fdef.(return_type) coerced_value then
@@ -254,10 +255,10 @@ Section QuerySemantic.
         | Some fld
             with fld.(return_type) :=
             {
-            | ListType _ => (f, Array [seq {- ≪ β ≫ in v -} | v <- neighbors_with_field g u (Field f α)]) :: ≪ φ ≫ in u;
+            | ListType _ => (f, Array [seq {- ≪ β ≫ in v -} | v <- neighbors_with_field g u (Label f α)]) :: ≪ φ ≫ in u;
         
             | NamedType ty
-                with ohead (neighbors_with_field g u (Field f α)) :=
+                with ohead (neighbors_with_field g u (Label f α)) :=
                 {
                 | Some v => (f, {- ≪ β ≫ in v -}) :: ≪ φ ≫ in u;
                 
@@ -273,10 +274,10 @@ Section QuerySemantic.
         | Some fld
             with fld.(return_type) :=
             {
-            | ListType _ => (l, Array [seq {- ≪ β ≫ in v -} | v <- neighbors_with_field g u (Field f α)]) :: ≪ φ ≫ in u;
+            | ListType _ => (l, Array [seq {- ≪ β ≫ in v -} | v <- neighbors_with_field g u (Label f α)]) :: ≪ φ ≫ in u;
         
             | NamedType ty
-                with ohead (neighbors_with_field g u (Field f α)) :=
+                with ohead (neighbors_with_field g u (Label f α)) :=
                 {
                 | Some v => (l, {- ≪ β ≫ in v -}) :: ≪ φ ≫ in u;
                 
@@ -296,11 +297,14 @@ Section QuerySemantic.
         }
 
     }
-  where "≪ queries ≫ 'in' u" := (execute_selection_set2 u queries).
+  where "≪ queries ≫ 'in' u" := (simpl_execute_selection_set u queries).
   Proof.
     all: do [leq_queries_size].
   Qed.
 
+
+  Definition simpl_execute_query (q : @query Vals) :=
+    ≪ q.(selection_set) ≫ in g.(root).
   
  
 
@@ -316,20 +320,20 @@ Section QuerySemantic.
   (**
      #<strong>resolve_field_value</strong># : Node → Name → List (Name * Vals) ↪ Vals + List Vals 
 
-     Attempt at replicating the specification's definition of _ResolveFieldValue_ 
+     Attempt at replicating the specification's definition of _ResolveLabelValue_ 
      instantiated to the graph setting.
 
      #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
      **** See also
-     - #<a href='https://graphql.github.io/graphql-spec/June2018/##ResolveFieldValue()'>ResolveFieldValue()</a># 
+     - #<a href='https://graphql.github.io/graphql-spec/June2018/##ResolveLabelValue()'>ResolveLabelValue()</a># 
    *)
   Equations resolve_field_value u (field_name : Name) (argument_values : seq (Name * Vals)) : option (Vals + (@node Vals) + seq (@node Vals)) :=
     {
       resolve_field_value u f α
-        with field_seq_value u.(nprops) (Field f α) :=
+        with field_seq_value u.(nprops) (Label f α) :=
         {
         | Some value := Some (inl (inl value));
-        | _ with neighbors_with_field g u (Field f α) :=
+        | _ with neighbors_with_field g u (Label f α) :=
             {
             | [::] := None;
             | [:: v] => Some (inl (inr v));
@@ -341,7 +345,7 @@ Section QuerySemantic.
 
   (* begin hide *)
   (* Equations' bug ? *)
-  (* Equations? execute_selection_set3 u (queries : seq (@Query Vals)) : *)
+  (* Equations? execute_selection_set3 u (queries : seq (@Selection Vals)) : *)
   (*   seq (Name * ResponseNode) by wf (queries_size queries) := *)
   (*   { *)
   (*     execute_selection_set3 _ [::] := [::]; *)
@@ -405,11 +409,11 @@ Section QuerySemantic.
 
   Reserved Notation "ty '⊢' φ '≡' φ'" (at level 80). 
          
-  Equations? Equiv  (ty : Name) (φ1 φ2 : seq (@Query Vals)) : bool by wf (queries_size φ1 + queries_size φ2) :=
+  Equations? Equiv  (ty : Name) (φ1 φ2 : seq (@Selection Vals)) : bool by wf (queries_size φ1 + queries_size φ2) :=
     {
       _ ⊢ [::] ≡ [::] := true;
 
-      ty ⊢ SingleField f α :: φ1 ≡ SingleField f' α' :: φ2
+      ty ⊢ SingleLabel f α :: φ1 ≡ SingleLabel f' α' :: φ2
         with (f == f') && (α == α') :=
         {
         | true 
@@ -421,7 +425,7 @@ Section QuerySemantic.
         | _ := false
         };
       
-       ty ⊢ SingleField f α :: φ1 ≡ LabeledField l f' α' :: φ2
+       ty ⊢ SingleLabel f α :: φ1 ≡ LabeledLabel l f' α' :: φ2
         with [&& (f == l), (f == f') & (α == α')] :=
         {
         | true 
@@ -433,7 +437,7 @@ Section QuerySemantic.
         | _ := false
         };
 
-       ty ⊢ LabeledField l f α :: φ1 ≡ SingleField f' α' :: φ2
+       ty ⊢ LabeledLabel l f α :: φ1 ≡ SingleLabel f' α' :: φ2
         with [&& (l == f'), (f == f') & (α == α')] :=
         {
         | true 
@@ -445,7 +449,7 @@ Section QuerySemantic.
         | _ := false
         };
           
-       ty ⊢ LabeledField l f α :: φ1 ≡ LabeledField l' f' α' :: φ2
+       ty ⊢ LabeledLabel l f α :: φ1 ≡ LabeledLabel l' f' α' :: φ2
         with [&& (l == l'), (f == f') & (α == α')] :=
         {
         | true 
@@ -457,7 +461,7 @@ Section QuerySemantic.
         | _ := false
         }; 
 
-      ty ⊢ NestedField f α β :: φ1 ≡ NestedField f' α' χ :: φ2
+      ty ⊢ NestedLabel f α β :: φ1 ≡ NestedLabel f' α' χ :: φ2
         with (f == f') && (α == α') :=
         {
         | true
@@ -472,7 +476,7 @@ Section QuerySemantic.
         | _ := false
         };
 
-      ty ⊢ NestedField f α β :: φ1 ≡ NestedLabeledField l f' α' χ :: φ2
+      ty ⊢ NestedLabel f α β :: φ1 ≡ NestedLabeledLabel l f' α' χ :: φ2
         with [&& (f == l), (f == f') & (α == α')] :=
         {
         | true
@@ -487,7 +491,7 @@ Section QuerySemantic.
         | _ := false
         };
 
-      ty ⊢ NestedLabeledField l f α β :: φ1 ≡ NestedField f' α' χ :: φ2
+      ty ⊢ NestedLabeledLabel l f α β :: φ1 ≡ NestedLabel f' α' χ :: φ2
         with [&& (f == l), (f == f') & (α == α')] :=
         {
         | true
@@ -502,7 +506,7 @@ Section QuerySemantic.
         | _ := false
         };
 
-      ty ⊢ NestedLabeledField l f α β :: φ1 ≡ NestedLabeledField l' f' α' χ :: φ2
+      ty ⊢ NestedLabeledLabel l f α β :: φ1 ≡ NestedLabeledLabel l' f' α' χ :: φ2
         with [&& (l == l'), (f == f') & (α == α')] :=
         {
         | true
@@ -563,20 +567,22 @@ End QuerySemantic.
 
 Arguments is_valid_response_value [Vals].
 Arguments execute_selection_set [Vals].
-Arguments execute_selection_set2 [Vals].
+Arguments execute_query [Vals].
+Arguments simpl_execute_selection_set [Vals].
+Arguments simpl_execute_query [Vals].
 
 Delimit Scope query_eval with QEVAL.
 Open Scope query_eval.
 
 (* This notation collides with the pairs notation (_ , _) ...  *)
 Notation "s , g ⊢ ⟦ φ ⟧ˢ 'in' u 'with' coerce" := (execute_selection_set s g coerce u φ) (at level 30, g at next level, φ at next level) : query_eval.
-Notation "s , g ⊢ ≪ φ ≫ 'in' u 'with' coerce" := (execute_selection_set2 s g coerce u φ) (at level 30, g at next level, φ at next level) : query_eval.
+Notation "s , g ⊢ ≪ φ ≫ 'in' u 'with' coerce" := (simpl_execute_selection_set s g coerce u φ) (at level 30, g at next level, φ at next level) : query_eval.
 
 
 (** ---- *)
 (** 
     #<div>
         <a href='GraphCoQL.Response.html' class="btn btn-light" role='button'> Previous ← GraphQL Response </a>
-        <a href='GraphCoQL.theory.QuerySemanticsLemmas.html' class="btn btn-info" role='button'>Continue Reading → Semantics Proofs</a>
+        <a href='GraphCoQL.theory.SelectionSemanticsLemmas.html' class="btn btn-info" role='button'>Continue Reading → Semantics Proofs</a>
     </div>#
 *)

@@ -33,19 +33,19 @@ Section GraphQLGraph.
   (** * Definition *)
   
   (** ---- *)
-  (** *** Field 
+  (** *** Label 
 
       It corresponds to an edge's label or a property's key.
    **)
-  Record fld := Field {
-                      label : string;
+  Record label := Label {
+                      lname : string;
                       args : seq (string * Vals)
                     }.
 
   
   
-  Coercion label_of_fld (f : fld) := let: Field l _ := f in l.
-  Coercion fun_of_fld (f : fld) := let: Field _ a := f in a.
+  Coercion label_of_label (f : label) := let: Label l _ := f in l.
+  Coercion fun_of_label (f : label) := let: Label _ a := f in a.
 
   (** ---- *)
   (** *** Node
@@ -55,7 +55,7 @@ Section GraphQLGraph.
    *)
   Record node := Node {
                        ntype : Name;
-                       nprops : seq (fld * Vals)
+                       nprops : seq (label * Vals)
                      }.
 
 
@@ -66,7 +66,7 @@ Section GraphQLGraph.
    *)
   Record graphQLGraph := GraphQLGraph {
                             root : node;
-                            E : seq (node * fld * node)
+                            E : seq (node * label * node)
                           }.
   
 
@@ -78,7 +78,7 @@ Section GraphQLGraph.
 End GraphQLGraph.
 
 
-Arguments fld [Vals].
+Arguments label [Vals].
 Arguments node [Vals].
 Arguments graphQLGraph [Vals].
 
@@ -107,20 +107,20 @@ Section Equality.
   
 
   (** Packing and unpacking of graph fields, needed for canonical instances  **)
-  Definition prod_of_fld (f : @fld Vals) := let: Field l a := f in (l, a).
-  Definition fld_of_prod (p : string * seq (string * Vals)) := let: (l, a) := p in Field l a.
+  Definition prod_of_label (f : @label Vals) := let: Label l a := f in (l, a).
+  Definition label_of_prod (p : string * seq (string * Vals)) := let: (l, a) := p in Label l a.
 
   (** Cancelation lemma **)
-  Lemma can_fld_of_prod : cancel prod_of_fld fld_of_prod.
+  Lemma can_label_of_prod : cancel prod_of_label label_of_prod.
   Proof. by case. Qed.
 
-  Canonical fld_eqType := EqType fld (CanEqMixin can_fld_of_prod).
+  Canonical label_eqType := EqType label (CanEqMixin can_label_of_prod).
 
 
   
   (** Packing and unpacking of graph nodes, needed for canonical instances **)
   Definition prod_of_node (n : @node Vals) := let: Node t f := n in (t, f).
-  Definition node_of_prod (p : string * seq (fld * Vals)) :=
+  Definition node_of_prod (p : string * seq (label * Vals)) :=
     let: (t, f) := p in Node t f.
 
   (** Cancelation lemma for a node **)
@@ -131,10 +131,10 @@ Section Equality.
   Canonical node_eqType := EqType node (CanEqMixin prod_of_nodeK).
   
   
-  Fixpoint mem_seq_field (flds :  seq (fld * Vals)) f : bool :=
-    match flds with
+  Fixpoint mem_seq_field (labels :  seq (label * Vals)) f : bool :=
+    match labels with
     | [::] => false
-    | (fld, _) :: flds => (f == fld) || mem_seq_field flds f
+    | (label, _) :: labels => (f == label) || mem_seq_field labels f
     end.
     
   Definition mem_field (n : node) f := mem_seq_field n.(nprops) f.
@@ -147,19 +147,19 @@ Section Equality.
 
   
 
-  Fixpoint field_seq_value (flds :  seq (fld * Vals)) f : option Vals :=
-    match flds with
+  Fixpoint field_seq_value (labels :  seq (label * Vals)) f : option Vals :=
+    match labels with
     | [::] => None
-    | (fld, vals) :: flds => if f == fld then
+    | (label, vals) :: labels => if f == label then
                               Some vals
                             else
-                              field_seq_value flds f
+                              field_seq_value labels f
     end.
 
 
    (** Packing and unpacking for graphs, needed for canonical instances **)
   Definition prod_of_graph (g : @graphQLGraph Vals) := let: GraphQLGraph r e := g in (r, e).
-  Definition graph_of_prod (p : node * seq (node * fld * node)) :=
+  Definition graph_of_prod (p : node * seq (node * label * node)) :=
     let: (r, e) := p in @GraphQLGraph Vals r e.
 
 

@@ -216,7 +216,7 @@ Section GraphQLSpecExamples.
     (**
        https://graphql.github.io/graphql-spec/June2018/#sec-Field-Selections-on-Objects-Interfaces-and-Unions-Types
      *)
-    Let example102 : seq (@Query value_eqType) :=  [::
+    Let example102 : seq (@Selection value_eqType) :=  [::
                                                       on "Dog" {
                                                         [::
                                                            "meowVolume" [[ [::] ]]
@@ -224,7 +224,7 @@ Section GraphQLSpecExamples.
                                                       }
                                                    ].
     
-    Let example102' :  seq (@Query value_eqType) := [::
+    Let example102' :  seq (@Selection value_eqType) := [::
                                                        on "Dog" {
                                                          [::
                                                             "barkVolume" : "kawVolume" [[ [::] ]]
@@ -236,11 +236,11 @@ Section GraphQLSpecExamples.
      This is not exactly the same as in the spec, but in that example they are checking 
      defined fragment spreads, not inline fragments.
      *)
-    Example e102 : ~~ (queries_conform wf_schema "Dog" example102 || queries_conform wf_schema "Dog" example102').
+    Example e102 : ~~ (selections_conform wf_schema "Dog" example102 || selections_conform wf_schema "Dog" example102').
     Proof. by []. Qed.
 
 
-    Let example103 : seq (@Query value_eqType) := [::
+    Let example103 : seq (@Selection value_eqType) := [::
                                                      (* on "Pet" { *)
                                                      (* [:: *)
                                                      "name" [[ [::] ]]
@@ -249,12 +249,12 @@ Section GraphQLSpecExamples.
                                                   ].
 
     
-    Example e103 : queries_conform wf_schema "Pet" example103.
+    Example e103 : selections_conform wf_schema "Pet" example103.
     Proof. by []. Qed.
 
     
 
-    Let example104 : seq (@Query value_eqType) := [::
+    Let example104 : seq (@Selection value_eqType) := [::
                                                      (* on "Pet" { *)
                                                      (* [:: *)
                                                      "nickname" [[ [::] ]]
@@ -262,16 +262,16 @@ Section GraphQLSpecExamples.
                                                      (* } *)
                                                   ].
 
-    Example e104 : ~~ queries_conform wf_schema "Pet" example104.
+    Example e104 : ~~ selections_conform wf_schema "Pet" example104.
     Proof. by []. Qed.
 
-    Example e104' : all (fun implementor => queries_conform wf_schema implementor example104) (get_possible_types wf_schema "Pet").
+    Example e104' : all (fun implementor => selections_conform wf_schema implementor example104) (get_possible_types wf_schema "Pet").
     Proof.
         by [].
     Qed.
     
 
-    Let example105 : seq (@Query value_eqType) := [::
+    Let example105 : seq (@Selection value_eqType) := [::
                                                      (* on "CatOrDog" { *)
                                                      (* [:: *)
                                                      on "Pet" {
@@ -288,26 +288,26 @@ Section GraphQLSpecExamples.
                                                         (* } *)
                                                   ].
 
-    Example e105 : queries_conform wf_schema "CatOrDog" example105.
+    Example e105 : selections_conform wf_schema "CatOrDog" example105.
     Proof. by []. Qed.
 
-    Let example106 : seq (@Query value_eqType) := [::
+    Let example106 : seq (@Selection value_eqType) := [::
                                                      "name" [[ [::] ]];
                                                      "barkVolume" [[ [::] ]]
                                                   ].
 
-    Example e106 : ~~ queries_conform wf_schema "CatOrDog" example106.
+    Example e106 : ~~ selections_conform wf_schema "CatOrDog" example106.
     Proof. by []. Qed.
 
     
 
     Section FieldSelectionMerging.
 
-      Let example107_1 : seq (@Query value_eqType) := [::
+      Let example107_1 : seq (@Selection value_eqType) := [::
                                                          "name" [[ [::] ]];
                                                          "name" [[ [::] ]]
                                                       ].
-      Let example107_2 : seq (@Query value_eqType) := [::
+      Let example107_2 : seq (@Selection value_eqType) := [::
                                                          "otherName" : "name" [[ [::] ]];
                                                          "otherName" : "name" [[ [::] ]]
                                                       ].
@@ -323,7 +323,7 @@ Section GraphQLSpecExamples.
       Qed.
 
 
-      Let example108 : seq (@Query value_eqType) := [::
+      Let example108 : seq (@Selection value_eqType) := [::
                                                        "name" : "nickname" [[ [::] ]];
                                                        "name" [[ [::] ]]
                                                     ].
@@ -367,7 +367,7 @@ Section GraphQLSpecExamples.
       Qed.
 
 
-      Let example111_1 : seq (@Query value_eqType) := [::
+      Let example111_1 : seq (@Selection value_eqType) := [::
                                                          on "Dog" {
                                                            [::
                                                               "volume": "barkVolume" [[ [::] ]]
@@ -386,7 +386,7 @@ Section GraphQLSpecExamples.
           by [].
       Qed.
 
-      Let example111_2 : seq (@Query value_eqType) := [::
+      Let example111_2 : seq (@Selection value_eqType) := [::
                                                          on "Dog" {
                                                            [::
                                                               "doesKnowCommand" [[ [:: pair "dogCommand" (VString "SIT")] ]]
@@ -406,7 +406,7 @@ Section GraphQLSpecExamples.
       Qed.
       
 
-      Let example112 : seq (@Query value_eqType) := [::
+      Let example112 : seq (@Selection value_eqType) := [::
                                                        on "Dog" {
                                                          [::
                                                             "someValue": "nickname" [[ [::] ]]
@@ -425,7 +425,7 @@ Section GraphQLSpecExamples.
           by [].
       Qed.
 
-      Example e112' : ~~ queries_conform wf_schema "Pet" example112.
+      Example e112' : ~~ selections_conform wf_schema "Pet" example112.
       Proof.
           by [].
       Qed.
@@ -439,16 +439,16 @@ Section GraphQLSpecExamples.
        https://graphql.github.io/graphql-spec/June2018/#sec-Leaf-Field-Selections
        *)
 
-      Let example113 : seq (@Query value_eqType) := [::
+      Let example113 : seq (@Selection value_eqType) := [::
                                                        "barkVolume" [[ [::] ]]
                                                     ].
       
-      Example e113 : queries_conform wf_schema "Dog" example113.
+      Example e113 : selections_conform wf_schema "Dog" example113.
       Proof.
           by [].
       Qed.
 
-      Let example114 : seq (@Query value_eqType) :=
+      Let example114 : seq (@Selection value_eqType) :=
         [::
            "barkVolume" [[ [::] ]] {
              [::
@@ -457,7 +457,7 @@ Section GraphQLSpecExamples.
            }
         ].
 
-      Example e114 : ~~ queries_conform wf_schema "Dog" example114.
+      Example e114 : ~~ selections_conform wf_schema "Dog" example114.
       Proof.
           by [].
       Qed.
@@ -466,7 +466,7 @@ Section GraphQLSpecExamples.
       (**
        Example 115 uses schema extension, which is not implemented but we can manage around it.
        *)
-      Let ExtendedQueryType := Object "ExtendedQuery" implements [::] {
+      Let ExtendedSelectionType := Object "ExtendedSelection" implements [::] {
                                        [::
                                           (Schema.Field "dog" [::] "Dog");
                                           (Schema.Field "human" [::] "Human");
@@ -475,12 +475,12 @@ Section GraphQLSpecExamples.
                                        ]
                                      }.
       (* For some reason this gets stuck trying to compute wf... ? *)
-      (* Let extended_schema := GraphQLSchema "ExtendedQuery" *)
-      (*                                     (ExtendedQueryType :: schema.(type_definitions)). *)
+      (* Let extended_schema := GraphQLSchema "ExtendedSelection" *)
+      (*                                     (ExtendedSelectionType :: schema.(type_definitions)). *)
 
-      Let extended_schema := GraphQLSchema "ExtendedQuery"
+      Let extended_schema := GraphQLSchema "ExtendedSelection"
                                           [:: StringScalar; BooleanScalar; IntScalar; FloatScalar;
-                                             ExtendedQueryType;
+                                             ExtendedSelectionType;
                                              DogCommandEnum; DogType;
                                                SentientInterface; PetInterface;
                                                  AlienType; HumanType;
@@ -492,32 +492,32 @@ Section GraphQLSpecExamples.
 
       Let extended_wf_schema : @wfGraphQLSchema value_eqType   := WFGraphQLSchema extended_schwf (is_valid_value extended_schema).
 
-      Let example116_1 : seq (@Query value_eqType) :=
+      Let example116_1 : seq (@Selection value_eqType) :=
         [::
            "human" [[ [::] ]]
         ].
 
-      Example e116_1 : ~~queries_conform extended_wf_schema "ExtendedQuery" example116_1.
+      Example e116_1 : ~~selections_conform extended_wf_schema "ExtendedSelection" example116_1.
       Proof.
           by [].
       Qed.
 
-      Let example116_2 : seq (@Query value_eqType) :=
+      Let example116_2 : seq (@Selection value_eqType) :=
         [::
            "pet" [[ [::] ]]
         ].
 
-      Example e116_2 : ~~queries_conform extended_wf_schema "ExtendedQuery" example116_2.
+      Example e116_2 : ~~selections_conform extended_wf_schema "ExtendedSelection" example116_2.
       Proof.
           by [].
       Qed.
 
-      Let example116_3 : seq (@Query value_eqType) :=
+      Let example116_3 : seq (@Selection value_eqType) :=
         [::
            "catOrDog" [[ [::] ]]
         ].
 
-      Example e116_3 : ~~queries_conform extended_wf_schema "ExtendedQuery" example116_3.
+      Example e116_3 : ~~selections_conform extended_wf_schema "ExtendedSelection" example116_3.
       Proof.
           by [].
       Qed.
@@ -532,12 +532,12 @@ Section GraphQLSpecExamples.
        https://graphql.github.io/graphql-spec/June2018/#sec-Argument-Names
      *)
 
-    Let example117_1 : seq (@Query value_eqType) :=
+    Let example117_1 : seq (@Selection value_eqType) :=
       [::
          "doesKnowCommand" [[ [:: pair "dogCommand" (VString "SIT")] ]]
       ].
 
-    Example e117_1 : queries_conform wf_schema "Dog" example117_1.
+    Example e117_1 : selections_conform wf_schema "Dog" example117_1.
     Proof.
         by [].
     Qed.
@@ -545,23 +545,23 @@ Section GraphQLSpecExamples.
     (**
        Not including the directive @include since directives are not implemented.
      *)
-    Let example117_2 : seq (@Query value_eqType) :=
+    Let example117_2 : seq (@Selection value_eqType) :=
       [::
          "isHousetrained" [[ [:: pair "atOtherHomes" (VBool true) ] ]]
       ].
 
-    Example e117_2 : queries_conform wf_schema "Dog" example117_2.
+    Example e117_2 : selections_conform wf_schema "Dog" example117_2.
     Proof.
       by [].
     Qed.
 
 
-    Let example_118 : seq (@Query value_eqType) :=
+    Let example_118 : seq (@Selection value_eqType) :=
       [::
          "doesKnowCommand" [[ [:: pair "command" (VString "CLEAN_UP_HOUSE") ] ]]
       ].
 
-    Example e118 : ~~queries_conform wf_schema "Dog" example_118.
+    Example e118 : ~~selections_conform wf_schema "Dog" example_118.
     Proof.
         by [].
     Qed.
@@ -613,7 +613,7 @@ Section GraphQLSpecExamples.
                                  ]
                                }.
 
-    Let ExtendedQueryType := Object "ExtendedQuery" implements [::] {
+    Let ExtendedSelectionType := Object "ExtendedSelection" implements [::] {
                                      [::
                                         (Schema.Field "dog" [::] "Dog");
                                         (Schema.Field "arguments" [::] "Arguments")
@@ -621,9 +621,9 @@ Section GraphQLSpecExamples.
                                      ]
                                    }.
 
-    Let extended_schema := GraphQLSchema "ExtendedQuery"
+    Let extended_schema := GraphQLSchema "ExtendedSelection"
                                         [:: StringScalar; BooleanScalar; IntScalar; FloatScalar;
-                                           ExtendedQueryType;
+                                           ExtendedSelectionType;
                                            DogCommandEnum; DogType;
                                            SentientInterface; PetInterface;
                                            AlienType; HumanType;
@@ -640,22 +640,22 @@ Section GraphQLSpecExamples.
 
     Let extended_wf_schema : @wfGraphQLSchema value_eqType   := WFGraphQLSchema extended_schwf (is_valid_value extended_schema).
 
-    Let example121_1 : seq (@Query value_eqType) :=
+    Let example121_1 : seq (@Selection value_eqType) :=
       [::
          "multipleReqs" [[ [:: (pair "x" (VInt 1)); (pair "y" (VInt 2))] ]]
       ].
 
-    Example e121_1 : queries_conform extended_wf_schema "Arguments" example121_1.
+    Example e121_1 : selections_conform extended_wf_schema "Arguments" example121_1.
     Proof.
         by [].
     Qed.
 
-    Let example121_2 : seq (@Query value_eqType) :=
+    Let example121_2 : seq (@Selection value_eqType) :=
       [::
          "multipleReqs" [[ [:: (pair "y" (VInt 1)); (pair "x" (VInt 2))] ]]
       ].
 
-    Example e121_2 : queries_conform extended_wf_schema "Arguments" example121_2.
+    Example e121_2 : selections_conform extended_wf_schema "Arguments" example121_2.
     Proof.
         by [].
     Qed.
@@ -683,7 +683,7 @@ Section GraphQLSpecExamples.
        We check this indirectly when checking if the fragments spread.
        If a fragment does not exist in the schema, it will never spread.
      *)
-    Let example128 : seq (@Query value_eqType) :=
+    Let example128 : seq (@Selection value_eqType) :=
       [::
          on "Dog" {
            [::
@@ -692,14 +692,14 @@ Section GraphQLSpecExamples.
          }
       ].
 
-    Example e128 : queries_conform wf_schema "Dog" example128 &&
-                   queries_conform wf_schema "Pet" example128.                
+    Example e128 : selections_conform wf_schema "Dog" example128 &&
+                   selections_conform wf_schema "Pet" example128.                
     Proof.
         by [].
     Qed.
 
 
-    Let example129 : seq (@Query value_eqType) :=
+    Let example129 : seq (@Selection value_eqType) :=
       [::
          on "NotInSchema" {
            [::
@@ -708,17 +708,17 @@ Section GraphQLSpecExamples.
          }
       ].
 
-    Example e129 : ~~queries_conform wf_schema "Dog" example129.
+    Example e129 : ~~selections_conform wf_schema "Dog" example129.
     Proof.
         by [].
     Qed.
 
-    Example e129' : all (fun name => ~~queries_conform wf_schema name example129) wf_schema.(schema_names).
+    Example e129' : all (fun name => ~~selections_conform wf_schema name example129) wf_schema.(schema_names).
     Proof.
         by [].
     Qed.
 
-    Let example130_1 : @Query value_eqType := on "Dog" {
+    Let example130_1 : @Selection value_eqType := on "Dog" {
                                                    [::
                                                       "name" [[ [::] ]]
                                                    ]
@@ -729,7 +729,7 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
 
-    Let example130_2 : @Query value_eqType := on "Pet" {
+    Let example130_2 : @Selection value_eqType := on "Pet" {
                                                    [::
                                                       "name" [[ [::] ]]
                                                    ]
@@ -740,7 +740,7 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
 
-     Let example130_3 : @Query value_eqType := on "CatOrDog" {
+     Let example130_3 : @Selection value_eqType := on "CatOrDog" {
                                                     [::
                                                        on "Dog" {
                                                          [::
@@ -754,7 +754,7 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
 
-    Let example131_1 : (@Query value_eqType) := on "Int" {
+    Let example131_1 : (@Selection value_eqType) := on "Int" {
                                                      [::
                                                         "something" [[ [::] ]]
                                                      ]
@@ -765,7 +765,7 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
 
-    Let example131_2 : (@Query value_eqType) := on "Dog" {
+    Let example131_2 : (@Selection value_eqType) := on "Dog" {
                                                      [::
                                                         on "Boolean" {
                                                           [::
@@ -797,7 +797,7 @@ Section GraphQLSpecExamples.
     (**
        https://graphql.github.io/graphql-spec/June2018/#sec-Object-Spreads-In-Object-Scope
      *)
-    Let example137 : @Query value_eqType := on "Dog" {
+    Let example137 : @Selection value_eqType := on "Dog" {
                                                  [::
                                                     "barkVolume" [[ [::] ]]
                                                  ]
@@ -812,7 +812,7 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
 
-    Let example138 : @Query value_eqType := on "Cat" {
+    Let example138 : @Selection value_eqType := on "Cat" {
                                                  [::
                                                     "meowVolume" [[ [::] ]]
                                                  ]
@@ -832,7 +832,7 @@ Section GraphQLSpecExamples.
     (**
        https://graphql.github.io/graphql-spec/June2018/#sec-Abstract-Spreads-in-Object-Scope
      *)
-    Let example139 : @Query value_eqType := on "Pet" {
+    Let example139 : @Selection value_eqType := on "Pet" {
                                                  [::
                                                     "name" [[ [::] ]]
                                                  ]
@@ -849,7 +849,7 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
 
-    Let example140 : @Query value_eqType := on "CatOrDog" {
+    Let example140 : @Selection value_eqType := on "CatOrDog" {
                                                  [::
                                                     on "Cat" {
                                                       [::
@@ -873,7 +873,7 @@ Section GraphQLSpecExamples.
     (**
        https://graphql.github.io/graphql-spec/June2018/#sec-Object-Spreads-In-Abstract-Scope
      *)
-    Let example141_1 : seq (@Query value_eqType) :=
+    Let example141_1 : seq (@Selection value_eqType) :=
       [::
          "name" [[ [::] ]];
          on "Dog" {
@@ -889,12 +889,12 @@ Section GraphQLSpecExamples.
     Qed.
 
     
-    Example e141_1 : queries_conform wf_schema "Pet" example141_1.
+    Example e141_1 : selections_conform wf_schema "Pet" example141_1.
     Proof.
         by [].
     Qed.
 
-    Let example141_2 : seq (@Query value_eqType) :=
+    Let example141_2 : seq (@Selection value_eqType) :=
       [::
          on "Cat" {
            [::
@@ -908,13 +908,13 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
     
-    Example e141_2 : queries_conform wf_schema "CatOrDog" example141_2.
+    Example e141_2 : selections_conform wf_schema "CatOrDog" example141_2.
     Proof.
         by [].
     Qed.
     
     
-    Let example142_1 : @Query value_eqType := on "Dog" {
+    Let example142_1 : @Selection value_eqType := on "Dog" {
                                                  [::
                                                     "barkVolume" [[ [::] ]]
                                                  ]
@@ -931,7 +931,7 @@ Section GraphQLSpecExamples.
     Qed.
 
     
-    Let example142_2 : @Query value_eqType := on "Cat" {
+    Let example142_2 : @Selection value_eqType := on "Cat" {
                                                  [::
                                                     "meowVolume" [[ [::] ]]
                                                  ]
@@ -951,7 +951,7 @@ Section GraphQLSpecExamples.
     (**
        https://graphql.github.io/graphql-spec/June2018/#sec-Abstract-Spreads-in-Abstract-Scope
      *)
-    Let example143 : seq (@Query value_eqType) :=
+    Let example143 : seq (@Selection value_eqType) :=
       [::
          on "DogOrHuman" {
            [::
@@ -969,12 +969,12 @@ Section GraphQLSpecExamples.
         by [].
     Qed.
 
-    Example e143 : queries_conform wf_schema "Pet" example143.
+    Example e143 : selections_conform wf_schema "Pet" example143.
     Proof.
         by [].
     Qed.
 
-    Let example144 : @Query value_eqType := on "Sentient" {
+    Let example144 : @Selection value_eqType := on "Sentient" {
                                                  [::
                                                     "name" [[ [::] ]]
                                                  ]

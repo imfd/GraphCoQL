@@ -344,85 +344,85 @@ Section Example.
         
    *)
     
-  Let edges : seq (@node value_eqType * fld * node) :=
+  Let edges : seq (@node value_eqType * label * node) :=
     [::
        pair (pair (Node "Query" [::])
-                  (Graph.Field "search" [:: (pair "text" (VString "L"))]))
+                  (Label "search" [:: (pair "text" (VString "L"))]))
        (Node "Starship" [::
-                           (pair (Graph.Field "id" [::])  (VInt 3000));
-                           (pair (Graph.Field "name" [::]) (VString "Falcon")); 
-                           (pair (Graph.Field "length" [::]) (VFloat 34 37))
+                           (pair (Label "id" [::])  (VInt 3000));
+                           (pair (Label "name" [::]) (VString "Falcon")); 
+                           (pair (Label "length" [::]) (VFloat 34 37))
        ]);
        pair (pair (Node "Query" [::])
-                  (Graph.Field "search" [:: (pair "text" (VString "L"))]))
+                  (Label "search" [:: (pair "text" (VString "L"))]))
             (Node "Human" [::
-                             pair (Graph.Field "id" [::]) (VInt 1000);
-                             pair (Graph.Field "name" [::]) (VString "Luke")
+                             pair (Label "id" [::]) (VInt 1000);
+                             pair (Label "name" [::]) (VString "Luke")
             ]);
        pair (pair (Node "Query" [::])
-                  (Graph.Field "hero" [:: pair "episode" (VString "EMPIRE")]))
+                  (Label "hero" [:: pair "episode" (VString "EMPIRE")]))
             (Node "Human" [::
-                             pair (Graph.Field "id" [::]) (VInt 1000);
-                             pair (Graph.Field "name" [::]) (VString "Luke")
+                             pair (Label "id" [::]) (VInt 1000);
+                             pair (Label "name" [::]) (VString "Luke")
             ]);
        pair (pair (Node "Query" [::])
-                  (Graph.Field "hero" [:: pair "episode" (VString "NEWHOPE")]))
+                  (Label "hero" [:: pair "episode" (VString "NEWHOPE")]))
             (Node "Droid" [::
-                             (pair (Graph.Field "id" [::]) (VInt 2001));
-                             (pair (Graph.Field "name" [::]) (VString "R2-D2"));
-                             (pair (Graph.Field "primaryFunction" [::]) (VString "Astromech"))
+                             (pair (Label "id" [::]) (VInt 2001));
+                             (pair (Label "name" [::]) (VString "R2-D2"));
+                             (pair (Label "primaryFunction" [::]) (VString "Astromech"))
             ]);
        
        pair (pair (Node "Human" [::
-                                   pair (Graph.Field "id" [::]) (VInt 1000);
-                                   pair (Graph.Field "name" [::]) (VString "Luke")
+                                   pair (Label "id" [::]) (VInt 1000);
+                                   pair (Label "name" [::]) (VString "Luke")
                   ])
-                  (Graph.Field "friends" [::]))
+                  (Label "friends" [::]))
             (Node "Droid" [::
-                             (pair (Graph.Field "id" [::]) (VInt 2001));
-                             (pair (Graph.Field "name" [::]) (VString "R2-D2"));
-                             (pair (Graph.Field "primaryFunction" [::]) (VString "Astromech"))
+                             (pair (Label "id" [::]) (VInt 2001));
+                             (pair (Label "name" [::]) (VString "R2-D2"));
+                             (pair (Label "primaryFunction" [::]) (VString "Astromech"))
             ]);
 
        pair (pair (Node "Droid" [::
-                                   (pair (Graph.Field "id" [::]) (VInt 2001));
-                                   (pair (Graph.Field "name" [::]) (VString "R2-D2"));
-                                   (pair (Graph.Field "primaryFunction" [::]) (VString "Astromech"))
+                                   (pair (Label "id" [::]) (VInt 2001));
+                                   (pair (Label "name" [::]) (VString "R2-D2"));
+                                   (pair (Label "primaryFunction" [::]) (VString "Astromech"))
                   ])
-                  (Graph.Field "friends" [::]))
+                  (Label "friends" [::]))
             (Node "Human" [::
-                             pair (Graph.Field "id" [::]) (VInt 1000);
-                             pair (Graph.Field "name" [::]) (VString "Luke")
+                             pair (Label "id" [::]) (VInt 1000);
+                             pair (Label "name" [::]) (VString "Luke")
             ]);
        
        pair (pair (Node "Human" [::
-                                   pair (Graph.Field "id" [::]) (VInt 1000);
-                                   pair (Graph.Field "name" [::]) (VString "Luke")
+                                   pair (Label "id" [::]) (VInt 1000);
+                                   pair (Label "name" [::]) (VString "Luke")
                   ])
-                  (Graph.Field "friends" [::]))
+                  (Label "friends" [::]))
             (Node "Human" [::
-                             pair (Graph.Field "id" [::]) (VInt 1002);
-                             pair (Graph.Field "name" [::]) (VString "Han")
+                             pair (Label "id" [::]) (VInt 1002);
+                             pair (Label "name" [::]) (VString "Han")
             ]);
        
        pair (pair (Node "Human" [::
-                                   pair (Graph.Field "id" [::]) (VInt 1002);
-                                   pair (Graph.Field "name" [::]) (VString "Han")
+                                   pair (Label "id" [::]) (VInt 1002);
+                                   pair (Label "name" [::]) (VString "Han")
                   ])
-                  (Graph.Field "friends" [::]))
+                  (Label "friends" [::]))
             (Node "Human" [::
-                             pair (Graph.Field "id" [::]) (VInt 1000);
-                             pair (Graph.Field "name" [::]) (VString "Luke")
+                             pair (Label "id" [::]) (VInt 1000);
+                             pair (Label "name" [::]) (VString "Luke")
             ]);
        
        pair (pair (Node "Human" [::
-                                   pair (Graph.Field "id" [::]) (VInt 1002);
-                                   pair (Graph.Field "name" [::]) (VString "Han")
+                                   pair (Label "id" [::]) (VInt 1002);
+                                   pair (Label "name" [::]) (VString "Han")
                   ])
-                  (Graph.Field "starships" [::]))
-            (Node "Starship" [:: (pair (Graph.Field "id" [::]) (VInt 3000));
-                                (pair (Graph.Field "name" [::]) (VString "Falcon")); 
-                                (pair (Graph.Field "length" [::]) (VFloat 34 37))])
+                  (Label "starships" [::]))
+            (Node "Starship" [:: (pair (Label "id" [::]) (VInt 3000));
+                                (pair (Label "name" [::]) (VString "Falcon")); 
+                                (pair (Label "length" [::]) (VFloat 34 37))])
     ].
     
 
@@ -501,7 +501,7 @@ Section Example.
   (**
        We prove it conforms to the schema by simple computation.     
    *)
-  Lemma qbc : queries_conform  wf_schema wf_schema.(query_type) q.
+  Lemma qbc : selections_conform  wf_schema wf_schema.(query_type) q.
   Proof.
       by [].
   Qed.
