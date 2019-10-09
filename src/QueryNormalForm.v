@@ -77,7 +77,7 @@ Section NormalForm.
      Checks whether the given selection set is in ground-typed normal form, as described in HP.
    *)
   Definition are_in_ground_typed_nf (ss : seq (@Selection Vals)) : bool :=
-    (all (fun s => s.(is_field)) ss || all (fun s => s.(is_inline_fragment)) ss) && all is_in_ground_typed_nf ss.
+    (all (@is_field Vals) ss || all (@is_inline_fragment Vals) ss) && all is_in_ground_typed_nf ss.
 
   (** ---- *)
   (**
@@ -86,8 +86,8 @@ Section NormalForm.
      Checks whether the given query is in ground-typed normal form, by checking that its selection set is
      in ground-typed normal form.
    *)
-  Definition is_a_grounded_typed_nf_query (q : @query Vals) :=
-    all (fun sel => sel.(is_field) && sel.(is_in_ground_typed_nf)) q.(selection_set).
+  Definition is_a_ground_typed_nf_query (q : @query Vals) :=
+    q.(selection_set).(are_in_ground_typed_nf).
   
 
   (** ---- *)
@@ -182,14 +182,25 @@ Section NormalForm.
    *)
   Definition is_non_redundant (q : @query Vals) : bool := q.(selection_set).(are_non_redundant).
 
-  
+  (** ---- *)
+  (** ** Normal form
+
+   *)
+                                                
+  (** ---- *)
+  (**
+
+   *)
+  Definition are_in_normal_form (σ : seq Selection) :=
+    σ.(are_in_ground_typed_nf) && σ.(are_non_redundant).
+    
   (** ---- *)
   (**
      #<strong>is_in_normal_form</strong># : Query → Bool 
 
      Checks whether a query is in normal form.
    *)
-  Definition is_in_normal_form (q : @query Vals) := q.(is_a_grounded_typed_nf_query) && q.(is_non_redundant).
+  Definition is_in_normal_form (q : @query Vals) := q.(selection_set).(are_in_normal_form).
 
 
   (** ---- *)  
@@ -197,10 +208,12 @@ End NormalForm.
 
 Arguments is_in_ground_typed_nf [Vals].
 Arguments are_in_ground_typed_nf [Vals].
-Arguments is_grounded [Vals].
-Arguments are_grounded [Vals].
+Arguments is_a_ground_typed_nf_query [Vals].
+
 Arguments are_non_redundant [Vals].
 Arguments is_non_redundant [Vals].
+
+Arguments are_in_normal_form [Vals].
 Arguments is_in_normal_form [Vals].
 
 

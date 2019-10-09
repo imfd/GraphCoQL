@@ -54,9 +54,35 @@ Section NormalForm.
       In this section we prove several lemmas about groundness and non-redundancy.
    *)
 
-  Variables (Vals : eqType).
+  Variables (Vals : eqType) (s : @wfGraphQLSchema Vals).
 
 
+  (** ** Groundedness
+
+   *)
+  (** ---- *)
+  (**
+     This lemma states that
+   *)
+  Lemma grounded_fields_are_grounded σ :
+    all (fun σ__i => σ__i.(is_field) && is_in_ground_typed_nf s σ__i) σ ->
+    are_in_ground_typed_nf s σ.
+  Proof.
+    elim: σ => //= σ__i σ IH => /andP [/andP [Hf Hg] /allP Hgs].
+    rewrite /are_in_ground_typed_nf; apply_andP => /=; [apply/orP; left|]; apply_andP.
+    all: do [by apply/allP=> sel Hin; have /(_ sel Hin) := Hgs; case/andP].
+  Qed.
+
+  Lemma grounded_fragments_are_grounded σ :
+    all (fun σ__i => σ__i.(is_inline_fragment) && is_in_ground_typed_nf s σ__i) σ ->
+    are_in_ground_typed_nf s σ.
+  Proof.
+    elim: σ => //= σ__i σ IH => /andP [/andP [Hf Hg] /allP Hgs].
+    rewrite /are_in_ground_typed_nf; apply_andP => /=; [apply/orP; right|]; apply_andP.
+    all: do [by apply/allP=> sel Hin; have /(_ sel Hin) := Hgs; case/andP].
+  Qed.
+
+  
   
   (** ** Non-redundancy *)
   (** ---- *)
@@ -237,13 +263,14 @@ Section Normalisation.
      This corollary is just the conjunction that the normalized selections are 
      both fields and in ground-typed normal form.
    *)
-  Corollary normalized_selections_are_grounded_fields ts ss :
-    all (fun sel => sel.(is_field) && is_in_ground_typed_nf s sel) (normalize_selections s ts ss).
+  Corollary normalized_selections_are_grounded ts ss :
+    are_in_ground_typed_nf s (normalize_selections s ts ss).
   Proof.
-    apply/allP=> sel Hin; apply_andP.
-      by have/allP-/(_ sel Hin) := (normalized_selections_are_fields ts ss).
-        by have/allP-/(_ sel Hin) := (normalized_selections_are_in_gt_nf ts ss).
-  Qed.
+    rewrite /are_in_ground_typed_nf.
+    apply_andP.
+    - by apply/orP; left; apply: normalized_selections_are_fields.
+    - by apply: normalized_selections_are_in_gt_nf.
+  Qed. 
   
 
   (* (** ---- *) *)
@@ -318,10 +345,8 @@ Section Normalisation.
   Proof.
     case: q; intros.
     rewrite /is_in_normal_form /normalize /=; apply_andP.
-    - rewrite /is_a_grounded_typed_nf_query /=.
-        by apply: normalized_selections_are_grounded_fields.
-    - rewrite /is_non_redundant.
-        by apply: normalized_selections_are_non_redundant.
+    - by apply: normalized_selections_are_grounded.
+    - by apply: normalized_selections_are_non_redundant.
   Qed.
 
    

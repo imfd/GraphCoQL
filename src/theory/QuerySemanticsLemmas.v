@@ -645,42 +645,38 @@ Section Theory.
      equivalent.
    *)
   Lemma exec_equivalence u φ :
-    (all (fun s => s.(is_field)) φ || all (fun s => s.(is_inline_fragment)) φ) ->
-    all (is_in_ground_typed_nf s) φ ->
-    are_non_redundant φ -> 
+    are_in_normal_form s φ -> 
     s, g ⊢ ⟦ φ ⟧ˢ in u with coerce = s, g ⊢ ≪ φ ≫ in u with coerce. 
   Proof.
+    rewrite /are_in_normal_form; case/andP; rewrite /are_in_ground_typed_nf; case/andP.
     move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
     elim: n φ u => /= [| n IH] φ u; first by rewrite leqn0 => /queries_size_0_nil ->.
-    case: φ => // q φ; case_selection q; simp selection_size => Hleq /=; simp is_inline_fragment => /=; rewrite ?orbF => Hshape; bcase; non_red => /=; bcase; last first.
+    case: φ => //= q φ; case_selection q; simp selection_size => Hleq /=; simp is_inline_fragment => /=; rewrite ?orbF => Hshape; bcase; non_red => /=; bcase; last first.
 
     - exec; exec2.
+      move: Hb1; bcase.
       * have Htyeq : u.(ntype) = t.
         apply/eqP; move: Hfapplies; rewrite /does_fragment_type_apply.
-        move: Hb1 => /andP [/is_object_type_wfP [intfs [flds ->] ] Hsubg].
+        move: Hb1 => /is_object_type_wfP [intfs [flds ->] ].
           by case lookup_type => //=; case.
         rewrite exec_inv_inlines_nil // ?exec2_cat.
         have -> //= := (exec2_inlines_nil φ).
-        rewrite cats0; apply: IH => //; leq_queries_size.
-        apply/orP; left; apply/allP=> sel Hin.
-        by move: Hb1 => /andP [_ /allP-/(_ sel Hin)]; case/andP.
-        by apply/allP=> sel Hin; move: Hb1 => /andP [_ /allP-/(_ sel Hin)]; case/andP.
+        rewrite cats0; apply: IH => //; leq_queries_size; [apply/orP; left|];
+                                     by apply/allP=> sel Hin; have /allP-/(_ sel Hin) := Hb5; case/andP.
 
         all: do ? [ apply: find_frags_nil_then_N_applies;
                     [ by rewrite Htyeq; apply/eqP
-                    |  apply/allP=> sel Hin;
-                       have /allP-/(_ sel Hin) := Hshape;
-                       have /allP-/(_ sel Hin) {Hin} := Hb2;
-                        by case: sel => //= t' subs; case/andP
+                    | by apply/allP=> sel Hin;
+                         have /allP-/(_ sel Hin) := Hb2;
+                         have /allP-/(_ sel Hin) {Hin} := Hshape;
+                         case: sel => //= t' subs Hinl; case/andP
                     ]
                   ].
-       
           
-      * by apply: IH => //; leq_queries_size; apply/orP; right.
-     
-      
-        all: do ? exec; exec2.
-    all: do ? [move=> Hg; bcase].
+      * by apply: IH => //; leq_queries_size; apply/orP; right. 
+         
+    all: do ? exec; exec2.
+    all: do ? [move=> Hb1; bcase].
     all: do ? congr cons.
     all: do ? rewrite filter_find_fields_nil_is_nil //; do ? by apply/eqP.
     all: do ? apply: IH => //; leq_queries_size.
@@ -699,12 +695,8 @@ Section Theory.
     simpl_execute_query s g coerce q.
   Proof.
     case: q => n ss.
-    rewrite /is_in_normal_form /is_a_grounded_typed_nf_query /is_non_redundant /=.
-    move=> /andP [/allP Hg Hnr].
-    rewrite /simpl_execute_query /execute_query /=.
-    apply: exec_equivalence => //=.
-    apply/orP; left.
-    all: do [by apply/allP=> sel Hin; have := (Hg sel Hin); case/andP].
+    rewrite /is_in_normal_form /= /simpl_execute_query /execute_query /=.
+      by apply: exec_equivalence => //=.
   Qed.
 
 
@@ -712,9 +704,8 @@ Section Theory.
     s, g ⊢ ⟦ normalize_selections s u.(ntype) ss ⟧ˢ in u with coerce =
     s, g ⊢ ≪ normalize_selections s u.(ntype) ss ≫ in u with coerce.
   Proof.
-    apply: exec_equivalence => //=.
-    - by apply/orP; left; apply: normalized_selections_are_fields.
-    - by apply: normalized_selections_are_in_gt_nf.
+    apply: exec_equivalence => //=; rewrite /are_in_normal_form; apply_andP.
+    - by apply: normalized_selections_are_grounded.
     - by apply: normalized_selections_are_non_redundant.
   Qed.
 
