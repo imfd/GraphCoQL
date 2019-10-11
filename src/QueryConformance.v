@@ -265,7 +265,7 @@ Section QueryConformance.
        | Some fld := all (has_compatible_type fld.(return_type)) (find_pairs_with_response_name f φ)
                         && have_compatible_response_shapes (filter_pairs_with_response_name f φ);
        
-       | _ := have_compatible_response_shapes φ
+       | _ := false (* If the field is not defined in its own type in scope it should fail *)
        };
 
      have_compatible_response_shapes ((ty, l:f[[ _ ]]) :: φ)
@@ -274,7 +274,7 @@ Section QueryConformance.
        | Some fld := all (has_compatible_type fld.(return_type)) (find_pairs_with_response_name l φ)
                         && have_compatible_response_shapes (filter_pairs_with_response_name l φ);
        
-       | _ := have_compatible_response_shapes φ
+       | _ := false (* If the field is not defined in its own type in scope it should fail *)
        };
 
       have_compatible_response_shapes ((ty, f[[ _ ]] { β }) :: φ)
@@ -286,7 +286,7 @@ Section QueryConformance.
                      have_compatible_response_shapes (filter_pairs_with_response_name f φ)];
                      
                         
-       | _ := have_compatible_response_shapes φ
+       | _ := false (* If the field is not defined in its own type in scope it should fail *)
        };
       
       have_compatible_response_shapes ((ty, l:f[[ _ ]] { β }) :: φ)
@@ -298,7 +298,7 @@ Section QueryConformance.
                      have_compatible_response_shapes (filter_pairs_with_response_name f φ)];
                      
                         
-       | _ := have_compatible_response_shapes φ
+       | _ := false (* If the field is not defined in its own type in scope it should fail *)
        };
 
       
