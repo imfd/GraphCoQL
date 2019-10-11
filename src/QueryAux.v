@@ -348,7 +348,7 @@ Section QueryAux.
        have_same_name q1 q2 & have_same_arguments q1 q2].
 
 
-    
+   
 
     
   End Base.
@@ -426,6 +426,22 @@ Section QueryAux.
         oname \in members
       | _, _ => false
       end.
+
+     (** ---- *)
+    (**
+     #<strong>is_fragment_spread_possible</strong># : Name → Name → Bool 
+     
+     Checks whether a given type can be used as an inline fragment's type condition 
+     in a given context with another type in scope (parent type).
+
+     It basically amounts to intersecting the possible subtypes of each
+     and checking that the intersection is not empty.     
+     *)
+    Definition is_fragment_spread_possible parent_type fragment_type : bool :=
+      let ty_possible_types := get_possible_types s fragment_type in
+      let parent_possible_types := get_possible_types s parent_type in
+      let applicable_types := (ty_possible_types :&: parent_possible_types)%SEQ in
+      applicable_types != [::].
     
     
   End DefPreds.
@@ -751,6 +767,8 @@ Arguments have_same_arguments [Vals].
 Arguments are_equivalent [Vals].
 
 Arguments does_fragment_type_apply [Vals].
+Arguments is_fragment_spread_possible [Vals].
+
 Arguments filter_queries_with_label [Vals].
 Arguments filter_pairs_with_response_name [Vals].
 

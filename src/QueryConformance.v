@@ -100,21 +100,7 @@ Section QueryConformance.
      
 
 
-  (** ---- *)
-  (**
-     #<strong>is_fragment_spread_possible</strong># : Name → Name → Bool 
-     
-     Checks whether a given type can be used as an inline fragment's type condition 
-     in a given context with another type in scope (parent type).
 
-     It basically amounts to intersecting the possible subtypes of each
-     and checking that the intersection is not empty.     
-   *)
-  Definition is_fragment_spread_possible parent_type fragment_type : bool :=
-    let ty_possible_types := get_possible_types s fragment_type in
-    let parent_possible_types := get_possible_types s parent_type in
-    let applicable_types := (ty_possible_types :&: parent_possible_types)%SEQ in
-    applicable_types != [::].
 
 
   (** ---- *)
@@ -173,7 +159,7 @@ Section QueryConformance.
       else
         false 
 
-    | on t { φ } => [&& is_fragment_spread_possible type_in_scope t,
+    | on t { φ } => [&& is_fragment_spread_possible s type_in_scope t,
                     φ != [::] &
                     all (is_consistent t) φ]
     end.
@@ -433,7 +419,7 @@ Section QueryConformance.
        };
 
      is_field_merging_possible ty (on t { β } :: φ)
-       with is_fragment_spread_possible t ty :=
+       with is_fragment_spread_possible s t ty :=
        {
        | true with is_object_type s ty :=
            {
