@@ -159,6 +159,21 @@ Section Theory.
     Proof.
         by case: nq => //=; case=> ty; case.
     Qed.
+
+    Lemma queries_size_aux_cat (σs1 σs2 : seq (Name * @Selection Vals)) : 
+      queries_size_aux (σs1 ++ σs2) = queries_size_aux σs1 + queries_size_aux σs2.
+    Proof.
+      case: σs1 σs2 => //= σ σs1 σs2.
+      by rewrite /queries_size_aux /= map_cat queries_size_cat -?/(queries_size_aux _) addnA.
+      
+    Qed.
+    
+    Lemma queries_size_aux_tr (σs : seq (@Selection Vals)) t n :
+      queries_size σs <= n ->
+      queries_size_aux [seq (t, σ) | σ <- σs] <= n.
+    Proof.
+        by rewrite /queries_size_aux -map_comp /funcomp /= map_id.
+    Qed.
       
   End Size.
 
@@ -183,6 +198,22 @@ Section Theory.
         by funelim (find_queries_with_label _ _ _ qs) => //=; simp selection_size; rewrite ?queries_size_cat; ssromega.
     Qed.
 
+    
+    (**
+       This lemma states that
+     *)
+    Lemma found_valid_pairs_leq_size ts rname σs :
+      queries_size_aux (find_valid_pairs_with_response_name s ts rname σs) <=
+      queries_size_aux σs.
+    Proof.
+      funelim (find_valid_pairs_with_response_name s ts rname σs) => //=;
+      rewrite /queries_size_aux /=; simp selection_size => /=; rewrite -?queries_size_cat -?/(queries_size_aux _);
+      do ? ssromega.
+      rewrite /queries_size_aux /= -map_comp /funcomp /= map_id -/(queries_size_aux _) in H.
+      rewrite queries_size_aux_cat -?/(queries_size_aux _).
+        by ssromega.
+    Qed.
+      
     (** ---- *)
     (**
        This lemma states that that [find_queries_with_label] distributes over list concatenation.
@@ -205,6 +236,15 @@ Section Theory.
     Proof.
       funelim (find_fields_with_response_name k φ) => //=; simp selection_size; do ? ssromega.
         by rewrite queries_size_cat; ssromega.
+    Qed.
+
+    Lemma found_pairs_with_response_name_leq rname (σ : seq (Name * @Selection Vals)) :
+      queries_size_aux (find_pairs_with_response_name rname σ) <= queries_size_aux σ.
+    Proof.
+      rewrite /queries_size_aux.
+      funelim (find_pairs_with_response_name rname σ) => //=; simp selection_size; do ? ssromega.
+      rewrite map_cat queries_size_cat.
+      rewrite -map_comp /funcomp map_id in H; ssromega.
     Qed.
 
     (** ---- *)
@@ -397,6 +437,19 @@ Section Theory.
   Section Filter.
     Hint Resolve found_queries_leq_size.
 
+        (** ---- *)  
+    (**
+       This lemma states that
+     *)
+    Lemma filter_pairs_spec rname (nq : seq (Name * @Selection Vals)) :
+      [seq q.2 | q <- filter_pairs_with_response_name rname nq] = filter_queries_with_label rname [seq q.2 | q <- nq].
+    Proof.
+      elim: nq => //= q nq IH.
+        by case: q => ty; case=> //= [f α | l f α | f α β | l f α β | t β];
+                                 simp filter_pairs_with_response_name;
+                                 simp filter_queries_with_label => /=; do ? case: eqP => //= _; rewrite IH.
+    Qed.
+      
     
     (** ---- *)  
     (**
@@ -407,6 +460,15 @@ Section Theory.
       queries_size (filter_queries_with_label l φ) <= queries_size φ.
     Proof.
       funelim (filter_queries_with_label l φ) => //=; do ?[simp selection_size; ssromega]. 
+    Qed.
+
+
+    Lemma filter_pairs_with_response_name_leq rname (σ : seq (Name * @Selection Vals)) :
+      queries_size_aux (filter_pairs_with_response_name rname σ) <= queries_size_aux σ.
+    Proof.
+      rewrite /queries_size_aux.
+      funelim (filter_pairs_with_response_name rname σ) => //=; simp selection_size; do ? [ssromega].
+      have Hfleq := (filter_queries_with_label_leq_size response_name subqueries1); ssromega.
     Qed.
 
     
@@ -560,19 +622,7 @@ Section Theory.
     Qed.
 
     
-    (** ---- *)  
-    (**
-       This lemma states that
-     *)
-    Lemma filter_pairs_spec rname (nq : seq (Name * @Selection Vals)) :
-      [seq q.2 | q <- filter_pairs_with_response_name rname nq] = filter_queries_with_label rname [seq q.2 | q <- nq].
-    Proof.
-      elim: nq => //= q nq IH.
-        by case: q => ty; case=> //= [f α | l f α | f α β | l f α β | t β];
-                                 simp filter_pairs_with_response_name;
-                                 simp filter_queries_with_label => /=; do ? case: eqP => //= _; rewrite IH.
-    Qed.
-      
+
       
       
   End Filter.

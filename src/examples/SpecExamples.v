@@ -302,6 +302,9 @@ Section GraphQLSpecExamples.
     
 
     Section FieldSelectionMerging.
+      (* Redefining only to ease reading -- Another option would be to use [selections_conform] but this seems simpler *)
+      Definition is_field_merging_possible (s : wfGraphQLSchema)
+                 (ts : Name) (σs : seq (@Selection value_eqType)) := is_field_merging_possible s [seq (pair ts σ) | σ <- σs]. 
 
       Let example107_1 : seq (@Selection value_eqType) := [::
                                                          "name" [[ [::] ]];

@@ -489,6 +489,28 @@ Section QueryAux.
     all: do ?simp selection_size; ssromega.
     Qed.
 
+    Equations? find_valid_pairs_with_response_name (ts : Name) (rname : Name) (σs : seq (Name * @Selection Vals)) :
+      seq (Name * @Selection Vals) by wf (queries_size_aux σs) :=
+      {
+        find_valid_pairs_with_response_name _ _ [::] := [::];
+
+        find_valid_pairs_with_response_name ts rname ((_, on t { βs }) :: qs)
+          with does_fragment_type_apply s ts t :=
+          {
+          | true := find_valid_pairs_with_response_name rname ts [seq (t, β) | β <- βs] ++ find_valid_pairs_with_response_name ts rname qs;
+          | _ := find_valid_pairs_with_response_name ts rname qs
+          };
+
+        find_valid_pairs_with_response_name ts rname ((t, σ) :: σs)
+          with (qresponse_name σ _) == rname :=
+          {
+          | true := (t, σ) :: find_valid_pairs_with_response_name rname ts σs;
+          | _ := find_valid_pairs_with_response_name rname ts σs
+          }
+      }.
+    all: do ? [rewrite /queries_size_aux /=; simp selection_size; rewrite -/(queries_size_aux _); ssromega].
+      by rewrite /queries_size_aux /=; simp selection_size; rewrite -map_comp /funcomp /= map_id; ssromega.
+    Qed.
     
     (** ---- *)
     (** 
@@ -590,6 +612,8 @@ Section QueryAux.
         by intros; elim: xs => //= x xs ->.
         by ssromega.
     Qed.
+
+     
 
 
     (** ---- *)
@@ -773,6 +797,7 @@ Arguments filter_queries_with_label [Vals].
 Arguments filter_pairs_with_response_name [Vals].
 
 Arguments find_queries_with_label [Vals].
+Arguments find_valid_pairs_with_response_name [Vals].
 Arguments find_fields_with_response_name [Vals].
 Arguments find_pairs_with_response_name [Vals].
 Arguments find_fragment_with_type_condition [Vals].
