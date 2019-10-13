@@ -76,11 +76,10 @@ Section QuerySemantic.
 
  
   Fixpoint is_valid_response_value (ty : type) (response : @ResponseNode (option Vals)) : bool :=
-    match response with
-    | Leaf (Some v) => s.(is_valid_value) ty v
-    | Response.Object rs => all (fun r => is_valid_response_value ty r.2) rs
-    | Array rs => all (is_valid_response_value ty) rs
-    | _ => false 
+    match ty, response with
+    | NamedType _, Leaf (Some v) => s.(is_valid_value) ty v
+    | ListType ty, Array rs => all (is_valid_response_value ty) rs
+    | _, _ => false 
     end.
 
   
