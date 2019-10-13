@@ -100,21 +100,7 @@ Section QueryConformance.
      
 
 
-  (** ---- *)
-  (**
-     #<strong>is_fragment_spread_possible</strong># : Name → Name → Bool 
-     
-     Checks whether a given type can be used as an inline fragment's type condition 
-     in a given context with another type in scope (parent type).
 
-     It basically amounts to intersecting the possible subtypes of each
-     and checking that the intersection is not empty.     
-   *)
-  Definition is_fragment_spread_possible parent_type fragment_type : bool :=
-    let ty_possible_types := get_possible_types s fragment_type in
-    let parent_possible_types := get_possible_types s parent_type in
-    let applicable_types := (ty_possible_types :&: parent_possible_types)%SEQ in
-    applicable_types != [::].
 
 
   (** ---- *)
@@ -173,7 +159,7 @@ Section QueryConformance.
       else
         false 
 
-    | on t { φ } => [&& is_fragment_spread_possible type_in_scope t,
+    | on t { φ } => [&& is_fragment_spread_possible s type_in_scope t,
                     φ != [::] &
                     all (is_consistent t) φ]
     end.
@@ -268,7 +254,7 @@ Section QueryConformance.
     
   *)
  (* Equations is not able to build the graph - hence we use noind *)
- Equations(noind) have_compatible_response_shapes (selections : seq (Name * @Selection Vals)) :
+ Equations? have_compatible_response_shapes (selections : seq (Name * @Selection Vals)) :
    bool by wf (queries_size_aux selections) :=
    {
      have_compatible_response_shapes [::] := true ;
@@ -279,7 +265,7 @@ Section QueryConformance.
        | Some fld := all (has_compatible_type fld.(return_type)) (find_pairs_with_response_name f φ)
                         && have_compatible_response_shapes (filter_pairs_with_response_name f φ);
        
-       | _ := have_compatible_response_shapes φ
+       | _ := false (* If the field is not defined in its own type in scope it should fail *)
        };
 
      have_compatible_response_shapes ((ty, l:f[[ _ ]]) :: φ)
@@ -288,7 +274,7 @@ Section QueryConformance.
        | Some fld := all (has_compatible_type fld.(return_type)) (find_pairs_with_response_name l φ)
                         && have_compatible_response_shapes (filter_pairs_with_response_name l φ);
        
-       | _ := have_compatible_response_shapes φ
+       | _ := false (* If the field is not defined in its own type in scope it should fail *)
        };
 
       have_compatible_response_shapes ((ty, f[[ _ ]] { β }) :: φ)
@@ -300,7 +286,7 @@ Section QueryConformance.
                      have_compatible_response_shapes (filter_pairs_with_response_name f φ)];
                      
                         
-       | _ := have_compatible_response_shapes φ
+       | _ := false (* If the field is not defined in its own type in scope it should fail *)
        };
       
       have_compatible_response_shapes ((ty, l:f[[ _ ]] { β }) :: φ)
@@ -312,39 +298,23 @@ Section QueryConformance.
                      have_compatible_response_shapes (filter_pairs_with_response_name f φ)];
                      
                         
-       | _ := have_compatible_response_shapes φ
+       | _ := false (* If the field is not defined in its own type in scope it should fail *)
        };
 
       
       have_compatible_response_shapes ((ty, on t { β }) :: φ) := have_compatible_response_shapes ([seq (t, q) | q <- β] ++ φ)
                                                                                                       
    }.
- Solve Obligations with intros; leq_queries_size.
- Next Obligation.
-   rewrite /queries_size_aux /= map_cat queries_size_cat; simp selection_size.
-   have -> : forall xs y, [seq x.2 | x <- [seq (y, q) | q <- xs] ] = xs by intros; elim: xs => //= x xs ->.
-   have Hmleq := (merge_pair_selections_leq s (find_pairs_with_response_name f φ)).
-   rewrite /queries_size_aux in Hmleq *.
-   have Hfleq : queries_size [seq nq.2 | nq <- find_pairs_with_response_name f φ] <=
-                queries_size [seq nq.2 | nq <- φ].
-     by rewrite find_pairs_spec; apply: found_fields_leq_size.
-       by ssromega.
- Qed.
- Next Obligation.
-   rewrite /queries_size_aux /= map_cat queries_size_cat; simp selection_size.
-   have -> : forall xs y, [seq x.2 | x <- [seq (y, q) | q <- xs] ] = xs by intros; elim: xs => //= x xs ->.
-   have Hmleq := (merge_pair_selections_leq s (find_pairs_with_response_name l φ)).
-   rewrite /queries_size_aux in Hmleq *.
-   have Hfleq : queries_size [seq nq.2 | nq <- find_pairs_with_response_name l φ] <=
-                queries_size [seq nq.2 | nq <- φ].
-     by rewrite find_pairs_spec; apply: found_fields_leq_size.
-       by ssromega.
- Qed.
- Next Obligation.
-   rewrite /queries_size_aux /= map_cat queries_size_cat; simp selection_size.
-   have -> : forall xs y, [seq x.2 | x <- [seq (y, q) | q <- xs] ] = xs by intros; elim: xs => //= x xs ->.       
-     by ssromega.
- Qed.
+ all: do ? [rewrite ?/similar_queries; leq_queries_size].
+  Qed.
+  Next Obligation.
+     move: {2}(queries_size_aux _) (leqnn (queries_size_aux selections)) => n.
+     elim: n selections => /= [| n IH] selections; first by rewrite leqn0 => /queries_size_aux_0_nil ->; constructor.
+     case: selections => /= [| q selections]; first by constructor.
+     case: q => ts q.
+     case_selection q; rewrite /queries_size_aux /= -/(queries_size_aux _); simp selection_size => Hleq;
+     simp have_compatible_response_shapes; constructor; do ? [lookup; constructor]; apply: IH; leq_queries_size.
+  Defined.
 
 
 
@@ -366,99 +336,98 @@ Section QueryConformance.
     We use the type in context to find only the fields that make sense 
     (because with fragments we can create queries that don't make sense).
   *)
- Equations? is_field_merging_possible (type_in_scope : Name) selections : bool by wf (queries_size selections)  :=
+ (* Equations is not able to build the graph - hence we use noind *)
+ Equations? is_field_merging_possible (selections : seq (Name * @Selection Vals)) :
+   bool by wf (queries_size_aux selections) :=
    {
-     is_field_merging_possible _ [::] := true;
+     is_field_merging_possible [::] := true;
 
-     is_field_merging_possible ty (f[[α]] :: φ)
+     is_field_merging_possible ((ty, f[[α]]) :: φ)
        with is_object_type s ty :=
        {
-       | true := all (are_equivalent (f[[α]])) (find_queries_with_label s f ty φ) &&
-                    is_field_merging_possible ty (filter_queries_with_label f φ);
+       | true := all (are_equivalent (f[[α]])) [seq p.2 | p <- (find_valid_pairs_with_response_name s ty f φ)] &&
+                 is_field_merging_possible (filter_pairs_with_response_name f φ);
        
-       | _ := all (are_equivalent (f[[α]])) (find_fields_with_response_name f φ) &&
-                 is_field_merging_possible ty (filter_queries_with_label f φ)
+       | _ := all (are_equivalent (f[[α]])) [seq p.2 | p <- (find_pairs_with_response_name f φ)] &&
+                 is_field_merging_possible (filter_pairs_with_response_name f φ)
        };
 
-     is_field_merging_possible ty (l:f[[α]] :: φ)
+     is_field_merging_possible ((ty, l:f[[α]]) :: φ)
        with is_object_type s ty :=
        {
-       | true := all (are_equivalent (l:f[[α]])) (find_queries_with_label s l ty φ) &&
-                    is_field_merging_possible ty (filter_queries_with_label l φ);
+       | true := all (are_equivalent (l:f[[α]])) [seq p.2 | p <- (find_valid_pairs_with_response_name s ty l φ)] &&
+                 is_field_merging_possible (filter_pairs_with_response_name l φ);
        
-       | _ := all (are_equivalent (l:f[[α]])) (find_fields_with_response_name l φ) &&
-                 is_field_merging_possible ty (filter_queries_with_label l φ)
+       | _ := all (are_equivalent (l:f[[α]])) [seq p.2 | p <- (find_pairs_with_response_name l φ)] &&
+                 is_field_merging_possible (filter_pairs_with_response_name l φ)
        };
+
+                               
+       (* all (are_equivalent (l:f[[α]])) [seq p.2 | p <- (find_pairs_with_response_name l φ)] && *)
+       (*     is_field_merging_possible (filter_pairs_with_response_name l φ);      *)
      
-     is_field_merging_possible ty (f[[α]] { β } :: φ)
+     is_field_merging_possible ((ty, f[[α]] { β }) :: φ)
        with lookup_field_in_type s ty f :=
        {
-       | Some fld 
+       | Some fld
            with is_object_type s ty :=
            {
-           | true := let similar_queries := find_queries_with_label s f ty φ in
-                    [&& all (are_equivalent (f[[α]] { β })) similar_queries,
-                     is_field_merging_possible fld.(return_type) (β ++ merge_selection_sets similar_queries) &
-                     is_field_merging_possible ty (filter_queries_with_label f φ)];
+           | true := let similar_queries := find_valid_pairs_with_response_name s ty f φ in
+                 [&& all (are_equivalent (f[[α]] { β })) [seq p.2 | p <- similar_queries],
+                  is_field_merging_possible ([seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
+                  is_field_merging_possible (filter_pairs_with_response_name f φ)];
            
-       
-           | _ := let similar_queries := find_fields_with_response_name f φ in
-                 [&& all (are_equivalent (f[[α]] { β })) similar_queries,
-                  is_field_merging_possible fld.(return_type) (β ++ merge_selection_sets similar_queries) &
-                  is_field_merging_possible ty (filter_queries_with_label f φ)]
+           | _ := let similar_queries := find_pairs_with_response_name f φ in
+                 [&& all (are_equivalent (f[[α]] { β })) [seq p.2 | p <- similar_queries],
+                  is_field_merging_possible ([seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
+                  is_field_merging_possible (filter_pairs_with_response_name f φ)]
            };
        
        | _ := false 
        };
 
-     is_field_merging_possible ty (l:f[[α]] { β } :: φ)
+     is_field_merging_possible ((ty, l:f[[α]] { β }) :: φ)
        with lookup_field_in_type s ty f :=
        {
-       | Some fld 
+       | Some fld
            with is_object_type s ty :=
            {
-           | true := let similar_queries := find_queries_with_label s l ty φ in
-                    [&& all (are_equivalent (l:f[[α]] { β })) similar_queries,
-                     is_field_merging_possible fld.(return_type) (β ++ merge_selection_sets similar_queries) &
-                     is_field_merging_possible ty (filter_queries_with_label l φ)];
+           | true := let similar_queries := find_valid_pairs_with_response_name s ty l φ in
+                 [&& all (are_equivalent (l:f[[α]] { β })) [seq p.2 | p <- similar_queries],
+                  is_field_merging_possible ([seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
+                  is_field_merging_possible (filter_pairs_with_response_name l φ)];
            
-       
-           | _ := let similar_queries := find_fields_with_response_name l φ in
-                 [&& all (are_equivalent (l:f[[α]] { β })) similar_queries,
-                  is_field_merging_possible fld.(return_type) (β ++ merge_selection_sets similar_queries) &
-                  is_field_merging_possible ty (filter_queries_with_label l φ)]
+           | _ := let similar_queries := find_pairs_with_response_name l φ in
+                 [&& all (are_equivalent (l:f[[α]] { β })) [seq p.2 | p <- similar_queries],
+                  is_field_merging_possible ([seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
+                  is_field_merging_possible (filter_pairs_with_response_name l φ)]
            };
-       
+          
        | _ := false 
        };
 
-     is_field_merging_possible ty (on t { β } :: φ)
-       with is_fragment_spread_possible t ty :=
+     is_field_merging_possible ((ty, on t { β }) :: φ)
+       with is_fragment_spread_possible s ty t :=
        {
-       | true with is_object_type s ty :=
-           {
-           | true := is_field_merging_possible ty (β ++ φ);
-
-           (* This can be improved. For instance, if t = ty, then we can simply 
-              lift β *)
-           | _ := is_field_merging_possible t (β ++ φ) && is_field_merging_possible ty φ
-           };
-       
-       | _ := is_field_merging_possible ty φ
+       | true := is_field_merging_possible ([seq (t, sel) | sel <- β] ++ φ);
+       | _ := is_field_merging_possible φ
        }
    }.
  Proof.
    all: do ? [rewrite ?/similar_queries; leq_queries_size].
  Qed.
- (* Equations can't build the graph *)
  Next Obligation.
-   move: {2}(queries_size _) (leqnn (queries_size selections)) => n.
-   elim: n type_in_scope selections => /= [| n IH] type_in_scope selections; first by rewrite leqn0 => /queries_size_0_nil ->; constructor.
+   move: {2}(queries_size_aux _) (leqnn (queries_size_aux selections)) => n.
+   elim: n selections => /= [| n IH] selections; first by rewrite leqn0 => /queries_size_aux_0_nil ->; constructor.
    case: selections => /= [| q selections]; first by constructor.
-   case_selection q; simp selection_size => Hleq;
+   case: q => ts q.
+   case_selection q; rewrite /queries_size_aux /= -/(queries_size_aux _); simp selection_size => Hle;
    simp is_field_merging_possible; constructor; do ? [lookup; constructor]; last first.
    case is_fragment_spread_possible; constructor; last by apply: IH; leq_queries_size.
-   all: do ? [case is_object_type => /=; by constructor; apply: IH; leq_queries_size].
+
+   all: do ? [case is_object_type; constructor].
+   all: do ? [by apply: IH; leq_queries_size].
+   
  Defined.
  
 
@@ -480,9 +449,10 @@ Section QueryConformance.
 
    *)
   Definition selections_conform (ty : Name) selections : bool :=
+    let sel_with_type := [seq (ty, q) | q <- selections] in 
     [&& all (is_consistent ty) selections,
-        have_compatible_response_shapes [seq (ty, q) | q <- selections] &
-        is_field_merging_possible ty selections].
+        have_compatible_response_shapes sel_with_type &
+        is_field_merging_possible sel_with_type].
 
 
   (** ---- *)
@@ -498,7 +468,6 @@ End QueryConformance.
 (** ---- *)
 
 Arguments arguments_conform [Vals].
-Arguments is_fragment_spread_possible [Vals].
 Arguments have_compatible_response_shapes [Vals].
 Arguments is_field_merging_possible [Vals].
 Arguments is_consistent [Vals].

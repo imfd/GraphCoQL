@@ -348,7 +348,7 @@ Section QueryAux.
        have_same_name q1 q2 & have_same_arguments q1 q2].
 
 
-    
+   
 
     
   End Base.
@@ -426,6 +426,22 @@ Section QueryAux.
         oname \in members
       | _, _ => false
       end.
+
+     (** ---- *)
+    (**
+     #<strong>is_fragment_spread_possible</strong># : Name → Name → Bool 
+     
+     Checks whether a given type can be used as an inline fragment's type condition 
+     in a given context with another type in scope (parent type).
+
+     It basically amounts to intersecting the possible subtypes of each
+     and checking that the intersection is not empty.     
+     *)
+    Definition is_fragment_spread_possible parent_type fragment_type : bool :=
+      let ty_possible_types := get_possible_types s fragment_type in
+      let parent_possible_types := get_possible_types s parent_type in
+      let applicable_types := (ty_possible_types :&: parent_possible_types)%SEQ in
+      applicable_types != [::].
     
     
   End DefPreds.
@@ -473,6 +489,28 @@ Section QueryAux.
     all: do ?simp selection_size; ssromega.
     Qed.
 
+    Equations? find_valid_pairs_with_response_name (ts : Name) (rname : Name) (σs : seq (Name * @Selection Vals)) :
+      seq (Name * @Selection Vals) by wf (queries_size_aux σs) :=
+      {
+        find_valid_pairs_with_response_name _ _ [::] := [::];
+
+        find_valid_pairs_with_response_name ts rname ((_, on t { βs }) :: qs)
+          with does_fragment_type_apply s ts t :=
+          {
+          | true := find_valid_pairs_with_response_name rname ts [seq (t, β) | β <- βs] ++ find_valid_pairs_with_response_name ts rname qs;
+          | _ := find_valid_pairs_with_response_name ts rname qs
+          };
+
+        find_valid_pairs_with_response_name ts rname ((t, σ) :: σs)
+          with (qresponse_name σ _) == rname :=
+          {
+          | true := (t, σ) :: find_valid_pairs_with_response_name rname ts σs;
+          | _ := find_valid_pairs_with_response_name rname ts σs
+          }
+      }.
+    all: do ? [rewrite /queries_size_aux /=; simp selection_size; rewrite -/(queries_size_aux _); ssromega].
+      by rewrite /queries_size_aux /=; simp selection_size; rewrite -map_comp /funcomp /= map_id; ssromega.
+    Qed.
     
     (** ---- *)
     (** 
@@ -574,6 +612,8 @@ Section QueryAux.
         by intros; elim: xs => //= x xs ->.
         by ssromega.
     Qed.
+
+     
 
 
     (** ---- *)
@@ -751,10 +791,13 @@ Arguments have_same_arguments [Vals].
 Arguments are_equivalent [Vals].
 
 Arguments does_fragment_type_apply [Vals].
+Arguments is_fragment_spread_possible [Vals].
+
 Arguments filter_queries_with_label [Vals].
 Arguments filter_pairs_with_response_name [Vals].
 
 Arguments find_queries_with_label [Vals].
+Arguments find_valid_pairs_with_response_name [Vals].
 Arguments find_fields_with_response_name [Vals].
 Arguments find_pairs_with_response_name [Vals].
 Arguments find_fragment_with_type_condition [Vals].
