@@ -236,10 +236,10 @@ End Values.
 
 
 
-(** * Example
+(** * Hartig & Pérez GraphQL Example
 
  *)
-Section Example.
+Section HPExample.
 
  
   Coercion namedType_of_string (s : string) := NamedType s.
@@ -262,37 +262,37 @@ Section Example.
 
   
   Let StarshipType := Object "Starship" implements [::] {
-                              [:: Schema.Field "id" [::] "ID";
-                                  Schema.Field "name" [::] "String";
-                                  Schema.Field "length" [::] "Float"
+                              [:: Field "id" [::] "ID";
+                                  Field "name" [::] "String";
+                                  Field "length" [::] "Float"
                               ]
                             }.
 
   Let CharacterType := Interface "Character" {
                                   [::
-                                     Schema.Field "id" [::] "ID" ;
-                                     Schema.Field "name" [::] "String";
-                                     Schema.Field "friends" [::] [ "Character" ]
+                                     Field "id" [::] "ID" ;
+                                     Field "name" [::] "String";
+                                     Field "friends" [::] [ "Character" ]
                                     ]
                                   }.
 
   
   Let DroidType := Object "Droid" implements [:: "Character"] {
                            [::
-                              Schema.Field "id" [::] "ID" ;
-                              Schema.Field "name" [::] "String";
-                              Schema.Field "friends" [::] [ "Character" ];
-                              Schema.Field "primaryFunction" [::] "String"
+                              Field "id" [::] "ID" ;
+                              Field "name" [::] "String";
+                              Field "friends" [::] [ "Character" ];
+                              Field "primaryFunction" [::] "String"
                            ]
                          }.
   
   
   Let HumanType := Object "Human" implements [:: "Character"] {
                            [::
-                              Schema.Field "id" [::] "ID" ;
-                              Schema.Field "name" [::] "String";
-                              Schema.Field "friends" [::] [ "Character" ];
-                              Schema.Field "starships" [::] [ "Starship" ]
+                              Field "id" [::] "ID" ;
+                              Field "name" [::] "String";
+                              Field "friends" [::] [ "Character" ];
+                              Field "starships" [::] [ "Starship" ]
                            ]
                          }.
 
@@ -304,8 +304,8 @@ Section Example.
 
   Let QueryType := Object "Query" implements [::] {
                            [::
-                              Schema.Field "hero" [:: FieldArgument "episode" "Episode"] "Character";
-                              Schema.Field "search" [:: FieldArgument "text" "String"] [ "SearchResult" ]
+                              Field "hero" [:: FieldArgument "episode" "Episode"] "Character";
+                              Field "search" [:: FieldArgument "text" "String"] [ "SearchResult" ]
                            ]
                          }.
 
@@ -314,7 +314,7 @@ Section Example.
   (**
      We define the schema as the root operation type and its type definitions.
    *)
-  Let schema  := GraphQLSchema "Query"  [:: IDType; StringType; FloatType;  StarshipType;  CharacterType; DroidType; HumanType; EpisodeType; SearchResultType; QueryType].
+  Let StarWarsSchema  := GraphQLSchema "Query"  [:: IDType; StringType; FloatType;  StarshipType;  CharacterType; DroidType; HumanType; EpisodeType; SearchResultType; QueryType].
 
 
   
@@ -322,8 +322,7 @@ Section Example.
   (**
      We prove that the schema is well-formed by simple computation.
    *)
-  Lemma sdf : schema.(is_a_wf_schema).
-  Proof. by []. Qed.
+  Let wf_schema : StarWarsSchema.(is_a_wf_schema). Proof. by []. Qed.
   
 
 
@@ -333,7 +332,7 @@ Section Example.
      We build the well-formed schema with the schema, the proof of its well-formedness
      and the predicate that helps determine when a value respects the type.
    *)
-  Let wf_schema : wfGraphQLSchema := WFGraphQLSchema sdf (is_valid_value schema).
+  Let ValidStarWarsSchema : wfGraphQLSchema := WFGraphQLSchema wf_schema (is_valid_value StarWarsSchema).
 
   (** ---- *)
   (** ** Graph 
@@ -343,118 +342,92 @@ Section Example.
       #<img src="../imgs/HPExample/graph.png" class="img-fluid" alt="Graph">#
         
    *)
-    
-  Let edges : seq (@node value_eqType * label * node) :=
-    [::
-       pair (pair (Node "Query" [::])
-                  (Label "search" [:: (pair "text" (VString "L"))]))
-       (Node "Starship" [::
-                           (pair (Label "id" [::])  (VInt 3000));
-                           (pair (Label "name" [::]) (VString "Falcon")); 
-                           (pair (Label "length" [::]) (VFloat 34 37))
-       ]);
-       pair (pair (Node "Query" [::])
-                  (Label "search" [:: (pair "text" (VString "L"))]))
-            (Node "Human" [::
-                             pair (Label "id" [::]) (VInt 1000);
-                             pair (Label "name" [::]) (VString "Luke")
-            ]);
-       pair (pair (Node "Query" [::])
-                  (Label "hero" [:: pair "episode" (VString "EMPIRE")]))
-            (Node "Human" [::
-                             pair (Label "id" [::]) (VInt 1000);
-                             pair (Label "name" [::]) (VString "Luke")
-            ]);
-       pair (pair (Node "Query" [::])
-                  (Label "hero" [:: pair "episode" (VString "NEWHOPE")]))
-            (Node "Droid" [::
-                             (pair (Label "id" [::]) (VInt 2001));
-                             (pair (Label "name" [::]) (VString "R2-D2"));
-                             (pair (Label "primaryFunction" [::]) (VString "Astromech"))
-            ]);
-       
-       pair (pair (Node "Human" [::
-                                   pair (Label "id" [::]) (VInt 1000);
-                                   pair (Label "name" [::]) (VString "Luke")
-                  ])
-                  (Label "friends" [::]))
-            (Node "Droid" [::
-                             (pair (Label "id" [::]) (VInt 2001));
-                             (pair (Label "name" [::]) (VString "R2-D2"));
-                             (pair (Label "primaryFunction" [::]) (VString "Astromech"))
-            ]);
 
-       pair (pair (Node "Droid" [::
-                                   (pair (Label "id" [::]) (VInt 2001));
-                                   (pair (Label "name" [::]) (VString "R2-D2"));
-                                   (pair (Label "primaryFunction" [::]) (VString "Astromech"))
-                  ])
-                  (Label "friends" [::]))
-            (Node "Human" [::
-                             pair (Label "id" [::]) (VInt 1000);
-                             pair (Label "name" [::]) (VString "Luke")
-            ]);
-       
-       pair (pair (Node "Human" [::
-                                   pair (Label "id" [::]) (VInt 1000);
-                                   pair (Label "name" [::]) (VString "Luke")
-                  ])
-                  (Label "friends" [::]))
-            (Node "Human" [::
-                             pair (Label "id" [::]) (VInt 1002);
-                             pair (Label "name" [::]) (VString "Han")
-            ]);
-       
-       pair (pair (Node "Human" [::
-                                   pair (Label "id" [::]) (VInt 1002);
-                                   pair (Label "name" [::]) (VString "Han")
-                  ])
-                  (Label "friends" [::]))
-            (Node "Human" [::
-                             pair (Label "id" [::]) (VInt 1000);
-                             pair (Label "name" [::]) (VString "Luke")
-            ]);
-       
-       pair (pair (Node "Human" [::
-                                   pair (Label "id" [::]) (VInt 1002);
-                                   pair (Label "name" [::]) (VString "Han")
-                  ])
-                  (Label "starships" [::]))
-            (Node "Starship" [:: (pair (Label "id" [::]) (VInt 3000));
-                                (pair (Label "name" [::]) (VString "Falcon")); 
-                                (pair (Label "length" [::]) (VFloat 34 37))])
-    ].
-    
+  (**
+     We first define the root node.
+   *)
+  Let Root := @Node value_eqType "Query" [::].
+
+  (**
+     Some auxiliary definitions to define the graph
+   *)
+  Let id (val : nat) := (pair (@Label value_eqType "id" [::])  (VInt val)).
+  Let name (val : string) := (pair (@Label value_eqType "name" [::]) (VString val)).
+
+  (**
+     We define the nodes of the graph.
+   *)
+  Let Falcon := Node "Starship" [::
+                                  id 3000;
+                                  name "Falcon"; 
+                                  (pair (Label "length" [::]) (VFloat 34 37))
+                               ].
+
+  Let Luke := Node "Human" [::
+                             id 1000;
+                             name "Luke"
+                          ].
+
+  Let Han := Node "Human" [::
+                            pair (Label "id" [::]) (VInt 1002);
+                            pair (Label "name" [::]) (VString "Han")
+                         ].
+  
+  Let Artoo := Node "Droid" [::
+                              (pair (Label "id" [::]) (VInt 2001));
+                              (pair (Label "name" [::]) (VString "R2-D2"));
+                              (pair (Label "primaryFunction" [::]) (VString "Astromech"))
+                           ].
+
+  (**
+     Then the labelds on edges.
+   *)
+  Let search := Label "search" [:: (pair "text" (VString "L"))].
+  Let hero (val : string) := Label "hero" [:: pair "episode" (VString val)].
+  Let friends := @Label value_eqType "friends" [::].
+  Let starships := @Label value_eqType "starships" [::].
 
 
   (**
-       We define the root node.
+     And finally the edges themselves.
    *)
-  Let r : @node value_eqType := Node "Query" [::].
-  
+  Let edges : seq (@node value_eqType * label * node) :=
+    [::
+       Root ⟜ search → Falcon;
+       Root ⟜ search → Luke;
+       Root ⟜ (hero "EMPIRE") → Luke;
+       Root ⟜ (hero "NEWHOPE") → Artoo;
+       
+       Luke ⟜ friends → Artoo;
+       Luke ⟜ friends → Han;
+       
+       Artoo ⟜ friends → Luke;
+
+       Han ⟜ friends → Luke;
+
+       Han ⟜ starships → Falcon
+    ].
+    
 
   (** ---- *)
   (**
        We define the graph as the root node and the edges in the graph.
    *)
-  Let g := GraphQLGraph r edges.
+  Let StarWarsGraph := GraphQLGraph Root edges.
 
 
   (** ---- *)
   (**
        We prove that the graph conforms to the previous well-formed schema, by simple computation.
    *)
-  Lemma cgraph : is_a_conforming_graph wf_schema g.
-  Proof.
-      by [].
-  Qed.
+  Let graph_conforms : is_a_conforming_graph ValidStarWarsSchema StarWarsGraph. Proof. by []. Qed.
     
 
   (** ---- *)
   (**
        We build the conformed graph, using the graph and the proof of its conformance.
    *)
-  Let wf_graph := ConformedGraph cgraph.
+  Let ValidStarWarsGraph := ConformedGraph graph_conforms.
 
 
   (** ---- *)
@@ -465,7 +438,8 @@ Section Example.
         #<img src="../imgs/HPExample/query.png" class="img-fluid" alt="Query">#
 
    *)
-  Let q :=
+  Let example_query :=
+    Query None
     [::
        "hero" [[ [:: (pair "episode" (VString "EMPIRE")) ] ]] {
          [::
@@ -501,10 +475,7 @@ Section Example.
   (**
        We prove it conforms to the schema by simple computation.     
    *)
-  Lemma qbc : selections_conform  wf_schema wf_schema.(query_type) q.
-  Proof.
-      by [].
-  Qed.
+  Let example_query_conforms : query_conforms ValidStarWarsSchema example_query. Proof. by []. Qed.
   
 
 
@@ -516,7 +487,7 @@ Section Example.
         #<img src="../imgs/HPExample/response.png" class="img-fluid" alt="Response">#
 
    *)
-  Let query_response :=
+  Let expected_response :=
     [::
        (pair "hero"
              {-
@@ -562,12 +533,12 @@ Section Example.
   (**
      Finally, we show that executing the previous query in the context of the well-formed schema, and over the conformed graph, starting from the root node, gives us the expected response.
    *)
-  Example ev_query_eq_response :  wf_schema, wf_graph ⊢  ⟦ q ⟧ˢ in wf_graph.(root) with wf_coercion = query_response.
+  Goal (execute_query ValidStarWarsSchema ValidStarWarsGraph wf_coercion example_query = expected_response).
   Proof.
       by [].
   Qed.
   
 
 
-End Example.
+End HPExample.
 
