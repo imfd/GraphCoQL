@@ -78,9 +78,17 @@ Section GraphQLGraph.
 End GraphQLGraph.
 
 
+
 Arguments label [Vals].
 Arguments node [Vals].
 Arguments graphQLGraph [Vals].
+
+Delimit Scope graph_scope with graph.
+Open Scope graph_scope.
+
+(* Keep an eye that → is the symbol, not pretty printing of '->' *)
+Notation "src '⟜' lab '→' tgt" := (src, lab, tgt) (at level 20) : graph_scope.
+
 
 
 
