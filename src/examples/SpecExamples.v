@@ -171,7 +171,7 @@ Section GraphQLSpecExamples.
 
   Let QueryType := Object "Query" implements [::] {
                          [::
-                            (Schema.Field "dog" [::] "Dog")
+                            (Field "dog" [::] "Dog")
                          ]
                        }.
   
@@ -179,24 +179,24 @@ Section GraphQLSpecExamples.
 
   Let DogType := Object "Dog" implements [:: "Pet"] {
                          [::
-                            (Schema.Field "name" [::] "String");
-                            (Schema.Field "nickname" [::] "String");
-                            (Schema.Field "barkVolume" [::] "Int");
-                            (Schema.Field "doesKnowCommand" [:: (FieldArgument "dogCommand" "DogCommand")] "Boolean");
-                            (Schema.Field "isHousetrained" [:: (FieldArgument "atOtherHomes" "Boolean")] "Boolean");
-                            (Schema.Field "owner" [::] "Human")
+                            (Field "name" [::] "String");
+                            (Field "nickname" [::] "String");
+                            (Field "barkVolume" [::] "Int");
+                            (Field "doesKnowCommand" [:: (FieldArgument "dogCommand" "DogCommand")] "Boolean");
+                            (Field "isHousetrained" [:: (FieldArgument "atOtherHomes" "Boolean")] "Boolean");
+                            (Field "owner" [::] "Human")
                          ]
                        }.
 
   Let SentientInterface := Interface "Sentient" {
                                       [::
-                                         (Schema.Field "name" [::] "String")
+                                         (Field "name" [::] "String")
                                       ]
                                     }.
   
   Let PetInterface := Interface "Pet" {
                                  [::
-                                    (Schema.Field "name" [::] "String")
+                                    (Field "name" [::] "String")
                                  ]
                                }.
 
@@ -204,14 +204,14 @@ Section GraphQLSpecExamples.
 
   Let AlienType := Object "Alien" implements [:: "Sentient"] {
                            [::
-                              (Schema.Field "name" [::] "String");
-                              (Schema.Field "homePlanet" [::] "String")
+                              (Field "name" [::] "String");
+                              (Field "homePlanet" [::] "String")
                            ]
                          }.
 
   Let HumanType := Object "Human" implements [:: "Sentient"] {
                            [::
-                              (Schema.Field "name" [::] "String")
+                              (Field "name" [::] "String")
                            ]
                          }.
 
@@ -219,10 +219,10 @@ Section GraphQLSpecExamples.
 
   Let CatType := Object "Cat" implements [:: "Pet" ] {
                          [::
-                            (Schema.Field "name" [::] "String");
-                            (Schema.Field "nickname" [::] "String");
-                            (Schema.Field "doesKnowCommand" [:: (FieldArgument "catCommand" "CatCommand")] "Boolean");
-                            (Schema.Field "meowVolume" [::] "Int")
+                            (Field "name" [::] "String");
+                            (Field "nickname" [::] "String");
+                            (Field "doesKnowCommand" [:: (FieldArgument "catCommand" "CatCommand")] "Boolean");
+                            (Field "meowVolume" [::] "Int")
                          ]
                        }.
 
@@ -509,10 +509,10 @@ Section GraphQLSpecExamples.
        *)
       Let ExtendedSelectionType := Object "ExtendedSelection" implements [::] {
                                        [::
-                                          (Schema.Field "dog" [::] "Dog");
-                                          (Schema.Field "human" [::] "Human");
-                                          (Schema.Field "pet" [::] "Pet");
-                                          (Schema.Field "catOrDog" [::] "CatOrDog")
+                                          (Field "dog" [::] "Dog");
+                                          (Field "human" [::] "Human");
+                                          (Field "pet" [::] "Pet");
+                                          (Field "catOrDog" [::] "CatOrDog")
                                        ]
                                      }.
       (* For some reason this gets stuck trying to compute wf... ? *)
@@ -615,36 +615,36 @@ Section GraphQLSpecExamples.
 
     Let ArgumentsType := Object "Arguments" implements [::] {
                                  [::
-                                    (Schema.Field "multipleReqs" [::
+                                    (Field "multipleReqs" [::
                                                                     FieldArgument "x" "Int";
                                                                     FieldArgument "y" "Int"
                                                                  ]
                                                   "Int");
-                                    (Schema.Field "booleanArgField" [::
+                                    (Field "booleanArgField" [::
                                                                        FieldArgument "booleanArg" "Boolean"
                                                                     ]
                                                   "Boolean");
-                                    (Schema.Field "floatArgField" [::
+                                    (Field "floatArgField" [::
                                                                      FieldArgument "floatArg" "Float"
                                                                   ]
                                                   "Float");
-                                    (Schema.Field "intArgField" [::
+                                    (Field "intArgField" [::
                                                                    FieldArgument "intArg" "Int"
                                                                 ]
                                                   "Int");
-                                    (* (Schema.Field "nonNullBooleanArgField" *)
+                                    (* (Field "nonNullBooleanArgField" *)
                                     (*               [:: *)
                                     (*                  FieldArgument "nonNullBooleanArg" "Boolean" *)
                                     (*               ] *)
                                     (*               "Boolean"); *)
 
-                                    (Schema.Field "booleanListArgField"
+                                    (Field "booleanListArgField"
                                                   [::
                                                      FieldArgument "booleanListArg" [ "Boolean" ]
                                                   ]
                                                   [ "Boolean" ])
 
-                                      (* (Schema.Field "optionalNonNullBooleanArgField" *)
+                                      (* (Field "optionalNonNullBooleanArgField" *)
                                       (*               [:: *)
                                       (*                  FieldArgument "optionalNonNullBooleanArgField" "Boolean" *)
                                       (*               ] *)
@@ -656,8 +656,8 @@ Section GraphQLSpecExamples.
 
     Let ExtendedSelectionType := Object "ExtendedSelection" implements [::] {
                                      [::
-                                        (Schema.Field "dog" [::] "Dog");
-                                        (Schema.Field "arguments" [::] "Arguments")
+                                        (Field "dog" [::] "Dog");
+                                        (Field "arguments" [::] "Arguments")
 
                                      ]
                                    }.
