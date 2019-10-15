@@ -11,6 +11,8 @@ Set Asymmetric Patterns.
 Require Import String.
 Require Import QString.
 
+From Equations Require Import Equations.
+
 
 Notation Name := string.
 
@@ -207,103 +209,70 @@ Section Equality.
      This section deals with some SSReflect bureaucratic things, in particular 
      establishing that a Selection has decidable procedure to establish equality (they belong to the 
      SSReflect type - eqType).
-
-     This is basically done by establishing isomorphisms between the different structures
-     to others that already have a decidable procedure.
    *)
-  
-  (**
-     Declaring functions to establish isomorphism of Selection to GenTree, allowing us 
-     to later prove that Selection has a decidable equality procedure.
-     
-     We could define our own procedure but this way we may also benefit from other properties
-     defined for GenTree already.
-   *)
-  (* Maybe not... we are not really using anything else *)
-  
-  (**
-     tree_of_selection : Selection -> GenTree.tree (option Name * Name * List (Name * Vals))
-
-     Converts a Selection into a tree.
-   *)
-  Fixpoint tree_of_selection selection : GenTree.tree (option Name * Name * seq (Name * Vals)):=
-    match selection with
-    | SingleField f α => GenTree.Node 0 [:: GenTree.Leaf  (None, f, α)]
-    | AliasedField l f α => GenTree.Node 1 [:: GenTree.Leaf (Some l, f, α)]
-    | NestedField f α φ => GenTree.Node 2  (GenTree.Leaf (None, f, α) :: [seq (tree_of_selection subselection) | subselection <- φ])
-    | NestedAliasedField l f α φ => GenTree.Node 3 (GenTree.Leaf (Some l, f, α) :: [seq (tree_of_selection subselection) | subselection <- φ])
-    | InlineFragment t φ => GenTree.Node 4 (GenTree.Leaf (None, t, [::]) :: [seq (tree_of_selection subselection) | subselection <- φ])
-    end.
-
 
   (**
-     get_subqueries : List (option Selection) -> List Selection 
+     #<strong>selection_eq</strong# : Selection → Selection → Bool 
 
-     Retrieves elements of a list of options which are not None.
-
-     This could be generalised.
+     The equality procedure.
    *)
-  Fixpoint get_subqueries (queries : seq (option (@Selection Vals))) : seq Selection :=
-    match queries with
-      | [::] => [::]
-      | ((Some q) :: tl) => q :: get_subqueries tl
-      | (None :: tl) => get_subqueries tl
-    end.
+  Equations selection_eq (σ1 σ2 : @Selection Vals) : bool :=
+    {
+      selection_eq (f1[[α1]]) (f2[[α2]]) := (f1 == f2) && (α1 == α2);
+      selection_eq (a1:f1[[α1]]) (a2:f2[[α2]]) := [&& a1 == a2, f1 == f2 & α1 == α2];
+      selection_eq (f1[[α1]] { σs1 }) (f2[[α2]] { σs2 }) :=
+        [&& f1 == f2, α1 == α2 & selections_eq σs1 σs2];
+      selection_eq (a1:f1[[α1]] { σs1 }) (a2:f2[[α2]] { σs2 }) :=
+        [&& a1 == a2, f1 == f2, α1 == α2 & selections_eq σs1 σs2];
+      selection_eq (on t1 { σs1 }) (on t2 { σs2 }) :=
+        (t1 == t2) && (selections_eq σs1 σs2);
+      selection_eq _ _ := false 
+    }
+  where selections_eq (σs1 σs2 : seq (@Selection Vals)) : bool :=
+          {
+            selections_eq [::] [::] := true;
+            selections_eq (σ1 :: σs1) (σ2 :: σs2) := selection_eq σ1 σ2 && selections_eq σs1 σs2;
+            selections_eq _ _ := false
+          }.
 
   (**
-     selection_of_tree : GenTree.tree -> option Selection 
-
-     Converts a tree into a Selection.
-
-     If the tree cannot be converted then it returns None.
+     This lemma states that indeed the equality procedure coincides
+     with equality of the terms.
    *)
-  Fixpoint selection_of_tree tree : option Selection :=
-    match tree with
-    | (GenTree.Node 0 [:: GenTree.Leaf  (None, f, α)]) => Some (SingleField f α)
-      | (GenTree.Node 1 [:: GenTree.Leaf (Some l, f, α)]) => Some (AliasedField l f α)
-      | (GenTree.Node 2  (GenTree.Leaf (None, f, α) :: subtree)) =>
-        Some (NestedField f α (get_subqueries [seq (selection_of_tree t) | t <- subtree]))
-      
-      | (GenTree.Node 3  (GenTree.Leaf (Some l, f, α) :: subtree)) =>
-          Some (NestedAliasedField l f α (get_subqueries [seq (selection_of_tree t) | t <- subtree]))
-      
-      | (GenTree.Node 4  (GenTree.Leaf (None, t, emptym) :: subtree)) =>
-        Some (InlineFragment t (get_subqueries [seq (selection_of_tree t) | t <- subtree]))
-         
-
-      | _ => None
-    end.
-
-
-  (**
-     Proving cancelling lemma, used to establish isomorphism between Selection 
-     and GenTree, which can be used to establish that Selection is in eqType.
-   *)
-  Lemma tree_of_selectionK : pcancel tree_of_selection selection_of_tree.
+  Transparent selection_eq.
+  Lemma selection_eqP : Equality.axiom selection_eq.
   Proof.
-    move=> q.
-    elim q using Selection_ind with
-        (Pl := fun qs =>
-                Forall (fun q' => selection_of_tree (tree_of_selection q') = Some q') qs) => //=
-    [ f α φ /Forall_forall H
-    | l f α φ /Forall_forall H
-    | t φ /Forall_forall H
-    | hd IH tl IH'];
-    rewrite -?map_comp; try congr Some;
-      [congr (NestedField f α) | congr (NestedAliasedField l f α) | congr (InlineFragment t) | ].
+    rewrite /Equality.axiom => x y.
+    apply: (iffP idP) => //= [| ->]; last first.
+    - elim y using Selection_ind with
+          (Pl := fun σs => selections_eq σs σs) => //=;
+                                                intros; simp selection_eq.
+      all: do ? [apply/andP; split=> //].
+      
+    - move: y.
+      elim x using Selection_ind with
+          (Pl := fun σs => forall σs2, selections_eq σs σs2 -> σs = σs2); intros.
 
-    all: do ?[elim: φ H => //= hd tl IH H;
-              have Heq : (hd = hd \/ In hd tl) by left].
-    all: do ?[by rewrite (H hd Heq); congr cons; apply: IH => x Hin; apply: H; right].
-    by apply: Forall_cons.
+      * by case: y H => //= n2 α2 /andP [/eqP -> /eqP ->].
+      * by case: y H => //= a2 n2 α2 /and3P [/eqP -> /eqP -> /eqP ->]. 
+      * case: y H0 => // n2 α2 σs2; simp selection_eq => /and3P [/eqP -> /eqP -> Hsseq].
+          by rewrite (H _ Hsseq).
+      * case: y H0 => // a2 n2 α2 σs2; simp selection_eq => /and4P [/eqP -> /eqP -> /eqP -> Hsseq].
+          by rewrite (H _ Hsseq).
+          
+      * case: y H0 => // t2 σs2; simp selection_eq => /andP [/eqP -> Hsseq].
+          by rewrite (H _ Hsseq).
+
+      * by case: σs2 H => //.
+      * case: σs2 H1 => // σ2 σs2; rewrite selections_eq_equation_4 => /andP [Heq1 Heq2].
+          by congr cons; [apply: H | apply: H0].
   Qed.
-
+      
   
   (**
      Defining selection_eqType.
    *)
-  Canonical selection_eqType := EqType Selection (PcanEqMixin tree_of_selectionK).
-
+  Canonical selection_eqType := EqType Selection (EqMixin selection_eqP).
 
   Definition tuple_of_query (q : @query Vals) := let: (Query n b) := q in (n, b).
   Definition query_of_tuple (nb : option Name * seq (@Selection Vals)) := let: (n, b) := nb in Query n b.
