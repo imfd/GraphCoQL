@@ -326,6 +326,30 @@ Section QueryAux.
         is_nested_field_selection _ := false
       }.
 
+    (**
+       #<strong>selection_perm_eq</strong# : Selection → Selection → Bool 
+
+       Decides whether two selections are equal, considering possible permutation
+       of arguments in field selections.
+     *)
+    Equations selection_perm_eq (σ1 σ2 : @Selection Vals) : bool :=
+      {
+        selection_perm_eq (f1[[α1]]) (f2[[α2]]) := (f1 == f2) && perm_eq α1 α2;
+        selection_perm_eq (a1:f1[[α1]]) (a2:f2[[α2]]) := [&& a1 == a2, f1 == f2 & perm_eq α1 α2];
+        selection_perm_eq (f1[[α1]] { σs1 }) (f2[[α2]] { σs2 }) :=
+          [&& f1 == f2, perm_eq α1 α2 & selections_perm_eq σs1 σs2];
+        selection_perm_eq (a1:f1[[α1]] { σs1 }) (a2:f2[[α2]] { σs2 }) :=
+          [&& a1 == a2, f1 == f2, perm_eq α1 α2 & selections_perm_eq σs1 σs2];
+        selection_perm_eq (on t1 { σs1 }) (on t2 { σs2 }) :=
+          (t1 == t2) && (selections_perm_eq σs1 σs2);
+        selection_perm_eq _ _ := false
+      }
+    where selections_perm_eq (σs1 σs2 : seq (@Selection Vals)) : bool :=
+            {
+              selections_perm_eq [::] [::] := true;
+              selections_perm_eq (σ1 :: σs1) (σ2 :: σs2) := selection_perm_eq σ1 σ2 && selections_perm_eq σs1 σs2;
+              selections_perm_eq _ _ := false
+            }.
     
     (** ---- *)
     (**
