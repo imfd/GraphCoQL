@@ -5,6 +5,10 @@ From mathcomp Require Import all_ssreflect.
 Require Import String.
 Require Import QString.
 
+From Equations Require Import Equations.
+Require Import GeneralTactics.
+Require Import Ssromega.
+
 Require Import Schema.
 Require Import SchemaAux.
 Require Import SchemaWellFormedness.
@@ -32,8 +36,8 @@ Section Values.
   | VInt : nat -> Value
   | VBool: bool -> Value            
   | VString : string -> Value
-  | VList : seq Value -> Value
-  | VFloat : nat -> nat -> Value.
+  | VFloat : nat -> nat -> Value
+  | VList : seq Value -> Value.
 
   Notation vtype := (nat + bool + string + (nat * nat))%type.
 
@@ -57,13 +61,47 @@ Section Values.
     | _ => None
     end.
 
-  Lemma tree_of_valueK : pcancel tree_of_value value_of_tree.
-  Proof.
-    rewrite /pcancel; case => //=.
-    elim=> //= x xs IH.
-  Admitted.
+  
+  Fixpoint value_size (v : Value) : nat :=
+    match v with
+    | VList l => (sumn [seq value_size v | v <- l]).+1
+    | _ => 1
+    end.
 
-  Canonical value_eqType := EqType Value (PcanEqMixin tree_of_valueK).
+  Lemma value_size_gt_1 v : 0 < v.(value_size).
+      by case: v.
+  Qed.
+
+  Equations? value_eq (v1 v2 : Value) : bool by wf (v1.(value_size)) :=
+    {
+      value_eq (VInt n1) (VInt n2) := n1 == n2;
+      value_eq (VBool b1) (VBool b2) := b1 == b2;
+      value_eq (VString s1) (VString s2) := s1 == s2;
+      value_eq (VFloat n1 n1') (VFloat n2 n2') := (n1 == n2) && (n1' == n2');
+      value_eq (VList [::]) (VList [::]) := true;
+      value_eq (VList (v1 :: vs1)) (VList (v2 :: vs2)) :=
+        value_eq v1 v2 && value_eq (VList vs1) (VList vs2);
+      value_eq _ _ := false
+    }. 
+   Proof.
+     all: do ? [have H := (value_size_gt_1 v1)]; ssromega.
+   Qed.
+   
+   Lemma value_eq_axiom : Equality.axiom value_eq.
+   Proof.
+     rewrite /Equality.axiom; intros.
+     apply: (iffP idP) => [| ->]; last first.
+     - funelim (value_eq y y) => //=; do ? by case: H => ->; apply/eqP.
+       * case: H => -> ->; apply_andP; apply/eqP.
+       * case: H1 => Heq1 Heq2; rewrite ?Heq1 ?Heq2 in H H0 *.
+         by apply_andP; [apply: H| apply: H0].
+     - funelim (value_eq x y) => //= [| | | /andP [/eqP -> /eqP ->]| /andP [/H -> Heq ] ] //; do ? by move/eqP=> ->.
+       congr VList; congr cons.
+         by move: (H0 Heq); case.
+   Qed.
+
+
+  Canonical value_eqType := EqType Value (EqMixin value_eq_axiom).
 
   Fixpoint coerce (v : Value) : @ResponseNode (option Value) :=
     match v with

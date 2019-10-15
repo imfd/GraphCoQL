@@ -7,6 +7,7 @@ Require Import QString.
 
 From Equations Require Import Equations.
 Require Import GeneralTactics.
+Require Import Ssromega.
 
 Require Import Schema.
 Require Import SchemaAux.
@@ -121,31 +122,44 @@ Section Values.
    *)
   Notation vtype := (nat + string + (nat * nat))%type.
 
-  Fixpoint tree_of_value (v : Value) : GenTree.tree vtype  :=
+  Fixpoint value_size (v : Value) : nat :=
     match v with
-    | VInt n => GenTree.Node 0 [:: GenTree.Leaf (inl (inl n))]
-    | VString s => GenTree.Node 1 [:: GenTree.Leaf (inl (inr s))]
-    | VFloat f1 f2 => GenTree.Node 2 [:: GenTree.Leaf (inr (pair f1 f2))]
-    | VList ls => GenTree.Node 3 [seq tree_of_value x | x <- ls]
+    | VList l => (sumn [seq value_size v | v <- l]).+1
+    | _ => 1
     end.
 
-  Fixpoint value_of_tree (t : GenTree.tree vtype) : option Value :=
-    match t with
-    | GenTree.Node 0 [:: GenTree.Leaf (inl (inl n))] => Some (VInt n)
-    | GenTree.Node 1 [:: GenTree.Leaf (inl (inr s))] => Some (VString s)
-    | GenTree.Node 2 [:: GenTree.Leaf (inr (pair f1 f2))] => Some (VFloat f1 f2)
-    | GenTree.Node 3 vals =>
-      Some (VList (pmap value_of_tree vals))
-    | _ => None
-    end.
+  Lemma value_size_gt_1 v : 0 < v.(value_size).
+      by case: v.
+  Qed.
 
-  Lemma tree_of_valueK : pcancel tree_of_value value_of_tree.
-  Proof.
-    rewrite /pcancel; case => //=.
-    elim=> //= x xs IH.
-  Admitted.
+  Equations? value_eq (v1 v2 : Value) : bool by wf (v1.(value_size)) :=
+    {
+      value_eq (VInt n1) (VInt n2) := n1 == n2;
+      value_eq (VString s1) (VString s2) := s1 == s2;
+      value_eq (VFloat n1 n1') (VFloat n2 n2') := (n1 == n2) && (n1' == n2');
+      value_eq (VList [::]) (VList [::]) := true;
+      value_eq (VList (v1 :: vs1)) (VList (v2 :: vs2)) :=
+        value_eq v1 v2 && value_eq (VList vs1) (VList vs2);
+      value_eq _ _ := false
+    }. 
+   Proof.
+     all: do ? [have H := (value_size_gt_1 v1)]; ssromega.
+   Qed.
+   
+   Lemma value_eq_axiom : Equality.axiom value_eq.
+   Proof.
+     rewrite /Equality.axiom; intros.
+     apply: (iffP idP) => [| ->]; last first.
+     - funelim (value_eq y y) => //=; do ? by case: H => ->; apply/eqP.
+       * case: H => -> ->; apply_andP; apply/eqP.
+       * case: H1 => Heq1 Heq2; rewrite ?Heq1 ?Heq2 in H H0 *.
+         by apply_andP; [apply: H| apply: H0].
+     - funelim (value_eq x y) => //= [| | /andP [/eqP -> /eqP ->]| /andP [/H -> Heq ] ] //; do ? by move/eqP=> ->.
+       congr VList; congr cons.
+         by move: (H0 Heq); case.
+   Qed.
 
-  Canonical value_eqType := EqType Value (PcanEqMixin tree_of_valueK).
+  Canonical value_eqType := EqType Value (EqMixin value_eq_axiom).
 
   (* end hide *)
 

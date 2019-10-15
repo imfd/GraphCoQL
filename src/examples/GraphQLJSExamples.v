@@ -117,15 +117,15 @@ Section Values.
 
   Fixpoint value_size (v : Value) : nat :=
     match v with
-    | VString s => s.(length).+1
     | VList l => (sumn [seq value_size v | v <- l]).+1
+    | _ => 1
     end.
 
   Lemma value_size_gt_1 v : 0 < v.(value_size).
       by case: v.
   Qed.
 
-   Equations? value_eq (v1 v2 : Value) : bool by wf (v1.(value_size)) :=
+  Equations? value_eq (v1 v2 : Value) : bool by wf (v1.(value_size)) :=
     {
       value_eq (VString s1) (VString s2) := s1 == s2;
       value_eq (VList [::]) (VList [::]) := true;
@@ -134,15 +134,20 @@ Section Values.
       value_eq _ _ := false
     }. 
    Proof.
-     ssromega.
-     have H := (value_size_gt_1 v1). ssromega.
+     all: do ? [have H := (value_size_gt_1 v1)]; ssromega.
    Qed.
    
    Lemma value_eq_axiom : Equality.axiom value_eq.
    Proof.
-     case=> //=.
-   Admitted.
-  
+     rewrite /Equality.axiom; intros.
+     apply: (iffP idP) => [| ->]; last first.
+     - funelim (value_eq y y) => //=; first by case: H => ->; apply/eqP.
+       case: H1 => Heq1 Heq2; rewrite ?Heq1 ?Heq2 in H H0 *.
+         by apply_andP; [apply: H| apply: H0].
+     - funelim (value_eq x y) => //= [| /andP [/H -> Heq ] ]; first by move/eqP=> ->.
+       congr VList; congr cons.
+         by move: (H0 Heq); case.
+   Qed.
 
   Canonical value_eqType := EqType Value (EqMixin value_eq_axiom).
 
