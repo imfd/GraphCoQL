@@ -167,7 +167,7 @@ Section Values.
   (** ---- *)
   (** *** Coerce function
 
-      #<strong>coerce</strong># : Value → ResponseNode
+      #<strong>coerce</strong># : Value → ResponseValue
  
       This is the function used in the semantics to coerce 
       results into JSON values.
@@ -175,7 +175,7 @@ Section Values.
       Scalar value are  simply translated as leaf values, while 
       list values have to be properly formatted as array values.
    *)
-  Fixpoint coerce (v : Value) : @ResponseNode (option Value) :=
+  Fixpoint coerce (v : Value) : ResponseValue :=
     match v with
     | VList ls => Array [seq coerce x | x <- ls]
     | _ => Leaf (Some v)

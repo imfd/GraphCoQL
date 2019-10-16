@@ -30,14 +30,15 @@ Notation Name := string.
 
 Section Response.
 
-  Variable (A : Type).
   
   Unset Elimination Schemes.
 
-  (** * JSON *)
+  Variable (Val : eqType).
+  
+  (** * Response *)
   (** ---- *)
   (**
-     Here we define a general Response structure, which is a JSON tree.
+     Here we define a general Response structure, which is in essence a JSON tree.
      We later use this definition to build a GraphQL Response.     
 
      There are:
@@ -46,31 +47,37 @@ Section Response.
      - Array nodes: Contain elements
    *)
 
-  Inductive ResponseNode : Type :=
-  | Leaf : A -> ResponseNode
-  | Object : seq (Name * ResponseNode) -> ResponseNode
-  | Array : seq ResponseNode -> ResponseNode.
-
+  Inductive ResponseValue : Type :=
+  | Leaf : option Val -> ResponseValue
+  | Object : seq (Name * ResponseValue) -> ResponseValue
+  | Array : seq ResponseValue -> ResponseValue.
   
   Set Elimination Schemes.
 
+  
+  (** * GraphQL Response 
+
+   A GraphQL Response is in essence a JSON Object.
+
+   *)  
+  Definition GraphQLResponse := seq (Name * ResponseValue).
 
   
 
   (** ---- *)
   (**
-     #<strong>rsize</strong># : ResponseNode → Nat
+     #<strong>rsize</strong># : ResponseValue → Nat
 
      Gets the size of the response tree.
    *)
   
-  Equations rsize (response : ResponseNode) : nat :=
+  Equations rsize (response : ResponseValue) : nat :=
     {
       rsize (Leaf _) := 1;
       rsize (Object rt) := (lrsize rt).+1;
       rsize (Array rt) := (list_size rsize rt).+1
     }
-  where lrsize (r : seq (Name * ResponseNode)) : nat :=
+  where lrsize (r : seq (Name * ResponseValue)) : nat :=
           {
             lrsize [::] := 0;
             lrsize (hd :: tl) := rsize hd.2 + lrsize tl
@@ -79,14 +86,14 @@ Section Response.
 
   (** ---- *)
   (**
-     #<strong>is_non_redundant</strong># : ResponseNode → Bool 
+     #<strong>is_non_redundant</strong># : ResponseValue → Bool 
 
      This predicate checks whether the responses are non-redundant.
      
      Non-redundancy means that there are no repeated keys.
    *)
   
-  Equations is_non_redundant (response : ResponseNode) : bool :=
+  Equations is_non_redundant (response : ResponseValue) : bool :=
           {
             is_non_redundant (Leaf _) := true;
 
@@ -94,7 +101,7 @@ Section Response.
 
             is_non_redundant (Array rt) := all is_non_redundant rt
           }
-  where are_non_redundant (responses : seq (Name * ResponseNode)) : bool  :=
+  where are_non_redundant (responses : seq (Name * ResponseValue)) : bool  :=
     {
       are_non_redundant [::] := true;
 
@@ -108,31 +115,12 @@ Section Response.
 (** ---- *)    
 End Response.
 
-Arguments is_non_redundant [A].
-Arguments are_non_redundant [A].
-
-
-Section GraphQLResponse.
-  
-  Variable (Vals : eqType).
-  (** * GraphQL Response 
-
-   A GraphQL Response is a JSON Object.
-
-   Because we can have _null_ values, we use option for the leaves values.
-   *)
-  
-  Definition GraphQLResponse := seq (Name * (@ResponseNode (option Vals))).
-
-
-  
-  (** ---- *)
-End GraphQLResponse.
-
-Arguments ResponseNode [A].
-Arguments Leaf [A].
-Arguments Object [A].
-Arguments Array [A].
+Arguments ResponseValue [Val].
+Arguments Leaf [Val].
+Arguments Object [Val].
+Arguments Array [Val].
+Arguments is_non_redundant [Val].
+Arguments are_non_redundant [Val].
 
 
 Delimit Scope response_scope with RESP.

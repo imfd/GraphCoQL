@@ -103,7 +103,7 @@ Section Values.
 
   Canonical value_eqType := EqType Value (EqMixin value_eq_axiom).
 
-  Fixpoint coerce (v : Value) : @ResponseNode (option Value) :=
+  Fixpoint coerce (v : Value) : ResponseValue :=
     match v with
     | VList ls => Array [seq coerce x | x <- ls]
     | _ => Leaf (Some v)

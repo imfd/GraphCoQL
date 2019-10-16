@@ -61,7 +61,7 @@ Section QuerySemantic.
    *)
   Record wfCoercion :=
     WFCoercion {
-        fn :> Vals -> @ResponseNode (option Vals);
+        fn :> Vals -> @ResponseValue Vals;
         _ : forall (value : Vals), Response.is_non_redundant (fn value)
       }.
   
@@ -75,9 +75,9 @@ Section QuerySemantic.
   Implicit Type queries : seq (@Selection Vals).
 
  
-  Fixpoint is_valid_response_value (ty : type) (response : @ResponseNode (option Vals)) : bool :=
+  Fixpoint is_valid_response_value (ty : type) (response : @ResponseValue Vals) : bool :=
     match ty, response with
-    | NamedType _, Leaf (Some v) => s.(is_valid_value) ty v
+    | NamedType _, (Leaf (Some v)) => s.(is_valid_value) ty v
     | ListType ty, Array rs => all (is_valid_response_value ty) rs
     | _, _ => false 
     end.
@@ -88,14 +88,13 @@ Section QuerySemantic.
   (** * Semantics in a Graph setting *)
   (** ---- *)
   (**
-     #<strong>execute_selection_set</strong># : Node → List Selection → List (Name * ResponseNode)
+     #<strong>execute_selection_set</strong># : Node → List Selection → List (Name * ResponseValue)
 
      Evaluates the list of queries and returns a GraphQL Response.
 
    *)
   Equations? execute_selection_set u (queries : seq (@Selection Vals)) :
-    
-    seq (Name * ResponseNode) by wf (queries_size queries) :=
+    @GraphQLResponse Vals by wf (queries_size queries) :=
     {
       ⟦ [::] ⟧ˢ in _ := [::];
       
@@ -200,7 +199,7 @@ Section QuerySemantic.
   (** * Simplified Semantics *)
   (** ---- *)
   (**
-     #<strong>execute_selection_set2</strong># : Node → List Selection → List (Name * ResponseNode)
+     #<strong>execute_selection_set2</strong># : Node → List Selection → List (Name * ResponseValue)
 
      Evaluates a list of queries and returns a GraphQL Response. 
 
@@ -209,7 +208,7 @@ Section QuerySemantic.
      The definition corresponds to the one given by P&H.
    *)
   Equations? simpl_execute_selection_set u queries :
-    seq (Name * ResponseNode) by wf (queries_size queries) :=
+    @GraphQLResponse Vals by wf (queries_size queries) :=
     {
       ≪ [::] ≫ in _ := [::];
 
