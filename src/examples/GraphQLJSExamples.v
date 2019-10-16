@@ -1021,3 +1021,6 @@ Section Example.
    Goal execute_query ValidStarWarsSchema ValidStarWarsGraph wf_coercion q9 = result9.
        by [].
    Qed.
+
+End Example.
+     
