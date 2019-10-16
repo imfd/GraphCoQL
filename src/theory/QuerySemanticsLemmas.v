@@ -355,9 +355,11 @@ Section Theory.
      This lemma states that the semantics is preserved when normalizing with the the node's type
      where the queries are evaluated.
    *)
-  Lemma normalize_exec φ u :
+  Lemma normalize_selections_preserves_semantics φ u :
     u \in g.(nodes) ->
-          s, g ⊢ ⟦ normalize_selections s u.(ntype) φ ⟧ˢ in u with coerce =  s, g ⊢ ⟦ φ ⟧ˢ in u with coerce. 
+    s, g ⊢ ⟦ normalize_selections s u.(ntype) φ ⟧ˢ
+        in u with coerce =
+    s, g ⊢ ⟦ φ ⟧ˢ in u with coerce. 
   Proof.    
     funelim (normalize_selections s u.(ntype) φ) => //=; do ? by exec.
     all: do ? [by intros; exec; rewrite filter_normalize_swap filter_filter_absorb // H]; exec => Huin.
@@ -507,7 +509,7 @@ Section Theory.
     execute_query s g coerce q.
   Proof.
     case: q => n ss; rewrite /execute_query /= -(root_query_type g).    
-      by apply: normalize_exec; apply: root_in_nodes.
+      by apply: normalize_selections_preserves_semantics; apply: root_in_nodes.
   Qed.
 
 
@@ -644,9 +646,10 @@ Section Theory.
      both the semantics with collection and the simplified semantics are 
      equivalent.
    *)
-  Lemma exec_equivalence u φ :
+  Lemma exec_sel_eq_simpl_exec u φ :
     are_in_normal_form s φ -> 
-    s, g ⊢ ⟦ φ ⟧ˢ in u with coerce = s, g ⊢ ≪ φ ≫ in u with coerce. 
+    s, g ⊢ ⟦ φ ⟧ˢ in u with coerce =
+    s, g ⊢ ≪ φ ≫ in u with coerce. 
   Proof.
     rewrite /are_in_normal_form; case/andP; rewrite /are_in_ground_typed_nf; case/andP.
     move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
@@ -696,7 +699,7 @@ Section Theory.
   Proof.
     case: q => n ss.
     rewrite /is_in_normal_form /= /simpl_execute_query /execute_query /=.
-      by apply: exec_equivalence => //=.
+      by apply: exec_sel_eq_simpl_exec => //=.
   Qed.
 
 
@@ -704,7 +707,7 @@ Section Theory.
     s, g ⊢ ⟦ normalize_selections s u.(ntype) ss ⟧ˢ in u with coerce =
     s, g ⊢ ≪ normalize_selections s u.(ntype) ss ≫ in u with coerce.
   Proof.
-    apply: exec_equivalence => //=; rewrite /are_in_normal_form; apply_andP.
+    apply: exec_sel_eq_simpl_exec => //=; rewrite /are_in_normal_form; apply_andP.
     - by apply: normalized_selections_are_grounded.
     - by apply: normalized_selections_are_non_redundant.
   Qed.
