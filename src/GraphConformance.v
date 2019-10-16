@@ -96,7 +96,7 @@ Section Conformance.
         Returns all nodes from a graph.
      *)
     Definition nodes graph : seq node :=
-      undup (graph.(root) ::  flatten [seq edge.(enodes) | edge <- graph.(E)]).
+      undup (graph.(root) ::  flatten [seq edge.(enodes) | edge <- graph.(edges)]).
 
 
     (** ---- *)
@@ -113,7 +113,7 @@ Section Conformance.
        Get a node's neighbors connected via an edge with a given field. 
      *)
     Definition neighbors_with_field (u : node) (f : label) : seq node :=
-      undup [seq edge.(etarget) |  edge <- [seq edge <- graph.(E) | (esource edge == u) & (efield edge == f)]].
+      undup [seq edge.(etarget) |  edge <- [seq edge <- graph.(edges) | (esource edge == u) & (efield edge == f)]].
 
 
     (** ---- *)
@@ -122,7 +122,7 @@ Section Conformance.
       having the given field.
      *)
     Definition is_field_unique_for_src_node graph (src_node : node) (f : label) : bool :=
-      uniq [seq edge <- graph.(E) | (esource edge == src_node) & (efield edge == f)].
+      uniq [seq edge <- graph.(edges) | (esource edge == src_node) & (efield edge == f)].
     
     
     
@@ -218,7 +218,7 @@ Section Conformance.
           | _ => false     
           end
       in
-      uniq graph.(E) && all edge_conforms graph.(E).
+      uniq graph.(edges) && all edge_conforms graph.(edges).
     
 
     

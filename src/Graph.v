@@ -66,11 +66,11 @@ Section GraphQLGraph.
    *)
   Record graphQLGraph := GraphQLGraph {
                             root : node;
-                            E : seq (node * label * node)
+                            edges : seq (node * label * node)
                           }.
   
 
-  Coercion edges_of_graph (g : graphQLGraph) := g.(E).
+  Coercion edges_of_graph (g : graphQLGraph) := g.(edges).
 
 
   
