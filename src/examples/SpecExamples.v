@@ -461,7 +461,7 @@ Section GraphQLSpecExamples.
                                                           }
                                                     ].
 
-      Example e112 : ~~ have_compatible_response_shapes wf_schema [seq pair "Pet" q | q <- example112].
+      Example e112 : ~~ are_type_compatible wf_schema [seq pair "Pet" q | q <- example112].
       Proof.
           by [].
       Qed.

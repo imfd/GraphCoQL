@@ -241,7 +241,7 @@ Section QueryConformance.
   
   (** ---- *)
   (**
-    #<strong>have_compatible_response_shapes</strong># : Name → List (Name * Selection) → Bool 
+    #<strong>are_type_compatible</strong># : Name → List (Name * Selection) → Bool 
 
     Checks whether a list of queries have compatible return types.
     This means that queries with the same response name should have types that are 
@@ -254,55 +254,55 @@ Section QueryConformance.
     
   *)
  (* Equations is not able to build the graph - hence we use noind *)
- Equations? have_compatible_response_shapes (selections : seq (Name * @Selection Value)) :
+ Equations? are_type_compatible (selections : seq (Name * @Selection Value)) :
    bool by wf (queries_size_aux selections) :=
    {
-     have_compatible_response_shapes [::] := true ;
+     are_type_compatible [::] := true ;
 
-     have_compatible_response_shapes ((ty, f[[ _ ]]) :: φ)
+     are_type_compatible ((ty, f[[ _ ]]) :: φ)
        with lookup_field_in_type s ty f :=
        {
        | Some fld := all (has_compatible_type fld.(return_type)) (find_pairs_with_response_name f φ)
-                        && have_compatible_response_shapes (filter_pairs_with_response_name f φ);
+                        && are_type_compatible (filter_pairs_with_response_name f φ);
        
        | _ := false (* If the field is not defined in its own type in scope it should fail *)
        };
 
-     have_compatible_response_shapes ((ty, l:f[[ _ ]]) :: φ)
+     are_type_compatible ((ty, l:f[[ _ ]]) :: φ)
        with lookup_field_in_type s ty f :=
        {
        | Some fld := all (has_compatible_type fld.(return_type)) (find_pairs_with_response_name l φ)
-                        && have_compatible_response_shapes (filter_pairs_with_response_name l φ);
+                        && are_type_compatible (filter_pairs_with_response_name l φ);
        
        | _ := false (* If the field is not defined in its own type in scope it should fail *)
        };
 
-      have_compatible_response_shapes ((ty, f[[ _ ]] { β }) :: φ)
+      are_type_compatible ((ty, f[[ _ ]] { β }) :: φ)
        with lookup_field_in_type s ty f :=
        {
        | Some fld := let similar_queries := find_pairs_with_response_name f φ in
                     [&& all (has_compatible_type fld.(return_type)) similar_queries,
-                     have_compatible_response_shapes ([seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
-                     have_compatible_response_shapes (filter_pairs_with_response_name f φ)];
+                     are_type_compatible ([seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
+                     are_type_compatible (filter_pairs_with_response_name f φ)];
                      
                         
        | _ := false (* If the field is not defined in its own type in scope it should fail *)
        };
       
-      have_compatible_response_shapes ((ty, l:f[[ _ ]] { β }) :: φ)
+      are_type_compatible ((ty, l:f[[ _ ]] { β }) :: φ)
        with lookup_field_in_type s ty f :=
        {
        | Some fld := let similar_queries := find_pairs_with_response_name l φ in
                     [&& all (has_compatible_type fld.(return_type)) similar_queries,
-                     have_compatible_response_shapes ([seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
-                     have_compatible_response_shapes (filter_pairs_with_response_name f φ)];
+                     are_type_compatible ([seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
+                     are_type_compatible (filter_pairs_with_response_name f φ)];
                      
                         
        | _ := false (* If the field is not defined in its own type in scope it should fail *)
        };
 
       
-      have_compatible_response_shapes ((ty, on t { β }) :: φ) := have_compatible_response_shapes ([seq (t, q) | q <- β] ++ φ)
+      are_type_compatible ((ty, on t { β }) :: φ) := are_type_compatible ([seq (t, q) | q <- β] ++ φ)
                                                                                                       
    }.
  all: do ? [rewrite ?/similar_queries; leq_queries_size].
@@ -313,7 +313,7 @@ Section QueryConformance.
      case: selections => /= [| q selections]; first by constructor.
      case: q => ts q.
      case_selection q; rewrite /queries_size_aux /= -/(queries_size_aux _); simp selection_size => Hleq;
-     simp have_compatible_response_shapes; constructor; do ? [lookup; constructor]; apply: IH; leq_queries_size.
+     simp are_type_compatible; constructor; do ? [lookup; constructor]; apply: IH; leq_queries_size.
   Defined.
 
 
@@ -449,10 +449,10 @@ Section QueryConformance.
 
    *)
   Definition selections_conform (ty : Name) selections : bool :=
-    let sel_with_type := [seq (ty, q) | q <- selections] in 
+    let σs_with_scope := [seq (ty, q) | q <- selections] in 
     [&& all (is_consistent ty) selections,
-        have_compatible_response_shapes sel_with_type &
-        is_field_merging_possible sel_with_type].
+        σs_with_scope.(are_type_compatible) &
+        σs_with_scope.(is_field_merging_possible)].
 
 
   (** ---- *)
@@ -468,7 +468,7 @@ End QueryConformance.
 (** ---- *)
 
 Arguments arguments_conform [Value].
-Arguments have_compatible_response_shapes [Value].
+Arguments are_type_compatible [Value].
 Arguments is_field_merging_possible [Value].
 Arguments is_consistent [Value].
 Arguments selections_conform [Value].
