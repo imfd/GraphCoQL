@@ -143,7 +143,7 @@ Section WellFormedness.
   (** ---- *)
   (**
      Reflection lemma between [is_object_type] and its Prop counterpart.
-     It states that being an Object type means looking that name up in the schema and getting an Object type definition.
+     It states that being an object type means looking that name up in the schema and getting an Object type definition.
    *)
   Lemma is_object_type_wfP ty :
     reflect (exists intfs flds, lookup_type s ty = Some (ObjectTypeDefinition ty intfs flds))
@@ -155,6 +155,36 @@ Section WellFormedness.
     - by move=> [intfs [flds Hlook]]; simp is_object_type; rewrite Hlook.
   Qed.
 
+  (** ---- *)
+  (**
+     Reflection lemma between [is_interface_type] and its Prop counterpart.
+     It states that being an interface type means looking that name up in the schema and getting an interface type definition.
+   *)
+  Lemma is_interface_type_wfP ty :
+    reflect (exists flds, lookup_type s ty = Some (InterfaceTypeDefinition ty flds))
+            (is_interface_type s ty).
+  Proof.
+    apply: (iffP idP)=> //.
+    - funelim (is_interface_type s ty) => // _.
+      by exists fields1; rewrite Heq; move/lookup_type_name_wf: Heq =>  -> /=.
+    - by move=> [flds Hlook]; simp is_interface_type; rewrite Hlook.
+  Qed.
+
+  (** ---- *)
+  (**
+     Reflection lemma between [is_union_type] and its Prop counterpart.
+     It states that being a union type means looking that name up in the schema and getting a union type definition.
+   *)
+  Lemma is_union_type_wfP ty :
+    reflect (exists mbs, lookup_type s ty = Some (UnionTypeDefinition ty mbs))
+            (is_union_type s ty).
+  Proof.
+    apply: (iffP idP)=> //.
+    - funelim (is_union_type s ty) => // _.
+      by exists members; rewrite Heq; move/lookup_type_name_wf: Heq =>  -> /=.
+    - by move=> [mbs Hlook]; simp is_union_type; rewrite Hlook.
+  Qed.
+  
   
   (** ---- *)
   (**
