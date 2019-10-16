@@ -130,7 +130,7 @@ Section SeqExtra.
   Abort.
   
   
-  Lemma singleton (x y : A) : x = y -> [:: x] = [:: y]. Proof. by move=> ->. Qed.    
+  (* Lemma singleton (x y : A) : x = y -> [:: x] = [:: y]. Proof. by move=> ->. Qed.     *)
 
 
   Fixpoint onth (s : seq T) (i : nat) : option T :=
@@ -238,9 +238,9 @@ Section SeqI.
   Variable (A : eqType).
   
   Definition seqI (s1 s2 : seq A) :=
-    undup (filter (mem s1) s2).
+    undup (filter (fun s => s \in s1) s2).
   
-  Notation "s1 :&: s2" := (seqI s1 s2) : seq_scope.
+  Infix ":&:" := seqI : seq_scope.
 
   Open Scope SEQ.
 
@@ -250,23 +250,54 @@ Section SeqI.
       by rewrite /seqI mem_undup mem_filter.
   Qed.
 
-  Lemma seq1I (x : A) s1 :
-    [:: x] :&: s1 = if x \in s1 then [:: x] else [::].
+  Lemma seq1I (x : A) s :
+    [:: x] :&: s = if x \in s then [:: x] else [::] .
   Proof.
-    rewrite /seqI fun_if.
-    case: ifP => //= Hin; last first.
-  Admitted.
-  
-  Lemma seq1I_N_nil (x : A) s1 :
-    [:: x] :&: s1 != [::] -> x \in s1.
+    rewrite /seqI.
+    elim: s => //= s1 s IH.
+    case: ifP.
+    - rewrite mem_seq1 => /eqP Heq.
+      rewrite Heq in IH *; rewrite mem_head /= mem_filter mem_head /=.
+        by case: ifP => // Hin; rewrite Hin in IH; rewrite IH.
+    - rewrite mem_seq1 => Hneq.
+        by rewrite inE eq_sym Hneq /= IH.
+  Qed.
+
+  (* These lemmas should are repeated... It should suffice to prove
+     commutativity of the intersection, but for some reason I cannot do it --
+     my mind is not on the mood apparently 
+   *)
+  Lemma mem_seqI1 (x : A) s1 :
+    x \in s1 <->
+          s1 :&: [:: x] = [:: x].
+  Proof.
+    split.
+    - by rewrite /seqI /= => ->.
+    - by rewrite /seqI /=; case: ifP.
+  Qed.
+
+  Lemma mem_seq1I (x : A) s1 :
+    x \in s1 <->
+          [:: x] :&: s1 = [:: x].
   Proof.
       by rewrite seq1I; case: ifP.
   Qed.
 
-  Lemma seq1IC x s1 :
-    [:: x] :&: s1 = s1 :&: [:: x].
+  Lemma seqI1_Nnil s1 x :
+    s1 :&: [:: x] != [::] <->
+    s1 :&: [:: x] = [:: x].
   Proof.
-    rewrite {2}/seqI /= seq1I.
+    elim: s1 => //= x1 s1 IH.
+    rewrite /seqI /=.
+      by case: ifP.
+  Qed.
+
+  Lemma seq1I_Nnil s x :
+    [:: x] :&: s != [::] <->
+    [:: x] :&: s = [:: x].
+  Proof.
+    elim: s => //= x1 s IH.
+    rewrite seq1I.
       by case: ifP.
   Qed.
   

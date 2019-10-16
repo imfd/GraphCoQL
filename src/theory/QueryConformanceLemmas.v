@@ -31,10 +31,6 @@ Section Theory.
   Transparent qresponse_name.
 
 
-  Ltac apply_and3P := apply/and3P; split=> //.
-
-  Ltac wfquery := case: schema=> sch Hhasty Hwf.
-  Ltac query_conforms := simp query_conforms; try move/and5P; try apply/and5P.
 
 
   Variables (Vals : eqType).
@@ -42,8 +38,6 @@ Section Theory.
   Section FragmentSpread.
 
     Variable (s : @wfGraphQLSchema Vals).
-    
-  
 
     
     (**
@@ -56,10 +50,12 @@ Section Theory.
       is_fragment_spread_possible s type_in_scope type_condition <->
       type_in_scope = type_condition.
     Proof.
-      intros; split.
-        
-    Admitted.
-    
+      move=> /get_possible_types_objectE Hobj1 /get_possible_types_objectE Hobj2.
+      - rewrite /is_fragment_spread_possible Hobj1 Hobj2 /=.
+        rewrite /seqI /= mem_seq1; case: ifP => /= [/eqP -> |] //.
+        case: eqP => //.
+    Qed.
+
 
     (**
        https://graphql.github.io/graphql-spec/June2018/#sec-Abstract-Spreads-in-Object-Scope
@@ -70,8 +66,11 @@ Section Theory.
       is_fragment_spread_possible s type_in_scope type_condition <->
       type_in_scope \in implementation s type_condition.
     Proof.
-      intros; split.
-    Admitted.
+      move=> /get_possible_types_objectE Hobj /is_interface_type_wfP [flds Hlook].
+      rewrite /is_fragment_spread_possible; rewrite Hobj.
+      simp get_possible_types; rewrite Hlook /=.
+        by rewrite mem_seqI1 seqI1_Nnil.
+    Qed.
 
     (**
        https://graphql.github.io/graphql-spec/June2018/#sec-Abstract-Spreads-in-Object-Scope
@@ -82,9 +81,11 @@ Section Theory.
       is_fragment_spread_possible s type_in_scope type_condition <->
       type_in_scope \in union_members s type_condition.
     Proof.
-      intros; split.
-    Admitted.
-    
+      move=> /get_possible_types_objectE Hobj /is_union_type_wfP [mbs Hlook].
+      rewrite /is_fragment_spread_possible; rewrite Hobj.
+      simp get_possible_types; rewrite /union_members Hlook /=.
+        by rewrite mem_seqI1 seqI1_Nnil.
+    Qed.
  
     (**
        https://graphql.github.io/graphql-spec/June2018/#sec-Object-Spreads-In-Abstract-Scope
@@ -95,9 +96,13 @@ Section Theory.
       is_fragment_spread_possible s type_in_scope type_condition <->
       type_condition \in implementation s type_in_scope.
     Proof.
-      intros; split.
-    Admitted.
+      move=> /is_interface_type_wfP [flds Hlook] /get_possible_types_objectE Hobj.
+      rewrite /is_fragment_spread_possible; rewrite Hobj.
+      simp get_possible_types; rewrite Hlook /=.
+        by rewrite mem_seq1I seq1I_Nnil.
+    Qed.
 
+    
     (**
        https://graphql.github.io/graphql-spec/June2018/#sec-Object-Spreads-In-Abstract-Scope
      *)
@@ -107,9 +112,11 @@ Section Theory.
       is_fragment_spread_possible s type_in_scope type_condition <->
       type_condition \in union_members s type_in_scope.
     Proof.
-      intros; split.
-    Admitted.
-
+      move=> /is_union_type_wfP [mbs Hlook] /get_possible_types_objectE Hobj.
+      rewrite /is_fragment_spread_possible; rewrite Hobj.
+      simp get_possible_types; rewrite /union_members Hlook /=.
+        by rewrite mem_seq1I seq1I_Nnil.
+    Qed.
 
     
     
