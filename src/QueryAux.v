@@ -40,10 +40,10 @@ Require Import Ssromega.
 Section QueryAux.
 
   
-  Variable Vals : eqType.
+  Variable Value : eqType.
 
-  Implicit Type queries : seq (@Selection Vals).
-  Implicit Type query : @Selection Vals.
+  Implicit Type queries : seq (@Selection Value).
+  Implicit Type query : @Selection Value.
 
 
   (** ---- *)
@@ -207,7 +207,7 @@ Section QueryAux.
        This is always false for inline fragments.
      *)
     (* Not actually using this def *)
-    Equations has_response_name : Name -> @Selection Vals -> bool :=
+    Equations has_response_name : Name -> @Selection Value -> bool :=
       {
         has_response_name _ (on _ { _ }) := false;
         has_response_name rname q := (qresponse_name q _) == rname
@@ -233,14 +233,14 @@ Section QueryAux.
 
     (** ---- *)
     (**
-       qargs : ∀ query, query.is_field → List (Name * Vals) 
+       qargs : ∀ query, query.is_field → List (Name * Value) 
 
        Gets the given query's arguments.
 
        Inline fragment do not have arguments, therefore 
        it is required that the given query is a field.
      *)
-    Equations qargs query (Hfld : query.(is_field)) :  seq (Name * Vals) :=
+    Equations qargs query (Hfld : query.(is_field)) :  seq (Name * Value) :=
       {
         qargs (_ [[ α ]]) _ := α;
         qargs (_ : _ [[ α ]]) _ := α;
@@ -259,7 +259,7 @@ Section QueryAux.
 
        It is always false if either is an inline fragment.
      *)
-    Equations have_same_name : @Selection Vals -> @Selection Vals -> bool :=
+    Equations have_same_name : @Selection Value -> @Selection Value -> bool :=
       {
         have_same_name (on _ { _ }) _ := false;
         have_same_name _ (on _ { _ }) := false;
@@ -275,7 +275,7 @@ Section QueryAux.
 
        It is always false if either is an inline fragment.
      *)
-    Equations have_same_response_name : @Selection Vals -> @Selection Vals -> bool :=
+    Equations have_same_response_name : @Selection Value -> @Selection Value -> bool :=
       {
         have_same_response_name (on _ { _ }) _ := false;
         have_same_response_name _ (on _ { _ }) := false;
@@ -291,7 +291,7 @@ Section QueryAux.
 
        It is always false if either is an inline fragment.
      *)
-    Equations have_same_arguments : @Selection Vals -> @Selection Vals -> bool :=
+    Equations have_same_arguments : @Selection Value -> @Selection Value -> bool :=
       {
         have_same_arguments (on _ { _ }) _ := false;
         have_same_arguments _ (on _ { _ }) := false;
@@ -332,7 +332,7 @@ Section QueryAux.
        Decides whether two selections are equal, considering possible permutation
        of arguments in field selections.
      *)
-    Equations selection_perm_eq (σ1 σ2 : @Selection Vals) : bool :=
+    Equations selection_perm_eq (σ1 σ2 : @Selection Value) : bool :=
       {
         selection_perm_eq (f1[[α1]]) (f2[[α2]]) := (f1 == f2) && perm_eq α1 α2;
         selection_perm_eq (a1:f1[[α1]]) (a2:f2[[α2]]) := [&& a1 == a2, f1 == f2 & perm_eq α1 α2];
@@ -344,7 +344,7 @@ Section QueryAux.
           (t1 == t2) && (selections_perm_eq σs1 σs2);
         selection_perm_eq _ _ := false
       }
-    where selections_perm_eq (σs1 σs2 : seq (@Selection Vals)) : bool :=
+    where selections_perm_eq (σs1 σs2 : seq (@Selection Value)) : bool :=
             {
               selections_perm_eq [::] [::] := true;
               selections_perm_eq (σ1 :: σs1) (σ2 :: σs2) := selection_perm_eq σ1 σ2 && selections_perm_eq σs1 σs2;
@@ -366,7 +366,7 @@ Section QueryAux.
        - [is_field_merging_possible] (_SelectionConformance_)
      *)
     (* FIXME : Rename *)
-    Definition are_equivalent (q1 q2 : @Selection Vals) : bool :=
+    Definition are_equivalent (q1 q2 : @Selection Value) : bool :=
       [&& (q1.(is_simple_field_selection) && (q2.(is_simple_field_selection)) ||
            q1.(is_nested_field_selection) && q2.(is_nested_field_selection)),
        have_same_name q1 q2 & have_same_arguments q1 q2].
@@ -413,7 +413,7 @@ Section QueryAux.
     Definition queries_size_aux (queries : seq (Name * Selection)) :=
       queries_size [seq nq.2 | nq <- queries].
 
-    Definition query_size (φ : @query Vals) :=
+    Definition query_size (φ : @query Value) :=
       queries_size φ.(selection_set).
       
 
@@ -426,7 +426,7 @@ Section QueryAux.
     
   Section DefPreds.
     
-    Variable s : @wfGraphQLSchema Vals.
+    Variable s : @wfGraphQLSchema Value.
 
     (** ---- *)
     (**       
@@ -478,7 +478,7 @@ Section QueryAux.
   Section Find.
 
     
-    Variable (s : @wfGraphQLSchema Vals).
+    Variable (s : @wfGraphQLSchema Value).
 
     (** ---- *)
     (**
@@ -491,8 +491,8 @@ Section QueryAux.
 
      *)
     (* FIXME : Rename to something that makes sense - find_fields_with_response_name ? *)
-    Equations? find_queries_with_label (label : Name) (object_type : Name) (queries : seq (@Selection Vals)) :
-      seq (@Selection Vals) by wf (queries_size queries) :=
+    Equations? find_queries_with_label (label : Name) (object_type : Name) (queries : seq (@Selection Value)) :
+      seq (@Selection Value) by wf (queries_size queries) :=
       {
         find_queries_with_label _ _ [::] := [::];
 
@@ -513,8 +513,8 @@ Section QueryAux.
     all: do ?simp selection_size; ssromega.
     Qed.
 
-    Equations? find_valid_pairs_with_response_name (ts : Name) (rname : Name) (σs : seq (Name * @Selection Vals)) :
-      seq (Name * @Selection Vals) by wf (queries_size_aux σs) :=
+    Equations? find_valid_pairs_with_response_name (ts : Name) (rname : Name) (σs : seq (Name * @Selection Value)) :
+      seq (Name * @Selection Value) by wf (queries_size_aux σs) :=
       {
         find_valid_pairs_with_response_name _ _ [::] := [::];
 
@@ -545,8 +545,8 @@ Section QueryAux.
         with [find_queries_with_label], where the type condition _is_ important.
      *)
     (* FIXME : Rename considering previous def *)
-    Equations? find_fields_with_response_name (rname : Name) (φ : seq (@Selection Vals)) :
-      seq (@Selection Vals) by wf (queries_size φ) :=
+    Equations? find_fields_with_response_name (rname : Name) (φ : seq (@Selection Value)) :
+      seq (@Selection Value) by wf (queries_size φ) :=
       {
         find_fields_with_response_name _ [::] := [::];
         
@@ -592,8 +592,8 @@ Section QueryAux.
     (**
        
      *)
-    Equations? find_pairs_with_response_name (rname : Name) (φ : seq (Name * @Selection Vals)) :
-      seq (Name * @Selection Vals) by wf (queries_size_aux φ) :=
+    Equations? find_pairs_with_response_name (rname : Name) (φ : seq (Name * @Selection Value)) :
+      seq (Name * @Selection Value) by wf (queries_size_aux φ) :=
       {
         find_pairs_with_response_name _ [::] := [::];
         
@@ -646,7 +646,7 @@ Section QueryAux.
 
        Find all fragments with type condition equal to a given type.
      *)
-    Equations find_fragment_with_type_condition : Name -> seq (@Selection Vals) -> seq (@Selection Vals) :=
+    Equations find_fragment_with_type_condition : Name -> seq (@Selection Value) -> seq (@Selection Value) :=
       {
         find_fragment_with_type_condition _ [::] := [::];
 
@@ -673,8 +673,8 @@ Section QueryAux.
         
         Remove all fields with a given response name.
      *)
-    Equations? filter_queries_with_label (label : Name) (queries : seq (@Selection Vals)) :
-      seq (@Selection Vals) by wf (queries_size queries) :=
+    Equations? filter_queries_with_label (label : Name) (queries : seq (@Selection Value)) :
+      seq (@Selection Value) by wf (queries_size queries) :=
       {
         filter_queries_with_label _ [::] := [::];
 
@@ -697,8 +697,8 @@ Section QueryAux.
     (**
 
      *)
-     Equations? filter_pairs_with_response_name (response_name : Name) (queries : seq (Name * @Selection Vals)) :
-      seq (Name * @Selection Vals) by wf (queries_size_aux queries) :=
+     Equations? filter_pairs_with_response_name (response_name : Name) (queries : seq (Name * @Selection Value)) :
+      seq (Name * @Selection Value) by wf (queries_size_aux queries) :=
       {
         filter_pairs_with_response_name _ [::] := [::];
 
@@ -735,13 +735,13 @@ Section QueryAux.
     Definition merge_selection_sets queries := flatten [seq q.(qsubqueries) | q <- queries].
     
 
-    Variable (s : @wfGraphQLSchema Vals).
+    Variable (s : @wfGraphQLSchema Value).
 
     (** ---- *)
     (**
 
      *)
-    Equations merge_pairs_selection_sets (nq : seq (Name * @Selection Vals)) : seq (Name * @Selection Vals) :=
+    Equations merge_pairs_selection_sets (nq : seq (Name * @Selection Value)) : seq (Name * @Selection Value) :=
       {
         merge_pairs_selection_sets [::] := [::];
 
@@ -786,47 +786,47 @@ End QueryAux.
 
 (** ---- *)
 
-Arguments is_field [Vals].
-Arguments is_inline_fragment [Vals].
-Arguments is_aliased [Vals].
-Arguments has_subqueries [Vals].
-Arguments is_simple_field_selection [Vals].
-Arguments is_nested_field_selection [Vals].
+Arguments is_field [Value].
+Arguments is_inline_fragment [Value].
+Arguments is_aliased [Value].
+Arguments has_subqueries [Value].
+Arguments is_simple_field_selection [Value].
+Arguments is_nested_field_selection [Value].
 
-Arguments qresponse_name [Vals].
-Arguments oqresponse_name [Vals].
-Arguments qalias [Vals].
-Arguments oqalias [Vals].
-Arguments qargs [Vals].
+Arguments qresponse_name [Value].
+Arguments oqresponse_name [Value].
+Arguments qalias [Value].
+Arguments oqalias [Value].
+Arguments qargs [Value].
 
-Arguments qsubqueries [Vals].
-Arguments qresponse_name [Vals].
-Arguments oqresponse_name [Vals].
+Arguments qsubqueries [Value].
+Arguments qresponse_name [Value].
+Arguments oqresponse_name [Value].
 
-Arguments selection_size [Vals].
-Arguments queries_size [Vals].
-Arguments queries_size_aux [Vals].
-Arguments query_size [Vals].
+Arguments selection_size [Value].
+Arguments queries_size [Value].
+Arguments queries_size_aux [Value].
+Arguments query_size [Value].
 
-Arguments has_response_name [Vals].
-Arguments have_same_name [Vals].
-Arguments have_same_response_name [Vals].
-Arguments have_same_arguments [Vals].
-Arguments are_equivalent [Vals].
+Arguments has_response_name [Value].
+Arguments have_same_name [Value].
+Arguments have_same_response_name [Value].
+Arguments have_same_arguments [Value].
+Arguments are_equivalent [Value].
 
-Arguments does_fragment_type_apply [Vals].
-Arguments is_fragment_spread_possible [Vals].
+Arguments does_fragment_type_apply [Value].
+Arguments is_fragment_spread_possible [Value].
 
-Arguments filter_queries_with_label [Vals].
-Arguments filter_pairs_with_response_name [Vals].
+Arguments filter_queries_with_label [Value].
+Arguments filter_pairs_with_response_name [Value].
 
-Arguments find_queries_with_label [Vals].
-Arguments find_valid_pairs_with_response_name [Vals].
-Arguments find_fields_with_response_name [Vals].
-Arguments find_pairs_with_response_name [Vals].
-Arguments find_fragment_with_type_condition [Vals].
+Arguments find_queries_with_label [Value].
+Arguments find_valid_pairs_with_response_name [Value].
+Arguments find_fields_with_response_name [Value].
+Arguments find_pairs_with_response_name [Value].
+Arguments find_fragment_with_type_condition [Value].
 
-Arguments merge_selection_sets [Vals].
-Arguments merge_pairs_selection_sets [Vals].
+Arguments merge_selection_sets [Value].
+Arguments merge_pairs_selection_sets [Value].
 
 

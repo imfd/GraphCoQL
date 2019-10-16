@@ -45,7 +45,7 @@ Require Import SchemaAux.
 
 Section WellFormedness.
 
-  Variables (Vals : eqType).
+  Variables (Value : eqType).
 
   (** * Well-formedness predicates
 
@@ -243,7 +243,7 @@ Section WellFormedness.
   Record wfGraphQLSchema := WFGraphQLSchema {
                            schema : graphQLSchema;
                            _ : is_a_wf_schema schema;
-                           is_valid_value : type -> Vals -> bool;
+                           is_valid_value : type -> Value -> bool;
                          }.
 
   
@@ -263,5 +263,5 @@ End WellFormedness.
 
 
 
-Arguments wfGraphQLSchema [Vals].
+Arguments wfGraphQLSchema [Value].
 

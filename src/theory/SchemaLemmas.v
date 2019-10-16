@@ -115,8 +115,8 @@ End Aux.
 (** * Well-Formedness *)
 Section WellFormedness.
 
-  Variable (Vals : eqType).
-  Variable (s : @wfGraphQLSchema Vals).
+  Variable (Value : eqType).
+  Variable (s : @wfGraphQLSchema Value).
   
 
   (** Tactic to destroy a wf schema *)

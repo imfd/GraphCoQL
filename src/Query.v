@@ -37,7 +37,7 @@ Notation Name := string.
 
 Section Query.
   
-  Variables Vals : eqType.
+  Variables Value : eqType.
 
   (** * Definition *)
   
@@ -63,19 +63,19 @@ Section Query.
   *)
   Inductive Selection : Type :=
   | SingleField (name : Name)
-                (arguments : seq (Name * Vals))
+                (arguments : seq (Name * Value))
                 
   | AliasedField (alias : Name)
                  (name : Name)
-                 (arguments : seq (Name * Vals))
+                 (arguments : seq (Name * Value))
                  
   | NestedField (name : Name)
-                (arguments : seq (Name * Vals))
+                (arguments : seq (Name * Value))
                 (subqueries : seq Selection)
                 
   | NestedAliasedField (alias : Name)
                        (name : Name)
-                       (arguments : seq (Name * Vals))
+                       (arguments : seq (Name * Value))
                        (subqueries : seq Selection)
 
   | InlineFragment (type_condition : Name)
@@ -158,17 +158,17 @@ Section Query.
 End Query.
 (** ---- *)
 
-Arguments Selection [Vals].
-Arguments SingleField [Vals].
-Arguments AliasedField [Vals].
-Arguments NestedField [Vals].
-Arguments NestedAliasedField [Vals].
-Arguments InlineFragment [Vals].
+Arguments Selection [Value].
+Arguments SingleField [Value].
+Arguments AliasedField [Value].
+Arguments NestedField [Value].
+Arguments NestedAliasedField [Value].
+Arguments InlineFragment [Value].
 
-Arguments query [Vals].
-Arguments Query [Vals].
-Arguments qname [Vals].
-Arguments selection_set [Vals].
+Arguments query [Value].
+Arguments Query [Value].
+Arguments qname [Value].
+Arguments selection_set [Value].
 
 (** *** Notations 
       
@@ -203,7 +203,7 @@ Notation "'on' t { φ }" := (InlineFragment t φ) (t at next level, φ at next l
 
 Section Equality.
 
-  Variable (Vals : eqType).
+  Variable (Value : eqType).
   
   (** * Equality 
      This section deals with some SSReflect bureaucratic things, in particular 
@@ -216,7 +216,7 @@ Section Equality.
 
      The equality procedure.
    *)
-  Equations selection_eq (σ1 σ2 : @Selection Vals) : bool :=
+  Equations selection_eq (σ1 σ2 : @Selection Value) : bool :=
     {
       selection_eq (f1[[α1]]) (f2[[α2]]) := (f1 == f2) && (α1 == α2);
       selection_eq (a1:f1[[α1]]) (a2:f2[[α2]]) := [&& a1 == a2, f1 == f2 & α1 == α2];
@@ -228,7 +228,7 @@ Section Equality.
         (t1 == t2) && (selections_eq σs1 σs2);
       selection_eq _ _ := false 
     }
-  where selections_eq (σs1 σs2 : seq (@Selection Vals)) : bool :=
+  where selections_eq (σs1 σs2 : seq (@Selection Value)) : bool :=
           {
             selections_eq [::] [::] := true;
             selections_eq (σ1 :: σs1) (σ2 :: σs2) := selection_eq σ1 σ2 && selections_eq σs1 σs2;
@@ -274,8 +274,8 @@ Section Equality.
    *)
   Canonical selection_eqType := EqType Selection (EqMixin selection_eqP).
 
-  Definition tuple_of_query (q : @query Vals) := let: (Query n b) := q in (n, b).
-  Definition query_of_tuple (nb : option Name * seq (@Selection Vals)) := let: (n, b) := nb in Query n b.
+  Definition tuple_of_query (q : @query Value) := let: (Query n b) := q in (n, b).
+  Definition query_of_tuple (nb : option Name * seq (@Selection Value)) := let: (n, b) := nb in Query n b.
 
   Lemma tuple_of_queryK : cancel tuple_of_query query_of_tuple.
   Proof. by case. Qed.

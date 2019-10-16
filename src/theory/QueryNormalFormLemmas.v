@@ -54,7 +54,7 @@ Section NormalForm.
       In this section we prove several lemmas about groundness and non-redundancy.
    *)
 
-  Variables (Vals : eqType) (s : @wfGraphQLSchema Vals).
+  Variables (Value : eqType) (s : @wfGraphQLSchema Value).
 
 
   (** ** Groundedness
@@ -89,7 +89,7 @@ Section NormalForm.
   Section NonRedundant.
 
     
-    Implicit Type φ : seq (@Selection Vals).
+    Implicit Type φ : seq (@Selection Value).
 
     
     Section Filter.
@@ -143,7 +143,7 @@ Section Normalisation.
   
   Transparent qresponse_name.
   
-  Variables (Vals : eqType) (s : @wfGraphQLSchema Vals).
+  Variables (Value : eqType) (s : @wfGraphQLSchema Value).
 
   (** ---- *)
   (**
@@ -221,7 +221,7 @@ Section Normalisation.
            ].
     - apply_andP; first apply_andP.
       * apply/orP; right; by elim: get_possible_types.
-      * have := (@in_possible_types_is_object Vals s f.(return_type)).
+      * have := (@in_possible_types_is_object Value s f.(return_type)).
         generalize (get_possible_types s f.(return_type)).
         elim=> //= t ptys IHptys Hinobj.
         have Htobj := (Hinobj t (mem_head _ _)).
@@ -244,7 +244,7 @@ Section Normalisation.
            ].
     - apply_andP; first apply_andP.
       * apply/orP; right; by elim: get_possible_types.
-      * have := (@in_possible_types_is_object Vals s f.(return_type)).
+      * have := (@in_possible_types_is_object Value s f.(return_type)).
         generalize (get_possible_types s f.(return_type)).
         elim=> //= t ptys IHptys Hinobj.
         have Htobj := (Hinobj t (mem_head _ _)).
@@ -280,7 +280,7 @@ Section Normalisation.
   (*   rewrite /gnormalize_selections => /=; case: ifP => /= Hscope. *)
   (*     by apply: normalized_selections_are_in_gt_nf. *)
   (*     apply/allP=> sel. *)
-  (*   have  := (@in_possible_types_is_object Vals s ts). *)
+  (*   have  := (@in_possible_types_is_object Value s ts). *)
   (*   generalize (get_possible_types s ts). *)
   (*   elim=> //= t types IHtypes Hinobj. *)
   (*   have Htobj := (Hinobj t (mem_head _ _)). *)
@@ -311,7 +311,7 @@ Section Normalisation.
     all: do ? [by intros; non_red; apply_and3P; by rewrite -filter_normalize_swap /= find_fields_filter_nil].
     
     all: do [intros; non_red; apply_and3P => /=; [ by rewrite -filter_normalize_swap /= find_fields_filter_nil |] ].
-    all: do [have  := (@in_possible_types_is_object Vals s f.(return_type))].
+    all: do [have  := (@in_possible_types_is_object Value s f.(return_type))].
     all: do [have  := (uniq_get_possible_types s f.(return_type))].
     all: do [elim: get_possible_types => //= t ptys IH /andP [Hnin Huniq] Hinobj].
     all: do [non_red; apply_and3P => /=; last by apply: IH => //= t' Hin'; apply: Hinobj; apply: mem_tail].
@@ -327,7 +327,7 @@ Section Normalisation.
   (*   are_non_redundant (gnormalize_selections s ty φ). *)
   (* Proof. *)
   (*   rewrite /gnormalize_selections => /=; case: ifP => /= Hscope; first by apply: normalized_selections_are_non_redundant. *)
-  (*   have  := (@in_possible_types_is_object Vals s ty). *)
+  (*   have  := (@in_possible_types_is_object Value s ty). *)
   (*   have  := (uniq_get_possible_types s ty). *)
   (*   elim: get_possible_types => //= t ptys IH /andP [Hnin Huniq] Hinobj. *)
   (*   simp are_non_redundant; apply_and3P => /=; last by apply: IH => //= t' Hin'; apply: Hinobj; apply: mem_tail. *)
@@ -340,7 +340,7 @@ Section Normalisation.
   (**
      This theorem states that [normalize] returns a query in normal form. 
    *)
-  Theorem normalized_query_is_in_nf (q : @query Vals) :
+  Theorem normalized_query_is_in_nf (q : @query Value) :
     is_in_normal_form s (normalize s q).
   Proof.
     case: q; intros.

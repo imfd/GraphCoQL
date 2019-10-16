@@ -33,11 +33,11 @@ Section Theory.
 
 
 
-  Variables (Vals : eqType).
+  Variables (Value : eqType).
   
   Section FragmentSpread.
 
-    Variable (s : @wfGraphQLSchema Vals).
+    Variable (s : @wfGraphQLSchema Value).
 
     
     (**
@@ -134,7 +134,7 @@ End Theory.
 
 
 
-    (* Variable (s : @wfSchema Name Vals). *)
+    (* Variable (s : @wfSchema Name Value). *)
     
     (* Lemma queries_conform_inv ty φ : *)
     (*   all (query_conforms s ty) φ -> *)
@@ -295,7 +295,7 @@ End Theory.
 
     (* Lemma queries_conform_int_impl ty ti qs : *)
     (*   ty \in implementation s ti -> *)
-    (*          all (@is_field Name Vals) qs -> *)
+    (*          all (@is_field Name Value) qs -> *)
     (*          queries_conform s ti qs ->        *)
     (*          queries_conform s ty qs. *)
     (* Proof. *)

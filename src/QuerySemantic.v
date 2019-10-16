@@ -44,25 +44,25 @@ Require Import QueryTactics.
 
 Section QuerySemantic.
 
-  Variables Vals : eqType.
+  Variables Value : eqType.
   
   
-  Variable s : @wfGraphQLSchema Vals.
-  Variable g : @conformedGraph Vals s.
+  Variable s : @wfGraphQLSchema Value.
+  Variable g : @conformedGraph Value s.
 
   (** ---- *)
   (** *** Coercion
       
       The semantics require an unspecified coercion function. 
-      We define it as a function from Vals (scalar values) to 
+      We define it as a function from Value (scalar values) to 
       a JSON value. Since this transformation can introduce 
       redundancy, we include a proof that the coerced result is 
       non-redundant.
    *)
   Record wfCoercion :=
     WFCoercion {
-        fn :> Vals -> @ResponseValue Vals;
-        _ : forall (value : Vals), Response.is_non_redundant (fn value)
+        fn :> Value -> @ResponseValue Value;
+        _ : forall (value : Value), Response.is_non_redundant (fn value)
       }.
   
   
@@ -70,12 +70,12 @@ Section QuerySemantic.
 
   (** ---- *)
   
-  Implicit Type u : @node Vals.
-  Implicit Type query : @Selection Vals.
-  Implicit Type queries : seq (@Selection Vals).
+  Implicit Type u : @node Value.
+  Implicit Type query : @Selection Value.
+  Implicit Type queries : seq (@Selection Value).
 
  
-  Fixpoint is_valid_response_value (ty : type) (response : @ResponseValue Vals) : bool :=
+  Fixpoint is_valid_response_value (ty : type) (response : @ResponseValue Value) : bool :=
     match ty, response with
     | NamedType _, (Leaf (Some v)) => s.(is_valid_value) ty v
     | ListType ty, Array rs => all (is_valid_response_value ty) rs
@@ -93,8 +93,8 @@ Section QuerySemantic.
      Evaluates the list of queries and returns a GraphQL Response.
 
    *)
-  Equations? execute_selection_set u (queries : seq (@Selection Vals)) :
-    @GraphQLResponse Vals by wf (queries_size queries) :=
+  Equations? execute_selection_set u (queries : seq (@Selection Value)) :
+    @GraphQLResponse Value by wf (queries_size queries) :=
     {
       ⟦ [::] ⟧ˢ in _ := [::];
       
@@ -208,7 +208,7 @@ Section QuerySemantic.
      The definition corresponds to the one given by P&H.
    *)
   Equations? simpl_execute_selection_set u queries :
-    @GraphQLResponse Vals by wf (queries_size queries) :=
+    @GraphQLResponse Value by wf (queries_size queries) :=
     {
       ≪ [::] ≫ in _ := [::];
 
@@ -301,7 +301,7 @@ Section QuerySemantic.
   Qed.
 
 
-  Definition simpl_execute_query (q : @query Vals) :=
+  Definition simpl_execute_query (q : @query Value) :=
     ≪ q.(selection_set) ≫ in g.(root).
   
  
@@ -313,11 +313,11 @@ Section QuerySemantic.
   (** ---- *)
 End QuerySemantic.
 
-Arguments is_valid_response_value [Vals].
-Arguments execute_selection_set [Vals].
-Arguments execute_query [Vals].
-Arguments simpl_execute_selection_set [Vals].
-Arguments simpl_execute_query [Vals].
+Arguments is_valid_response_value [Value].
+Arguments execute_selection_set [Value].
+Arguments execute_query [Value].
+Arguments simpl_execute_selection_set [Value].
+Arguments simpl_execute_query [Value].
 
 Delimit Scope query_eval with QEVAL.
 Open Scope query_eval.

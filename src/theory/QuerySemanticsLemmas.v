@@ -172,11 +172,11 @@ Section Theory.
       end.
 
 
-  Variables (Vals : eqType) (s : @wfGraphQLSchema Vals) (g : conformedGraph s) (coerce : @wfCoercion Vals).
+  Variables (Val : eqType) (s : @wfGraphQLSchema Val) (g : conformedGraph s) (coerce : @wfCoercion Val).
 
 
   
-  Lemma exec_frags_nil_func (f : Name -> seq (@Selection Vals) -> seq Selection) u ptys φ :
+  Lemma exec_frags_nil_func (f : Name -> seq (@Selection Val) -> seq Selection) u ptys φ :
     uniq ptys ->
     all (is_object_type s) ptys ->
     u.(ntype) \notin ptys ->
@@ -205,7 +205,7 @@ Section Theory.
   Qed.
  
 
-  Lemma exec_cat_frags_func (f : Name -> seq (@Selection Vals) -> seq Selection) ptys u φ1 φ2 :
+  Lemma exec_cat_frags_func (f : Name -> seq (@Selection Val) -> seq Selection) ptys u φ1 φ2 :
     (forall rname t φ, filter_queries_with_label rname (f t φ) = f t (filter_queries_with_label rname φ)) ->
     uniq ptys ->
     all (is_object_type s) ptys ->
@@ -256,7 +256,7 @@ Section Theory.
   
 
   
-  Lemma exec_inlined_func (f : Name -> seq (@Selection Vals) -> seq Selection) ptys u φ :
+  Lemma exec_inlined_func (f : Name -> seq (@Selection Val) -> seq Selection) ptys u φ :
     (forall rname t φ, filter_queries_with_label rname (f t φ) = f t (filter_queries_with_label rname φ)) ->
     uniq ptys ->
     all (is_object_type s) ptys ->
@@ -375,7 +375,7 @@ Section Theory.
         apply: (in_object_possible_types Heq).
         have Hlook : lookup_field_in_type s u.(ntype) (Label name1 arguments1) = Some f by [].
         move/ohead_in: Hv => Hin.
-        move: (@neighbors_are_subtype_of_field Vals s g u (Label name1 arguments1) f Hlook v Hin).
+        move: (@neighbors_are_subtype_of_field Val s g u (Label name1 arguments1) f Hlook v Hin).
           by rewrite Hrty.
       by apply: H => //; rewrite Hvtype.
       
@@ -388,7 +388,7 @@ Section Theory.
       have Hvtype : v.(ntype) = rty.
         rewrite Hrty in Heq; apply: (in_object_possible_types Heq).
         have Hlook : lookup_field_in_type s u.(ntype) (Label name1 arguments1) = Some f by [].
-        move: (@neighbors_are_subtype_of_field Vals s g u (Label name1 arguments1) f Hlook v Hin).
+        move: (@neighbors_are_subtype_of_field Val s g u (Label name1 arguments1) f Hlook v Hin).
           by rewrite Hrty /=. (* ?? *)
       by apply: H => //; rewrite Hvtype.
             
@@ -409,7 +409,7 @@ Section Theory.
                   by apply/allP; apply: in_possible_types_is_object.
 
                   move/ohead_in: Hv => Hin.
-                  move: (@neighbors_are_subtype_of_field Vals s g u (Label name1 arguments1) f Heq0 v Hin).
+                  move: (@neighbors_are_subtype_of_field Val s g u (Label name1 arguments1) f Heq0 v Hin).
                     by rewrite Hrty.
                     
       * congr cons; congr pair; congr Array.
@@ -425,7 +425,7 @@ Section Theory.
               by apply: uniq_get_possible_types.
                 by apply/allP; apply: in_possible_types_is_object.  
 
-                move: (@neighbors_are_subtype_of_field Vals s g u (Label name1 arguments1) f Heq0 v Hin).
+                move: (@neighbors_are_subtype_of_field Val s g u (Label name1 arguments1) f Heq0 v Hin).
                   by rewrite Hrty.
                   
 
@@ -441,7 +441,7 @@ Section Theory.
       apply: (in_object_possible_types Heq).
       have Hlook : lookup_field_in_type s u.(ntype) (Label name2 arguments2) = Some f by [].
       move/ohead_in: Hv => Hin.
-      move: (@neighbors_are_subtype_of_field Vals s g u (Label name2 arguments2) f Hlook v Hin).
+      move: (@neighbors_are_subtype_of_field Val s g u (Label name2 arguments2) f Hlook v Hin).
         by rewrite Hrty.
           by apply: H => //; rewrite Hvtype.
               
@@ -455,7 +455,7 @@ Section Theory.
       have Hvtype : v.(ntype) = rty.
       rewrite Hrty in Heq; apply: (in_object_possible_types Heq).
       have Hlook : lookup_field_in_type s u.(ntype) (Label name2 arguments2) = Some f by [].
-      move: (@neighbors_are_subtype_of_field Vals s g u (Label name2 arguments2) f Hlook v Hin).
+      move: (@neighbors_are_subtype_of_field Val s g u (Label name2 arguments2) f Hlook v Hin).
         by rewrite Hrty /=. (* ?? *)
           by apply: H => //; rewrite Hvtype.
             
@@ -476,7 +476,7 @@ Section Theory.
                 by apply/allP; apply: in_possible_types_is_object.
                 
                 move/ohead_in: Hv => Hin.
-                move: (@neighbors_are_subtype_of_field Vals s g u (Label name2 arguments2) f Heq0 v Hin).
+                move: (@neighbors_are_subtype_of_field Val s g u (Label name2 arguments2) f Heq0 v Hin).
                   by rewrite Hrty.
                   
 
@@ -493,7 +493,7 @@ Section Theory.
             by apply: uniq_get_possible_types.
               by apply/allP; apply: in_possible_types_is_object.  
               
-              move: (@neighbors_are_subtype_of_field Vals s g u (Label name2 arguments2) f Heq0 v Hin).
+              move: (@neighbors_are_subtype_of_field Val s g u (Label name2 arguments2) f Heq0 v Hin).
                 by rewrite Hrty.
   Qed.
 
@@ -614,7 +614,7 @@ Section Theory.
      See also:
      - [exec_equivalence]
    *)
-  Lemma find_frags_nil_then_N_applies (φ : seq (@Selection Vals)) ty :
+  Lemma find_frags_nil_then_N_applies (φ : seq (@Selection Val)) ty :
     find_fragment_with_type_condition ty φ = [::] ->
     all (fun sel => if sel is InlineFragment t _ then
                    is_object_type s t

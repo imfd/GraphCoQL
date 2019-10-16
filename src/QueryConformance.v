@@ -52,14 +52,14 @@ Require Import Ssromega.
 
 Section QueryConformance.
 
-  Variables Vals : eqType.
+  Variables Value : eqType.
   
   
-  Implicit Type selections : seq (@Selection Vals).
-  Implicit Type selection : @Selection Vals.
+  Implicit Type selections : seq (@Selection Value).
+  Implicit Type selection : @Selection Value.
 
 
-  Variable s : @wfGraphQLSchema Vals.
+  Variable s : @wfGraphQLSchema Value.
  
   (** * Conformance Predicates *)
   (** ---- *)
@@ -71,7 +71,7 @@ Section QueryConformance.
    *)
   (** ---- *)
   (** 
-      #<strong>arguments_conform</strong># : List FieldArgumentDefinition → List (Name * Vals) → Bool
+      #<strong>arguments_conform</strong># : List FieldArgumentDefinition → List (Name * Value) → Bool
 
       The following predicate checks whether a list of arguments (described as a pairing between names and values)
       conform to a list of field arguments.
@@ -91,8 +91,8 @@ Section QueryConformance.
       - Required arguments : Since NonNull types are not implemented, we are not checking for required 
          arguments.
    **)
-  Definition arguments_conform (args : seq FieldArgumentDefinition) (α : seq (Name * Vals)) : bool :=
-    let argument_conforms (arg : Name * Vals) : bool :=
+  Definition arguments_conform (args : seq FieldArgumentDefinition) (α : seq (Name * Value)) : bool :=
+    let argument_conforms (arg : Name * Value) : bool :=
         let: (name, value) := arg in
         has (fun argdef => (argdef.(argname) == name) && s.(is_valid_value) argdef.(argtype) value) args
     in
@@ -209,7 +209,7 @@ Section QueryConformance.
 
     There is a lot of code repetition, which is there only for reading purposes.
   *)
-  Fixpoint has_compatible_type (rty : type) (nq : Name * @Selection Vals) : bool :=
+  Fixpoint has_compatible_type (rty : type) (nq : Name * @Selection Value) : bool :=
     match nq with
     | (ty, f[[ _ ]]) =>
       if lookup_field_in_type s ty f is Some fld then
@@ -254,7 +254,7 @@ Section QueryConformance.
     
   *)
  (* Equations is not able to build the graph - hence we use noind *)
- Equations? have_compatible_response_shapes (selections : seq (Name * @Selection Vals)) :
+ Equations? have_compatible_response_shapes (selections : seq (Name * @Selection Value)) :
    bool by wf (queries_size_aux selections) :=
    {
      have_compatible_response_shapes [::] := true ;
@@ -337,7 +337,7 @@ Section QueryConformance.
     (because with fragments we can create queries that don't make sense).
   *)
  (* Equations is not able to build the graph - hence we use noind *)
- Equations? is_field_merging_possible (selections : seq (Name * @Selection Vals)) :
+ Equations? is_field_merging_possible (selections : seq (Name * @Selection Value)) :
    bool by wf (queries_size_aux selections) :=
    {
      is_field_merging_possible [::] := true;
@@ -467,12 +467,12 @@ Section QueryConformance.
 End QueryConformance.
 (** ---- *)
 
-Arguments arguments_conform [Vals].
-Arguments have_compatible_response_shapes [Vals].
-Arguments is_field_merging_possible [Vals].
-Arguments is_consistent [Vals].
-Arguments selections_conform [Vals].
-Arguments query_conforms [Vals].
+Arguments arguments_conform [Value].
+Arguments have_compatible_response_shapes [Value].
+Arguments is_field_merging_possible [Value].
+Arguments is_consistent [Value].
+Arguments selections_conform [Value].
+Arguments query_conforms [Value].
 
 (** ---- *)
 (** 

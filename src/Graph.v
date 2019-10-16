@@ -28,7 +28,7 @@ Notation Name := string.
 
 Section GraphQLGraph.
 
-  Variables (Vals : eqType).
+  Variables (Value : eqType).
 
   (** * Definition *)
   
@@ -39,7 +39,7 @@ Section GraphQLGraph.
    **)
   Record label := Label {
                       lname : string;
-                      args : seq (string * Vals)
+                      args : seq (string * Value)
                     }.
 
   
@@ -55,7 +55,7 @@ Section GraphQLGraph.
    *)
   Record node := Node {
                        ntype : Name;
-                       nprops : seq (label * Vals)
+                       nprops : seq (label * Value)
                      }.
 
 
@@ -79,9 +79,9 @@ End GraphQLGraph.
 
 
 
-Arguments label [Vals].
-Arguments node [Vals].
-Arguments graphQLGraph [Vals].
+Arguments label [Value].
+Arguments node [Value].
+Arguments graphQLGraph [Value].
 
 Delimit Scope graph_scope with graph.
 Open Scope graph_scope.
@@ -111,12 +111,12 @@ Section Equality.
      to others that already have a decidable procedure.
    *)
   
-  Variable (Vals : eqType).
+  Variable (Value : eqType).
   
 
   (** Packing and unpacking of graph fields, needed for canonical instances  **)
-  Definition prod_of_label (f : @label Vals) := let: Label l a := f in (l, a).
-  Definition label_of_prod (p : string * seq (string * Vals)) := let: (l, a) := p in Label l a.
+  Definition prod_of_label (f : @label Value) := let: Label l a := f in (l, a).
+  Definition label_of_prod (p : string * seq (string * Value)) := let: (l, a) := p in Label l a.
 
   (** Cancelation lemma **)
   Lemma can_label_of_prod : cancel prod_of_label label_of_prod.
@@ -127,8 +127,8 @@ Section Equality.
 
   
   (** Packing and unpacking of graph nodes, needed for canonical instances **)
-  Definition prod_of_node (n : @node Vals) := let: Node t f := n in (t, f).
-  Definition node_of_prod (p : string * seq (label * Vals)) :=
+  Definition prod_of_node (n : @node Value) := let: Node t f := n in (t, f).
+  Definition node_of_prod (p : string * seq (label * Value)) :=
     let: (t, f) := p in Node t f.
 
   (** Cancelation lemma for a node **)
@@ -139,7 +139,7 @@ Section Equality.
   Canonical node_eqType := EqType node (CanEqMixin prod_of_nodeK).
   
   
-  Fixpoint mem_seq_field (labels :  seq (label * Vals)) f : bool :=
+  Fixpoint mem_seq_field (labels :  seq (label * Value)) f : bool :=
     match labels with
     | [::] => false
     | (label, _) :: labels => (f == label) || mem_seq_field labels f
@@ -155,20 +155,20 @@ Section Equality.
 
   
 
-  Fixpoint field_seq_value (labels :  seq (label * Vals)) f : option Vals :=
+  Fixpoint field_seq_value (labels :  seq (label * Value)) f : option Value :=
     match labels with
     | [::] => None
-    | (label, vals) :: labels => if f == label then
-                              Some vals
+    | (label, val) :: labels => if f == label then
+                              Some val
                             else
                               field_seq_value labels f
     end.
 
 
    (** Packing and unpacking for graphs, needed for canonical instances **)
-  Definition prod_of_graph (g : @graphQLGraph Vals) := let: GraphQLGraph r e := g in (r, e).
+  Definition prod_of_graph (g : @graphQLGraph Value) := let: GraphQLGraph r e := g in (r, e).
   Definition graph_of_prod (p : node * seq (node * label * node)) :=
-    let: (r, e) := p in @GraphQLGraph Vals r e.
+    let: (r, e) := p in @GraphQLGraph Value r e.
 
 
   (** Cancelation lemma for a graph **)

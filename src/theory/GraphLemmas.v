@@ -33,13 +33,13 @@ Require Import SeqExtra.
 
 Section Theory.
 
-  Variables (Vals: eqType).
+  Variables (Value : eqType).
 
   (** *** Auxiliary definitions *)
   Section Aux.
 
-    Variable (graph :  @graphQLGraph Vals).
-    Implicit Type edge : @node Vals * @label Vals * @node Vals.
+    Variable (graph :  @graphQLGraph Value).
+    Implicit Type edge : @node Value * @label Value * @node Value.
 
   
     (** ---- *)
@@ -95,7 +95,7 @@ Section Theory.
   (** *** Graph Conformance *)
   Section Conformance.
     
-    Variable (s : @wfGraphQLSchema Vals) (g : conformedGraph s).
+    Variable (s : @wfGraphQLSchema Value) (g : conformedGraph s).
 
     (** ---- *)
     (**

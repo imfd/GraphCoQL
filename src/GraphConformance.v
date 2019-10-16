@@ -47,7 +47,7 @@ Require Import Graph.
 Section Conformance.
 
 
-  Variables (Vals: eqType).
+  Variables (Value : eqType).
 
   (** ---- *)
   (** ** Auxiliary definitions 
@@ -57,8 +57,8 @@ Section Conformance.
   (** ---- *)
   Section GraphAux.
 
-    Variable (graph :  @graphQLGraph Vals).
-    Implicit Type edge : @node Vals * @label Vals * @node Vals.
+    Variable (graph :  @graphQLGraph Value).
+    Implicit Type edge : @node Value * @label Value * @node Value.
 
     
     
@@ -140,7 +140,7 @@ Section Conformance.
 
   Section Predicates.
 
-    Variable (s : @wfGraphQLSchema Vals).
+    Variable (s : @wfGraphQLSchema Value).
 
 
       
@@ -151,7 +151,7 @@ Section Conformance.
 
       This predicate checks that a Graph's root node must have the same type as the Schema's query type.
      **)
-    Definition root_type_conforms (root : @node Vals) : bool := (root).(ntype) == s.(query_type).
+    Definition root_type_conforms (root : @node Value) : bool := (root).(ntype) == s.(query_type).
     
 
     (** ---- *)
@@ -168,7 +168,7 @@ Section Conformance.
      **)
     
     Definition arguments_conform ty (f : label) : bool :=
-      let argument_conforms (fname : Name) (arg : Name * Vals) : bool :=
+      let argument_conforms (fname : Name) (arg : Name * Value) : bool :=
           let: (argname, value) := arg in
           match lookup_argument_in_type_and_field s ty fname argname with
           | Some field_arg => s.(is_valid_value) field_arg.(argtype) value    (* If the argument is declared then check its value's type *)
@@ -205,7 +205,7 @@ Section Conformance.
        these types in a graph. More is discussed in the corresponding paper.     
      **)    
     Definition edges_conform graph :=
-      let edge_conforms (edge : node * label * @node Vals) : bool :=
+      let edge_conforms (edge : node * label * @node Value) : bool :=
           let: (src, label, target) := edge in
           match lookup_field_in_type s src.(ntype) label.(lname) with
           | Some fdef =>
@@ -238,8 +238,8 @@ Section Conformance.
           (If a field has an Int type then the value should represent an integer value).
        
      **)    
-    Definition nodes_conform (nodes : seq (@node Vals)) :=
-      let property_conforms ty (fd : label * Vals) : bool :=
+    Definition nodes_conform (nodes : seq (@node Value)) :=
+      let property_conforms ty (fd : label * Value) : bool :=
           match lookup_field_in_type s ty fd.1.(lname) with
           | Some fdef => arguments_conform ty fd.1 && s.(is_valid_value) fdef.(return_type) fd.2
           | _ => false
