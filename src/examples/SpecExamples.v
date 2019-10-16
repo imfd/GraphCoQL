@@ -341,8 +341,8 @@ Section GraphQLSpecExamples.
 
     Section FieldSelectionMerging.
       (* Redefining only to ease reading -- Another option would be to use [selections_conform] but this seems simpler *)
-      Definition is_field_merging_possible (s : wfGraphQLSchema)
-                 (ts : Name) (σs : seq (@Selection value_eqType)) := is_field_merging_possible s [seq (pair ts σ) | σ <- σs]. 
+      Definition are_renaming_consistent (s : wfGraphQLSchema)
+                 (ts : Name) (σs : seq (@Selection value_eqType)) := are_renaming_consistent s [seq (pair ts σ) | σ <- σs]. 
 
       Let example107_1 : seq (@Selection value_eqType) := [::
                                                          "name" [[ [::] ]];
@@ -353,12 +353,12 @@ Section GraphQLSpecExamples.
                                                          "otherName" : "name" [[ [::] ]]
                                                       ].
 
-      Example e107_1 : is_field_merging_possible wf_schema "Dog" example107_1.
+      Example e107_1 : are_renaming_consistent wf_schema "Dog" example107_1.
       Proof.
           by [].
       Qed.
 
-      Example e107_2 : is_field_merging_possible wf_schema "Dog" example107_2.
+      Example e107_2 : are_renaming_consistent wf_schema "Dog" example107_2.
       Proof.
           by [].
       Qed.
@@ -369,7 +369,7 @@ Section GraphQLSpecExamples.
                                                        "name" [[ [::] ]]
                                                     ].
 
-      Example e108 : ~~ is_field_merging_possible wf_schema "Dog" example108.
+      Example e108 : ~~ are_renaming_consistent wf_schema "Dog" example108.
       Proof.
           by [].
       Qed.
@@ -379,7 +379,7 @@ Section GraphQLSpecExamples.
                           "doesKnowCommand" [[ [:: pair "dogCommand" (VString "SIT")] ]]
                        ].
 
-      Example e109 : is_field_merging_possible wf_schema "Dog" example109.
+      Example e109 : are_renaming_consistent wf_schema "Dog" example109.
       Proof.
           by [].
       Qed.
@@ -397,12 +397,12 @@ Section GraphQLSpecExamples.
                             "doesKnowCommand" [[ [::] ]]
                          ].
 
-      Example e110_1 : ~~ is_field_merging_possible wf_schema "Dog" example110_1.
+      Example e110_1 : ~~ are_renaming_consistent wf_schema "Dog" example110_1.
       Proof.
           by [].
       Qed.
       
-      Example e110_2 : ~~ is_field_merging_possible wf_schema "Dog" example110_2.
+      Example e110_2 : ~~ are_renaming_consistent wf_schema "Dog" example110_2.
       Proof.
           by [].
       Qed.
@@ -422,7 +422,7 @@ Section GraphQLSpecExamples.
                                                             }
                                                       ].
 
-      Example e111_1 : is_field_merging_possible wf_schema "Pet" example111_1.
+      Example e111_1 : are_renaming_consistent wf_schema "Pet" example111_1.
       Proof.
           by [].
       Qed.
@@ -441,7 +441,7 @@ Section GraphQLSpecExamples.
                                                             }
                                                       ].
 
-      Example e111_2 : is_field_merging_possible wf_schema "Pet" example111_2.
+      Example e111_2 : are_renaming_consistent wf_schema "Pet" example111_2.
       Proof.
           by [].
       Qed.

@@ -319,12 +319,12 @@ Section QueryConformance.
 
 
  (** ---- *)
- (** ** Is field merging possible ?
+ (** ** Are renaming-consistent ?
      In this section we define the predicate that checks if field merging is possible.
   *)
  (** ---- *)
  (**
-    #<strong>is_field_merging_possible</strong># : Name → List Selection → Bool
+    #<strong>are_renaming_consistent</strong># : Name → List Selection → Bool
 
     Checks whether a list of queries are mergeable.
 
@@ -337,36 +337,36 @@ Section QueryConformance.
     (because with fragments we can create queries that don't make sense).
   *)
  (* Equations is not able to build the graph - hence we use noind *)
- Equations? is_field_merging_possible (selections : seq (Name * @Selection Value)) :
+ Equations? are_renaming_consistent (selections : seq (Name * @Selection Value)) :
    bool by wf (queries_size_aux selections) :=
    {
-     is_field_merging_possible [::] := true;
+     are_renaming_consistent [::] := true;
 
-     is_field_merging_possible ((ty, f[[α]]) :: φ)
+     are_renaming_consistent ((ty, f[[α]]) :: φ)
        with is_object_type s ty :=
        {
        | true := all (are_equivalent (f[[α]])) [seq p.2 | p <- (find_valid_pairs_with_response_name s ty f φ)] &&
-                 is_field_merging_possible (filter_pairs_with_response_name f φ);
+                 are_renaming_consistent (filter_pairs_with_response_name f φ);
        
        | _ := all (are_equivalent (f[[α]])) [seq p.2 | p <- (find_pairs_with_response_name f φ)] &&
-                 is_field_merging_possible (filter_pairs_with_response_name f φ)
+                 are_renaming_consistent (filter_pairs_with_response_name f φ)
        };
 
-     is_field_merging_possible ((ty, l:f[[α]]) :: φ)
+     are_renaming_consistent ((ty, l:f[[α]]) :: φ)
        with is_object_type s ty :=
        {
        | true := all (are_equivalent (l:f[[α]])) [seq p.2 | p <- (find_valid_pairs_with_response_name s ty l φ)] &&
-                 is_field_merging_possible (filter_pairs_with_response_name l φ);
+                 are_renaming_consistent (filter_pairs_with_response_name l φ);
        
        | _ := all (are_equivalent (l:f[[α]])) [seq p.2 | p <- (find_pairs_with_response_name l φ)] &&
-                 is_field_merging_possible (filter_pairs_with_response_name l φ)
+                 are_renaming_consistent (filter_pairs_with_response_name l φ)
        };
 
                                
        (* all (are_equivalent (l:f[[α]])) [seq p.2 | p <- (find_pairs_with_response_name l φ)] && *)
-       (*     is_field_merging_possible (filter_pairs_with_response_name l φ);      *)
+       (*     are_renaming_consistent (filter_pairs_with_response_name l φ);      *)
      
-     is_field_merging_possible ((ty, f[[α]] { β }) :: φ)
+     are_renaming_consistent ((ty, f[[α]] { β }) :: φ)
        with lookup_field_in_type s ty f :=
        {
        | Some fld
@@ -374,19 +374,19 @@ Section QueryConformance.
            {
            | true := let similar_queries := find_valid_pairs_with_response_name s ty f φ in
                  [&& all (are_equivalent (f[[α]] { β })) [seq p.2 | p <- similar_queries],
-                  is_field_merging_possible ([seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
-                  is_field_merging_possible (filter_pairs_with_response_name f φ)];
+                  are_renaming_consistent ([seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
+                  are_renaming_consistent (filter_pairs_with_response_name f φ)];
            
            | _ := let similar_queries := find_pairs_with_response_name f φ in
                  [&& all (are_equivalent (f[[α]] { β })) [seq p.2 | p <- similar_queries],
-                  is_field_merging_possible ([seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
-                  is_field_merging_possible (filter_pairs_with_response_name f φ)]
+                  are_renaming_consistent ([seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
+                  are_renaming_consistent (filter_pairs_with_response_name f φ)]
            };
        
        | _ := false 
        };
 
-     is_field_merging_possible ((ty, l:f[[α]] { β }) :: φ)
+     are_renaming_consistent ((ty, l:f[[α]] { β }) :: φ)
        with lookup_field_in_type s ty f :=
        {
        | Some fld
@@ -394,23 +394,23 @@ Section QueryConformance.
            {
            | true := let similar_queries := find_valid_pairs_with_response_name s ty l φ in
                  [&& all (are_equivalent (l:f[[α]] { β })) [seq p.2 | p <- similar_queries],
-                  is_field_merging_possible ([seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
-                  is_field_merging_possible (filter_pairs_with_response_name l φ)];
+                  are_renaming_consistent ([seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
+                  are_renaming_consistent (filter_pairs_with_response_name l φ)];
            
            | _ := let similar_queries := find_pairs_with_response_name l φ in
                  [&& all (are_equivalent (l:f[[α]] { β })) [seq p.2 | p <- similar_queries],
-                  is_field_merging_possible ([seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
-                  is_field_merging_possible (filter_pairs_with_response_name l φ)]
+                  are_renaming_consistent ([seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
+                  are_renaming_consistent (filter_pairs_with_response_name l φ)]
            };
           
        | _ := false 
        };
 
-     is_field_merging_possible ((ty, on t { β }) :: φ)
+     are_renaming_consistent ((ty, on t { β }) :: φ)
        with is_fragment_spread_possible s ty t :=
        {
-       | true := is_field_merging_possible ([seq (t, sel) | sel <- β] ++ φ);
-       | _ := is_field_merging_possible φ
+       | true := are_renaming_consistent ([seq (t, sel) | sel <- β] ++ φ);
+       | _ := are_renaming_consistent φ
        }
    }.
  Proof.
@@ -422,7 +422,7 @@ Section QueryConformance.
    case: selections => /= [| q selections]; first by constructor.
    case: q => ts q.
    case_selection q; rewrite /queries_size_aux /= -/(queries_size_aux _); simp selection_size => Hle;
-   simp is_field_merging_possible; constructor; do ? [lookup; constructor]; last first.
+   simp are_renaming_consistent; constructor; do ? [lookup; constructor]; last first.
    case is_fragment_spread_possible; constructor; last by apply: IH; leq_queries_size.
 
    all: do ? [case is_object_type; constructor].
@@ -448,11 +448,11 @@ Section QueryConformance.
      - Field merging is possible.
 
    *)
-  Definition selections_conform (ty : Name) selections : bool :=
-    let σs_with_scope := [seq (ty, q) | q <- selections] in 
-    [&& all (is_consistent ty) selections,
+  Definition selections_conform (ty : Name) σs : bool :=
+    let σs_with_scope := [seq (ty, σ) | σ <- σs] in 
+    [&& all (is_consistent ty) σs,
         σs_with_scope.(are_type_compatible) &
-        σs_with_scope.(is_field_merging_possible)].
+        σs_with_scope.(are_renaming_consistent)].
 
 
   (** ---- *)
@@ -469,7 +469,7 @@ End QueryConformance.
 
 Arguments arguments_conform [Value].
 Arguments are_type_compatible [Value].
-Arguments is_field_merging_possible [Value].
+Arguments are_renaming_consistent [Value].
 Arguments is_consistent [Value].
 Arguments selections_conform [Value].
 Arguments query_conforms [Value].
