@@ -54,7 +54,7 @@ Section NormalForm.
       In this section we prove several lemmas about groundness and non-redundancy.
    *)
 
-  Variables (Value : eqType) (s : @wfGraphQLSchema Value).
+  Variables (Scalar : eqType) (s : wfGraphQLSchema).
 
 
   (** ** Groundedness
@@ -64,7 +64,7 @@ Section NormalForm.
   (**
      This lemma states that
    *)
-  Lemma grounded_fields_are_grounded σ :
+  Lemma grounded_fields_are_grounded (σ : seq (@Selection Scalar)) :
     all (fun σ__i => σ__i.(is_field) && is_in_ground_typed_nf s σ__i) σ ->
     are_in_ground_typed_nf s σ.
   Proof.
@@ -73,7 +73,7 @@ Section NormalForm.
     all: do [by apply/allP=> sel Hin; have /(_ sel Hin) := Hgs; case/andP].
   Qed.
 
-  Lemma grounded_fragments_are_grounded σ :
+  Lemma grounded_fragments_are_grounded (σ : seq (@Selection Scalar)) :
     all (fun σ__i => σ__i.(is_inline_fragment) && is_in_ground_typed_nf s σ__i) σ ->
     are_in_ground_typed_nf s σ.
   Proof.
@@ -89,7 +89,7 @@ Section NormalForm.
   Section NonRedundant.
 
     
-    Implicit Type φ : seq (@Selection Value).
+    Implicit Type φ : seq (@Selection Scalar).
 
     
     Section Filter.
@@ -143,14 +143,14 @@ Section Normalisation.
   
   Transparent qresponse_name.
   
-  Variables (Value : eqType) (s : @wfGraphQLSchema Value).
+  Variables (Scalar : eqType) (s : wfGraphQLSchema).
 
   (** ---- *)
   (**
      This lemma states that the order of filtering queries by response name 
      and normalizing does not affect the result.
    *)
-  Lemma filter_normalize_swap rname ty φ :
+  Lemma filter_normalize_swap rname ty (φ : seq (@Selection Scalar)) :
     filter_queries_with_label rname (normalize_selections s ty φ) = normalize_selections s ty (filter_queries_with_label rname φ).
   Proof.
     move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
@@ -200,7 +200,7 @@ Section Normalisation.
      This lemma states that [normalize_selections] returns fields.
    *)
   Lemma normalized_selections_are_fields ts ss :
-    all (fun s => s.(is_field)) (normalize_selections s ts ss).
+    all (@is_field Scalar) (normalize_selections s ts ss).
   Proof.
       by funelim (normalize_selections s ts ss).
   Qed.
@@ -210,7 +210,7 @@ Section Normalisation.
      This lemma states that the resulting selections of [normalize_selections] are 
      in ground-typed normal form.
    *)
-  Lemma normalized_selections_are_in_gt_nf ts ss :
+  Lemma normalized_selections_are_in_gt_nf ts (ss : seq (@Selection Scalar)) :
     all (is_in_ground_typed_nf s) (normalize_selections s ts ss).
   Proof.
     funelim (normalize_selections s ts ss) => //=.
@@ -221,7 +221,7 @@ Section Normalisation.
            ].
     - apply_andP; first apply_andP.
       * apply/orP; right; by elim: get_possible_types.
-      * have := (@in_possible_types_is_object Value s f.(return_type)).
+      * have := (@in_possible_types_is_object s f.(return_type)).
         generalize (get_possible_types s f.(return_type)).
         elim=> //= t ptys IHptys Hinobj.
         have Htobj := (Hinobj t (mem_head _ _)).
@@ -244,7 +244,7 @@ Section Normalisation.
            ].
     - apply_andP; first apply_andP.
       * apply/orP; right; by elim: get_possible_types.
-      * have := (@in_possible_types_is_object Value s f.(return_type)).
+      * have := (@in_possible_types_is_object s f.(return_type)).
         generalize (get_possible_types s f.(return_type)).
         elim=> //= t ptys IHptys Hinobj.
         have Htobj := (Hinobj t (mem_head _ _)).
@@ -263,7 +263,7 @@ Section Normalisation.
      This corollary is just the conjunction that the normalized selections are 
      both fields and in ground-typed normal form.
    *)
-  Corollary normalized_selections_are_grounded ts ss :
+  Corollary normalized_selections_are_grounded ts (ss : seq (@Selection Scalar)) :
     are_in_ground_typed_nf s (normalize_selections s ts ss).
   Proof.
     rewrite /are_in_ground_typed_nf.
@@ -280,7 +280,7 @@ Section Normalisation.
   (*   rewrite /gnormalize_selections => /=; case: ifP => /= Hscope. *)
   (*     by apply: normalized_selections_are_in_gt_nf. *)
   (*     apply/allP=> sel. *)
-  (*   have  := (@in_possible_types_is_object Value s ts). *)
+  (*   have  := (@in_possible_types_is_object Scalar s ts). *)
   (*   generalize (get_possible_types s ts). *)
   (*   elim=> //= t types IHtypes Hinobj. *)
   (*   have Htobj := (Hinobj t (mem_head _ _)). *)
@@ -302,7 +302,7 @@ Section Normalisation.
      non-redundant, whenever the type used to normalize 
      is an Object type.
    *)
-  Lemma normalized_selections_are_non_redundant ty φ :
+  Lemma normalized_selections_are_non_redundant ty (φ : seq (@Selection Scalar)) :
     are_non_redundant (normalize_selections s ty φ).
   Proof.
     apply_funelim (normalize_selections s ty φ) => //=.
@@ -311,7 +311,7 @@ Section Normalisation.
     all: do ? [by intros; non_red; apply_and3P; by rewrite -filter_normalize_swap /= find_fields_filter_nil].
     
     all: do [intros; non_red; apply_and3P => /=; [ by rewrite -filter_normalize_swap /= find_fields_filter_nil |] ].
-    all: do [have  := (@in_possible_types_is_object Value s f.(return_type))].
+    all: do [have  := (@in_possible_types_is_object s f.(return_type))].
     all: do [have  := (uniq_get_possible_types s f.(return_type))].
     all: do [elim: get_possible_types => //= t ptys IH /andP [Hnin Huniq] Hinobj].
     all: do [non_red; apply_and3P => /=; last by apply: IH => //= t' Hin'; apply: Hinobj; apply: mem_tail].
@@ -327,7 +327,7 @@ Section Normalisation.
   (*   are_non_redundant (gnormalize_selections s ty φ). *)
   (* Proof. *)
   (*   rewrite /gnormalize_selections => /=; case: ifP => /= Hscope; first by apply: normalized_selections_are_non_redundant. *)
-  (*   have  := (@in_possible_types_is_object Value s ty). *)
+  (*   have  := (@in_possible_types_is_object Scalar s ty). *)
   (*   have  := (uniq_get_possible_types s ty). *)
   (*   elim: get_possible_types => //= t ptys IH /andP [Hnin Huniq] Hinobj. *)
   (*   simp are_non_redundant; apply_and3P => /=; last by apply: IH => //= t' Hin'; apply: Hinobj; apply: mem_tail. *)
@@ -340,7 +340,7 @@ Section Normalisation.
   (**
      This theorem states that [normalize] returns a query in normal form. 
    *)
-  Theorem normalized_query_is_in_nf (q : @query Value) :
+  Theorem normalized_query_is_in_nf (q : @query Scalar) :
     is_in_normal_form s (normalize s q).
   Proof.
     case: q; intros.

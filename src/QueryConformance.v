@@ -9,6 +9,8 @@ From Equations Require Import Equations.
 Require Import String.
 Require Import QString.
 
+Require Import Value.
+
 Require Import Schema.
 Require Import SchemaAux.
 Require Import Query.
@@ -52,14 +54,15 @@ Require Import Ssromega.
 
 Section QueryConformance.
 
-  Variables Value : eqType.
+  Variables (Scalar : eqType)
+            (is_valid_scalar_value : graphQLSchema -> Name -> Scalar -> bool).
   
   
-  Implicit Type selections : seq (@Selection Value).
-  Implicit Type selection : @Selection Value.
+  Implicit Type selections : seq (@Selection Scalar).
+  Implicit Type selection : @Selection Scalar.
 
 
-  Variable s : @wfGraphQLSchema Value.
+  Variable s : wfGraphQLSchema.
  
   (** * Conformance Predicates *)
   (** ---- *)
@@ -71,7 +74,7 @@ Section QueryConformance.
    *)
   (** ---- *)
   (** 
-      #<strong>arguments_conform</strong># : List FieldArgumentDefinition → List (Name * Value) → Bool
+      #<strong>arguments_conform</strong># : List FieldArgumentDefinition → List (Name * Scalar) → Bool
 
       The following predicate checks whether a list of arguments (described as a pairing between names and values)
       conform to a list of field arguments.
@@ -91,10 +94,10 @@ Section QueryConformance.
       - Required arguments : Since NonNull types are not implemented, we are not checking for required 
          arguments.
    **)
-  Definition arguments_conform (args : seq FieldArgumentDefinition) (α : seq (Name * Value)) : bool :=
-    let argument_conforms (arg : Name * Value) : bool :=
+  Definition arguments_conform (args : seq FieldArgumentDefinition) (α : seq (Name * @Value Scalar)) : bool :=
+    let argument_conforms (arg : Name * @Value Scalar) : bool :=
         let: (name, value) := arg in
-        has (fun argdef => (argdef.(argname) == name) && s.(is_valid_value) argdef.(argtype) value) args
+        has (fun argdef => (argdef.(argname) == name) && is_valid_value s is_valid_scalar_value argdef.(argtype) value) args
     in
     all argument_conforms α && uniq [seq arg.1 | arg <- α].
      
@@ -209,7 +212,7 @@ Section QueryConformance.
 
     There is a lot of code repetition, which is there only for reading purposes.
   *)
-  Fixpoint has_compatible_type (rty : type) (nq : Name * @Selection Value) : bool :=
+  Fixpoint has_compatible_type (rty : type) (nq : Name * @Selection Scalar) : bool :=
     match nq with
     | (ty, f[[ _ ]]) =>
       if lookup_field_in_type s ty f is Some fld then
@@ -254,7 +257,7 @@ Section QueryConformance.
     
   *)
  (* Equations is not able to build the graph - hence we use noind *)
- Equations? are_type_compatible (selections : seq (Name * @Selection Value)) :
+ Equations? are_type_compatible (selections : seq (Name * @Selection Scalar)) :
    bool by wf (queries_size_aux selections) :=
    {
      are_type_compatible [::] := true ;
@@ -337,7 +340,7 @@ Section QueryConformance.
     (because with fragments we can create queries that don't make sense).
   *)
  (* Equations is not able to build the graph - hence we use noind *)
- Equations? are_renaming_consistent (selections : seq (Name * @Selection Value)) :
+ Equations? are_renaming_consistent (selections : seq (Name * @Selection Scalar)) :
    bool by wf (queries_size_aux selections) :=
    {
      are_renaming_consistent [::] := true;
@@ -467,12 +470,12 @@ Section QueryConformance.
 End QueryConformance.
 (** ---- *)
 
-Arguments arguments_conform [Value].
-Arguments are_type_compatible [Value].
-Arguments are_renaming_consistent [Value].
-Arguments is_consistent [Value].
-Arguments selections_conform [Value].
-Arguments query_conforms [Value].
+Arguments arguments_conform [Scalar].
+Arguments are_type_compatible [Scalar].
+Arguments are_renaming_consistent [Scalar].
+Arguments is_consistent [Scalar].
+Arguments selections_conform [Scalar].
+Arguments query_conforms [Scalar].
 
 (** ---- *)
 (** 

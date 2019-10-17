@@ -2,13 +2,12 @@
 
 From mathcomp Require Import all_ssreflect.
 
+From Equations Require Import Equations.
+
 Require Import String.
 Require Import QString.
 
-From Equations Require Import Equations.
-Require Import GeneralTactics.
-Require Import Ssromega.
-
+Require Import Value.
 
 Require Import Schema.
 Require Import SchemaAux.
@@ -57,101 +56,7 @@ Section Values.
      
      Type that wraps all possible values present in the system.
    *)
-  Inductive Value : Type :=
-  | VString : string -> Value
-  | VList : seq Value -> Value.
-
-  Set Elimination Schemes.
-
-  (* begin hide *)
-  
-  (** ---- *)
-  (**
-     Defining the induction principle for Value.
-   *)
-  Definition Value_rect (P : Value -> Type)
-             (Pl : seq Value -> Type)
-             (IH_Str : forall s, P (VString s))
-             (IH_List : forall l, Pl l -> P (VList l))
-             (IH_Nil : Pl [::])
-             (IH_Cons : forall v, P v -> forall vs, Pl vs -> Pl (v :: vs))
-    :=
-    fix loop value : P value :=
-      let fix F (qs : seq Value) : Pl qs :=
-          match qs with
-          | [::] => IH_Nil
-          | hd :: tl => IH_Cons hd (loop hd) tl (F tl)
-          end
-      in
-      match value with
-      | VString s => IH_Str s
-      | VList l => IH_List l (F l)
-      end.
-
-  Definition Value_rec (P : Value -> Set) := @Value_rect P.
-
-  Definition Value_ind (P : Value -> Prop)
-           (Pl : seq Value -> Type)
-             (IH_Str : forall s, P (VString s))
-             (IH_List : forall l, Pl l -> P (VList l))
-             (IH_Nil : Pl [::])
-             (IH_Cons : forall v, P v -> forall vs, Pl vs -> Pl (v :: vs))
-    :=
-        fix loop value : P value :=
-      let fix F (qs : seq Value) : Pl qs :=
-          match qs with
-          | [::] => IH_Nil
-          | hd :: tl => IH_Cons hd (loop hd) tl (F tl)
-          end
-      in
-      match value with
-      | VString s => IH_Str s
-      | VList l => IH_List l (F l)
-      end.
-
-
-  (** We need to prove that Value has a decidable equality procedure,
-      we hide it to unclutter the docs
-   *)
-  Notation vtype := (string)%type.
-
-  Fixpoint value_size (v : Value) : nat :=
-    match v with
-    | VList l => (sumn [seq value_size v | v <- l]).+1
-    | _ => 1
-    end.
-
-  Lemma value_size_gt_1 v : 0 < v.(value_size).
-      by case: v.
-  Qed.
-
-  Equations? value_eq (v1 v2 : Value) : bool by wf (v1.(value_size)) :=
-    {
-      value_eq (VString s1) (VString s2) := s1 == s2;
-      value_eq (VList [::]) (VList [::]) := true;
-      value_eq (VList (v1 :: vs1)) (VList (v2 :: vs2)) :=
-        value_eq v1 v2 && value_eq (VList vs1) (VList vs2);
-      value_eq _ _ := false
-    }. 
-   Proof.
-     all: do ? [have H := (value_size_gt_1 v1)]; ssromega.
-   Qed.
-   
-   Lemma value_eq_axiom : Equality.axiom value_eq.
-   Proof.
-     rewrite /Equality.axiom; intros.
-     apply: (iffP idP) => [| ->]; last first.
-     - funelim (value_eq y y) => //=; first by case: H => ->; apply/eqP.
-       case: H1 => Heq1 Heq2; rewrite ?Heq1 ?Heq2 in H H0 *.
-         by apply_andP; [apply: H| apply: H0].
-     - funelim (value_eq x y) => //= [| /andP [/H -> Heq ] ]; first by move/eqP=> ->.
-       congr VList; congr cons.
-         by move: (H0 Heq); case.
-   Qed.
-
-  Canonical value_eqType := EqType Value (EqMixin value_eq_axiom).
-
-  (* end hide *)
+  Notation Scalar := string.
 
 
   (** ---- *)
@@ -165,15 +70,10 @@ Section Values.
       Scalar value are  simply translated as leaf values, while 
       list values have to be properly formatted as array values.
    *)
-  Fixpoint coerce (v : Value) : ResponseValue :=
-    match v with
-    | VList ls => Array [seq coerce x | x <- ls]
-    | _ => Leaf (Some v)
-    end.
+  Definition coerce : Scalar -> Scalar := id.
+
 
   
-  Coercion v_of_str (s : string) := VString s.
-
 
   (** ---- *)
   (** *** Is valid value?
@@ -188,44 +88,19 @@ Section Values.
       String or if it refers to an enum value.
    *)
   Variable (schema : graphQLSchema). 
-  Fixpoint is_valid_value (ty : type) (v : Value) : bool :=
-    match v with    
-    | VString s => if ty is NamedType name then
-                    (name == "String")
-                    ||
-                    if lookup_type schema name is Some (enum _ { members }) then
-                      s \in members
-                    else
-                      false
-                  else
-                    false
-                                           
-    | VList ls => if ty is ListType ty' then
-                   all (is_valid_value ty') ls
-                 else
-                   false
-
-    end.
+  Definition is_valid_scalar_value (ty : type) (v : Scalar) : bool :=
+    if ty is NamedType name then
+      (name == "String")
+      ||
+      if lookup_type schema name is Some (enum _ { members }) then
+        v \in members
+      else
+        false
+    else
+      false.
 
 End Values.
 
-
-  (** ---- *)
-  (**
-     We prove here that the coercion is ok, simply for scope...
-   *)
-  Let wf_coerce : forall v, is_non_redundant (coerce v).
-  Proof.
-    move=> v.
-    elim v using Value_ind  with
-        (Pl := fun vs => all (fun v => is_non_redundant (coerce v)) vs) => //=.
-    - intros; simp is_non_redundant.
-      rewrite all_map; apply/allP => v' Hin /=.
-        by move/allP: H => /(_ v' Hin).
-    - intros; simp is_non_redundant; apply_andP.
-  Qed.
-   
-  Let wf_coercion := WFCoercion value_eqType coerce wf_coerce.
 
 
 
@@ -319,7 +194,7 @@ Section Example.
      We build the well-formed schema with the schema, the proof of its well-formedness
      and the predicate that helps determine when a value respects the type.
    *)
-  Let ValidStarWarsSchema : wfGraphQLSchema := WFGraphQLSchema wf_schema (is_valid_value StarWarsSchema).
+  Let ValidStarWarsSchema : wfGraphQLSchema := WFGraphQLSchema wf_schema.
 
   (** ---- *)
   (** ** Data 
@@ -332,100 +207,100 @@ Section Example.
    *)
   
   Let Luke := Node "Human" [::
-                             pair (Label "id" [::]) (VString "1000");
-                             pair (Label "name" [::]) (VString "Luke Skywalker");
-                             pair (Label "appearsIn" [::]) (VList [::
-                                                                     (VString "NEWHOPE");
-                                                                     (VString "EMPIRE");
-                                                                     (VString "JEDI")
-                                                                  ]
-                                                           );
-                             pair (Label "homePlanet" [::]) (VString "Tatooine")
+                             (Label "id" [::], SValue "1000");
+                             (Label "name" [::], SValue "Luke Skywalker");
+                             (Label "appearsIn" [::], LValue [::
+                                                                SValue "NEWHOPE";
+                                                                SValue "EMPIRE";
+                                                                SValue "JEDI"
+                                                             ]
+                             );
+                             (Label "homePlanet" [::], SValue "Tatooine")
                           ].
   
   Let Vader := Node "Human" [::
-                              pair (Label "id" [::]) (VString "1001");
-                              pair (Label "name" [::]) (VString "Darth Vader");
-                              pair (Label "appearsIn" [::]) (VList [::
-                                                                      (VString "NEWHOPE");
-                                                                      (VString "EMPIRE");
-                                                                      (VString "JEDI")
-                                                                   ]
-                                                            );
-                             pair (Label "homePlanet" [::]) (VString "Tatooine")
-                          ].
-
+                              (Label "id" [::], SValue "1001");
+                              (Label "name" [::], SValue "Darth Vader");
+                              (Label "appearsIn" [::], LValue [::
+                                                                 SValue "NEWHOPE";
+                                                                 SValue "EMPIRE";
+                                                                 SValue "JEDI"
+                                                              ]
+                              );
+                              (Label "homePlanet" [::], SValue "Tatooine")
+                           ].
+  
   Let Han := Node "Human" [::
-                            pair (Label "id" [::]) (VString "1002");
-                            pair (Label "name" [::]) (VString "Han Solo");
-                            pair (Label "appearsIn" [::]) (VList [::
-                                                                    (VString "NEWHOPE");
-                                                                    (VString "EMPIRE");
-                                                                    (VString "JEDI")
-                                                                 ]
-                                                          ) 
+                            (Label "id" [::], SValue "1002");
+                            (Label "name" [::], SValue "Han Solo");
+                            (Label "appearsIn" [::], LValue [::
+                                                               SValue "NEWHOPE";
+                                                               SValue "EMPIRE";
+                                                               SValue "JEDI"
+                                                            ]
+                            )
                          ].
   
   Let Leia := Node "Human" [::
-                             pair (Label "id" [::]) (VString "1003");
-                             pair (Label "name" [::]) (VString "Leia Organa");
-                             pair (Label "appearsIn" [::]) (VList [::
-                                                                     (VString "NEWHOPE");
-                                                                     (VString "EMPIRE");
-                                                                     (VString "JEDI")
-                                                                  ]
-                                                           );
-                             pair (Label "homePlanet" [::]) (VString "Alderaan")
+                             (Label "id" [::], SValue "1003");
+                             (Label "name" [::], SValue "Leia Organa");
+                             (Label "appearsIn" [::], LValue [::
+                                                                SValue "NEWHOPE";
+                                                                SValue "EMPIRE";
+                                                                SValue "JEDI"
+                                                             ]
+                             );
+                             (Label "homePlanet" [::], SValue "Alderaan")
                           ].
   
   Let Tarkin := Node "Human" [::
-                               pair (Label "id" [::]) (VString "1004");
-                               pair (Label "name" [::]) (VString "Wilhuff Tarkin");
-                               pair (Label "appearsIn" [::]) (VList [::
-                                                                       (VString "NEWHOPE")
-                                                                    ]
-                                                             )
+                               (Label "id" [::], SValue "1004");
+                               (Label "name" [::], SValue "Wilhuff Tarkin");
+                               (Label "appearsIn" [::], LValue [::
+                                                                  SValue "NEWHOPE"
+                                                               ]
+                               )
                             ].
   
   Let Threepio := Node "Droid" [::
-                                 pair (Label "id" [::]) (VString "2000");
-                                 pair (Label "name" [::]) (VString "C3-PO");
-                                 pair (Label "appearsIn" [::]) (VList [::
-                                                                         (VString "NEWHOPE");
-                                                                         (VString "EMPIRE");
-                                                                         (VString "JEDI")
-                                                                      ]
-                                                               );
-                                 pair (Label "primaryFunction" [::]) (VString "Protocol")
+                                 (Label "id" [::], SValue "2000");
+                                 (Label "name" [::], SValue "C3-PO");
+                                 (Label "appearsIn" [::], LValue [::
+                                                                    SValue "NEWHOPE";
+                                                                    SValue "EMPIRE";
+                                                                    SValue "JEDI"
+                                                                 ]
+                                 );
+                                 (Label "primaryFunction" [::], SValue "Protocol")
                               ].
 
   
   Let Artoo := Node "Droid" [::
-                              pair (Label "id" [::]) (VString "2001");
-                              pair (Label "name" [::]) (VString "R2-D2");
-                              pair (Label "appearsIn" [::]) (VList [::
-                                                                      (VString "NEWHOPE");
-                                                                      (VString "EMPIRE");
-                                                                      (VString "JEDI")
-                                                                   ]
-                                                            );
-                              pair (Label "primaryFunction" [::]) (VString "Astromech")
+                              (Label "id" [::], SValue "2001");
+                              (Label "name" [::], SValue "R2-D2");
+                              (Label "appearsIn" [::], LValue [::
+                                                                 SValue "NEWHOPE";
+                                                                 SValue "EMPIRE";
+                                                                 SValue "JEDI"
+                                                              ]
+                              );
+                              (Label "primaryFunction" [::], SValue "Astromech")
                            ].
 
 
-  Let Root := @Node value_eqType "Query" [::].
+  Let Root := @Node string_eqType "Query" [::].
 
-  Let human (id : string) := @Label value_eqType "human" [:: pair "id" (VString id)].
+  Let human (id : string) := @Label string_eqType "human" [:: ("id", SValue id)].
 
-  Let droid (id : string) := @Label value_eqType "droid" [:: pair "id" (VString id)].
+  Let droid (id : string) := @Label string_eqType "droid" [:: ("id", SValue id)].
 
-  Let hero (episode : string) := (Label "hero" [:: pair "episode" (VString episode)]).
+  Let hero (episode : string) := (Label "hero" [:: ("episode", SValue episode)]).
   
-  Let friends := @Label value_eqType "friends" [::].
+  Let friends := @Label string_eqType "friends" [::].
 
-  Let appearsIn := @Label value_eqType "appearsIn" [::].
+  Let appearsIn := @Label string_eqType "appearsIn" [::].
   
-  Let edges : seq (@node value_eqType * label * node) :=
+  Let edges : seq (@node string_eqType * label * node) :=
     [::
        (* Heroes *)
        pair (pair Root (hero "EMPIRE")) Luke;
@@ -495,7 +370,7 @@ Section Example.
        We prove that the graph conforms to the previous well-formed schema, by simple computation.
    *)
  
-  Let graph_conforms : is_a_conforming_graph ValidStarWarsSchema StarWarsGraph.
+  Let graph_conforms : is_a_conforming_graph ValidStarWarsSchema is_valid_scalar_value StarWarsGraph.
   Proof.
       by [].
   Qed.
@@ -519,14 +394,14 @@ Section Example.
 
    *)
 
-  Let val v := Leaf (Some (VString v)).
+  Let val (v : string) := Leaf (Some v).
   
   (** *** Basic Queries
 
    *)
   (** **** It correctly identifies R2-D2 as the hero of the Star Wars Saga
    *)
-  Let q1 := @Query value_eqType (Some "HeroNameQuery")
+  Let q1 := @Query string_eqType (Some "HeroNameQuery")
                   [::
                      "hero" [[ [::] ]] {
                        [::
@@ -535,18 +410,18 @@ Section Example.
                      }
                   ].
 
-  Let q1_conforms : query_conforms ValidStarWarsSchema q1. by []. Qed.
+  Let q1_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q1. by []. Qed.
   
   Let result1 :=   [::
-                     pair "hero"
-                     (Response.Object
-                               [::
-                                  pair "name" (val "R2-D2")
-                               ]
+                     ("hero",
+                      Response.Object
+                        [::
+                           ("name", val "R2-D2")
+                        ]
                      )
                   ].
 
-   Goal execute_query ValidStarWarsSchema ValidStarWarsGraph wf_coercion q1 = result1.
+  Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q1 = result1.
        by [].
    Qed.
 
@@ -555,7 +430,7 @@ Section Example.
     *)
   
 
-   Let q2 := @Query value_eqType (Some "HeroNameAndFriendsQuery")
+   Let q2 := @Query string_eqType (Some "HeroNameAndFriendsQuery")
                   [::
                      "hero" [[ [::] ]] {
                        [::
@@ -570,87 +445,37 @@ Section Example.
                      }
                   ].
 
-  Let q2_conforms : query_conforms ValidStarWarsSchema q2. by []. Qed.
+  Let q2_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q2. by []. Qed.
 
-   Ltac exec :=
-    repeat
-      match goal with
-      | [ H : lookup_field_in_type _ _ _ = _ |- context [ lookup_field_in_type _ _ _] ] => rewrite H /=
-      | [ H : (field_seq_value (nprops _) _) = _ |- context [ field_seq_value (nprops _) _] ] => rewrite H /=
-
-      | [|- context [ lookup_field_in_type _ _ _] ] => lookup
-      | [|- context [ field_seq_value ?u.(nprops) ] ] =>
-        let Hv := fresh "Hv" in
-        let v := fresh "v" in
-        let vs := fresh "vs" in
-        case Hv : (field_seq_value u.(nprops) _) => [ v |] /=
-
-      | [H : is_true (is_valid_response_value _ _ _) |- context [if is_valid_response_value _ _ _ then _ else _] ] =>
-        rewrite H /=
-
-      | [H : is_valid_response_value _ _ _ = _ |- context [if is_valid_response_value _ _ _ then _ else _] ] =>
-        rewrite H /=
-
-      | [|- context [if is_valid_response_value _ _ _ then _ else _] ] =>
-        let Hvalid := fresh "Hvalid" in
-        case: ifP => Hvalid //=
-                      
-      | [H : (return_type ?f) = _ |- context [ return_type ?f ] ] => rewrite H /=
-
-      | [|- context[ execute_selection_set_unfold_clause_4_clause_1 _ _ _ _ _ (return_type ?fld)] ] =>
-        let Hrty := fresh "Hrty" in
-        let rty := fresh "rty" in
-        case Hrty : fld.(return_type) => [rty | rty] /=
-
-      | [|- context[ execute_selection_set_unfold_clause_4_clause_1_clause_2 _ _ _ _ _ _ _ (ohead _)] ] =>
-        let Hv := fresh "Hv" in
-        case Hv : ohead => [v|] //=
-                               
-      | [|- context[ execute_selection_set_unfold_clause_5_clause_1 _ _ _ _ _ (return_type ?fld)] ] =>
-        let Hrty := fresh "Hrty" in
-        let rty := fresh "rty" in
-        case Hrty : fld.(return_type) => [rty | rty] /=
-
-      | [|- context[ execute_selection_set_unfold_clause_5_clause_1_clause_2 _ _ _ _ _ _ _ (ohead _)] ] =>
-        let Hv := fresh "Hv" in
-        case Hv : ohead => [v|] //=
-                               
-      | [ H : does_fragment_type_apply _ _ _ = _ |- context [ does_fragment_type_apply _ _ _] ] => rewrite H /=
-
-      | [|- context [execute_selection_set_unfold_clause_6 _ _ _ _ _ _ (does_fragment_type_apply _ _ _)] ] =>
-        let Hfapplies := fresh "Hfapplies" in
-        case Hfapplies : does_fragment_type_apply => //=
-   
-      | [ |- context [ _, _ ⊢ ⟦ _ ⟧ˢ in _ with _] ] => simp execute_selection_set
-      end.
-   
   Let result2 :=   [::
-                     pair "hero"
-                     (Response.Object
-                     [::
-                        pair "id" (val "2001");
-                        pair "name" (val "R2-D2");
-                        pair "friends"
-                             (Array
-                             [::
-                                Response.Object
-                                [::
-                                   pair "name" (val "Luke Skywalker")
-                                ];
-                                Response.Object
-                                  [::
-                                     pair "name" (val "Han Solo")
-                                  ];
-                                Response.Object
-                                  [::
-                                     pair "name" (val "Leia Organa")
-                                  ]
-                             ])
-                     ])
+                     ("hero",
+                      Response.Object
+                        [::
+                           ("id", val "2001");
+                           ("name", val "R2-D2");
+                           ("friends",
+                            Array
+                              [::
+                                 Response.Object
+                                 [::
+                                    ("name", val "Luke Skywalker")
+                                 ];
+                                 Response.Object
+                                   [::
+                                      ("name", val "Han Solo")
+                                   ];
+                                 Response.Object
+                                   [::
+                                      ("name", val "Leia Organa")
+                                   ]
+                              ]
+                           )
+                        ]
+                     )
                   ].
 
 
-  Goal execute_query ValidStarWarsSchema ValidStarWarsGraph wf_coercion q2 = result2.
+  Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q2 = result2.
       by [].
   Qed.
 
@@ -662,7 +487,7 @@ Section Example.
      
    *)
 
-   Let q3 := @Query value_eqType (Some "HeroNameAndFriendsQuery")
+   Let q3 := @Query string_eqType (Some "HeroNameAndFriendsQuery")
                    [::
                       "hero" [[ [::] ]] {
                         [::
@@ -682,107 +507,112 @@ Section Example.
                      }
                    ].
 
-   Let q3_conforms : query_conforms ValidStarWarsSchema q3. by []. Qed.
+   Let q3_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q3. by []. Qed.
 
 
    Let result3 := [::
-                     pair "hero"
-                     (Response.Object
-                     [::
-                        pair "name" (val "R2-D2");
-                                
-                        pair "friends"
-                             (Array
+                    ("hero",
+                     Response.Object
+                       [::
+                          ("name", val "R2-D2");
+                          
+                          ("friends",
+                           Array
                              [::
                                 Response.Object
                                 [::
-                                   pair "name" (val "Luke Skywalker");
-                                   pair "appearsIn" (Array [:: val "NEWHOPE";
-                                                              val "EMPIRE";
-                                                              val "JEDI"
-                                                    ]);
-                                   pair "friends"
-                                   (Array
+                                   ("name", val "Luke Skywalker");
+                                   ("appearsIn", Array [:: val "NEWHOPE";
+                                                          val "EMPIRE";
+                                                          val "JEDI"
+                                                       ]
+                                   );
+                                   ("friends",
+                                    Array
                                       [::
                                          Response.Object
                                          [::
-                                            pair "name" (val "Han Solo")
+                                            ("name", val "Han Solo")
                                          ];
                                          Response.Object
-                                         [::
-                                            pair "name" (val "Leia Organa")
-                                         ];
+                                           [::
+                                              ("name", val "Leia Organa")
+                                           ];
                                          Response.Object
-                                         [::
-                                            pair "name" (val "C3-PO")
-                                         ];
+                                           [::
+                                              ("name", val "C3-PO")
+                                           ];
                                          Response.Object
-                                         [::
-                                            pair "name" (val "R2-D2")
-                                         ]
+                                           [::
+                                              ("name", val "R2-D2")
+                                           ]
                                       ]
                                    )
                                 ];
                                 Response.Object
                                   [::
-                                     pair "name" (val "Han Solo");
-                                     pair "appearsIn" (Array [:: val "NEWHOPE";
-                                                                val "EMPIRE";
-                                                                val "JEDI"
-                                                      ]);
-                                     pair "friends"
-                                   (Array
-                                      [::
-                                         Response.Object
-                                         [::
-                                            pair "name" (val "Luke Skywalker")
-                                         ];
-                                         Response.Object
-                                         [::
-                                            pair "name" (val "Leia Organa")
-                                         ];
-                                         Response.Object
-                                         [::
-                                            pair "name" (val "R2-D2")
-                                         ]
-                                      ]
-                                   )
+                                     ("name", val "Han Solo");
+                                     ("appearsIn", Array [:: val "NEWHOPE";
+                                                            val "EMPIRE";
+                                                            val "JEDI"
+                                                         ]
+                                     );
+                                     ("friends",
+                                      Array
+                                        [::
+                                           Response.Object
+                                           [::
+                                              ("name", val "Luke Skywalker")
+                                           ];
+                                           Response.Object
+                                             [::
+                                                ("name", val "Leia Organa")
+                                             ];
+                                           Response.Object
+                                             [::
+                                                ("name", val "R2-D2")
+                                             ]
+                                        ]
+                                     )
                                   ];
                                 Response.Object
                                   [::
-                                     pair "name" (val "Leia Organa");
-                                     pair "appearsIn" (Array [:: val "NEWHOPE";
-                                                                val "EMPIRE";
-                                                                val "JEDI"
-                                                      ]);
-                                     pair "friends"
-                                   (Array
-                                      [::
-                                         Response.Object
-                                         [::
-                                            pair "name" (val "Luke Skywalker")
-                                         ];
-                                         
-                                         Response.Object
-                                         [::
-                                            pair "name" (val "Han Solo")
-                                         ];
-                                         Response.Object
-                                         [::
-                                            pair "name" (val "C3-PO")
-                                         ];
-                                         Response.Object
-                                         [::
-                                            pair "name" (val "R2-D2")
-                                         ]
-                                      ]
-                                   )
+                                     ("name", val "Leia Organa");
+                                     ("appearsIn", Array [:: val "NEWHOPE";
+                                                            val "EMPIRE";
+                                                            val "JEDI"
+                                                         ]
+                                     );
+                                     ("friends",
+                                      Array
+                                        [::
+                                           Response.Object
+                                           [::
+                                              ("name", val "Luke Skywalker")
+                                           ];
+                                           
+                                           Response.Object
+                                             [::
+                                                ("name", val "Han Solo")
+                                             ];
+                                           Response.Object
+                                             [::
+                                                ("name", val "C3-PO")
+                                             ];
+                                           Response.Object
+                                             [::
+                                                ("name", val "R2-D2")
+                                             ]
+                                        ]
+                                     )
                                   ]
-                             ])
-                     ])
+                             ]
+                          )
+                       ]
+                    )
                  ].
 
-   Goal execute_query ValidStarWarsSchema ValidStarWarsGraph wf_coercion q3 = result3.
+   Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q3 = result3.
        by [].
    Qed.
 
@@ -793,27 +623,27 @@ Section Example.
    (** It allows us to query for Luke Skywalker directly, using his ID
 
     *)   
-   Let q4 := @Query value_eqType (Some "FetchLukeQuery")
+   Let q4 := @Query string_eqType (Some "FetchLukeQuery")
                    [::
-                      "human" [[ [:: pair "id" (VString "1000")] ]] {
+                      "human" [[ [:: ("id", SValue "1000")] ]] {
                         [::
                            "name" [[ [::] ]]
                         ]
                       }
                    ].
 
-   Let q4_conforms : query_conforms ValidStarWarsSchema q4. by []. Qed.
+   Let q4_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q4. by []. Qed.
 
    Let result4 := [::
-                    pair "human"
-                    (Response.Object
-                     [::
-                        pair "name" (val "Luke Skywalker")
-                     ]
+                    ("human",
+                     Response.Object
+                       [::
+                          ("name", val "Luke Skywalker")
+                       ]
                     )
                  ].
 
-   Goal execute_query ValidStarWarsSchema ValidStarWarsGraph wf_coercion q4 = result4.
+   Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q4 = result4.
        by [].
    Qed.
 
@@ -822,22 +652,22 @@ Section Example.
 
     *)
  
-  Let q5 := @Query value_eqType (Some "humanQuery")
+  Let q5 := @Query string_eqType (Some "humanQuery")
                    [::
-                      "human" [[ [:: pair "id" (VString "not a valid id")] ]] {
+                      "human" [[ [:: ("id", SValue "not a valid id")] ]] {
                         [::
                            "name" [[ [::] ]]
                         ]
                       }
                    ].
 
-   Let q5_conforms : query_conforms ValidStarWarsSchema q5. by []. Qed.
+   Let q5_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q5. by []. Qed.
 
    Let result5 := [::
-                    pair "human" (@Leaf value_eqType None)
+                    ("human", (@Leaf string_eqType None))
                  ].
 
-   Goal execute_query ValidStarWarsSchema ValidStarWarsGraph wf_coercion q5 = result5.
+   Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q5 = result5.
        by [].
    Qed.
 
@@ -850,27 +680,27 @@ Section Example.
 
     *)
 
-   Let q6 := @Query value_eqType (Some "FetchLukeAliased")
+   Let q6 := @Query string_eqType (Some "FetchLukeAliased")
                    [::
-                      "luke":"human" [[ [:: pair "id" (VString "1000")] ]] {
+                      "luke":"human" [[ [:: ("id", SValue "1000")] ]] {
                         [::
                            "name" [[ [::] ]]
                         ]
                       }
                    ].
 
-   Let q6_conforms : query_conforms ValidStarWarsSchema q6. by []. Qed.
+   Let q6_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q6. by []. Qed.
 
    Let result6 := [::
-                    pair "luke"
-                    (Response.Object
-                     [::
-                        pair "name" (val "Luke Skywalker")
-                     ]
+                    ("luke",
+                     Response.Object
+                       [::
+                          ("name", val "Luke Skywalker")
+                       ]
                     )
                  ].
 
-   Goal execute_query ValidStarWarsSchema ValidStarWarsGraph wf_coercion q6 = result6.
+   Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q6 = result6.
        by [].
    Qed.
 
@@ -879,38 +709,38 @@ Section Example.
 
     *)
 
-   Let q7 := @Query value_eqType (Some "FetchLukeAndLeiaAliased")
+   Let q7 := @Query string_eqType (Some "FetchLukeAndLeiaAliased")
                    [::
-                      "luke":"human" [[ [:: pair "id" (VString "1000")] ]] {
+                      "luke":"human" [[ [:: ("id", SValue "1000")] ]] {
                                        [::
                                           "name" [[ [::] ]]
                                        ]
                                      };
-                      "leia":"human" [[ [:: pair "id" (VString "1003")] ]] {
+                      "leia":"human" [[ [:: ("id", SValue "1003")] ]] {
                                        [::
                                           "name" [[ [::] ]]
                                        ]
                                      }
                    ].
 
-   Let q7_conforms : query_conforms ValidStarWarsSchema q7. by []. Qed.
+   Let q7_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q7. by []. Qed.
 
    Let result7 := [::
-                    pair "luke"
-                    (Response.Object
-                     [::
-                        pair "name" (val "Luke Skywalker")
-                     ]
+                    ("luke",
+                     Response.Object
+                       [::
+                          ("name", val "Luke Skywalker")
+                       ]
                     );
-                    pair "leia"
-                    (Response.Object
-                     [::
-                        pair "name" (val "Leia Organa")
-                     ]
+                    ("leia",
+                     Response.Object
+                       [::
+                          ("name", val "Leia Organa")
+                       ]
                     )
                  ].
 
-   Goal execute_query ValidStarWarsSchema ValidStarWarsGraph wf_coercion q7 = result7.
+   Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q7 = result7.
        by [].
    Qed.
 
@@ -923,15 +753,15 @@ Section Example.
    (** **** Allows us to query using duplicated content
 
     *)
-   Let q8 := @Query value_eqType (Some "DuplicateFields")
+   Let q8 := @Query string_eqType (Some "DuplicateFields")
                    [::
-                      "luke":"human" [[ [:: pair "id" (VString "1000")] ]] {
+                      "luke":"human" [[ [:: ("id", SValue "1000")] ]] {
                                        [::
                                           "name" [[ [::] ]];
                                           "homePlanet" [[ [::] ]]
                                        ]
                                      };
-                      "leia":"human" [[ [:: pair "id" (VString "1003")] ]] {
+                      "leia":"human" [[ [:: ("id", SValue "1003")] ]] {
                                        [::
                                           "name" [[ [::] ]];
                                           "homePlanet" [[ [::] ]]
@@ -939,26 +769,26 @@ Section Example.
                                      }
                    ].
 
-   Let q8_conforms : query_conforms ValidStarWarsSchema q8. by []. Qed.
+   Let q8_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q8. by []. Qed.
 
    Let result8 := [::
-                    pair "luke"
-                    (Response.Object
-                     [::
-                        pair "name" (val "Luke Skywalker");
-                        pair  "homePlanet" (val "Tatooine")
-                     ]
+                    ("luke",
+                     Response.Object
+                       [::
+                          ("name", val "Luke Skywalker");
+                          ( "homePlanet", val "Tatooine")
+                       ]
                     );
-                    pair "leia"
-                    (Response.Object
-                     [::
-                        pair "name" (val "Leia Organa");
-                        pair "homePlanet" (val "Alderaan")
-                     ]
+                    ("leia",
+                     Response.Object
+                       [::
+                          ("name", val "Leia Organa");
+                          ("homePlanet", val "Alderaan")
+                       ]
                     )
                  ].
 
-   Goal execute_query ValidStarWarsSchema ValidStarWarsGraph wf_coercion q8 = result8.
+   Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q8 = result8.
        by [].
    Qed.
 
@@ -969,9 +799,9 @@ Section Example.
        are still ok.
     *)
 
-   Let q9 := @Query value_eqType (Some "DuplicateFields")
+   Let q9 := @Query string_eqType (Some "DuplicateFields")
                    [::
-                      "luke":"human" [[ [:: pair "id" (VString "1000")] ]] {
+                      "luke":"human" [[ [:: ("id", SValue "1000")] ]] {
                                        [::
                                           on "Human" {
                                             [::
@@ -981,7 +811,7 @@ Section Example.
                                           }
                                        ]
                                      };
-                      "leia":"human" [[ [:: pair "id" (VString "1003")] ]] {
+                      "leia":"human" [[ [:: ("id", SValue "1003")] ]] {
                                        [::
                                           on "Human" {
                                             [::
@@ -993,26 +823,26 @@ Section Example.
                                      }
                    ].
 
-   Let q9_conforms : query_conforms ValidStarWarsSchema q9. by []. Qed.
+   Let q9_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q9. by []. Qed.
 
    Let result9 := [::
-                    pair "luke"
-                    (Response.Object
-                     [::
-                        pair "name" (val "Luke Skywalker");
-                        pair  "homePlanet" (val "Tatooine")
-                     ]
+                    ("luke",
+                     Response.Object
+                       [::
+                          ("name", val "Luke Skywalker");
+                          ( "homePlanet", val "Tatooine")
+                       ]
                     );
-                    pair "leia"
-                    (Response.Object
-                     [::
-                        pair "name" (val "Leia Organa");
-                        pair "homePlanet" (val "Alderaan")
-                     ]
+                    ("leia",
+                     Response.Object
+                       [::
+                          ("name", val "Leia Organa");
+                          ("homePlanet", val "Alderaan")
+                       ]
                     )
                  ].
 
-   Goal execute_query ValidStarWarsSchema ValidStarWarsGraph wf_coercion q9 = result9.
+   Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q9 = result9.
        by [].
    Qed.
 

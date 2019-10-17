@@ -43,11 +43,11 @@ Require Import QueryTactics.
 
 Section NormalForm.
 
-  Variables Value : eqType.
-  Variables (s : @wfGraphQLSchema Value).
+  Variables Scalar : eqType.
+  Variables (s : wfGraphQLSchema).
   
-  Implicit Type queries : seq (@Selection Value).
-  Implicit Type query : @Selection Value.
+  Implicit Type queries : seq (@Selection Scalar).
+  Implicit Type query : @Selection Scalar.
   
 
   (** * Definitions *)
@@ -62,7 +62,7 @@ Section NormalForm.
 
      Checks whether the given selection is in ground-typed normal form, as described in HP.
    *)
-  Fixpoint is_in_ground_typed_nf (selection : @Selection Value) : bool :=
+  Fixpoint is_in_ground_typed_nf (selection : @Selection Scalar) : bool :=
     match selection with
     | _[[_]] { ss } => (all (fun s => s.(is_field)) ss || all (fun s => s.(is_inline_fragment)) ss) && all is_in_ground_typed_nf ss
     | _:_[[_]] { ss } => (all (fun s => s.(is_field)) ss || all (fun s => s.(is_inline_fragment)) ss) && all is_in_ground_typed_nf ss  
@@ -76,8 +76,8 @@ Section NormalForm.
 
      Checks whether the given selection set is in ground-typed normal form, as described in HP.
    *)
-  Definition are_in_ground_typed_nf (ss : seq (@Selection Value)) : bool :=
-    (all (@is_field Value) ss || all (@is_inline_fragment Value) ss) && all is_in_ground_typed_nf ss.
+  Definition are_in_ground_typed_nf (ss : seq (@Selection Scalar)) : bool :=
+    (all (@is_field Scalar) ss || all (@is_inline_fragment Scalar) ss) && all is_in_ground_typed_nf ss.
 
   (** ---- *)
   (**
@@ -86,7 +86,7 @@ Section NormalForm.
      Checks whether the given query is in ground-typed normal form, by checking that its selection set is
      in ground-typed normal form.
    *)
-  Definition is_a_ground_typed_nf_query (q : @query Value) :=
+  Definition is_a_ground_typed_nf_query (q : @query Scalar) :=
     q.(selection_set).(are_in_ground_typed_nf).
   
 
@@ -104,7 +104,7 @@ Section NormalForm.
      - If the type in context is an Abstract type, then it expects to find only fragments.
      
    *)
-  Fixpoint is_grounded (ts : Name) (selection : @Selection Value) : bool :=
+  Fixpoint is_grounded (ts : Name) (selection : @Selection Scalar) : bool :=
     if is_object_type s ts then
       (* Fields are valid in object scope *)
       match selection with
@@ -131,7 +131,7 @@ Section NormalForm.
       else
         false.
                      
-  Definition are_grounded (ts : Name) (ss : seq (@Selection Value)) : bool :=
+  Definition are_grounded (ts : Name) (ss : seq (@Selection Scalar)) : bool :=
     all (is_grounded ts) ss.
 
     
@@ -151,7 +151,7 @@ Section NormalForm.
      - There are no inline fragments with the same type condition.
      - There are no field selections with the same response name.
    *)
-  Equations? are_non_redundant (ss : seq (@Selection Value)) : bool
+  Equations? are_non_redundant (ss : seq (@Selection Scalar)) : bool
     by wf (queries_size ss) :=
     {
       are_non_redundant [::] := true;
@@ -180,7 +180,7 @@ Section NormalForm.
      Checks whether the query is non-redundant by checking that its selection set is 
      non-redundant.
    *)
-  Definition is_non_redundant (q : @query Value) : bool := q.(selection_set).(are_non_redundant).
+  Definition is_non_redundant (q : @query Scalar) : bool := q.(selection_set).(are_non_redundant).
 
   (** ---- *)
   (** ** Normal form
@@ -200,32 +200,32 @@ Section NormalForm.
 
      Checks whether a query is in normal form.
    *)
-  Definition is_in_normal_form (q : @query Value) := q.(selection_set).(are_in_normal_form).
+  Definition is_in_normal_form (q : @query Scalar) := q.(selection_set).(are_in_normal_form).
 
 
   (** ---- *)  
 End NormalForm.
 
-Arguments is_in_ground_typed_nf [Value].
-Arguments are_in_ground_typed_nf [Value].
-Arguments is_a_ground_typed_nf_query [Value].
+Arguments is_in_ground_typed_nf [Scalar].
+Arguments are_in_ground_typed_nf [Scalar].
+Arguments is_a_ground_typed_nf_query [Scalar].
 
-Arguments are_non_redundant [Value].
-Arguments is_non_redundant [Value].
+Arguments are_non_redundant [Scalar].
+Arguments is_non_redundant [Scalar].
 
-Arguments are_in_normal_form [Value].
-Arguments is_in_normal_form [Value].
+Arguments are_in_normal_form [Scalar].
+Arguments is_in_normal_form [Scalar].
 
 
 
 Section Normalisation.
 
-  Variables Value : eqType.
-  Implicit Type schema : @wfGraphQLSchema Value.
-  Implicit Type query : @Selection Value.
+  Variables Scalar : eqType.
+  Implicit Type schema : wfGraphQLSchema.
+  Implicit Type query : @Selection Scalar.
 
 
-  Variable s : @wfGraphQLSchema Value.
+  Variable s : wfGraphQLSchema.
 
   (** * Normalisation
       
@@ -260,8 +260,8 @@ Section Normalisation.
 
      This definition assumes that the given type in scope is actually an Object type.
    *)
-  Equations? normalize_selections (type_in_scope : Name) (ss : seq (@Selection Value)) :
-    seq (@Selection Value) by wf (queries_size ss) :=
+  Equations? normalize_selections (type_in_scope : Name) (ss : seq (@Selection Scalar)) :
+    seq (@Selection Scalar) by wf (queries_size ss) :=
     {
       normalize_selections _ [::] := [::];
 
@@ -334,8 +334,8 @@ Section Normalisation.
      in fragments with type conditions equal to the given type's subtypes 
      (minus the abstract type itself).
    *)
-  Definition gnormalize_selections (type_in_scope : Name) (queries : seq (@Selection Value)) :
-    seq (@Selection Value) :=
+  Definition gnormalize_selections (type_in_scope : Name) (queries : seq (@Selection Scalar)) :
+    seq (@Selection Scalar) :=
     if is_object_type s type_in_scope then
       normalize_selections type_in_scope queries
     else
@@ -348,16 +348,16 @@ Section Normalisation.
 
      Normalizes a query, using the Query type to normalize the selection set.
    *)
-  Definition normalize (q : @query Value) : @query Value :=
+  Definition normalize (q : @query Scalar) : @query Scalar :=
     let: Query n ss := q in
     Query n (normalize_selections s.(query_type) q.(selection_set)).
   
   (** ---- *)
 End Normalisation.
 
-Arguments normalize_selections [Value].
-Arguments gnormalize_selections [Value].
-Arguments normalize [Value].
+Arguments normalize_selections [Scalar].
+Arguments gnormalize_selections [Scalar].
+Arguments normalize [Scalar].
 
 
 (** ---- *)

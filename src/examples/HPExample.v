@@ -2,10 +2,13 @@
 
 From mathcomp Require Import all_ssreflect.
 
+From Equations Require Import Equations.
+
 Require Import String.
 Require Import QString.
 
-From Equations Require Import Equations.
+Require Import Value.
+
 Require Import GeneralTactics.
 Require Import Ssromega.
 
@@ -48,120 +51,43 @@ Open Scope string_scope.
 *)
 Section Values.
 
-  Unset Elimination Schemes.
+  (* Unset Elimination Schemes. *)
   (** ---- *)
   (** *** Value 
      
      Type that wraps all possible values present in the system.
    *)
-  Inductive Value : Type :=
-  | VInt : nat -> Value
-  | VString : string -> Value
-  | VFloat : nat -> nat -> Value
-  | VList : seq Value -> Value.
-
-  Set Elimination Schemes.
-
-  (* begin hide *)
+  Inductive Scalar : Type :=
+  | VInt : nat -> Scalar
+  | VString : string -> Scalar
+  | VFloat : nat -> nat -> Scalar.
+ 
   
-  (** ---- *)
-  (**
-     Defining the induction principle for Value.
-   *)
-  Definition Value_rect (P : Value -> Type)
-             (Pl : seq Value -> Type)
-             (IH_Int : forall n, P (VInt n))
-             (IH_Str : forall s, P (VString s))
-             (IH_Float : forall f1 f2, P (VFloat f1 f2))
-             (IH_List : forall l, Pl l -> P (VList l))
-             (IH_Nil : Pl [::])
-             (IH_Cons : forall v, P v -> forall vs, Pl vs -> Pl (v :: vs))
-    :=
-    fix loop value : P value :=
-      let fix F (qs : seq Value) : Pl qs :=
-          match qs with
-          | [::] => IH_Nil
-          | hd :: tl => IH_Cons hd (loop hd) tl (F tl)
-          end
-      in
-      match value with
-      | VInt n => IH_Int n
-      | VString s => IH_Str s
-      | VFloat f1 f2 => IH_Float f1 f2
-      | VList l => IH_List l (F l)
-      end.
-
-  Definition Value_rec (P : Value -> Set) := @Value_rect P.
-
-  Definition Value_ind (P : Value -> Prop)
-           (Pl : seq Value -> Type)
-             (IH_Int : forall n, P (VInt n))
-             (IH_Str : forall s, P (VString s))
-             (IH_Float : forall f1 f2, P (VFloat f1 f2))
-             (IH_List : forall l, Pl l -> P (VList l))
-             (IH_Nil : Pl [::])
-             (IH_Cons : forall v, P v -> forall vs, Pl vs -> Pl (v :: vs))
-    :=
-        fix loop value : P value :=
-      let fix F (qs : seq Value) : Pl qs :=
-          match qs with
-          | [::] => IH_Nil
-          | hd :: tl => IH_Cons hd (loop hd) tl (F tl)
-          end
-      in
-      match value with
-      | VInt n => IH_Int n
-      | VString s => IH_Str s
-      | VFloat f1 f2 => IH_Float f1 f2
-      | VList l => IH_List l (F l)
-      end.
-
 
   (** We need to prove that Value has a decidable equality procedure,
       we hide it to unclutter the docs
    *)
   Notation vtype := (nat + string + (nat * nat))%type.
 
-  Fixpoint value_size (v : Value) : nat :=
+  Definition tuple_of_scalar (v : Scalar) :=
     match v with
-    | VList l => (sumn [seq value_size v | v <- l]).+1
-    | _ => 1
+    | VInt n => inl (inl n)
+    | VString s => inl  (inr s)
+    | VFloat n1 n2 => inr (n1, n2)
     end.
 
-  Lemma value_size_gt_1 v : 0 < v.(value_size).
-      by case: v.
+  Definition scalar_of_tuple (t : vtype) : Scalar :=
+    match t with
+    | inl (inl n) => VInt n
+    | inl (inr s) => VString s
+    | inr (n1, n2) => VFloat n1 n2
+    end.
+
+  Lemma tuple_of_scalarK : cancel tuple_of_scalar scalar_of_tuple.
+  Proof. by case; case.
   Qed.
-
-  Equations? value_eq (v1 v2 : Value) : bool by wf (v1.(value_size)) :=
-    {
-      value_eq (VInt n1) (VInt n2) := n1 == n2;
-      value_eq (VString s1) (VString s2) := s1 == s2;
-      value_eq (VFloat n1 n1') (VFloat n2 n2') := (n1 == n2) && (n1' == n2');
-      value_eq (VList [::]) (VList [::]) := true;
-      value_eq (VList (v1 :: vs1)) (VList (v2 :: vs2)) :=
-        value_eq v1 v2 && value_eq (VList vs1) (VList vs2);
-      value_eq _ _ := false
-    }. 
-   Proof.
-     all: do ? [have H := (value_size_gt_1 v1)]; ssromega.
-   Qed.
    
-   Lemma value_eq_axiom : Equality.axiom value_eq.
-   Proof.
-     rewrite /Equality.axiom; intros.
-     apply: (iffP idP) => [| ->]; last first.
-     - funelim (value_eq y y) => //=; do ? by case: H => ->; apply/eqP.
-       * case: H => -> ->; apply_andP; apply/eqP.
-       * case: H1 => Heq1 Heq2; rewrite ?Heq1 ?Heq2 in H H0 *.
-         by apply_andP; [apply: H| apply: H0].
-     - funelim (value_eq x y) => //= [| | /andP [/eqP -> /eqP ->]| /andP [/H -> Heq ] ] //; do ? by move/eqP=> ->.
-       congr VList; congr cons.
-         by move: (H0 Heq); case.
-   Qed.
-
-  Canonical value_eqType := EqType Value (EqMixin value_eq_axiom).
-
-  (* end hide *)
+  Canonical scalar_eqType := EqType Scalar (CanEqMixin tuple_of_scalarK).
 
 
   (** ---- *)
@@ -175,20 +101,12 @@ Section Values.
       Scalar value are  simply translated as leaf values, while 
       list values have to be properly formatted as array values.
    *)
-  Fixpoint coerce (v : Value) : ResponseValue :=
-    match v with
-    | VList ls => Array [seq coerce x | x <- ls]
-    | _ => Leaf (Some v)
-    end.
-
-  
-  Coercion v_of_nat (n : nat) := VInt n.
-  Coercion v_of_str (s : string) := VString s.
+  Definition coerce : Scalar -> Scalar := id.
 
 
   (** ---- *)
-  (** *** Is valid value?
-      #<strong>is_valid_value</strong># : type → Value → Bool
+  (** *** Is valid scalar value?
+      #<strong>is_valid_scalar_value</strong># : type → Value → Bool
 
       The following predicate checks whether a given value respects 
       the given type. This is used when checking that argument values 
@@ -199,7 +117,7 @@ Section Values.
       String or if it refers to an enum value.
    *)
   Variable (schema : graphQLSchema). 
-  Fixpoint is_valid_value (ty : type) (v : Value) : bool :=
+  Fixpoint is_valid_scalar_value (ty : type) (v : Scalar) : bool :=
     match v with
     | VInt _ => if ty is NamedType name then
                  name == "ID"
@@ -220,33 +138,10 @@ Section Values.
                      name == "Float"
                    else
                      false
-                       
-    | VList ls => if ty is ListType ty' then
-                   all (is_valid_value ty') ls
-                 else
-                   false
-
+                      
     end.
 
 End Values.
-
-
-  (** ---- *)
-  (**
-     We prove here that the coercion is ok, simply for scope...
-   *)
-  Let wf_coerce : forall v, is_non_redundant (coerce v).
-  Proof.
-    move=> v.
-    elim v using Value_ind  with
-        (Pl := fun vs => all (fun v => is_non_redundant (coerce v)) vs) => //=.
-    - intros; simp is_non_redundant.
-      rewrite all_map; apply/allP => v' Hin /=.
-        by move/allP: H => /(_ v' Hin).
-    - intros; simp is_non_redundant; apply_andP.
-  Qed.
-   
-  Let wf_coercion := WFCoercion value_eqType coerce wf_coerce.
 
 
 
@@ -346,7 +241,7 @@ Section HPExample.
      We build the well-formed schema with the schema, the proof of its well-formedness
      and the predicate that helps determine when a value respects the type.
    *)
-  Let ValidStarWarsSchema : wfGraphQLSchema := WFGraphQLSchema wf_schema (is_valid_value StarWarsSchema).
+  Let ValidStarWarsSchema : wfGraphQLSchema := WFGraphQLSchema wf_schema.
 
   (** ---- *)
   (** ** Graph 
@@ -360,13 +255,13 @@ Section HPExample.
   (**
      We first define the root node.
    *)
-  Let Root := @Node value_eqType "Query" [::].
+  Let Root := @Node scalar_eqType "Query" [::].
 
   (**
      Some auxiliary definitions to define the graph
    *)
-  Let id (val : nat) := (pair (@Label value_eqType "id" [::])  (VInt val)).
-  Let name (val : string) := (pair (@Label value_eqType "name" [::]) (VString val)).
+  Let id (val : nat) :=  (@Label scalar_eqType "id" [::],  SValue (VInt val)).
+  Let name (val : string) := (@Label scalar_eqType "name" [::], SValue (VString val)).
 
   (**
      We define the nodes of the graph.
@@ -374,7 +269,7 @@ Section HPExample.
   Let Falcon := Node "Starship" [::
                                   id 3000;
                                   name "Falcon"; 
-                                  (pair (Label "length" [::]) (VFloat 34 37))
+                                  (Label "length" [::], SValue (VFloat 34 37))
                                ].
 
   Let Luke := Node "Human" [::
@@ -383,29 +278,29 @@ Section HPExample.
                           ].
 
   Let Han := Node "Human" [::
-                            pair (Label "id" [::]) (VInt 1002);
-                            pair (Label "name" [::]) (VString "Han")
+                            (Label "id" [::], SValue (VInt 1002));
+                            (Label "name" [::], SValue (VString "Han"))
                          ].
   
   Let Artoo := Node "Droid" [::
-                              (pair (Label "id" [::]) (VInt 2001));
-                              (pair (Label "name" [::]) (VString "R2-D2"));
-                              (pair (Label "primaryFunction" [::]) (VString "Astromech"))
+                              (Label "id" [::], SValue (VInt 2001));
+                              (Label "name" [::], SValue (VString "R2-D2"));
+                              (Label "primaryFunction" [::], SValue (VString "Astromech"))
                            ].
 
   (**
      Then the labelds on edges.
    *)
-  Let search := Label "search" [:: (pair "text" (VString "L"))].
-  Let hero (val : string) := Label "hero" [:: pair "episode" (VString val)].
-  Let friends := @Label value_eqType "friends" [::].
-  Let starships := @Label value_eqType "starships" [::].
+  Let search := Label "search" [:: ("text", SValue (VString "L"))].
+  Let hero (val : string) := Label "hero" [:: ("episode", SValue (VString val))].
+  Let friends := @Label scalar_eqType "friends" [::].
+  Let starships := @Label scalar_eqType "starships" [::].
 
 
   (**
      And finally the edges themselves.
    *)
-  Let edges : seq (@node value_eqType * label * node) :=
+  Let edges : seq (@node scalar_eqType * label * node) :=
     [::
        Root ⟜ search → Falcon;
        Root ⟜ search → Luke;
@@ -434,7 +329,7 @@ Section HPExample.
   (**
        We prove that the graph conforms to the previous well-formed schema, by simple computation.
    *)
-  Let graph_conforms : is_a_conforming_graph ValidStarWarsSchema StarWarsGraph. Proof. by []. Qed.
+  Let graph_conforms : is_a_conforming_graph ValidStarWarsSchema is_valid_scalar_value StarWarsGraph. Proof. by []. Qed.
     
 
   (** ---- *)
@@ -455,7 +350,7 @@ Section HPExample.
   Let example_query :=
     Query None
     [::
-       "hero" [[ [:: (pair "episode" (VString "EMPIRE")) ] ]] {
+       "hero" [[ [:: ("episode", SValue (VString "EMPIRE")) ] ]] {
          [::
             "name" [[ [::] ]] ;
             "friends" [[ [::] ]] {
@@ -489,7 +384,7 @@ Section HPExample.
   (**
        We prove it conforms to the schema by simple computation.     
    *)
-  Let example_query_conforms : query_conforms ValidStarWarsSchema example_query. Proof. by []. Qed.
+  Let example_query_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema example_query. Proof. by []. Qed.
   
 
 
@@ -503,51 +398,49 @@ Section HPExample.
    *)
   Let expected_response :=
     [::
-       (pair "hero"
-             {-
-              [::
-                 (pair "name" (Leaf (Some (VString "Luke"))));
-                 (pair "friends"
-                       (Array
-                          [::
-                             {-
-                              [::
-                                 (pair "droidFriend" (Leaf (Some (VString "R2-D2"))));
-                                 (pair "primaryFunction" (Leaf (Some (VString "Astromech"))))
-                              ]
-                              -};
-                             {-
-                              [::
-                                 (pair "humanFriend" (Leaf (Some (VString "Han"))));
-                                 (pair "starships"
-                                       (Array
-                                          [::
-                                             {-
-                                              [::
-                                                 (pair "starship" (Leaf (Some (VString "Falcon"))));
-                                                 (pair "length" (Leaf (Some (VFloat 34 37))))
-                                              ]
-                                              -}
-                                          ]
-                                       )
-                                 )
-                              ]
-                              -}
-                          ]
-                       )
-                 )
-              ]
-              -}
+       ("hero",
+        {-
+         [::
+            ("name", Leaf (Some (VString "Luke")));
+            ("friends",
+             Array
+               [::
+                  {-
+                   [::
+                      ("droidFriend", Leaf (Some (VString "R2-D2")));
+                      ("primaryFunction", Leaf (Some (VString "Astromech")))
+                   ]
+                   -};
+                  {-
+                   [::
+                      ("humanFriend", Leaf (Some (VString "Han")));
+                      ("starships",
+                       Array
+                         [::
+                            {-
+                             [::
+                                ("starship", Leaf (Some (VString "Falcon")));
+                                ("length", Leaf (Some (VFloat 34 37)))
+                             ]
+                             -}
+                         ]
+                      )
+                   ]
+                   -}
+               ]
+            )
+         ]
+         -}
        )
     ].
-  
+ 
 
   
   (** ---- *)
   (**
      Finally, we show that executing the previous query in the context of the well-formed schema, and over the conformed graph, starting from the root node, gives us the expected response.
    *)
-  Goal (execute_query ValidStarWarsSchema ValidStarWarsGraph wf_coercion example_query = expected_response).
+  Goal (execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce example_query = expected_response).
   Proof.
       by [].
   Qed.

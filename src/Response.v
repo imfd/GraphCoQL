@@ -33,7 +33,7 @@ Section Response.
   
   Unset Elimination Schemes.
 
-  Variable (Value : eqType).
+  Variable (Scalar : eqType).
   
   (** * Response *)
   (** ---- *)
@@ -48,7 +48,7 @@ Section Response.
    *)
 
   Inductive ResponseValue : Type :=
-  | Leaf : option Value -> ResponseValue
+  | Leaf : option Scalar -> ResponseValue
   | Object : seq (Name * ResponseValue) -> ResponseValue
   | Array : seq ResponseValue -> ResponseValue.
   
@@ -115,12 +115,12 @@ Section Response.
 (** ---- *)    
 End Response.
 
-Arguments ResponseValue [Value].
-Arguments Leaf [Value].
-Arguments Object [Value].
-Arguments Array [Value].
-Arguments is_non_redundant [Value].
-Arguments are_non_redundant [Value].
+Arguments ResponseValue [Scalar].
+Arguments Leaf [Scalar].
+Arguments Object [Scalar].
+Arguments Array [Scalar].
+Arguments is_non_redundant [Scalar].
+Arguments are_non_redundant [Scalar].
 
 
 Delimit Scope response_scope with RESP.

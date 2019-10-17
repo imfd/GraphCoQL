@@ -5,6 +5,8 @@ From mathcomp Require Import all_ssreflect.
 Require Import String.
 Require Import QString.
 
+Require Import Value.
+
 Require Import Schema.
 Require Import SchemaAux.
 Require Import SchemaWellFormedness.
@@ -28,56 +30,49 @@ Open Scope string_scope.
 
 Section Values.
 
-  Inductive Value : Type :=
-  | VInt : nat -> Value
-  | VBool: bool -> Value            
-  | VString : string -> Value
-  | VList : seq Value -> Value
-  | VFloat : nat -> nat -> Value.
+  Inductive Scalar : Type :=
+  | VInt : nat -> Scalar
+  | VBool: bool -> Scalar            
+  | VString : string -> Scalar
+  | VFloat : nat -> nat -> Scalar.
+ 
+  
 
+  (** We need to prove that Value has a decidable equality procedure,
+      we hide it to unclutter the docs
+   *)
+  (* begin hide *)
   Notation vtype := (nat + bool + string + (nat * nat))%type.
 
-  Fixpoint tree_of_value (v : Value) : GenTree.tree vtype  :=
+  Definition tuple_of_scalar (v : Scalar) :=
     match v with
-    | VInt n => GenTree.Node 0 [:: GenTree.Leaf (inl (inl (inl n)))]
-    | VBool b => GenTree.Node 4 [:: GenTree.Leaf (inl (inl (inr b)))]                            
-    | VString s => GenTree.Node 1 [:: GenTree.Leaf (inl (inr s))]
-    | VFloat f1 f2 => GenTree.Node 2 [:: GenTree.Leaf (inr (pair f1 f2))]
-    | VList ls => GenTree.Node 3 [seq tree_of_value x | x <- ls]
+    | VInt n => inl (inl (inl n))
+    | VBool b => inl (inl (inr b))
+    | VString s => inl (inr s)
+    | VFloat n1 n2 => inr (n1, n2)
     end.
 
-  Fixpoint value_of_tree (t : GenTree.tree vtype) : option Value :=
+  Definition scalar_of_tuple (t : vtype) : Scalar :=
     match t with
-    | GenTree.Node 0 [:: GenTree.Leaf (inl (inl (inl n)))] => Some (VInt n)
-    | GenTree.Node 4 [:: GenTree.Leaf (inl (inl (inr b)))] => Some (VBool b)
-    | GenTree.Node 1 [:: GenTree.Leaf (inl (inr s))] => Some (VString s)
-    | GenTree.Node 2 [:: GenTree.Leaf (inr (pair f1 f2))] => Some (VFloat f1 f2)
-    | GenTree.Node 3 vals =>
-      Some (VList (pmap value_of_tree vals))
-    | _ => None
+    | inl (inl (inl n)) => VInt n
+    | inl (inl (inr b)) => VBool b
+    | inl (inr s) => VString s
+    | inr (n1, n2) => VFloat n1 n2
     end.
 
-  Lemma tree_of_valueK : pcancel tree_of_value value_of_tree.
-  Proof.
-    rewrite /pcancel; case => //=.
-    elim=> //= x xs IH.
-  Admitted.
+  Lemma tuple_of_scalarK : cancel tuple_of_scalar scalar_of_tuple.
+  Proof. by case; case.
+  Qed.
+   
+  Canonical scalar_eqType := EqType Scalar (CanEqMixin tuple_of_scalarK).
+  (* end hide *)
+ 
+  Definition coerce : Scalar -> Scalar := id.
 
-  Canonical value_eqType := EqType Value (PcanEqMixin tree_of_valueK).
-
-  Fixpoint coerce (v : Value) : ResponseValue :=
-    match v with
-    | VList ls => Array [seq coerce x | x <- ls]
-    | _ => Leaf (Some v)
-    end.
   
-  Coercion v_of_nat (n : nat) := VInt n.
-  Coercion v_of_bool (b : bool) := VBool b.
-  Coercion v_of_str (s : string) := VString s.
-
-
+ 
   Variable (schema : graphQLSchema). 
-  Fixpoint is_valid_value (ty : type) (v : Value) : bool :=
+  Fixpoint is_valid_scalar_value (ty : type) (v : Scalar) : bool :=
     match v with
     | VInt _ => if ty is NamedType name then
                  (name == "Int") || (name == "ID")
@@ -103,12 +98,6 @@ Section Values.
                      name == "Float"
                    else
                      false
-                       
-    | VList ls => if ty is ListType ty' then
-                   all (is_valid_value ty') ls
-                 else
-                   false
-
     end.
 
 End Values.
@@ -185,16 +174,16 @@ Section WrongGraph.
 
  
 
-  Let wf_schema : wfGraphQLSchema := WFGraphQLSchema sdf (is_valid_value schema).
+  Let wf_schema : wfGraphQLSchema := WFGraphQLSchema sdf.
   
   (** Some examples of graph's not conforming to the schema **)
 
-  Let r : @node value_eqType := Node "Query" [::].
+  Let r : @node scalar_eqType := Node "Query" [::].
   
   (** Root node does not have same type as query type **)
-  Let edges1 : seq (@node value_eqType * @label value_eqType * @node value_eqType) := [::].
+  Let edges1 : seq (@node scalar_eqType * @label scalar_eqType * @node scalar_eqType) := [::].
   
-  Let r1 : @node value_eqType := Graph.Node "Human" [::].
+  Let r1 : @node scalar_eqType := Graph.Node "Human" [::].
   
   Let g := GraphQLGraph r1 edges1.
 
@@ -203,17 +192,17 @@ Section WrongGraph.
   
   (** Arguments are incorrect **)
 
-  Let edges2 : seq (@node value_eqType * @label value_eqType * @node value_eqType) :=
+  Let edges2 : seq (@node scalar_eqType * @label scalar_eqType * @node scalar_eqType) :=
     [:: (pair
            (pair
               (Node "Query" [::])
 
-              (Label "search" [:: pair "wrong_Arg" (VString "L")]))          (* <--- Wrong name for argument *)
+              (Label "search" [:: pair "wrong_Arg" (SValue (VString "L"))]))          (* <--- Wrong name for argument *)
 
            (Node "Starship" [::
-                               (pair (Label  "id" [::]) (VInt 3000));
-                               (pair (Label "name" [::]) (VString "Falcon")); 
-                               (pair (Label "length" [::]) (VFloat 34 37))
+                               (pair (Label  "id" [::]) (SValue (VInt 3000)));
+                               (pair (Label "name" [::]) (SValue (VString "Falcon"))); 
+                               (pair (Label "length" [::]) (SValue (VFloat 34 37)))
                             ]
            )
         )
@@ -222,26 +211,26 @@ Section WrongGraph.
   
   Let g2 := GraphQLGraph r edges2.
   
-  Example eNc : ~ edges_conform wf_schema g2.
+  Example eNc : ~ edges_conform wf_schema is_valid_scalar_value g2.
   Proof. by [].
   Qed.
   
   
   (** Types are incorrect **)
   
-  Let edges3 : seq (@node value_eqType * @label value_eqType * @node value_eqType) :=
+  Let edges3 : seq (@node scalar_eqType * @label scalar_eqType * @node scalar_eqType) :=
     [:: pair
         (pair (Node "Human" [::
-                               (pair (Label "id" [::]) (VInt 1000));
-                               (pair (Label "name" [::]) (VString "Luke"))
+                               (pair (Label "id" [::]) (SValue (VInt 1000)));
+                               (pair (Label "name" [::]) (SValue (VString "Luke")))
                             ]
               )
               (Label "friends" [::])
         )
         (Node "Starship" [::
-                            (pair (Label "id" [::]) (VInt 2001));
-                            (pair (Label "name" [::]) (VString "R2-D2"));
-                            (pair (Label "primaryFunction" [::]) (VString "Astromech"))
+                            (pair (Label "id" [::]) (SValue (VInt 2001)));
+                            (pair (Label "name" [::]) (SValue (VString "R2-)D2")));
+                            (pair (Label "primaryFunction" [::]) (SValue (VString "Astromech")))
                          ]
         )
     ].
@@ -250,31 +239,31 @@ Section WrongGraph.
   
     Let g3 := GraphQLGraph r edges3.
     
-    Example eNc3 : ~ edges_conform wf_schema g3.
+    Example eNc3 : ~ edges_conform wf_schema is_valid_scalar_value g3.
     Proof. by [].
     Qed.
 
 
 
 
-    Let edges4 : seq (@node value_eqType * label * node) :=
+    Let edges4 : seq (@node scalar_eqType * label * node) :=
       [:: pair
           (pair (Node "Query" [::])
-                (Label "search" [:: (pair "wrong_Arg" (VString "L"))])
+                (Label "search" [:: (pair "wrong_Arg" (SValue (VString "L")))])
           )
           (Node "Other" [::
-                           (pair (Label "id" [::]) (VInt 3000)); (* <--- Type is not in union *)
-                           (pair (Label "name" [::]) (VString "Falcon")); 
-                           (pair (Label "length" [::]) (VFloat 34 37))
+                           (pair (Label "id" [::]) (SValue (VInt 3000))); (* <--- Type is not in union *)
+                           (pair (Label "name" [::]) (SValue (VString "Falcon"))); 
+                           (pair (Label "length" [::]) (SValue (VFloat 34 37)))
                         ]
           )
       ].
 
-    Let r4 : @node value_eqType := Node "Query" [::].
+    Let r4 : @node scalar_eqType := Node "Query" [::].
 
     Let g4 := GraphQLGraph r edges4.
     
-    Example eNc4 : ~ edges_conform wf_schema g4.
+    Example eNc4 : ~ edges_conform wf_schema is_valid_scalar_value g4.
     Proof. by [].
     Qed.
 
@@ -282,15 +271,15 @@ Section WrongGraph.
 
     (** Label's are incorrect **)
 
-    Let edges5 : seq (@node value_eqType * @label value_eqType * @node value_eqType) :=
+    Let edges5 : seq (@node scalar_eqType * @label scalar_eqType * @node scalar_eqType) :=
       [:: pair
           (pair (Node "Query" [::])
-                (Label "search" [:: (pair "wrong_Arg" (VString "L"))])
+                (Label "search" [:: (pair "wrong_Arg" (SValue (VString "L")))])
           )
           (Node "Starship" [::
-                              (pair (Label "id" [::]) (VInt 3000));
-                              (pair (Label "name" [:: (pair "wrong" (VString "arg"))]) (VString "Falcon")); (* <--- invalid argument in field*) 
-                              (pair (Label "length" [::]) (VFloat 34 37))
+                              (pair (Label "id" [::]) (SValue (VInt 3000)));
+                              (pair (Label "name" [:: (pair "wrong" (SValue (VString "arg")))]) (SValue (VString "Falcon"))); (* <--- invalid argument in field*) 
+                              (pair (Label "length" [::]) (SValue (VFloat 34 37)))
                            ]
           )
       ].
@@ -299,7 +288,7 @@ Section WrongGraph.
     Let g5 := GraphQLGraph r edges5.
 
     
-    Example fNc : ~ nodes_conform wf_schema g5.(nodes).
+    Example fNc : ~ nodes_conform wf_schema is_valid_scalar_value g5.(nodes).
     Proof. by [].
     Qed.
     

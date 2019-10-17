@@ -10,6 +10,8 @@ From Equations Require Import Equations.
 Require Import String.
 Require Import QString.
 
+Require Import Value.
+
 Require Import Schema.
 Require Import SchemaAux.
 Require Import SchemaWellFormedness.
@@ -44,44 +46,62 @@ Require Import QueryTactics.
 
 Section QuerySemantic.
 
-  Variables Value : eqType.
-  
-  
-  Variable s : @wfGraphQLSchema Value.
-  Variable g : @conformedGraph Value s.
+  Variables (Scalar : eqType)
+            (s : wfGraphQLSchema)
+            (is_valid_scalar_value : graphQLSchema -> Name -> Scalar -> bool)
+            (g : conformedGraph s is_valid_scalar_value)
+            (coerce : Scalar -> Scalar).
 
-  (** ---- *)
-  (** *** Coercion
+  (* (** ---- *) *)
+  (* (** *** Coercion *)
       
-      The semantics require an unspecified coercion function. 
-      We define it as a function from Value (scalar values) to 
-      a JSON value. Since this transformation can introduce 
-      redundancy, we include a proof that the coerced result is 
-      non-redundant.
-   *)
-  Record wfCoercion :=
-    WFCoercion {
-        fn :> Value -> @ResponseValue Value;
-        _ : forall (value : Value), Response.is_non_redundant (fn value)
-      }.
+  (*     The semantics require an unspecified coercion function.  *)
+  (*     We define it as a function from Value (scalar values) to  *)
+  (*     a JSON value. Since this transformation can introduce  *)
+  (*     redundancy, we include a proof that the coerced result is  *)
+  (*     non-redundant. *)
+  (*  *) *)
+  (* Record wfCoercion := *)
+  (*   WFCoercion { *)
+  (*       fn :> Value -> @ResponseValue Value; *)
+  (*       _ : forall (value : Value), Response.is_non_redundant (fn value) *)
+  (*     }. *)
   
   
-  Variable (coerce : wfCoercion).
+  (* Variable (coerce : wfCoercion). *)
 
   (** ---- *)
   
-  Implicit Type u : @node Value.
-  Implicit Type query : @Selection Value.
-  Implicit Type queries : seq (@Selection Value).
+  Implicit Type u : @node Scalar.
+  Implicit Type query : @Selection Scalar.
+  Implicit Type queries : seq (@Selection Scalar).
 
  
-  Fixpoint is_valid_response_value (ty : type) (response : @ResponseValue Value) : bool :=
-    match ty, response with
-    | NamedType _, (Leaf (Some v)) => s.(is_valid_value) ty v
-    | ListType ty, Array rs => all (is_valid_response_value ty) rs
-    | _, _ => false 
-    end.
+  (* Fixpoint is_valid_response_value (ty : type) (response : @ResponseValue Value) : bool := *)
+  (*   match ty, response with *)
+  (*   | NamedType _, (Leaf (Some v)) => s.(is_valid_value) ty v *)
+  (*   | ListType ty, Array rs => all (is_valid_response_value ty) rs *)
+  (*   | _, _ => false  *)
+  (*   end. *)
 
+ 
+  Equations complete_value (ftype : type) (value : option (@Value Scalar)) : @ResponseValue Scalar :=
+    {
+      complete_value (NamedType n) (Some (SValue svalue))
+        with is_valid_scalar_value s n (coerce svalue) :=
+        {
+        | true := Leaf (Some (coerce svalue));
+        | _ := Leaf None
+        };
+
+      complete_value (ListType wty) (Some (LValue lvalue)) :=
+        Array (map (complete_value wty) (map Some lvalue));
+
+      complete_value _ _ := Leaf None
+    }.
+      
+                                                                       
+  
   
   Reserved Notation "⟦ φ ⟧ˢ 'in' u" (at level 40).
   
@@ -93,41 +113,25 @@ Section QuerySemantic.
      Evaluates the list of queries and returns a GraphQL Response.
 
    *)
-  Equations? execute_selection_set u (queries : seq (@Selection Value)) :
-    @GraphQLResponse Value by wf (queries_size queries) :=
+  Equations? execute_selection_set u (queries : seq (@Selection Scalar)) :
+    @GraphQLResponse Scalar by wf (queries_size queries) :=
     {
       ⟦ [::] ⟧ˢ in _ := [::];
       
       ⟦ f[[α]] :: φ ⟧ˢ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
-        | Some fdef
-            with field_seq_value u.(nprops) (Label f α) :=
-            {
-            | Some value => let coerced_value := coerce value in
-                           if is_valid_response_value fdef.(return_type) coerced_value then
-                             (f, coerced_value) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u
-                           else
-                             (f, Leaf None) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
+        | Some fdef := (f, complete_value fdef.(return_type) (field_seq_value u.(nprops) (Label f α)))
+                        :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
 
-            | None => (f, Leaf None) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u  (* Should throw error? *)
-            };
         | _ := ⟦ φ ⟧ˢ in u (* Should throw error *)
         };
       
       ⟦ l:f[[α]] :: φ ⟧ˢ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
-        | Some fdef
-            with field_seq_value u.(nprops) (Label f α) :=
-            {
-            | Some value => let coerced_value := coerce value in
-                           if is_valid_response_value fdef.(return_type) coerced_value then
-                             (l, coerced_value) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u
-                           else
-                             (l, Leaf None) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
-            | None => (l, Leaf None) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u (* Should throw error? *)
-            };
+        | Some fdef := (l, complete_value fdef.(return_type) (field_seq_value u.(nprops) (Label f α)))
+                        :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
 
         | _ := ⟦ φ ⟧ˢ in u (* Should throw error *)
         };
@@ -208,43 +212,27 @@ Section QuerySemantic.
      The definition corresponds to the one given by P&H.
    *)
   Equations? simpl_execute_selection_set u queries :
-    @GraphQLResponse Value by wf (queries_size queries) :=
+    @GraphQLResponse Scalar by wf (queries_size queries) :=
     {
       ≪ [::] ≫ in _ := [::];
 
       ≪ f[[α]] :: φ ≫ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
-        | Some fdef
-            with field_seq_value u.(nprops) (Label f α) :=
-            {
-            | Some value => let coerced_value := coerce value in
-                           if is_valid_response_value fdef.(return_type) coerced_value then
-                             (f, coerced_value) :: ≪ φ ≫ in u
-                           else
-                             (f, Leaf None) :: ≪ φ ≫ in u;
-            
-            | None => (f, Leaf None) :: ≪ φ ≫ in u
-            };
-        | _ := ≪ φ ≫ in u (* Error *)
+          | Some fdef := (f, complete_value fdef.(return_type) (field_seq_value u.(nprops) (Label f α)))
+                          :: ≪ φ ≫ in u;
+          
+          | _ := ≪ φ ≫ in u (* Should throw error *)
         };
       
       ≪ l:f[[α]] :: φ ≫ in u
         with lookup_field_in_type s u.(ntype) f :=
-        {
-        | Some fdef
-            with field_seq_value u.(nprops) (Label f α) :=
             {
-            | Some value => let coerced_value := coerce value in
-                           if is_valid_response_value fdef.(return_type) coerced_value then
-                             (l, coerced_value) :: ≪ φ ≫ in u
-                           else
-                             (l, Leaf None) :: ≪ φ ≫ in u;
+            | Some fdef := (l, complete_value fdef.(return_type) (field_seq_value u.(nprops) (Label f α)))
+                            :: ≪ φ ≫ in u;
             
-            | None => (l, Leaf None) :: ≪ φ ≫ in u
+            | _ := ≪ φ ≫ in u (* Should throw error *)
             };
-        | _ := ≪ φ ≫ in u (* Error *)
-        };
 
       
       ≪ f[[α]] { β } :: φ ≫ in u
@@ -301,7 +289,7 @@ Section QuerySemantic.
   Qed.
 
 
-  Definition simpl_execute_query (q : @query Value) :=
+  Definition simpl_execute_query (q : @query Scalar) :=
     ≪ q.(selection_set) ≫ in g.(root).
   
  
@@ -313,18 +301,18 @@ Section QuerySemantic.
   (** ---- *)
 End QuerySemantic.
 
-Arguments is_valid_response_value [Value].
-Arguments execute_selection_set [Value].
-Arguments execute_query [Value].
-Arguments simpl_execute_selection_set [Value].
-Arguments simpl_execute_query [Value].
+Arguments complete_value [Scalar].
+Arguments execute_selection_set [Scalar].
+Arguments execute_query [Scalar].
+Arguments simpl_execute_selection_set [Scalar].
+Arguments simpl_execute_query [Scalar].
 
 Delimit Scope query_eval with QEVAL.
 Open Scope query_eval.
 
 (* This notation collides with the pairs notation (_ , _) ...  *)
-Notation "s , g ⊢ ⟦ φ ⟧ˢ 'in' u 'with' coerce" := (execute_selection_set s g coerce u φ) (at level 30, g at next level, φ at next level) : query_eval.
-Notation "s , g ⊢ ≪ φ ≫ 'in' u 'with' coerce" := (simpl_execute_selection_set s g coerce u φ) (at level 30, g at next level, φ at next level) : query_eval.
+(* Notation "s , g ⊢ ⟦ φ ⟧ˢ 'in' u 'with' coerce" := (execute_selection_set s g coerce u φ) (at level 30, g at next level, φ at next level) : query_eval. *)
+(* Notation "s , g ⊢ ≪ φ ≫ 'in' u 'with' coerce" := (simpl_execute_selection_set s g coerce u φ) (at level 30, g at next level, φ at next level) : query_eval. *)
 
 
 (** ---- *)

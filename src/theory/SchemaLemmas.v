@@ -115,8 +115,8 @@ End Aux.
 (** * Well-Formedness *)
 Section WellFormedness.
 
-  Variable (Value : eqType).
-  Variable (s : @wfGraphQLSchema Value).
+  (* Variable (Value : eqType). *)
+  Variable (s : wfGraphQLSchema).
   
 
   (** Tactic to destroy a wf schema *)
@@ -126,7 +126,7 @@ Section WellFormedness.
     let Hqobj := fresh "Hqboj" in
     let Huniq := fresh "Huniq" in
     let Hok := fresh "Hok" in
-    case: s => sch; rewrite /is_a_wf_schema => /=  /and3P [Hqobj Huniq /allP Hok] Hhty.
+    case: s => sch; rewrite /is_a_wf_schema => /=  /and3P [Hqobj Huniq /allP Hok].
 
 
   (** ---- *)
@@ -136,7 +136,7 @@ Section WellFormedness.
   Lemma query_has_object_type :
     is_object_type s s.(query_type).
   Proof.
-      by wfschema s. 
+     by wfschema s. 
   Qed.
 
 

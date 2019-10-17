@@ -33,13 +33,13 @@ Require Import SeqExtra.
 
 Section Theory.
 
-  Variables (Value : eqType).
+  Variables (Scalar : eqType).
 
   (** *** Auxiliary definitions *)
   Section Aux.
 
-    Variable (graph :  @graphQLGraph Value).
-    Implicit Type edge : @node Value * @label Value * @node Value.
+    Variable (graph :  @graphQLGraph Scalar).
+    Implicit Type edge : @node Scalar * @label Scalar * @node Scalar.
 
   
     (** ---- *)
@@ -95,7 +95,9 @@ Section Theory.
   (** *** Graph Conformance *)
   Section Conformance.
     
-    Variable (s : @wfGraphQLSchema Value) (g : conformedGraph s).
+    Variables (s : wfGraphQLSchema)
+              (is_valid_scalar_value : graphQLSchema -> Name -> Scalar -> bool)
+              (g : conformedGraph s is_valid_scalar_value).
 
     (** ---- *)
     (**
@@ -113,7 +115,7 @@ Section Theory.
        This lemma states that conformed nodes must have object type.
      *)
     Lemma nodes_conform_have_object_type :
-      nodes_conform s g.(nodes) -> forall u, u \in g.(nodes) -> is_object_type s u.(ntype).
+      nodes_conform s is_valid_scalar_value g.(nodes) -> forall u, u \in g.(nodes) -> is_object_type s u.(ntype).
     Proof.
       rewrite /nodes_conform /= => /allP Hconf u Hin.
         by case/andP : (Hconf u Hin).
