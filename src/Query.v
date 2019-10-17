@@ -71,15 +71,15 @@ Section Query.
                  
   | NestedField (name : Name)
                 (arguments : seq (Name * @Value Scalar))
-                (subqueries : seq Selection)
+                (subselections : seq Selection)
                 
   | NestedAliasedField (alias : Name)
                        (name : Name)
                        (arguments : seq (Name * @Value Scalar))
-                       (subqueries : seq Selection)
+                       (subselections : seq Selection)
 
   | InlineFragment (type_condition : Name)
-                   (subqueries : seq Selection).
+                   (subselections : seq Selection).
 
   
   Set Elimination Schemes.
