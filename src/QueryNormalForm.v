@@ -89,52 +89,7 @@ Section NormalForm.
   Definition is_a_ground_typed_nf_query (q : @query Scalar) :=
     q.(selection_set).(are_in_ground_typed_nf).
   
-
-  (** ---- *)
-  (**
-     #<strong>is_grounded</strong># : Name → Selection → Bool 
-
-     #<strong>are_grounded2</strong># : Name → List Selection → Bool
-
-     #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-     Checks whether the given query is grounded v.2.0.
-     
-     This predicate uses information on the type in context where queries might be defined.
-     - If the type in context is an Object type, then it expects to find only fields.
-     - If the type in context is an Abstract type, then it expects to find only fragments.
-     
-   *)
-  Fixpoint is_grounded (ts : Name) (selection : @Selection Scalar) : bool :=
-    if is_object_type s ts then
-      (* Fields are valid in object scope *)
-      match selection with
-      | _[[_]]
-      | _:_[[_]] => true
-      | f[[_]] { ss } =>
-        if lookup_field_in_type s ts f is Some fld then
-          all (is_grounded fld.(return_type)) ss
-        else
-          false
-            
-      | _:f[[_]] { ss } =>
-        if lookup_field_in_type s ts f is Some fld then
-          all (is_grounded fld.(return_type)) ss
-        else
-          false
-            
-      | _ => false
-      end
-    else
-      (* Only inline fragments are valid in abstract scope *)
-      if selection is on t { ss } then
-        (is_object_type s t) && all (is_grounded t) ss
-      else
-        false.
-                     
-  Definition are_grounded (ts : Name) (ss : seq (@Selection Scalar)) : bool :=
-    all (is_grounded ts) ss.
-
-    
+   
 
 
   (** ** Non-redundancy
@@ -322,25 +277,6 @@ Section Normalisation.
     all: do [leq_queries_size].
   Qed.
 
-  (** ---- *)
-  (**
-     #<strong>gnormalize_selections</strong># : Name → List Selection → List Selection 
-
-     Normalizes a list of selections.
-     
-     Unlike [normalize_selections], this definition does not assume that the type given 
-     is an object type. It only checks the type and either calls [normalize_selections] 
-     on the list of selections if the type is an object type, or wraps them
-     in fragments with type conditions equal to the given type's subtypes 
-     (minus the abstract type itself).
-   *)
-  Definition gnormalize_selections (type_in_scope : Name) (queries : seq (@Selection Scalar)) :
-    seq (@Selection Scalar) :=
-    if is_object_type s type_in_scope then
-      normalize_selections type_in_scope queries
-    else
-      [seq on t { normalize_selections t queries } | t <- get_possible_types s type_in_scope].
-
 
   (** ---- *)
   (**
@@ -356,7 +292,6 @@ Section Normalisation.
 End Normalisation.
 
 Arguments normalize_selections [Scalar].
-Arguments gnormalize_selections [Scalar].
 Arguments normalize [Scalar].
 
 
