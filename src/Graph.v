@@ -139,30 +139,7 @@ Section Equality.
   
   Canonical node_eqType := EqType node (CanEqMixin prod_of_nodeK).
   
-  
-  Fixpoint mem_seq_field (labels :  seq (label * @Value Scalar)) f : bool :=
-    match labels with
-    | [::] => false
-    | (label, _) :: labels => (f == label) || mem_seq_field labels f
-    end.
-    
-  Definition mem_field (n : node) f := mem_seq_field n.(nprops) f.
-  
-  Definition pred_of_node (n : node) : pred_class :=
-    [eta mem_field n].
-
-  Canonical node_predType := mkPredType pred_of_node.
  
-
-  Fixpoint field_seq_value (labels :  seq (label * @Value Scalar)) f : option (@ Value Scalar) :=
-    match labels with
-    | [::] => None
-    | (label, val) :: labels => if f == label then
-                              Some val
-                            else
-                              field_seq_value labels f
-    end.
-
 
    (** Packing and unpacking for graphs, needed for canonical instances **)
   Definition prod_of_graph (g : @graphQLGraph Scalar) := let: GraphQLGraph r e := g in (r, e).

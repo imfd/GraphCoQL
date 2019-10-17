@@ -96,7 +96,7 @@ Section QuerySemantic.
       ⟦ f[[α]] :: φ ⟧ˢ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
-        | Some fdef := (f, complete_value fdef.(return_type) (field_seq_value u.(nprops) (Label f α)))
+        | Some fdef := (f, complete_value fdef.(return_type) (property u (Label f α)))
                         :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
 
         | _ := ⟦ φ ⟧ˢ in u (* Should throw error *)
@@ -105,7 +105,7 @@ Section QuerySemantic.
       ⟦ l:f[[α]] :: φ ⟧ˢ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
-        | Some fdef := (l, complete_value fdef.(return_type) (field_seq_value u.(nprops) (Label f α)))
+        | Some fdef := (l, complete_value fdef.(return_type) (property u (Label f α)))
                         :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
 
         | _ := ⟦ φ ⟧ˢ in u (* Should throw error *)
@@ -194,7 +194,7 @@ Section QuerySemantic.
       ≪ f[[α]] :: φ ≫ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
-          | Some fdef := (f, complete_value fdef.(return_type) (field_seq_value u.(nprops) (Label f α)))
+          | Some fdef := (f, complete_value fdef.(return_type) (property u (Label f α)))
                           :: ≪ φ ≫ in u;
           
           | _ := ≪ φ ≫ in u (* Should throw error *)
@@ -203,7 +203,7 @@ Section QuerySemantic.
       ≪ l:f[[α]] :: φ ≫ in u
         with lookup_field_in_type s u.(ntype) f :=
             {
-            | Some fdef := (l, complete_value fdef.(return_type) (field_seq_value u.(nprops) (Label f α)))
+            | Some fdef := (l, complete_value fdef.(return_type) (property u (Label f α)))
                             :: ≪ φ ≫ in u;
             
             | _ := ≪ φ ≫ in u (* Should throw error *)

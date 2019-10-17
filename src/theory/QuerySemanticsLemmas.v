@@ -83,15 +83,15 @@ Section Theory.
     repeat
       match goal with
       | [ H : lookup_field_in_type _ _ _ = _ |- context [ lookup_field_in_type _ _ _] ] => rewrite H /=
-      | [ H : (field_seq_value (nprops _) _) = _ |- context [ field_seq_value (nprops _) _] ] => rewrite H /=
+      | [ H : (property _ _) = _ |- context [ property _ _] ] => rewrite H /=
 
       | [|- context [ lookup_field_in_type _ _ _] ] => lookup
-      | [|- context [ field_seq_value ?u.(nprops) ] ] =>
+      | [|- context [ property ?u ] ] =>
         let Hv := fresh "Hv" in
         let v := fresh "v" in
         let svalue := fresh "svalue" in
         let lvalue := fresh "lvalue" in
-        case Hv : (field_seq_value u.(nprops) _) => [v |] /=; [case: v Hv => [svalue | lvalue] Hv |]
+        case Hv : (property u _) => [v |] /=; [case: v Hv => [svalue | lvalue] Hv |]
 
       | [|- context [(complete_value_clause_1 _ _ _ _ _ (?valid _ _ _))] ] =>
         let Hvalid := fresh "Hvalid" in
@@ -139,15 +139,15 @@ Section Theory.
     repeat
       match goal with
       | [ H : lookup_field_in_type _ _ _ = _ |- context [ lookup_field_in_type _ _ _] ] => rewrite H /=
-      | [ H : (field_seq_value (nprops _) _) = _ |- context [ field_seq_value (nprops _) _] ] => rewrite H /=
+      | [ H : (property _ _) = _ |- context [ property _ _] ] => rewrite H /=
 
       | [|- context [ lookup_field_in_type _ _ _] ] => lookup
-      | [|- context [ field_seq_value ?u.(nprops) ] ] =>
+      | [|- context [ property _ ] ] =>
         let Hv := fresh "Hv" in
         let v := fresh "v" in
         let svalue := fresh "svalue" in
         let lvalue := fresh "lvalue" in
-        case Hv : (field_seq_value u.(nprops) _) => [v |] /=; [case: v Hv => [svalue | lvalue] Hv |]
+        case Hv : (property _ _) => [v |] /=; [case: v Hv => [svalue | lvalue] Hv |]
 
                                                          
       | [H : (return_type ?f) = _ |- context [ return_type ?f ] ] => rewrite H /=

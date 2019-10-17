@@ -8,6 +8,7 @@ Unset Printing Implicit Defensive.
 
 Require Import String.
 Require Import QString.
+Require Import SeqExtra.
 
 Require Import Value.
 
@@ -100,6 +101,16 @@ Section Conformance.
       undup (graph.(root) ::  flatten [seq edge.(enodes) | edge <- graph.(edges)]).
 
 
+    (** ---- *)
+    (**
+       Get the value of the property with the given label.
+     *)
+    Definition property (u : node) (lab : label) : option (@Value Scalar) :=
+      if get_first (fun prop => prop.1 == lab) u.(nprops) is Some (_, value) then
+        Some value
+      else
+        None.
+  
     (** ---- *)
     (**
        Returns a node's neighbors.
