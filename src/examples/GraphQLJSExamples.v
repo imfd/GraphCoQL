@@ -23,7 +23,7 @@ Require Import QueryTactics.
 
 Require Import Response.
 
-Require Import QuerySemantic.
+Require Import QuerySemantics.
 Require Import QuerySemanticsLemmas.
 
 (* end hide *)

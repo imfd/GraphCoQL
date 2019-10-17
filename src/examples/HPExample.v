@@ -25,7 +25,7 @@ Require Import QueryConformance.
 
 Require Import Response.
 
-Require Import QuerySemantic.
+Require Import QuerySemantics.
 
 (* end hide *)
 

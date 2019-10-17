@@ -34,7 +34,7 @@
 
 ./src/Response.v
 
-./src/QuerySemantic.v
+./src/QuerySemantics.v
 ./src/theory/QuerySemanticsLemmas.v
 
 

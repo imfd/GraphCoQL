@@ -37,7 +37,7 @@ Require Import SeqExtra.
 Require Import QueryTactics.
 Require Import GeneralTactics.
 
-Require Import QuerySemantic.
+Require Import QuerySemantics.
 
 (* end hide *)
 
