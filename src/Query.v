@@ -65,9 +65,9 @@ Section Query.
   | SingleField (name : Name)
                 (arguments : seq (Name * @Value Scalar))
                 
-  | AliasedField (alias : Name)
-                 (name : Name)
-                 (arguments : seq (Name * @Value Scalar))
+  | SingleAliasedField (alias : Name)
+                       (name : Name)
+                       (arguments : seq (Name * @Value Scalar))
                  
   | NestedField (name : Name)
                 (arguments : seq (Name * @Value Scalar))
@@ -92,7 +92,7 @@ Section Query.
   Definition Selection_rect (P : Selection -> Type)
              (Pl : seq Selection -> Type)
              (IH_SF : forall n α, P (SingleField n α))
-             (IH_LF : forall l n α, P (AliasedField l n α))
+             (IH_LF : forall l n α, P (SingleAliasedField l n α))
              (IH_NF : forall n α ϕ, Pl ϕ -> P (NestedField n α ϕ))
              (IH_NLF : forall l n α ϕ, Pl ϕ -> P (NestedAliasedField l n α ϕ))
              (IH_IF : forall t ϕ, Pl ϕ -> P (InlineFragment t ϕ))
@@ -108,7 +108,7 @@ Section Query.
       in
       match selection with
       | SingleField n α => IH_SF n α
-      | AliasedField l n α => IH_LF l n α
+      | SingleAliasedField l n α => IH_LF l n α
       | NestedField n α ϕ => IH_NF n α ϕ (F ϕ)
       | NestedAliasedField l n α ϕ => IH_NLF l n α ϕ (F ϕ)
       | InlineFragment t ϕ => IH_IF t ϕ (F ϕ)
@@ -119,7 +119,7 @@ Section Query.
   Definition Selection_ind (P : Selection -> Prop)
              (Pl : seq Selection -> Prop)
             (IH_SF : forall n α, P (SingleField n α))
-            (IH_LF : forall l n α, P (AliasedField l n α))
+            (IH_LF : forall l n α, P (SingleAliasedField l n α))
             (IH_NF : forall n α ϕ, Pl ϕ -> P (NestedField n α ϕ))
             (IH_NLF : forall l n α ϕ, Pl ϕ -> P (NestedAliasedField l n α ϕ))
             (IH_IF : forall t ϕ, Pl ϕ -> P (InlineFragment t ϕ))
@@ -135,7 +135,7 @@ Section Query.
         in
         match selection with
         | SingleField n α => IH_SF n α
-        | AliasedField l n α => IH_LF l n α
+        | SingleAliasedField l n α => IH_LF l n α
         | NestedField n α ϕ => IH_NF n α ϕ (F ϕ)
         | NestedAliasedField l n α ϕ => IH_NLF l n α ϕ (F ϕ)
         | InlineFragment t ϕ => IH_IF t ϕ (F ϕ)
@@ -160,7 +160,7 @@ End Query.
 
 Arguments Selection [Scalar].
 Arguments SingleField [Scalar].
-Arguments AliasedField [Scalar].
+Arguments SingleAliasedField [Scalar].
 Arguments NestedField [Scalar].
 Arguments NestedAliasedField [Scalar].
 Arguments InlineFragment [Scalar].
@@ -182,7 +182,7 @@ Open Scope selection_scope.
 (* We are using double brackets because there is too much conflict with these notations and
    others already used... And I don't really get how to fix it *)
 Notation "f [[ α ]]" := (SingleField f α) (at level 20, α at next level) : selection_scope.
-Notation "l : f [[ α ]]" := (AliasedField l f α) (at level 20, f at next level, α at next level)  : selection_scope.
+Notation "l : f [[ α ]]" := (SingleAliasedField l f α) (at level 20, f at next level, α at next level)  : selection_scope.
 Notation "f [[ α ]] { φ }" := (NestedField f α φ) (at level 20, α at next level, φ at next level) : selection_scope.
 Notation "l : f [[ α ]] { φ }" := (NestedAliasedField l f α φ)
                                  (at level 20, f at next level, α at next level, φ at next level)  : selection_scope.
