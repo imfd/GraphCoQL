@@ -198,22 +198,22 @@ Notation "[ name ]" := (ListType name).
 
   
 
-Notation "'Scalar' scalar_name" := (ScalarTypeDefinition scalar_name) (at level 0) : schema_scope.
+Notation "'scalar' scalar_name" := (ScalarTypeDefinition scalar_name) (at level 0) : schema_scope.
 
 (* Using 'type', as in the spec, clashes with the actual type called 'type'... So I preferred Object instead *)
-Notation "'Object' object_name 'implements' interfaces '{' fields '}'" :=
+Notation "'object' object_name 'implements' interfaces '{' fields '}'" :=
   (ObjectTypeDefinition object_name interfaces fields)
     (object_name at next level, interfaces at next level, fields at next level) : schema_scope.
 
-Notation "'Interface' interface_name '{' fields '}'" :=
+Notation "'interface' interface_name '{' fields '}'" :=
   (InterfaceTypeDefinition interface_name fields)
   (interface_name at next level, fields at next level) : schema_scope.
 
-Notation "'Union' union_name '{' union_members '}'" :=
+Notation "'union' union_name '{' union_members '}'" :=
   (UnionTypeDefinition union_name union_members)
   (union_name at next level, union_members at next level) : schema_scope.
 
-Notation "'Enum' enum_name '{' enum_members '}'" :=
+Notation "'enum' enum_name '{' enum_members '}'" :=
   (EnumTypeDefinition enum_name enum_members)
     (enum_name at next level, enum_members at next level) : schema_scope.
 

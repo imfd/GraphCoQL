@@ -92,7 +92,7 @@ Section Values.
     | VString s => if ty is NamedType name then
                     (name == "String")
                     ||
-                    if lookup_type schema name is Some (Enum _ { members }) then
+                    if lookup_type schema name is Some (enum _ { members }) then
                       s \in members
                     else
                       false
@@ -121,20 +121,20 @@ Section WrongGraph.
 
 
   
-  Let IDType := Scalar "ID".
-  Let StringType := Scalar "String".
-  Let FloatType := Scalar "Float".
+  Let IDType := scalar "ID".
+  Let StringType := scalar "String".
+  Let FloatType := scalar "Float".
 
 
   
-  Let StarshipType := Object "Starship" implements [::] {
+  Let StarshipType := object "Starship" implements [::] {
                               [:: Schema.Field "id" [::] "ID";
                                   Schema.Field "name" [::] "String";
                                   Schema.Field "length" [::] "Float"
                               ]
                             }.
 
-  Let CharacterType := Interface "Character" {
+  Let CharacterType := interface "Character" {
                                   [::
                                      Schema.Field "id" [::] "ID" ;
                                      Schema.Field "name" [::] "String";
@@ -143,7 +143,7 @@ Section WrongGraph.
                                   }.
 
   
-  Let DroidType := Object "Droid" implements [:: "Character"] {
+  Let DroidType := object "Droid" implements [:: "Character"] {
                            [::
                               Schema.Field "id" [::] "ID" ;
                               Schema.Field "name" [::] "String";
@@ -153,7 +153,7 @@ Section WrongGraph.
                          }.
   
   
-  Let HumanType := Object "Human" implements [:: "Character"] {
+  Let HumanType := object "Human" implements [:: "Character"] {
                            [::
                               Schema.Field "id" [::] "ID" ;
                               Schema.Field "name" [::] "String";
@@ -162,13 +162,13 @@ Section WrongGraph.
                            ]
                          }.
 
-  Let EpisodeType := Enum "Episode" { [:: "NEWHOPE" ; "EMPIRE" ; "JEDI" ] }.
+  Let EpisodeType := enum "Episode" { [:: "NEWHOPE" ; "EMPIRE" ; "JEDI" ] }.
 
 
-  Let SearchResultType := Union "SearchResult" { [:: "Human" ; "Droid" ; "Starship"] }.
+  Let SearchResultType := union "SearchResult" { [:: "Human" ; "Droid" ; "Starship"] }.
 
 
-  Let QueryType := Object "Query" implements [::] {
+  Let QueryType := object "Query" implements [::] {
                            [::
                               Schema.Field "hero" [:: FieldArgument "episode" "Episode"] "Character";
                               Schema.Field "search" [:: FieldArgument "text" "String"] [ "SearchResult" ]

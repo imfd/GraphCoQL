@@ -162,7 +162,7 @@ Section WellFormedness.
      *)
     Definition implements_interface_correctly (object_tdef : TypeDefinition) (interface_type : Name) : bool :=
       match object_tdef, lookup_type s interface_type with
-      | Object _ implements _ { object_fields }, Some (Interface _ { interface_fields }) =>
+      | object _ implements _ { object_fields }, Some (interface _ { interface_fields }) =>
         all (fun interface_field =>
                has (fun object_field =>
                       [&& object_field.(fname) == interface_field.(fname),
@@ -184,15 +184,15 @@ Section WellFormedness.
 
      **** Observations
      - Enums : The spec does not specify whether the enum members must be different from 
-       other defined types in the schema (eg. Object type 'Human' cannot be part of a 
+       other defined types in the schema (eg. object type 'Human' cannot be part of a 
        defined Enum type). We follow the same approach.
      
      *)
     Fixpoint is_a_wf_type_def (tdef : TypeDefinition) : bool :=
       match tdef with
-      | Scalar _ => true
+      | scalar _ => true
                                    
-      | Object name implements interfaces { fields } =>
+      | object name implements interfaces { fields } =>
         [&& fields != [::],
             uniq [seq fld.(fname) | fld <- fields],
             all is_a_wf_field fields,
@@ -200,17 +200,17 @@ Section WellFormedness.
             all (is_interface_type s) interfaces &
             all (implements_interface_correctly tdef) interfaces]
  
-      | Interface _ { fields } =>
+      | interface _ { fields } =>
         [&& fields != [::],
             uniq [seq fld.(fname) | fld <- fields] &
             all is_a_wf_field fields]
 
-      | Union name { members } =>
+      | union name { members } =>
         [&& members != [::],
             uniq members &
             all (is_object_type s) members]
 
-      | Enum _ { enumValues } => enumValues != [::]
+      | enum _ { enumValues } => enumValues != [::]
                                                      
       end.
 

@@ -43,19 +43,19 @@ Section SchemaAux.
     (** Get type definition's name *)
     Definition tdname tdef : Name :=
       match tdef with
-      | Scalar name
-      | Object name implements _ { _ }
-      | Interface name { _ }
-      | Union name { _ }
-      | Enum name { _ } => name
+      | scalar name
+      | object name implements _ { _ }
+      | interface name { _ }
+      | union name { _ }
+      | enum name { _ } => name
       end.
 
     (** ---- *)
     (** Get type definition's field *)
     Definition tfields tdef : seq FieldDefinition :=
       match tdef with 
-      | Object _ implements _ { flds }
-      | Interface _ { flds } => flds
+      | object _ implements _ { flds }
+      | interface _ { flds } => flds
       | _ => [::]
       end.
 
@@ -64,7 +64,7 @@ Section SchemaAux.
     (** Get type definition's declared interfaces *)
     Definition tintfs tdef : seq Name :=
       match tdef with
-      | Object _ implements intfs { _ } => intfs
+      | object _ implements intfs { _ } => intfs
       | _ => [::]
       end.
 
@@ -73,7 +73,7 @@ Section SchemaAux.
     (** Get type definition's members (only valid for union type) *)
     Definition tmbs tdef : seq Name :=
       match tdef with
-      | Union _ { mbs }=> mbs
+      | union _ { mbs }=> mbs
       | _ => [::]
       end.
 
@@ -82,7 +82,7 @@ Section SchemaAux.
     (** Get type definition's members (only valid for enum type) *) 
     Definition tenums tdef : seq EnumValue :=
       match tdef with
-      | Enum _ { enums } => enums
+      | enum _ { enums } => enums
       | _ => [::]
       end.
 
@@ -171,12 +171,12 @@ Section SchemaAux.
 
     (** ---- *)
     (**
-       Gets the list of fields declared in an Object or Interface type definition
+       Gets the list of fields declared in an object or interface type definition
      *)
     Definition fields (ty : Name) : seq FieldDefinition :=
       match lookup_type ty with
-      | Some (Object _ implements _ { flds })
-      | Some (Interface _ { flds }) => flds
+      | Some (object _ implements _ { flds })
+      | Some (interface _ { flds }) => flds
       | _ => [::]
       end.
     
@@ -188,49 +188,49 @@ Section SchemaAux.
   Section TypePredicates.
 
     (** ---- *)
-    (** Checks whether the given type is defined as a Scalar in the Schema *)
+    (** Checks whether the given type is defined as a scalar in the Schema *)
     Definition is_scalar_type (ty : Name) : bool :=
       match lookup_type ty with
-      | Some (Scalar _) => true
+      | Some (scalar _) => true
       | _ => false
       end.
 
 
     (** ---- *)
-    (** Checks whether the given type is defined as an Object in the Schema *)
+    (** Checks whether the given type is defined as an object in the Schema *)
     Equations is_object_type (ty : Name) : bool :=
       is_object_type ty with lookup_type ty :=
         {
-        | Some (Object _ implements _ { _ }) := true;
+        | Some (object _ implements _ { _ }) := true;
         | _ := false
         }.
 
 
     (** ---- *)
-    (** Checks whether the given type is defined as an Interface in the Schema *)
+    (** Checks whether the given type is defined as an interface in the Schema *)
     Equations is_interface_type (ty : Name) : bool :=
       is_interface_type ty with lookup_type ty :=
         {
-        | Some (Interface _ { _ }) := true;
+        | Some (interface _ { _ }) := true;
         | _ := false
         }.
 
     
     (** ---- *)
-    (** Checks whether the given type is defined as a Union in the Schema *)
+    (** Checks whether the given type is defined as a union in the Schema *)
     Equations is_union_type (ty : Name) : bool :=
       is_union_type ty with lookup_type ty :=
         {
-        | Some (Union _ { _ }) := true;
+        | Some (union _ { _ }) := true;
         | _ := false
         }.
 
 
     (** ---- *)
-    (** Checks whether the given type is defined as an Enum in the Schema *)
+    (** Checks whether the given type is defined as an enum in the Schema *)
     Definition is_enum_type (ty : Name) : bool :=
       match lookup_type ty with
-      | Some (Enum _ { _ }) => true
+      | Some (enum _ { _ }) => true
       | _ => false
       end.
 
@@ -295,13 +295,13 @@ Section SchemaAux.
       match ty, ty' with
       | NamedType name, NamedType name' => 
         match lookup_type name, lookup_type name' with
-        | Some (Scalar name), Some (Scalar name') => name == name'
-        | Some (Enum name { _ }), Some (Enum name' { _ }) => name == name'
-        | Some (Object name implements _ { _ }), Some (Object name' implements _ { _ }) => name == name'
-        | Some (Interface name { _ }), Some (Interface name' { _ }) => name == name'
-        | Some (Union name { _ }), Some (Union name' { _ }) => name == name'
-        | Some (Object name implements interfaces { _ }), Some (Interface name' { _ }) => name' \in interfaces
-        | Some (Object name implements _ { _ }), Some (Union name' { members }) => name \in members
+        | Some (scalar name), Some (scalar name') => name == name'
+        | Some (enum name { _ }), Some (enum name' { _ }) => name == name'
+        | Some (object name implements _ { _ }), Some (object name' implements _ { _ }) => name == name'
+        | Some (interface name { _ }), Some (interface name' { _ }) => name == name'
+        | Some (union name { _ }), Some (union name' { _ }) => name == name'
+        | Some (object name implements interfaces { _ }), Some (interface name' { _ }) => name' \in interfaces
+        | Some (object name implements _ { _ }), Some (union name' { members }) => name \in members
         | _, _ => false
         end
 
@@ -319,7 +319,7 @@ Section SchemaAux.
      *)
     Definition union_members (ty : Name) : seq Name :=
       match lookup_type ty with
-      | Some (Union _ { mbs }) => mbs
+      | Some (union _ { mbs }) => mbs
       | _ => [::]
       end.
     
@@ -336,18 +336,18 @@ Section SchemaAux.
        Gets "possible" types from a given type, as #<a href='https://graphql.github.io/graphql-spec/June2018/#GetPossibleTypes()'>defined in the GraphQL Spec</a>#.
 
        If the type is:
-       - Object : Possible types are only the type itself.
-       - Interface : Possible types are all types that declare implementation of this interface.
-       - Union : Possible types are all members of the union.
+       - object : Possible types are only the type itself.
+       - interface : Possible types are all types that declare implementation of this interface.
+       - union : Possible types are all members of the union.
     
      *)
     Equations get_possible_types (ty : Name) : seq Name :=
       {
         get_possible_types ty with lookup_type ty :=
           {
-          | Some (Object _ implements _ { _ }) => [:: ty];
-          | Some (Interface iname { _ }) => implementation iname;
-          | Some (Union _ { mbs }) => mbs;
+          | Some (object _ implements _ { _ }) => [:: ty];
+          | Some (interface iname { _ }) => implementation iname;
+          | Some (union _ { mbs }) => mbs;
           | _ => [::]
           }
       }.

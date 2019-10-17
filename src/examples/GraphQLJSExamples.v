@@ -193,7 +193,7 @@ Section Values.
     | VString s => if ty is NamedType name then
                     (name == "String")
                     ||
-                    if lookup_type schema name is Some (Enum _ { members }) then
+                    if lookup_type schema name is Some (enum _ { members }) then
                       s \in members
                     else
                       false
@@ -248,14 +248,14 @@ Section Example.
   (**
      We first define the scalar types used in this system.
    *)
-  Let StringType := Scalar "String".
+  Let StringType := scalar "String".
 
 
-  Let EpisodeType := Enum "Episode" { [:: "NEWHOPE" ; "EMPIRE" ; "JEDI" ] }.
+  Let EpisodeType := enum "Episode" { [:: "NEWHOPE" ; "EMPIRE" ; "JEDI" ] }.
 
   (* The secret backstory is actually implemented as a function that throws error, so
      we omit it for now *)
-  Let CharacterType := Interface "Character" {
+  Let CharacterType := interface "Character" {
                                   [::
                                      Field "id" [::] "String" ;
                                      Field "name" [::] "String";
@@ -265,7 +265,7 @@ Section Example.
                                     ]
                                   }.
 
-  Let HumanType := Object "Human" implements [:: "Character"] {
+  Let HumanType := object "Human" implements [:: "Character"] {
                            [::
                               Field "id" [::] "String" ;
                               Field "name" [::] "String";
@@ -276,7 +276,7 @@ Section Example.
                            ]
                          }.
 
-  Let DroidType := Object "Droid" implements [:: "Character"] {
+  Let DroidType := object "Droid" implements [:: "Character"] {
                            [::
                               Field "id" [::] "String" ;
                               Field "name" [::] "String";
@@ -288,7 +288,7 @@ Section Example.
                          }.
 
 
-  Let QueryType := Object "Query" implements [::] {
+  Let QueryType := object "Query" implements [::] {
                            [::
                               Field "hero" [:: FieldArgument "episode" "Episode"] "Character";
                               Field "human" [:: FieldArgument "id" "String"] "Human";
@@ -412,12 +412,6 @@ Section Example.
                               pair (Label "primaryFunction" [::]) (VString "Astromech")
                            ].
 
-  Eval compute in coerce ((VList [::
-                                                                      (VString "NEWHOPE");
-                                                                      (VString "EMPIRE");
-                                                                      (VString "JEDI")
-                                                                   ]
-                                                            )).
 
   Let Root := @Node value_eqType "Query" [::].
 

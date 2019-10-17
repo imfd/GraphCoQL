@@ -256,7 +256,7 @@ Section WellFormedness.
     apply/is_object_type_wfP.
     exists interfaces, fields.
     rewrite Heq.
-    have -> : object_name = (Object (object_name) implements interfaces {fields}).(tdname) by [].
+    have -> : object_name = (object (object_name) implements interfaces {fields}).(tdname) by [].
     by apply: in_tdefs_lookup.
   Qed.
 
@@ -277,7 +277,7 @@ Section WellFormedness.
   (** ---- *)
   (**
      This lemma states that if a type [t] belongs to the possible types 
-     of another type [ty], then [t] must be an Object type. 
+     of another type [ty], then [t] must be an object type. 
    *)
   Lemma in_possible_types_is_object ty :
     forall t,

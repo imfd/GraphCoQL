@@ -130,7 +130,7 @@ Section Values.
     | VString s => if ty is NamedType name then
                     (name == "String")
                     ||
-                    if lookup_type schema name is Some (Enum _ { members }) then
+                    if lookup_type schema name is Some (enum _ { members }) then
                       s \in members
                     else
                       false
@@ -163,21 +163,21 @@ Section GraphQLSpecExamples.
   
   Coercion namedType_of_string (s : string) := NamedType s.
   
-  Let StringScalar := Scalar "String".
-  Let BooleanScalar := Scalar "Boolean".
-  Let IntScalar := Scalar "Int".
-  Let FloatScalar := Scalar "Float".
+  Let StringScalar := scalar "String".
+  Let BooleanScalar := scalar "Boolean".
+  Let IntScalar := scalar "Int".
+  Let FloatScalar := scalar "Float".
 
 
-  Let QueryType := Object "Query" implements [::] {
+  Let QueryType := object "Query" implements [::] {
                          [::
                             (Field "dog" [::] "Dog")
                          ]
                        }.
   
-  Let DogCommandEnum := Enum "DogCommand" { [:: "SIT"; "DOWN"; "HEEL"] }.
+  Let DogCommandEnum := enum "DogCommand" { [:: "SIT"; "DOWN"; "HEEL"] }.
 
-  Let DogType := Object "Dog" implements [:: "Pet"] {
+  Let DogType := object "Dog" implements [:: "Pet"] {
                          [::
                             (Field "name" [::] "String");
                             (Field "nickname" [::] "String");
@@ -188,13 +188,13 @@ Section GraphQLSpecExamples.
                          ]
                        }.
 
-  Let SentientInterface := Interface "Sentient" {
+  Let SentientInterface := interface "Sentient" {
                                       [::
                                          (Field "name" [::] "String")
                                       ]
                                     }.
   
-  Let PetInterface := Interface "Pet" {
+  Let PetInterface := interface "Pet" {
                                  [::
                                     (Field "name" [::] "String")
                                  ]
@@ -202,22 +202,22 @@ Section GraphQLSpecExamples.
 
 
 
-  Let AlienType := Object "Alien" implements [:: "Sentient"] {
+  Let AlienType := object "Alien" implements [:: "Sentient"] {
                            [::
                               (Field "name" [::] "String");
                               (Field "homePlanet" [::] "String")
                            ]
                          }.
 
-  Let HumanType := Object "Human" implements [:: "Sentient"] {
+  Let HumanType := object "Human" implements [:: "Sentient"] {
                            [::
                               (Field "name" [::] "String")
                            ]
                          }.
 
-  Let CatCommandEnum := Enum "CatCommand" {[:: "JUMP" ]}.
+  Let CatCommandEnum := enum "CatCommand" {[:: "JUMP" ]}.
 
-  Let CatType := Object "Cat" implements [:: "Pet" ] {
+  Let CatType := object "Cat" implements [:: "Pet" ] {
                          [::
                             (Field "name" [::] "String");
                             (Field "nickname" [::] "String");
@@ -226,11 +226,11 @@ Section GraphQLSpecExamples.
                          ]
                        }.
 
-  Let CatOrDogUnion := Union "CatOrDog" { [:: "Cat"; "Dog"] }.
+  Let CatOrDogUnion := union "CatOrDog" { [:: "Cat"; "Dog"] }.
 
-  Let DogOrHumanUnion := Union "DogOrHuman" { [:: "Dog"; "Human"] }.
+  Let DogOrHumanUnion := union "DogOrHuman" { [:: "Dog"; "Human"] }.
 
-  Let HumanOrAlienUnion := Union "HumanOrAlien" { [:: "Human"; "Alien"] }.
+  Let HumanOrAlienUnion := union "HumanOrAlien" { [:: "Human"; "Alien"] }.
   
 
   Let schema := GraphQLSchema "Query" [:: StringScalar; BooleanScalar; IntScalar; FloatScalar;
@@ -252,7 +252,7 @@ Section GraphQLSpecExamples.
      *)
 
     (**
-       https://graphql.github.io/graphql-spec/June2018/#sec-Field-Selections-on-Objects-Interfaces-and-Unions-Types
+       https://graphql.github.io/graphql-spec/June2018/#sec-Field-Selections-on-objects-Interfaces-and-Unions-Types
      *)
     Let example102 : seq (@Selection value_eqType) :=  [::
                                                       on "Dog" {
@@ -507,7 +507,7 @@ Section GraphQLSpecExamples.
       (**
        Example 115 uses schema extension, which is not implemented but we can manage around it.
        *)
-      Let ExtendedSelectionType := Object "ExtendedSelection" implements [::] {
+      Let ExtendedSelectionType := object "ExtendedSelection" implements [::] {
                                        [::
                                           (Field "dog" [::] "Dog");
                                           (Field "human" [::] "Human");
@@ -613,7 +613,7 @@ Section GraphQLSpecExamples.
      *)
 
 
-    Let ArgumentsType := Object "Arguments" implements [::] {
+    Let ArgumentsType := object "Arguments" implements [::] {
                                  [::
                                     (Field "multipleReqs" [::
                                                                     FieldArgument "x" "Int";
@@ -654,7 +654,7 @@ Section GraphQLSpecExamples.
                                  ]
                                }.
 
-    Let ExtendedSelectionType := Object "ExtendedSelection" implements [::] {
+    Let ExtendedSelectionType := object "ExtendedSelection" implements [::] {
                                      [::
                                         (Field "dog" [::] "Dog");
                                         (Field "arguments" [::] "Arguments")
@@ -836,7 +836,7 @@ Section GraphQLSpecExamples.
 
 
     (**
-       https://graphql.github.io/graphql-spec/June2018/#sec-Object-Spreads-In-Object-Scope
+       https://graphql.github.io/graphql-spec/June2018/#sec-object-Spreads-In-object-Scope
      *)
     Let example137 : @Selection value_eqType := on "Dog" {
                                                  [::
@@ -871,7 +871,7 @@ Section GraphQLSpecExamples.
 
     
     (**
-       https://graphql.github.io/graphql-spec/June2018/#sec-Abstract-Spreads-in-Object-Scope
+       https://graphql.github.io/graphql-spec/June2018/#sec-Abstract-Spreads-in-object-Scope
      *)
     Let example139 : @Selection value_eqType := on "Pet" {
                                                  [::
@@ -912,7 +912,7 @@ Section GraphQLSpecExamples.
 
 
     (**
-       https://graphql.github.io/graphql-spec/June2018/#sec-Object-Spreads-In-Abstract-Scope
+       https://graphql.github.io/graphql-spec/June2018/#sec-object-Spreads-In-Abstract-Scope
      *)
     Let example141_1 : seq (@Selection value_eqType) :=
       [::

@@ -442,11 +442,11 @@ Section QueryAux.
      *)
     Definition does_fragment_type_apply object_type fragment_type :=
       match lookup_type s object_type, lookup_type s fragment_type with
-      | Some (Object oname implements _ { _ }), Some (Object name implements _ { _ }) =>
+      | Some (object oname implements _ { _ }), Some (object name implements _ { _ }) =>
         object_type == name
-      | Some (Object _ implements interfaces { _ }), Some (Interface name { _ }) =>
+      | Some (object _ implements interfaces { _ }), Some (interface name { _ }) =>
         name \in interfaces
-      | Some (Object oname implements _ { _ }), Some (Union name { members }) =>
+      | Some (object oname implements _ { _ }), Some (union name { members }) =>
         oname \in members
       | _, _ => false
       end.
