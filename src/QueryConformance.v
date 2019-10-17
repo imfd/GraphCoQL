@@ -129,7 +129,6 @@ Section QueryConformance.
       - Fragments' type condition must spread in the type in context.
      
    *)
- (* TODO: Rename? It is only a part of the whole validation process *)
   Fixpoint is_consistent (type_in_scope : Name) selection : bool :=
     match selection with
     | f[[α]] =>
@@ -256,7 +255,6 @@ Section QueryConformance.
     We have to wrap each query with its parent type in order to find their appropriate return type.
     
   *)
- (* Equations is not able to build the graph - hence we use noind *)
  Equations? are_type_compatible (selections : seq (Name * @Selection Scalar)) :
    bool by wf (queries_size_aux selections) :=
    {
@@ -339,7 +337,6 @@ Section QueryConformance.
     We use the type in context to find only the fields that make sense 
     (because with fragments we can create queries that don't make sense).
   *)
- (* Equations is not able to build the graph - hence we use noind *)
  Equations? are_renaming_consistent (selections : seq (Name * @Selection Scalar)) :
    bool by wf (queries_size_aux selections) :=
    {
@@ -364,10 +361,6 @@ Section QueryConformance.
        | _ := all (are_equivalent (l:f[[α]])) [seq p.2 | p <- (find_pairs_with_response_name l φ)] &&
                  are_renaming_consistent (filter_pairs_with_response_name l φ)
        };
-
-                               
-       (* all (are_equivalent (l:f[[α]])) [seq p.2 | p <- (find_pairs_with_response_name l φ)] && *)
-       (*     are_renaming_consistent (filter_pairs_with_response_name l φ);      *)
      
      are_renaming_consistent ((ty, f[[α]] { β }) :: φ)
        with lookup_field_in_type s ty f :=

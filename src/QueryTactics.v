@@ -28,7 +28,6 @@ Require Import Ssromega.
            | [|- context [queries_size_aux [seq (_, σ) | σ <- ?σs] ] ] =>
      rewrite [queries_size_aux [seq _ | _ <- _] ]/queries_size_aux /= -map_comp /funcomp map_id
 
-           (* | [|- context [ queries_size_aux _ ]] => rewrite /queries_size_aux /= *)
            | [|- context [ queries_size_aux (_ ++ _) ]] => rewrite queries_size_aux_cat /=
            | [|- context [ queries_size (_ ++ _)]] => rewrite queries_size_cat
 
