@@ -271,29 +271,8 @@ Section Normalisation.
     - by apply/orP; left; apply: normalized_selections_are_fields.
     - by apply: normalized_selections_are_in_gt_nf.
   Qed. 
+
   
-
-  (* (** ---- *) *)
-  (* Lemma normalize_selections_are_in_ground_typed_nf ts ss : *)
-  (*   all (is_in_ground_typed_nf s) (gnormalize_selections s ts ss). *)
-  (* Proof. *)
-  (*   rewrite /gnormalize_selections => /=; case: ifP => /= Hscope. *)
-  (*     by apply: normalized_selections_are_in_gt_nf. *)
-  (*     apply/allP=> sel. *)
-  (*   have  := (@in_possible_types_is_object Scalar s ts). *)
-  (*   generalize (get_possible_types s ts). *)
-  (*   elim=> //= t types IHtypes Hinobj. *)
-  (*   have Htobj := (Hinobj t (mem_head _ _)). *)
-  (*   rewrite inE => /orP [/eqP -> // | Hin]. *)
-  (*   rewrite /is_in_ground_typed_nf; apply_andP. *)
-  (*   apply/allP=> nsel Hin; apply_andP. *)
-  (*     by have/allP-/(_ nsel Hin):= (normalized_selections_are_fields t ss). *)
-  (*     by have/allP-/(_ nsel Hin) := (normalized_selections_are_in_gt_nf t ss). *)
-  (*       by apply: IHtypes => //; intros; apply: Hinobj; apply: mem_tail. *)
-  (* Qed. *)
-  
-
-
   (** ---- *)
   (** ** Non-redundancy *)
   (** ---- *)
@@ -317,23 +296,6 @@ Section Normalisation.
     all: do [non_red; apply_and3P => /=; last by apply: IH => //= t' Hin'; apply: Hinobj; apply: mem_tail].
     all: do ? by apply/eqP; apply: find_fragment_inlined_nil_func.
   Qed.
-
-  (* (** ---- *) *)
-  (* (** *)
-  (*    This lemma states that the result of [normalize_queries] are *)
-  (*    non-redundant, regardless of the type used to normalize. *)
-  (*  *) *)
-  (* Lemma normalize_gselections_are_non_redundant ty φ : *)
-  (*   are_non_redundant (gnormalize_selections s ty φ). *)
-  (* Proof. *)
-  (*   rewrite /gnormalize_selections => /=; case: ifP => /= Hscope; first by apply: normalized_selections_are_non_redundant. *)
-  (*   have  := (@in_possible_types_is_object Scalar s ty). *)
-  (*   have  := (uniq_get_possible_types s ty). *)
-  (*   elim: get_possible_types => //= t ptys IH /andP [Hnin Huniq] Hinobj. *)
-  (*   simp are_non_redundant; apply_and3P => /=; last by apply: IH => //= t' Hin'; apply: Hinobj; apply: mem_tail. *)
-  (*     by apply/eqP; apply: find_fragment_inlined_nil_func. *)
-  (*     by apply: normalized_selections_are_non_redundant; apply: Hinobj; apply: mem_head. *)
-  (* Qed. *)
 
 
   (** ---- *)

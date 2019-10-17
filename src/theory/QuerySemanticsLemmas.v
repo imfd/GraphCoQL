@@ -82,7 +82,6 @@ Section Theory.
    Ltac exec :=
     repeat
       match goal with
-      (* | [ H : ?P |- context [ ?P ] ] => rewrite H *)
       | [ H : lookup_field_in_type _ _ _ = _ |- context [ lookup_field_in_type _ _ _] ] => rewrite H /=
       | [ H : (field_seq_value (nprops _) _) = _ |- context [ field_seq_value (nprops _) _] ] => rewrite H /=
 
@@ -105,15 +104,6 @@ Section Theory.
       
         case Hrty : fld.(return_type) => [nty | lty] /=
 
-      (* | [H : is_true (is_valid_response_value _ _ _) |- context [if is_valid_response_value _ _ _ then _ else _] ] => *)
-        (* rewrite H /= *)
-
-      (* | [H : is_valid_response_value _ _ _ = _ |- context [if is_valid_response_value _ _ _ then _ else _] ] => *)
-      (*   rewrite H /= *)
-
-      (* | [|- context [if is_valid_response_value _ _ _ then _ else _] ] => *)
-      (*   let Hvalid := fresh "Hvalid" in *)
-      (*   case: ifP => Hvalid //= *)
                       
       | [H : (return_type ?f) = _ |- context [ return_type ?f ] ] => rewrite H /=
 
@@ -148,7 +138,6 @@ Section Theory.
   Ltac exec2 :=
     repeat
       match goal with
-      (* | [ H : ?P |- context [ ?P ] ] => rewrite H *)
       | [ H : lookup_field_in_type _ _ _ = _ |- context [ lookup_field_in_type _ _ _] ] => rewrite H /=
       | [ H : (field_seq_value (nprops _) _) = _ |- context [ field_seq_value (nprops _) _] ] => rewrite H /=
 
@@ -169,16 +158,6 @@ Section Theory.
   
       | [|- context [complete_value _ _ _ (return_type ?fld)] ] => case (return_type fld) => [nty | lty] /=                               
 
-      (* | [H : is_true (is_valid_response_value _ _ _) |- context [if is_valid_response_value _ _ _ then _ else _] ] => *)
-      (*   rewrite H /= *)
-                
-      (* | [H : is_valid_response_value _ _ _ = _ |- context [if is_valid_response_value _ _ _ then _ else _] ] => *)
-      (*   rewrite H /= *)
-
-    
-      (* | [|- context [if is_valid_response_value _ _ _ then _ else _] ] => *)
-      (*   let Hvalid := fresh "Hvalid" in *)
-      (*   case: ifP => Hvalid //= *)
                            
       | [|- context[ simpl_execute_selection_set_unfold_clause_4_clause_1 _ _ _ _ _ _ (return_type ?fld)] ] =>
         let Hrty := fresh "Hrty" in
@@ -211,7 +190,6 @@ Section Theory.
     all (is_object_type s) ptys ->
     u.(ntype) \notin ptys ->
     execute_selection_set s is_valid_scalar_value g coerce u  [seq InlineFragment t (f t φ) | t <- ptys] = [::].
-    (* s, g ⊢ ⟦ [seq InlineFragment t (f t φ) | t <- ptys] ⟧ˢ in u with coerce = [::]. *)
   Proof.
     elim: ptys => //= t ptys IH /andP [Hnin Huniq] /andP [Hobj Hinobj].
     rewrite /negb; case: ifP => //=.
@@ -231,7 +209,6 @@ Section Theory.
     all (is_object_type s) ptys ->
     u.(ntype) \notin ptys ->
     execute_selection_set s is_valid_scalar_value g coerce u [seq InlineFragment t φ | t <- ptys] = [::].
-    (* s, g ⊢ ⟦ [seq InlineFragment t φ | t <- ptys] ⟧ˢ in u with coerce = [::]. *)
   Proof.
       by apply: (exec_frags_nil_func (fun t qs => qs)).
   Qed.
@@ -244,7 +221,6 @@ Section Theory.
     u.(ntype) \notin ptys ->
     execute_selection_set s is_valid_scalar_value g coerce u (φ1 ++ [seq InlineFragment t (f t φ2) | t <- ptys]) =
     execute_selection_set s is_valid_scalar_value g coerce u φ1.
-    (* s, g ⊢ ⟦ φ1 ++ [seq InlineFragment t (f t φ2) | t <- ptys] ⟧ˢ in u with coerce = s, g ⊢ ⟦ φ1 ⟧ˢ in u with coerce. *)
   Proof.
     move=> Hfilterswap.
     move=> Hnin.
@@ -258,7 +234,6 @@ Section Theory.
       
       case_selection q; simp selection_size => Hleq Hobj Hunin; exec;
                                         rewrite ?filter_queries_with_label_cat ?filter_map_inline_func ?Hinlineswap ?IH //; leq_queries_size.
-      (* all: do ? by congr cons; apply: IH; leq_queries_size. *)
 
     - by congr cons; congr pair; congr Response.Object; rewrite find_queries_with_label_cat find_map_inline_nil_func // cats0.
         
@@ -277,8 +252,6 @@ Section Theory.
     u.(ntype) \notin ptys -> 
     execute_selection_set s is_valid_scalar_value g coerce u (φ1 ++ [seq InlineFragment t φ2 | t <- ptys]) =
     execute_selection_set s is_valid_scalar_value g coerce u φ1.
-
-    (* s, g ⊢ ⟦ φ1 ++ [seq InlineFragment t φ2 | t <- ptys] ⟧ˢ in u with coerce = s, g ⊢ ⟦ φ1 ⟧ˢ in u with coerce. *)
   Proof.
       by apply: (exec_cat_frags_func (fun t qs => qs)).
   Qed.
@@ -287,8 +260,6 @@ Section Theory.
     u.(ntype) \notin get_possible_types s ty ->
     execute_selection_set s is_valid_scalar_value g coerce u (φ1 ++ [seq InlineFragment t φ2 | t <- get_possible_types s ty]) =
   execute_selection_set s is_valid_scalar_value g coerce u φ1.
-    (* s, g ⊢ ⟦ φ1 ++ [seq InlineFragment t φ2 | t <- get_possible_types s ty] ⟧ˢ in u with coerce = *)
-                                                                          (* s, g ⊢ ⟦ φ1 ⟧ˢ in u with coerce. *)
   Proof.
       by move=> Hnin; apply: exec_cat_frags => //; [apply: uniq_get_possible_types | apply/allP; apply: in_possible_types_is_object].
   Qed.
@@ -302,7 +273,6 @@ Section Theory.
     u.(ntype) \in ptys ->
     execute_selection_set s is_valid_scalar_value g coerce u [seq InlineFragment t (f t φ) | t <- ptys] =
     execute_selection_set s is_valid_scalar_value g coerce u [:: InlineFragment u.(ntype) (f u.(ntype) φ) ]. 
-    (* s, g ⊢ ⟦ [seq InlineFragment t (f t φ) | t <- ptys] ⟧ˢ in u with coerce =  s, g ⊢ ⟦ [:: InlineFragment u.(ntype) (f u.(ntype) φ) ] ⟧ˢ in u with coerce.  *)
   Proof.
     move=> Hswap.
     elim: ptys => //= t ptys IH /andP [Hnin Huniq] /andP [/is_object_type_wfP [intfs [flds Hlook] ] Hinobj].
@@ -328,8 +298,6 @@ Section Theory.
     u.(ntype) \in ptys ->
     execute_selection_set s is_valid_scalar_value g coerce u [seq InlineFragment t φ | t <- ptys] =     
     execute_selection_set s is_valid_scalar_value g coerce u [:: InlineFragment u.(ntype) φ ].
-
-  (* s, g ⊢ ⟦ [seq InlineFragment t φ | t <- ptys] ⟧ˢ in u with coerce =  s, g ⊢ ⟦ [:: InlineFragment u.(ntype) φ ] ⟧ˢ in u with coerce.  *)
   Proof.
       by apply: (exec_inlined_func (fun t qs => qs)).
   Qed.
@@ -338,7 +306,6 @@ Section Theory.
   Lemma exec_filter_no_repeat rname φ u :
     all (fun kq => kq.1 != rname)
         (execute_selection_set s is_valid_scalar_value g coerce u (filter_queries_with_label rname φ)).
-        (* (s, g ⊢ ⟦ filter_queries_with_label rname φ ⟧ˢ in u with coerce). *)
   Proof.
     move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
     elim: n φ rname => /= [| n IH] φ rname; first by rewrite leqn0 => /queries_size_0_nil ->.
@@ -379,7 +346,6 @@ Section Theory.
   
   Lemma exec_non_redundant φ u :
     Response.are_non_redundant (execute_selection_set s is_valid_scalar_value g coerce u φ).
-    (* Response.are_non_redundant (s, g ⊢  ⟦ φ ⟧ˢ in u with coerce). *)
   Proof.
     funelim (execute_selection_set s is_valid_scalar_value g coerce u φ) => //=.
     all: do ? [by apply_and3P; apply: exec_filter_no_repeat].
@@ -406,9 +372,6 @@ Section Theory.
     u \in g.(nodes) ->
     execute_selection_set s is_valid_scalar_value g coerce u (normalize_selections s u.(ntype) φ) =
     execute_selection_set s is_valid_scalar_value g coerce u φ.
-    (* s, g ⊢ ⟦ normalize_selections s u.(ntype) φ ⟧ˢ *)
-    (*     in u with coerce = *)
-    (* s, g ⊢ ⟦ φ ⟧ˢ in u with coerce.  *)
   Proof.    
     funelim (normalize_selections s u.(ntype) φ) => //=; do ? by exec.
     all: do ? [by intros; exec; rewrite filter_normalize_swap filter_filter_absorb // H]; exec => Huin.
@@ -575,7 +538,6 @@ Section Theory.
     simpl_execute_selection_set s is_valid_scalar_value g coerce u (φ ++ β) =
     simpl_execute_selection_set s is_valid_scalar_value g coerce u φ ++
     simpl_execute_selection_set s is_valid_scalar_value g coerce u β. 
-    (* s, g ⊢ ≪ φ ++ β ≫ in u with coerce = s, g ⊢ ≪ φ ≫ in u with coerce ++ s, g ⊢ ≪ β ≫ in u with coerce.  *)
   Proof.
     move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
     elim: n φ β => /= [| n IH] φ β; first by rewrite leqn0 => /queries_size_0_nil ->.
@@ -599,7 +561,6 @@ Section Theory.
                else
                  true) φ ->
     execute_selection_set s is_valid_scalar_value g coerce u φ = [::].
-    (* s, g ⊢ ⟦ φ ⟧ˢ in u with coerce = [::]. *)
   Proof.
     funelim (execute_selection_set s is_valid_scalar_value g coerce u φ) => //=; bcase.
       by rewrite Heq in Hb0.
@@ -645,8 +606,6 @@ Section Theory.
                  true) β ->
     execute_selection_set s is_valid_scalar_value g coerce u (φ ++ β) =
     execute_selection_set s is_valid_scalar_value g coerce u φ. 
-    (* [::]. *)
-    (* s, g ⊢ ⟦ φ ++ β ⟧ˢ in u with coerce = s, g ⊢  ⟦ φ ⟧ˢ in u with coerce.  *)
   Proof.
     move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
     elim: n φ β u => /= [| n IH] φ β u; first by rewrite leqn0 => /queries_size_0_nil -> /=; apply: exec_inlines_nil.
@@ -705,8 +664,6 @@ Section Theory.
     are_in_normal_form s φ ->
     execute_selection_set s is_valid_scalar_value g coerce u φ =
     simpl_execute_selection_set s is_valid_scalar_value g coerce u φ.    
-    (* s, g ⊢ ⟦ φ ⟧ˢ in u with coerce = *)
-    (* s, g ⊢ ≪ φ ≫ in u with coerce.  *)
   Proof.
     rewrite /are_in_normal_form; case/andP; rewrite /are_in_ground_typed_nf; case/andP.
     move: {2}(queries_size _) (leqnn (queries_size φ)) => n.

@@ -52,37 +52,12 @@ Section QuerySemantic.
             (g : conformedGraph s is_valid_scalar_value)
             (coerce : Scalar -> Scalar).
 
-  (* (** ---- *) *)
-  (* (** *** Coercion *)
-      
-  (*     The semantics require an unspecified coercion function.  *)
-  (*     We define it as a function from Value (scalar values) to  *)
-  (*     a JSON value. Since this transformation can introduce  *)
-  (*     redundancy, we include a proof that the coerced result is  *)
-  (*     non-redundant. *)
-  (*  *) *)
-  (* Record wfCoercion := *)
-  (*   WFCoercion { *)
-  (*       fn :> Value -> @ResponseValue Value; *)
-  (*       _ : forall (value : Value), Response.is_non_redundant (fn value) *)
-  (*     }. *)
-  
-  
-  (* Variable (coerce : wfCoercion). *)
 
   (** ---- *)
   
   Implicit Type u : @node Scalar.
   Implicit Type query : @Selection Scalar.
   Implicit Type queries : seq (@Selection Scalar).
-
- 
-  (* Fixpoint is_valid_response_value (ty : type) (response : @ResponseValue Value) : bool := *)
-  (*   match ty, response with *)
-  (*   | NamedType _, (Leaf (Some v)) => s.(is_valid_value) ty v *)
-  (*   | ListType ty, Array rs => all (is_valid_response_value ty) rs *)
-  (*   | _, _ => false  *)
-  (*   end. *)
 
  
   Equations complete_value (ftype : type) (value : option (@Value Scalar)) : @ResponseValue Scalar :=
@@ -309,10 +284,6 @@ Arguments simpl_execute_query [Scalar].
 
 Delimit Scope query_eval with QEVAL.
 Open Scope query_eval.
-
-(* This notation collides with the pairs notation (_ , _) ...  *)
-(* Notation "s , g ⊢ ⟦ φ ⟧ˢ 'in' u 'with' coerce" := (execute_selection_set s g coerce u φ) (at level 30, g at next level, φ at next level) : query_eval. *)
-(* Notation "s , g ⊢ ≪ φ ≫ 'in' u 'with' coerce" := (simpl_execute_selection_set s g coerce u φ) (at level 30, g at next level, φ at next level) : query_eval. *)
 
 
 (** ---- *)
