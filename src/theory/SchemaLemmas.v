@@ -115,7 +115,6 @@ End Aux.
 (** * Well-Formedness *)
 Section WellFormedness.
 
-  (* Variable (Value : eqType). *)
   Variable (s : wfGraphQLSchema).
   
 

@@ -45,8 +45,6 @@ Require Import SchemaAux.
 
 Section WellFormedness.
 
-  (* Variables (Value : eqType). *)
-
   (** * Well-formedness predicates
 
       In this section we define the predicates necessary to establish the well-formedness
@@ -243,7 +241,6 @@ Section WellFormedness.
   Record wfGraphQLSchema := WFGraphQLSchema {
                            schema : graphQLSchema;
                            _ : is_a_wf_schema schema;
-                           (* is_valid_value : type -> Value -> bool; *)
                          }.
 
   
@@ -259,9 +256,4 @@ End WellFormedness.
         <a href='GraphCoQL.Query.html' class="btn btn-info" role='button'>Continue Reading → Query </a>
     </div>#
 *)
-
-
-
-
-(* Arguments wfGraphQLSchema . *)
 
