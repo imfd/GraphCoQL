@@ -10,7 +10,7 @@
 
 -R ./src GraphCoQL
 
-
+./src/Value.v
 
 ./src/Schema.v
 ./src/SchemaAux.v
