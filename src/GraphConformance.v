@@ -173,7 +173,7 @@ Section Conformance.
       let argument_conforms (fname : Name) (arg : Name * @Value Scalar) : bool :=
           let: (argname, value) := arg in
           match lookup_argument_in_type_and_field s ty fname argname with
-          | Some field_arg => is_valid_value s is_valid_scalar_value field_arg.(argtype) value    (* If the argument is declared then check its value's type *)
+          | Some field_arg => is_valid_value s is_valid_scalar_value field_arg.(argtype) value
           | _ => false
           end
       in
@@ -292,10 +292,7 @@ Section Conformance.
         _ : is_a_conforming_graph s is_valid_scalar_value graph
       }.
 
-  Coercion graph_of_conformed_graph s vsv (g : conformedGraph s vsv) := let: ConformedGraph g _ := g in g.
-
-
-               
+  Coercion graph_of_conformed_graph s vsv (g : conformedGraph s vsv) := let: ConformedGraph g _ := g in g.             
     
 
 End Conformance.

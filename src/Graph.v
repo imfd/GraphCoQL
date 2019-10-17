@@ -152,9 +152,7 @@ Section Equality.
     [eta mem_field n].
 
   Canonical node_predType := mkPredType pred_of_node.
-
-
-  
+ 
 
   Fixpoint field_seq_value (labels :  seq (label * @Value Scalar)) f : option (@ Value Scalar) :=
     match labels with
@@ -177,16 +175,7 @@ Section Equality.
   Proof. by case. Qed.
   
   Canonical graph_eqType := EqType graphQLGraph (CanEqMixin prod_of_graphK).
-
   
-  (* Definition fun_of_graph (g : graphQLGraph) := fun v1 f v2 => (v1, f, v2) \in (E g). *)
-  (* Coercion fun_of_graph : graphQLGraph >-> Funclass. *)
-
-  (* Lemma graphE (g : graphQLGraph) v1 f v2 : g v1 f v2 = ((v1, f, v2) \in g.(E)). *)
-  (* Proof. done. Qed. *)
-
-
-    
 
 
 End Equality.
