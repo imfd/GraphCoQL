@@ -44,19 +44,15 @@ Require Import QuerySemantics.
 (**
    #<div class="jumbotron">
       <div class="container">
-        <h1 class="display-4">Query Semantics Theory</h1>
+        <h1 class="display-4">Query Semantics Proofs</h1>
         <p class="lead">
-         This file contains lemmas and theory about the semantics of queries.
+         This file contains lemmas and proofs about the semantics of queries
+         and selection sets.
         </p>         
         <p>
-        In particular, we prove here that normalisation preserves the semantics
+        In particular, we prove here that normalization preserves the semantics
         and that the simplified semantics is equivalent to the regular semantics, 
         whenever the queries are in normal form.
-        </p>
-        <p>
-        Having this, we can satisfy the statement by Pérez & Hartig, that for every query 
-        there is a normalised version with the same semantics, and that we can replace 
-        one semantics for the other.
         </p>
   </div>
 </div>#
@@ -65,19 +61,17 @@ Require Import QuerySemantics.
 Section Theory.
   Transparent qresponse_name has_response_name.
 
-  (** We will be hiding several auxiliary definitions from the generated docs. They may still be seen 
-      by looking at the source code. *)
-
-  (* begin hide *)
- 
-
-
   Variables (Scalar : eqType)
             (s : wfGraphQLSchema)
             (is_valid_scalar_value : graphQLSchema -> Name -> Scalar -> bool)
             (g : conformedGraph s is_valid_scalar_value)
             (coerce : Scalar -> Scalar).
+  
+    
+  (** We will be hiding several auxiliary definitions from the generated docs. They may still be seen 
+      by looking at the source code. *)
 
+  (* begin hide *)
 
    Ltac exec :=
     repeat
@@ -184,7 +178,11 @@ Section Theory.
       | [|- context [complete_value] ] => simp complete_value
       | [ |- context [ simpl_execute_selection_set] ] => simp simpl_execute_selection_set
       end.
-  
+
+  (** ---- **)
+  (**
+     This lemma states that
+   *)
   Lemma exec_frags_nil_func (f : Name -> seq (@Selection Scalar) -> seq Selection) u ptys φ :
     uniq ptys ->
     all (is_object_type s) ptys ->
@@ -204,6 +202,10 @@ Section Theory.
       by apply: IH.
   Qed.
 
+  (** ---- **)
+  (**
+   This lemma states that
+   *)
   Lemma exec_frags_nil u ptys φ :
     uniq ptys ->
     all (is_object_type s) ptys ->
@@ -213,7 +215,10 @@ Section Theory.
       by apply: (exec_frags_nil_func (fun t qs => qs)).
   Qed.
  
-
+  (** ---- **)
+  (**
+   This lemma states that
+   *)
   Lemma exec_cat_frags_func (f : Name -> seq (@Selection Scalar) -> seq Selection) ptys u φ1 φ2 :
     (forall rname t φ, filter_queries_with_label rname (f t φ) = f t (filter_queries_with_label rname φ)) ->
     uniq ptys ->
@@ -245,7 +250,11 @@ Section Theory.
 
     - by rewrite catA; apply: IH => //; leq_queries_size.
   Qed.
-  
+
+  (** ---- **)
+  (**
+   This lemma states that
+   *)
   Lemma exec_cat_frags ptys u φ1 φ2 :
     uniq ptys ->
     all (is_object_type s) ptys ->
@@ -256,6 +265,10 @@ Section Theory.
       by apply: (exec_cat_frags_func (fun t qs => qs)).
   Qed.
 
+  (** ---- **)
+  (**
+   This lemma states that
+   *)
   Lemma exec_cat_frags_get_types ty u φ1 φ2 :
     u.(ntype) \notin get_possible_types s ty ->
     execute_selection_set s is_valid_scalar_value g coerce u (φ1 ++ [seq InlineFragment t φ2 | t <- get_possible_types s ty]) =
@@ -265,7 +278,10 @@ Section Theory.
   Qed.
   
 
-  
+  (** ---- **)
+  (**
+   This lemma states that
+   *)
   Lemma exec_inlined_func (f : Name -> seq (@Selection Scalar) -> seq Selection) ptys u φ :
     (forall rname t φ, filter_queries_with_label rname (f t φ) = f t (filter_queries_with_label rname φ)) ->
     uniq ptys ->
@@ -291,7 +307,11 @@ Section Theory.
 
       by apply: IH.
   Qed.
-  
+
+  (** ---- **)
+  (**
+   This lemma states that
+   *)
   Lemma exec_inlined ptys u φ :
     uniq ptys ->
     all (is_object_type s) ptys ->
@@ -302,7 +322,10 @@ Section Theory.
       by apply: (exec_inlined_func (fun t qs => qs)).
   Qed.
 
-
+  (** ---- **)
+  (**
+   This lemma states that
+   *)
   Lemma exec_filter_no_repeat rname φ u :
     all (fun kq => kq.1 != rname)
         (execute_selection_set s is_valid_scalar_value g coerce u (filter_queries_with_label rname φ)).
@@ -325,14 +348,13 @@ Section Theory.
   (* end hide *)
 
 
-  (** * Non-redundancy of responses *)
-  (** ---- *)
-  (**
-     This lemma states that the results of evaluating queries is non-redundant. 
-     This means that there are no duplicated names in the response.
+  (** * Non-redundancy of responses
+      ----
 
-     The proof actually requires that the coercion function gives a non-redundant
-     value.
+      We prove that the semantics produces non-redundant responses.
+   *)
+  (**
+     This lemma states that [complete_value] returns a non-redundant response.
    *)
   Lemma completed_value_are_non_redundant (ftype : type) (value : option (@Value Scalar)) : 
     Response.is_non_redundant (complete_value s is_valid_scalar_value coerce ftype value).
@@ -343,7 +365,11 @@ Section Theory.
     apply/allP=> v Hin /=.
       by apply: H.
   Qed.
-  
+
+    (**
+     This lemma states that the results of evaluating selections is non-redundant. 
+     This means that there are no duplicated names in the response.
+   *)
   Lemma exec_non_redundant φ u :
     Response.are_non_redundant (execute_selection_set s is_valid_scalar_value g coerce u φ).
   Proof.
@@ -362,11 +388,16 @@ Section Theory.
   Qed.
 
   
-  (** * Normalisation proofs *)
-  (** ---- *)
+  (** * Normalization preserves the semantics
+      ----
+
+      In this section we prove that, indeed, the normalization procedure 
+      preserves the semantics of the original query.
+   *)
+
   (**
      This lemma states that the semantics is preserved when normalizing with the the node's type
-     where the queries are evaluated.
+     where the selections are evaluated.
    *)
   Lemma normalize_selections_preserves_semantics φ u :
     u \in g.(nodes) ->
@@ -653,12 +684,16 @@ Section Theory.
   (* end hide *)
 
 
-  (** * Semantics equivalence *)
-  (** ---- *)
+  (** * Semantics equivalence
+      ----
+      
+      In this section we prove that both the original semantics and the simplified one are equivalent, 
+      when considering queries in normal form. 
+   *)
+
   (**
-     This theorem states that in the presence of a query in normal form, 
-     both the semantics with collection and the simplified semantics are 
-     equivalent.
+   This lemma states that, in the presence of selections in normal form, 
+   both the original semantics and the simplified one produce the same response.
    *)
   Lemma exec_sel_eq_simpl_exec u φ :
     are_in_normal_form s φ ->
@@ -712,6 +747,12 @@ Section Theory.
     
   Qed.
 
+  (** ---- *)
+  (**
+     This theorem states that, in the presence of a query in normal form, 
+     both the original semantics and the simplified semantics produce the same 
+     response.
+   *)
   Theorem exec_query_eq_simpl_exec q :
     is_in_normal_form s q -> 
     execute_query s is_valid_scalar_value g coerce q =
@@ -722,7 +763,11 @@ Section Theory.
       by apply: exec_sel_eq_simpl_exec => //=.
   Qed.
 
-
+  (** ---- **)
+  (**
+   This corollary states that the evaluation of normalized selections 
+   is equivalent in both semantics.
+   *)
   Corollary exec_normalized_selections_eq_simpl_exec ss u :
     execute_selection_set s is_valid_scalar_value g coerce u (normalize_selections s u.(ntype) ss) =
     simpl_execute_selection_set s is_valid_scalar_value g coerce u (normalize_selections s u.(ntype) ss).
@@ -732,6 +777,11 @@ Section Theory.
     - by apply: normalized_selections_are_non_redundant.
   Qed.
 
+  (** ---- *)
+  (**
+     This corollary states that the evaluation of normalized selections 
+     is equivalent in both semantics.
+   *)
   Corollary exec_normalized_query_eq_simpl_exec q :
     execute_query s is_valid_scalar_value g coerce (normalize s q) =
     simpl_execute_query s is_valid_scalar_value g coerce (normalize s q).
@@ -740,5 +790,13 @@ Section Theory.
   Qed.
   
   
-(** ---- *)
 End Theory.
+
+
+(** ---- *)
+(** 
+    #<div>
+        <a href='GraphCoQL.QuerySemantics.html' class="btn btn-light" role='button'>Previous ← Query Semantics</a>
+        <a href='GraphCoQL.examples.HPExample.html' class="btn btn-info" role='button'>Continue Reading → H&P Example</a>
+    </div>#
+*)
