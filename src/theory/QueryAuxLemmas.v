@@ -70,15 +70,14 @@ Section Theory.
   Implicit Type φ : seq (@Selection Scalar).
   Implicit Type selection : @Selection Scalar.
 
-  (** ---- *)
   (** *** Other types of predicates *)
+  (** ---- *)
   Section DefPreds.
     Variable (s : wfGraphQLSchema).
 
     
-    (** ---- *)
     (**
-       This lemma states that an Object type [ty] always 
+       This lemma states that an object type [ty] always 
        applies to itself.
      *)
     Lemma object_applies_to_itself ty :
@@ -93,7 +92,7 @@ Section Theory.
 
     (** ---- *)
     (**
-       This lemma states that an Object type different to another
+       This lemma states that an object type different to another
        cannot apply to it.
      *)
     Lemma object_diff_name_N_applies ty ty' :
@@ -110,16 +109,16 @@ Section Theory.
     
   End DefPreds.
 
-  (** ---- *)
   (** *** Selection size 
+  (** ---- *)
       
-      In this section we define lemmas about queries size.
+      In this section we define lemmas about selection size.
    *)
   Section Size.
 
     (** ---- *)
     (**
-       Equality lemma for queries_size without Equations. 
+       Equality lemma for [queries_size] without Equations. 
        It shows equality to the [sumn] function defined in SSreflect.
      *)
     Lemma queries_size_sumn φ :
@@ -160,6 +159,10 @@ Section Theory.
         by case: nq => //=; case=> ty; case.
     Qed.
 
+    (** ---- *)
+    (**
+       This lemma states that [queries_size_aux] distributes over list concatenation.
+     *)
     Lemma queries_size_aux_cat (σs1 σs2 : seq (Name * @Selection Scalar)) : 
       queries_size_aux (σs1 ++ σs2) = queries_size_aux σs1 + queries_size_aux σs2.
     Proof.
@@ -167,7 +170,12 @@ Section Theory.
       by rewrite /queries_size_aux /= map_cat queries_size_cat -?/(queries_size_aux _) addnA.
       
     Qed.
-    
+
+    (** ---- **)
+    (**
+       This lemma states that if the size of a selection set is less or equal to [n], then
+       the size of the same selection, paired with a type, is also less or equal to [n].
+     *)
     Lemma queries_size_aux_tr (σs : seq (@Selection Scalar)) t n :
       queries_size σs <= n ->
       queries_size_aux [seq (t, σ) | σ <- σs] <= n.
@@ -179,18 +187,17 @@ Section Theory.
 
 
 
-  (** ---- *)
   (** *** Find 
-     
+      ----
+
      Lemmas about functions used to find queries 
    *)
   Section Find.
     Variable (s : wfGraphQLSchema).
 
-    (** ---- *)
     (**
-       This lemma states that the size of the queries found via [find_queries_with_label] is
-       less or equal to the original queries list.
+       This lemma states that the size of the selections found via [find_queries_with_label] is
+       less or equal to the original selection list.
      *)
     Lemma found_queries_leq_size l O__t (qs : seq (@Selection Scalar)) :
       queries_size (find_queries_with_label s l O__t qs) <= queries_size qs.
@@ -200,7 +207,8 @@ Section Theory.
 
     
     (**
-       This lemma states that
+       This lemma states that the size of the selections found via [find_valid_pairs_with_response_name] is
+       less or equal to the original selection list.
      *)
     Lemma found_valid_pairs_leq_size ts rname (σs : seq (Name * @Selection Scalar)) :
       queries_size_aux (find_valid_pairs_with_response_name s ts rname σs) <=
@@ -238,6 +246,11 @@ Section Theory.
         by rewrite queries_size_cat; ssromega.
     Qed.
 
+    (** ---- *)
+    (**
+       This lemma states that the size of the queries found via [find_pairs_with_response_name] is
+       less or equal to the original queries list.
+     *)
     Lemma found_pairs_with_response_name_leq rname (σ : seq (Name * @Selection Scalar)) :
       queries_size_aux (find_pairs_with_response_name rname σ) <= queries_size_aux σ.
     Proof.
@@ -249,7 +262,8 @@ Section Theory.
 
     (** ---- *)
     (**
-       This lemma states that
+       This lemma states that finding selections in fragments, whose contents are modified by a function [f], with
+       type conditions that do not apply to a given object type [t], result in an empty list.
      *)
     Lemma find_map_inline_nil_func (f : Name -> seq (@Selection Scalar) -> seq (@Selection Scalar)) rname t ptys φ :
       uniq ptys ->
@@ -268,8 +282,10 @@ Section Theory.
 
     (** ---- *)
     (**
-       This lemma states that
+       This lemma states that finding selections in fragments with type conditions that
+       do not apply to a given object type [t], result in an empty list.
      *)
+    (* Unused *)
     Lemma find_map_inline_nil rname t ptys φ :
       uniq ptys ->
       all (is_object_type s) ptys ->
@@ -371,7 +387,7 @@ Section Theory.
       
     (** ---- *)
     (**
-       This lemma states that projecting the second element of each element obtained
+       This lemma states that projecting the second element of each pair obtained
        with [find_pairs_with_response_name] is the same as first projecting the second element 
        and then applying [find_fields_with_response_name].
      *)
@@ -431,15 +447,16 @@ Section Theory.
 
 
   (** *** Filter 
+      ----
 
       Lemmas about filtering queries.
    *)
   Section Filter.
     Hint Resolve found_queries_leq_size.
 
-        (** ---- *)  
     (**
-       This lemma states that
+       This lemma states that filtering pairs and projecting the second element is the same as 
+       first projecting and then filtering.
      *)
     Lemma filter_pairs_spec rname (nq : seq (Name * @Selection Scalar)) :
       [seq q.2 | q <- filter_pairs_with_response_name rname nq] = filter_queries_with_label rname [seq q.2 | q <- nq].
@@ -453,8 +470,8 @@ Section Theory.
     
     (** ---- *)  
     (**
-       This lemma states that the size of filtered queries is less or 
-       equal than the size of the original list of queries.
+       This lemma states that the size of filtered selections is less or 
+       equal than the size of the original list of selections.
      *)
     Lemma filter_queries_with_label_leq_size l φ :
       queries_size (filter_queries_with_label l φ) <= queries_size φ.
@@ -463,6 +480,11 @@ Section Theory.
     Qed.
 
 
+    (** ---- **)
+    (**
+       This lemma states that the size of filtered selections is less or 
+       equal than the size of the original list of selections.
+     *)
     Lemma filter_pairs_with_response_name_leq rname (σ : seq (Name * @Selection Scalar)) :
       queries_size_aux (filter_pairs_with_response_name rname σ) <= queries_size_aux σ.
     Proof.
@@ -513,7 +535,8 @@ Section Theory.
     
     (** ---- *)
     (**
-       This lemma states that
+       This lemma states that filtering a list of inline fragments is the same as filtering
+       each fragments's subselections, even when they are modified by a function [f].
      *)
     Lemma filter_map_inline_func (f : Name -> seq (@Selection Scalar) -> seq Selection) rname φ ptys :
       filter_queries_with_label rname [seq InlineFragment t (f t φ) | t <- ptys] =
@@ -527,6 +550,7 @@ Section Theory.
     (**
        This lemma states that
      *)
+    (* Unused *)
     Lemma filter_map_inline rname φ ptys :
       filter_queries_with_label rname [seq InlineFragment t φ | t <- ptys] =
       [seq InlineFragment t (filter_queries_with_label rname φ) | t <- ptys].
@@ -538,11 +562,11 @@ Section Theory.
      
     (** ---- *)
     (**
-       This lemma states that if there is no field with response name [rname],
-       then filtering a list of fields by that response name will have no effect.
+       This states that filtering a list of field selections by a response name [rname] 
+       results in the same list, if no field has that response name.
 
        This is not valid if there is an inline fragment, because filtering may 
-       remove some of its subqueries.
+       remove some of its subselections.
      *)
     Lemma filter_find_fields_nil_is_nil rname φ :
       all (fun q => q.(is_field)) φ ->
@@ -557,7 +581,7 @@ Section Theory.
     
     (** ---- *) 
     (**
-       This lemma states that filtering inline fragments via response name 
+       This lemma states that filtering fields in inline fragments 
        preserves the fact that they are all inline fragments.
      *)
     Lemma filter_preserves_inlines rname φ :
@@ -603,6 +627,7 @@ Section Theory.
       find_fields_with_response_name rname1 (filter_queries_with_label rname2 φ) = [::].
     Proof.
       funelim (filter_queries_with_label rname2 φ) => //=; simp find_fields_with_response_name.
+      
       move/cat_nil=> [Hnil1 Hnil2]; rewrite H // H0 //.
       all: do [by case: eqP => //= _; apply: H].
     Qed.
@@ -628,8 +653,8 @@ Section Theory.
   End Filter.
 
 
-  (** ---- *)
   (** *** Merging 
+      ----
 
       Lemmas about merging subqueries of queries.
    *)
@@ -681,3 +706,10 @@ Section Theory.
 
 End Theory.
 
+(** ---- *)
+(** 
+    #<div>
+        <a href='GraphCoQL.QueryAux.html' class="btn btn-light" role='button'> Previous ← Query Aux </a>
+        <a href='GraphCoQL.QueryConformance.html' class="btn btn-info" role='button'>Next → Query Conformance</a>
+    </div>#
+ *)
