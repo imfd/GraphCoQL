@@ -31,11 +31,9 @@ Section GraphQLGraph.
 
   Variables (Scalar : eqType).
 
-  (** * Definition *)
   
-  (** ---- *)
   (** *** Label 
-
+      ---- 
       It corresponds to an edge's label or a property's key.
    **)
   Record label := Label {
@@ -48,11 +46,11 @@ Section GraphQLGraph.
   Coercion label_of_label (f : label) := let: Label l _ := f in l.
   Coercion fun_of_label (f : label) := let: Label _ a := f in a.
 
-  (** ---- *)
   (** *** Node
+      ----
+
       It corresponds to a node in a graph.
-      It contains its type and its properties (as a partial mapping between
-      fields and values).
+      It contains its type and its properties (as a list of key-value pairs).
    *)
   Record node := Node {
                        ntype : Name;
@@ -61,8 +59,9 @@ Section GraphQLGraph.
 
 
 
-  (** ---- *)
   (** *** GraphQL Graph 
+      ----
+
       The collection of edges and a root node.
    *)
   Record graphQLGraph := GraphQLGraph {
@@ -75,14 +74,15 @@ Section GraphQLGraph.
 
 
   
-  (** ---- *)
 End GraphQLGraph.
+(** ---- *)
 
 
-
+(* begin hide *)
 Arguments label [Scalar].
 Arguments node [Scalar].
 Arguments graphQLGraph [Scalar].
+(* end hide *)
 
 Delimit Scope graph_scope with graph.
 Open Scope graph_scope.
@@ -91,16 +91,12 @@ Open Scope graph_scope.
 Notation "src '⟜' lab '→' tgt" := (src, lab, tgt) (at level 20) : graph_scope.
 
 
+(**
+   We also establish that all these structures have a decidable procedure for equality but 
+   we omit them here to unclutter the doc (they may still be seen in the source code).
+ *)
 
-
-(** ---- *)
-(** 
-    #<div>
-        <a href='GraphCoQL.QueryNormalization.html' class="btn btn-light" role='button'> Previous ← Normalisation</a>
-        <a href='GraphCoQL.GraphConformance.html' class="btn btn-info" role='button'>Continue Reading → Graph Conformance </a>
-    </div>#
-*)
-
+(* begin hide *)
 Section Equality.
 
   (** * Equality 
@@ -156,3 +152,15 @@ Section Equality.
 
 
 End Equality.
+(* end hide *)
+
+
+
+
+(** ---- *)
+(** 
+    #<div>
+        <a href='GraphCoQL.SchemaWellFormedness.html' class="btn btn-light" role='button'>Previous ← SchemaWellFormedness</a>
+        <a href='GraphCoQL.GraphConformance.html' class="btn btn-info" role='button'>Continue Reading → Graph Conformance</a>
+    </div>#
+*)
