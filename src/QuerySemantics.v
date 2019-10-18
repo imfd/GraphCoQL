@@ -53,13 +53,18 @@ Section QuerySemantic.
             (coerce : Scalar -> Scalar).
 
 
-  (** ---- *)
   
   Implicit Type u : @node Scalar.
   Implicit Type query : @Selection Scalar.
   Implicit Type queries : seq (@Selection Scalar).
 
- 
+
+  (** *** Complete values (cf. #<a href='https://graphql.github.io/graphql-spec/June2018/##CompleteValue()'><span>&#167;</span>6.4.3</a>#)
+      ----
+
+     Transform invalid values into null responses and coerces valid ones into 
+     proper values, respecting the expected type by the schema.     
+   *)
   Equations complete_value (ftype : type) (value : option (@Value Scalar)) : @ResponseValue Scalar :=
     {
       complete_value (NamedType n) (Some (SValue svalue))
@@ -82,10 +87,12 @@ Section QuerySemantic.
   
   (** * Semantics in a Graph setting *)
   (** ---- *)
-  (**
-     #<strong>execute_selection_set</strong># : Node → List Selection → List (Name * ResponseValue)
-
-     Evaluates the list of queries and returns a GraphQL Response.
+  (** ** Execute Selections 
+      (cf. #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Executing-Selection-Sets'><span>&#167;</span>6.3</a>#)
+      ---- 
+   
+      Evaluates the list of selections from a node, using a coercion function and a predicate to 
+      validate the generated values, and returns a GraphQL Response.
 
    *)
   Equations? execute_selection_set u (queries : seq (@Selection Scalar)) :
@@ -166,25 +173,30 @@ Section QuerySemantic.
   Qed.
 
   
+  (** ** Execute Query
+      (cf. #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Query'><span>&#167;</span>6.2.1</a>#)
+      ----
 
+      Evaluates the query, starting from the graph's root node.
+      
+  *)
   Definition execute_query (q : query) :=
     execute_selection_set g.(root) q.(selection_set).
   
 
   
 
-  Reserved Notation "≪ queries ≫ 'in' u" (at level 50).
 
   (** * Simplified Semantics *)
   (** ---- *)
-  (**
-     #<strong>execute_selection_set2</strong># : Node → List Selection → List (Name * ResponseValue)
+  Reserved Notation "≪ queries ≫ 'in' u" (at level 50).
+  
+  (** *** Simplified evaluation of selections 
+      ---- 
+      
+      Evaluates a list of selections and returns a GraphQL Response. 
 
-     Evaluates a list of queries and returns a GraphQL Response. 
-
-     This function assumes the queries are in normal form (grounded and non-redundant).
-
-     The definition corresponds to the one given by P&H.
+      The definition is partially based on H&P's simplified semantics.
    *)
   Equations? simpl_execute_selection_set u queries :
     @GraphQLResponse Scalar by wf (queries_size queries) :=
@@ -263,33 +275,34 @@ Section QuerySemantic.
     all: do [leq_queries_size].
   Qed.
 
-
+  (** Simplified evaluation of queries
+      ----
+      
+      Evaluates a query, starting from the graph's root node.
+   *)
   Definition simpl_execute_query (q : @query Scalar) :=
     ≪ q.(selection_set) ≫ in g.(root).
   
- 
 
-
-  
-  
-
-  (** ---- *)
 End QuerySemantic.
 
+(* begin hide *)
 Arguments complete_value [Scalar].
 Arguments execute_selection_set [Scalar].
 Arguments execute_query [Scalar].
 Arguments simpl_execute_selection_set [Scalar].
 Arguments simpl_execute_query [Scalar].
+(* end hide *)
 
 Delimit Scope query_eval with QEVAL.
 Open Scope query_eval.
+
 
 
 (** ---- *)
 (** 
     #<div>
         <a href='GraphCoQL.Response.html' class="btn btn-light" role='button'> Previous ← GraphQL Response </a>
-        <a href='GraphCoQL.theory.SelectionSemanticsLemmas.html' class="btn btn-info" role='button'>Continue Reading → Semantics Proofs</a>
+        <a href='GraphCoQL.theory.QuerySemanticsLemmas.html' class="btn btn-info" role='button'>Continue Reading → Semantics Proofs</a>
     </div>#
 *)
