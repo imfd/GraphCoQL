@@ -36,16 +36,16 @@ Section Theory.
   Variables (Scalar : eqType).
 
   (** *** Auxiliary definitions *)
+  (** ---- *)
   Section Aux.
 
     Variable (graph :  @graphQLGraph Scalar).
     Implicit Type edge : @node Scalar * @label Scalar * @node Scalar.
 
   
-    (** ---- *)
     (**
-       This lemma states that the graph's root node is also
-       included when asking for the graph's list of nodes.
+       This lemma states that the graph's root node is included in the list
+       of nodes.
      *)
     Lemma root_in_nodes : graph.(root) \in graph.(nodes).
     Proof.
@@ -55,8 +55,7 @@ Section Theory.
 
     (** ---- *)
     (**
-       This lemma states that neighbors of a node are also
-       nodes in the graph.
+       This lemma states that neighbors of a node also belong to the graph.
      *)
     Lemma neighbors_are_in_nodes u label:
       forall x, x \in neighbors_with_field graph u label -> x \in graph.(nodes).
@@ -91,18 +90,17 @@ Section Theory.
 
 
 
-  (** ---- *)
   (** *** Graph Conformance *)
+  (** ---- *)
   Section Conformance.
     
     Variables (s : wfGraphQLSchema)
               (is_valid_scalar_value : graphQLSchema -> Name -> Scalar -> bool)
               (g : conformedGraph s is_valid_scalar_value).
 
-    (** ---- *)
     (**
      This lemma states that if the root node's type conforms to the schema, 
-     then its type must be the Query type.
+     then its type must be the _Query_ type.
      *)
     Lemma root_query_type :
       g.(root).(ntype) = s.(query_type).
@@ -125,7 +123,7 @@ Section Theory.
     (** ---- *)
     (**
        This lemma states that every node in the conformed graph 
-       must have Object type.
+       must have object type.
      *)
     Lemma node_in_graph_has_object_type :
       forall u, u \in g.(nodes) -> is_object_type s u.(ntype).
@@ -160,3 +158,13 @@ Section Theory.
 
   End Conformance.
 End Theory.
+
+
+
+(** ---- *)
+(** 
+    #<div>
+        <a href='GraphCoQL.GraphConformance.html' class="btn btn-light" role='button'>Previous ← Graph Conformance</a>
+        <a href='GraphCoQL.Query.html' class="btn btn-info" role='button'>Continue Reading → Query</a>
+    </div>#
+*)
