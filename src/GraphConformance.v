@@ -24,15 +24,15 @@ Require Import Graph.
       <div class="container">
         <h1 class="display-4">Graph Conformance</h1>
         <p class="lead">
-         This file contains the necessary definitions to validate when a GraphQL Graph
-         is valid wrt. to a Schema. 
+         This file contains the necessary definitions to check when a GraphQL Graph
+         is valid wrt. to a GraphQL Schema. 
         </p>
          <p>
-         This notion includes things such as: 
+         This notion includes validations such as: 
           <ul>
            <li> Root node's type is same as the root query operation type. </li>
            <li> Fields in edges are defined in the Schema. </li>
-           <li> Values for arguments and properties correspond to the expected type in the Schema. </li>
+           <li> Values used in arguments and properties correspond to the expected type in the Schema. </li>
            <li> Etc. </li>
          </ul>
         </p>
@@ -46,17 +46,17 @@ Require Import Graph.
 
 
 (** * Conformance Predicates *)
+(** ---- *)
 Section Conformance.
 
 
   Variable (Scalar : eqType).
 
-  (** ---- *)
   (** ** Auxiliary definitions 
+      ----
 
       In this section we define some auxiliary definitions.
    *)
-  (** ---- *)
   Section GraphAux.
 
     Variable (graph :  @graphQLGraph Scalar).
@@ -65,8 +65,8 @@ Section Conformance.
     
     
     (** *** Extractors for an edge *)
-
     (** ---- *)
+
     (**
        Returns an edge's target node.
      *)
@@ -82,7 +82,7 @@ Section Conformance.
 
     (** ---- *)
     (**
-       Returns an edge's field (label).
+       Returns an edge's label.
      *)
     Definition efield edge : label :=
       let: (_, f, _) := edge in f.
@@ -92,8 +92,10 @@ Section Conformance.
        Returns the nodes of an edge (source and target).
      *)
     Definition enodes edge : seq node := [:: edge.(esource) ; edge.(etarget)].
-    
+
+    (** *** Node related functions *)
     (** ---- *)
+    
     (** 
         Returns all nodes from a graph.
      *)
@@ -140,37 +142,36 @@ Section Conformance.
     
 
   End GraphAux.
-  (** ---- *)
   
 
 
   (** ** Predicates 
-      
+      ----
+
       In this section we define predicates to establish when a graph conforms 
       to a given schema.
    *)
 
   Section Predicates.
 
+    (** In order to determine whether a value used in the graph correspond to the 
+        expected type in the schema, we parameterize it with a predicate 
+        that resolves it *)
     Variables (s : wfGraphQLSchema)
               (is_valid_scalar_value : graphQLSchema -> Name -> Scalar -> bool).
 
 
       
-    (** ---- *)
     (** *** Root type conforms
+        ----
 
-      #<strong>root_type_conforms</strong># : wfGraphQLSchema → graphQLSchema → Bool
-
-      This predicate checks that a Graph's root node must have the same type as the Schema's query type.
+        This predicate checks that a Graph's root node must have the same type as the Schema's query type.
      **)
     Definition root_type_conforms (root : @node Scalar) : bool := (root).(ntype) == s.(query_type).
     
 
-    (** ---- *)
     (** *** Arguments conform
-
-      #<strong>arguments_conform</strong># : wfGraphQLSchema → graphQLSchema → label → Bool
+        ----
 
       This predicate checks a field's arguments conform to 
       what the Schema requires of them.
@@ -193,9 +194,8 @@ Section Conformance.
 
 
 
-    (** ---- *)
     (** *** Edges conform 
-        #<strong>edges_conform</strong># : wfGraphQLSchema → graphQLSchema → Bool
+        ----
 
         This predicate checks whether a graph's edges conform to a Schema.
      
@@ -204,18 +204,17 @@ Section Conformance.
         - Each edge conforms.
 
         And the latter is done by checking that:
-        - The edge's field is defined is defined in source node.
-        - The target node's type is a subtype of the return type associated to the field of the edge.
-        - If the field's return type is not a List type, then this is the only edge connecting the source node 
-       with the target node using the given field. 
+        - The edge's field is defined in the source node.
+        - The target node's type is a subtype of the edge's field type.
+        - If the field's type is not a List type, then there must be only one edge connecting the source node 
+        with the target node using the given label. 
        - The field's arguments conform.
 
        #<div class="hidden-xs hidden-md hidden-lg"><br></div>#    
-       When checking that the target node's type is a subtype of the field's return type, 
+       When checking that the target node's type is a subtype of the field's type, 
        the predicate simply ignores whether there is any nesting of list type. It takes the 
-       base wrapped type and uses it to compare. For instance, if the type is [[Human]] 
-       then it checks for the Human type, but not [Human]. This is a limitation on how to model
-       these types in a graph. More is discussed in the corresponding paper.     
+       base wrapped type and uses it to compare. This is due to the open question on how to
+       properly model nested list types in a graph.
      **)    
     Definition edges_conform graph :=
       let edge_conforms (edge : node * label * @node Scalar) : bool :=
@@ -235,20 +234,18 @@ Section Conformance.
     
 
     
-    (** ---- *)
     (** *** Nodes conform
-        #<strong>nodes_conform</strong># : wfGraphQLSchema → graphQLGraph → Bool 
+        ----
 
         The following predicate checks whether a graph's nodes conform to a given Schema.
         This is done by checking that:
-        - Every node's type is an Object type.
+        - Every node's type is an object type.
         - Every property conforms.
 
         The latter is done by checking that:
         - The properties are actually defined in the type of the node.
         - The field's arguments conform.
-        - The properties values have a valid type wrt. to what is expected in the Schema 
-          (If a field has an Int type then the value should represent an integer value).
+        - The properties values have a valid type wrt. to what is expected in the Schema.
        
      **)    
     Definition nodes_conform (nodes : seq (@node Scalar)) :=
@@ -268,10 +265,8 @@ Section Conformance.
 
   Variable (is_valid_scalar_value : graphQLSchema -> Name -> Scalar -> bool).
 
-  (** ---- *)
-  (** *** Conforming graph *)
-  (**
-     #<strong>is_a_conforming_graph</strong># : wfGraphQLSchema → graphQLGraph → Bool
+  (** *** Conforming graph
+      ----
 
      The following predicate checks whether a graph conforms to a given schema.
      
@@ -289,10 +284,9 @@ Section Conformance.
         nodes_conform s is_valid_scalar_value graph.(nodes)].
 
   
-  (** ---- *)
-  (** * Conformed GraphQL Graph *)
-  (** ---- *)
-  (**
+  (** * Conformed GraphQL Graph
+      ----
+
      A conformed GraphQL graph is a graph which conforms to a given schema.
 
    **)
@@ -310,10 +304,11 @@ End Conformance.
 
 
 
+
 (** ---- *)
 (** 
     #<div>
-        <a href='GraphCoQL.Graph.html' class="btn btn-light" role='button'> Previous ← GraphQL Graph</a>
-        <a href='GraphCoQL.Response.html' class="btn btn-info" role='button'>Continue Reading → GraphQL Response </a>
+        <a href='GraphCoQL.Graph.html' class="btn btn-light" role='button'>Previous ← Graph</a>
+        <a href='GraphCoQL.Query.html' class="btn btn-info" role='button'>Continue Reading → Query</a>
     </div>#
 *)
