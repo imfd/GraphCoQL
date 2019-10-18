@@ -28,7 +28,6 @@ Notation Name := string.
          <p>
         These definitions allow building a Query but they do not guarantee that it is valid wrt. to a Schema.
         This notion of conformance/validation is covered in the <a href='GraphCoQL.QueryConformance.html'>QueryConformance</a> file.
-    
         </p>
   </div>
 </div>#
@@ -39,13 +38,14 @@ Section Query.
   
   Variable (Scalar : eqType).
 
-  (** * Definition *)
   
   (* Unsetting because the automatically generated induction principle is not good enough. *)
   Unset Elimination Schemes.
 
-  (** ** Selection 
-      
+  (** * Selection 
+      (cf. #<a href='https://graphql.github.io/graphql-spec/June2018/##Selection'><span>&#167;</span>2.4</a>#)
+      ----
+
       A Selection corresponds to an atomic piece of information one may request from a GraphQL service. 
       It can either be a field selection or an inline fragment.
       
@@ -56,10 +56,10 @@ Section Query.
       #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
       **** Observations
 
-      - SelectionSets: The Spec defines a mutually inductive type, using 
-      SelectionSets and Selection, where the former represents a non-empty list.
-      We decide to model it simply as a list.
-      
+      - SelectionSets (cf. #<a href='https://graphql.github.io/graphql-spec/June2018/##SelectionSet'><span>&#167;</span>2.4</a>#): 
+        The Spec defines a mutually inductive type, using 
+        SelectionSets and Selection, where the former represents a non-empty list.
+        We decide to separate them and define selections as a list.      
   *)
   Inductive Selection : Type :=
   | SingleField (name : Name)
@@ -85,10 +85,10 @@ Section Query.
   Set Elimination Schemes.
 
   
-  (** ---- *)
   (**
      Defining the induction principle for Selection.
    *)
+  (** ---- *)
   Definition Selection_rect (P : Selection -> Type)
              (Pl : seq Selection -> Type)
              (IH_SF : forall n α, P (SingleField n α))
@@ -142,8 +142,10 @@ Section Query.
         end.
 
 
-  (** ** Query 
-     
+  (** * Query 
+      (cf. #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Language.Operations'><span>&#167;</span>2.3</a>#)
+      ----
+
      A query is one of the three operations executable in a GraphQL service
      and it is formed by an optional name and a list of selections.
 
@@ -156,8 +158,8 @@ Section Query.
 
     
 End Query.
-(** ---- *)
 
+(* begin hide *)
 Arguments Selection [Scalar].
 Arguments SingleField [Scalar].
 Arguments SingleAliasedField [Scalar].
@@ -169,11 +171,12 @@ Arguments query [Scalar].
 Arguments Query [Scalar].
 Arguments qname [Scalar].
 Arguments selection_set [Scalar].
+(* end hide *)
 
 (** *** Notations 
-      
-      Notations follow closely to the ones used in Pérez & Hartig.
+    ----
 
+    Notations follow closely to the ones used in Hartig & Pérez.
  *)
 Delimit Scope selection_scope with QUERY.
 Open Scope selection_scope.
@@ -190,17 +193,24 @@ Notation "'on' t { φ }" := (InlineFragment t φ) (t at next level, φ at next l
 
 (** ---- *)
 
+
+(**
+   We also establish that all these structures have a decidable procedure for equality but 
+   we omit them here to unclutter the doc (they may still be seen in the source code).
+ *)
+
+(** ---- *)
 (** 
     #<div>
-        <a href='GraphCoQL.Schema.html' class="btn btn-light" role='button'> Previous ← SchemaWellFormedness  </a>
-        <a href='GraphCoQL.SelectionConformance.html' class="btn btn-info" role='button'>Continue Reading → SelectionConformance </a>
+        <a href='GraphCoQL.SchemaWellFormedness.html' class="btn btn-light" role='button'> Previous ← Schema Well-Formedness  </a>
+        <a href='GraphCoQL.QueryConformance.html' class="btn btn-info" role='button'>Continue Reading → Query Conformance </a>
     </div>#
 *)
 
 
 
 
-
+(* begin hide *)
 Section Equality.
 
   Variable (Scalar : eqType).
@@ -283,3 +293,5 @@ Section Equality.
   Canonical query_eqType := EqType query (CanEqMixin tuple_of_queryK).
 
 End Equality.
+
+(* end hide *)
