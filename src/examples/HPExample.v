@@ -32,9 +32,9 @@ Require Import QuerySemantics.
 (**
    #<div class="jumbotron">
       <div class="container">
-        <h1 class="display-4">HP Example</h1>
+        <h1 class="display-4">H&P's Example</h1>
         <p class="lead">
-         This file contains the example used in [Hartig & Pérez, 2017]; schema,
+         This file contains the example used in [Hartig & Pérez, WWW'2018]; schema,
          graph, query and response.
          </p>
   </div>
@@ -44,18 +44,21 @@ Require Import QuerySemantics.
 Open Scope string_scope.
 
 
-(** * Values 
-    
+(** *** Values 
+    ----
+
     We first need to define the values used in the system, the coercion
-    from a value to a JSON object, etc.
+    of values and the predicate to check when a scalar value respects the
+    expected type by the schema.
 *)
 Section Values.
 
-  (* Unset Elimination Schemes. *)
-  (** ---- *)
-  (** *** Value 
-     
-     Type that wraps all possible values present in the system.
+  (** **** Scalar  
+     ----
+
+     Type that wraps all possible values present in the system, which in this 
+     case correspond to: integer, string and floats (we model integers as nat and floats as two nats 
+     for simplicity).
    *)
   Inductive Scalar : Type :=
   | VInt : nat -> Scalar
@@ -67,6 +70,7 @@ Section Values.
   (** We need to prove that Value has a decidable equality procedure,
       we hide it to unclutter the docs
    *)
+  (* begin hide *)
   Notation vtype := (nat + string + (nat * nat))%type.
 
   Definition tuple_of_scalar (v : Scalar) :=
@@ -88,35 +92,30 @@ Section Values.
   Qed.
    
   Canonical scalar_eqType := EqType Scalar (CanEqMixin tuple_of_scalarK).
+  (* end hide *)
 
-
-  (** ---- *)
-  (** *** Coerce function
-
-      #<strong>coerce</strong># : Value → ResponseValue
+  (** **** Coerce function
+      ----
  
       This is the function used in the semantics to coerce 
-      results into JSON values.
-
-      Scalar value are  simply translated as leaf values, while 
-      list values have to be properly formatted as array values.
+      results into "proper" values.
+      
+      Since we use the same type of data everywhere, we
+      actually don't need to coerce, hence coerce is the id function.
+      One could imagine that a technology implementing GraphQL
+      might have different types to represent their values.
    *)
   Definition coerce : Scalar -> Scalar := id.
 
 
-  (** ---- *)
-  (** *** Is valid scalar value?
-      #<strong>is_valid_scalar_value</strong># : type → Value → Bool
+  (** **** Is valid scalar value?
+      ---- 
 
-      The following predicate checks whether a given value respects 
-      the given type. This is used when checking that argument values 
-      are used accordingly to the schema, and similarly for graphs.
-
-      For instance, an integer value in this scenario is valid if the 
-      type is the ID type. However, a string value is valid for the type 
-      String or if it refers to an enum value.
+      The following predicate checks whether a value respects its
+      expected type. 
    *)
-  Variable (schema : graphQLSchema). 
+  Variable (schema : graphQLSchema).
+  
   Fixpoint is_valid_scalar_value (ty : type) (v : Scalar) : bool :=
     match v with
     | VInt _ => if ty is NamedType name then
@@ -145,31 +144,30 @@ End Values.
 
 
 
-(** * Hartig & Pérez GraphQL Example
-
+(** *** Hartig & Pérez's example
+    ----
  *)
 Section HPExample.
 
  
   Coercion namedType_of_string (s : string) := NamedType s.
 
-  (** ---- *)
-  (** ** Schema
-      
-      As described in HP, the schema is the following:
+  (** **** Schema
+      ----
+      First, we define the schema. 
 
       #<img src="../imgs/HPExample/schema.png" class="img-fluid" alt="Schema definition">#
 
    *)
   (**
-     We first define the scalar types used in this system.
+     We start by defining the scalar types used in this system.
    *)
   Let IDType := scalar "ID".
   Let StringType := scalar "String".
   Let FloatType := scalar "Float".
 
 
-  
+  (** Then the objects and interfaces *)
   Let StarshipType := object "Starship" implements [::] {
                               [:: Field "id" [::] "ID";
                                   Field "name" [::] "String";
@@ -205,12 +203,14 @@ Section HPExample.
                            ]
                          }.
 
+  (** The enum and union types *)
   Let EpisodeType := enum "Episode" { [:: "NEWHOPE" ; "EMPIRE" ; "JEDI" ] }.
 
 
   Let SearchResultType := union "SearchResult" { [:: "Human" ; "Droid" ; "Starship"] }.
 
 
+  (** And finally the Query type *)
   Let QueryType := object "Query" implements [::] {
                            [::
                               Field "hero" [:: FieldArgument "episode" "Episode"] "Character";
@@ -219,35 +219,30 @@ Section HPExample.
                          }.
 
 
-  (** ---- *)
   (**
-     We define the schema as the root operation type and its type definitions.
+     We then define the schema as the root operation type and its type definitions.
    *)
   Let StarWarsSchema  := GraphQLSchema "Query"  [:: IDType; StringType; FloatType;  StarshipType;  CharacterType; DroidType; HumanType; EpisodeType; SearchResultType; QueryType].
 
 
   
-  (** ---- *)
   (**
-     We prove that the schema is well-formed by simple computation.
+     Next, we prove that the schema is well-formed by simple computation.
    *)
   Let wf_schema : StarWarsSchema.(is_a_wf_schema). Proof. by []. Qed.
   
 
-
- 
-  (** ---- *)
   (**
-     We build the well-formed schema with the schema, the proof of its well-formedness
-     and the predicate that helps determine when a value respects the type.
+     Finally, we build the well-formed schema with the schema and the proof of its well-formedness.
    *)
   Let ValidStarWarsSchema : wfGraphQLSchema := WFGraphQLSchema wf_schema.
 
-  (** ---- *)
-  (** ** Graph 
-        
-      We then define the graph displayed in HP.
-        
+
+  
+  (** **** Graph 
+      ----
+      Secondly, we define the graph. 
+
       #<img src="../imgs/HPExample/graph.png" class="img-fluid" alt="Graph">#
         
    *)
@@ -258,7 +253,7 @@ Section HPExample.
   Let Root := @Node scalar_eqType "Query" [::].
 
   (**
-     Some auxiliary definitions to define the graph
+     Some auxiliary definitions.
    *)
   Let id (val : nat) :=  (@Label scalar_eqType "id" [::],  SValue (VInt val)).
   Let name (val : string) := (@Label scalar_eqType "name" [::], SValue (VString val)).
@@ -289,7 +284,7 @@ Section HPExample.
                            ].
 
   (**
-     Then the labelds on edges.
+     Then the labels on edges.
    *)
   Let search := Label "search" [:: ("text", SValue (VString "L"))].
   Let hero (val : string) := Label "hero" [:: ("episode", SValue (VString val))].
@@ -318,31 +313,28 @@ Section HPExample.
     ].
     
 
-  (** ---- *)
   (**
        We define the graph as the root node and the edges in the graph.
    *)
   Let StarWarsGraph := GraphQLGraph Root edges.
 
 
-  (** ---- *)
   (**
-       We prove that the graph conforms to the previous well-formed schema, by simple computation.
+       Then, we prove that the graph conforms to the previous well-formed schema and the 
+       predicate on valid values, by simple computation.
    *)
   Let graph_conforms : is_a_conforming_graph ValidStarWarsSchema is_valid_scalar_value StarWarsGraph. Proof. by []. Qed.
     
-
-  (** ---- *)
   (**
-       We build the conformed graph, using the graph and the proof of its conformance.
+       Finally, we build the conformed graph, using the graph and the proof of its conformance.
    *)
   Let ValidStarWarsGraph := ConformedGraph graph_conforms.
 
 
-  (** ---- *)
-  (** ** Query 
-        
-        We then define the query.
+  (** **** Query 
+      ----
+      
+      Thirdly, we define the query.
 
         #<img src="../imgs/HPExample/query.png" class="img-fluid" alt="Query">#
 
@@ -380,18 +372,17 @@ Section HPExample.
     ].
 
 
-  (** ---- *)
   (**
-       We prove it conforms to the schema by simple computation.     
+       We prove it conforms to the schema and has valid values, by simple computation.     
    *)
   Let example_query_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema example_query. Proof. by []. Qed.
   
 
 
-  (** ---- *)
-  (** ** Response
-        
-        We define the response expected for the previous query.
+  (** **** Response
+      ----
+      
+      Fourthly, we define the response expected for the previous query.
 
         #<img src="../imgs/HPExample/response.png" class="img-fluid" alt="Response">#
 
@@ -436,9 +427,10 @@ Section HPExample.
  
 
   
-  (** ---- *)
-  (**
-     Finally, we show that executing the previous query in the context of the well-formed schema, and over the conformed graph, starting from the root node, gives us the expected response.
+  (** **** Evaluation
+      ----
+
+      Lastly, we show that executing the previous query in the context of the well-formed schema, and over the conformed graph, starting from the root node, gives us the expected response (by computation).
    *)
   Goal (execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce example_query = expected_response).
   Proof.
@@ -448,4 +440,3 @@ Section HPExample.
 
 
 End HPExample.
-
