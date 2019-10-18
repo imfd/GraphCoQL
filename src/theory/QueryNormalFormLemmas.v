@@ -23,9 +23,6 @@ Require Import QueryTactics.
 Require Import QueryConformance.
 
 
-
-
-
 Require Import QueryNormalForm.
 
 
@@ -35,35 +32,36 @@ Require Import QueryNormalForm.
 (**
    #<div class="jumbotron">
       <div class="container">
-        <h1 class="display-4">Normal Form Theory</h1>
+        <h1 class="display-4">Normal Form Proofs</h1>
         <p class="lead">
-         This file contains lemmas and theory about non-redundancy, groundness and the normalisation procedure.
+         This file contains proofs about normal form and the normalization procedure.
         </p>         
         <p>
-        In particular, we prove here that the normalisation procedures actually do
-        what they are supposed to do.
+        In particular, we prove here that the correctness of the normalzation procedure, 
+        meaning that the resulting queries are in normal form. 
         </p>
   </div>
 </div>#
  *)
 
+(** * Normal Form 
+    ----
+    
+    In this section we prove several lemmas about groundness and non-redundancy.
+   *)
 Section NormalForm.
 
-  (** * Normal Form 
-
-      In this section we prove several lemmas about groundness and non-redundancy.
-   *)
-
+  
   Variables (Scalar : eqType) (s : wfGraphQLSchema).
 
 
-  (** ** Groundedness
-
-   *)
+  (** ** Groundedness *)
   (** ---- *)
+  
   (**
      This lemma states that
    *)
+  (* Unused *)
   Lemma grounded_fields_are_grounded (σ : seq (@Selection Scalar)) :
     all (fun σ__i => σ__i.(is_field) && is_in_ground_typed_nf s σ__i) σ ->
     are_in_ground_typed_nf s σ.
@@ -73,6 +71,10 @@ Section NormalForm.
     all: do [by apply/allP=> sel Hin; have /(_ sel Hin) := Hgs; case/andP].
   Qed.
 
+  (** ---- **)
+  (**
+   This lemma states that
+   *)
   Lemma grounded_fragments_are_grounded (σ : seq (@Selection Scalar)) :
     all (fun σ__i => σ__i.(is_inline_fragment) && is_in_ground_typed_nf s σ__i) σ ->
     are_in_ground_typed_nf s σ.
@@ -96,10 +98,8 @@ Section NormalForm.
 
       Transparent qresponse_name.
            
-
       (**
-         This lemma states that filtering according to a response name preserves non-redundancy
-         of the queries.
+         This lemma states that filtering preserves non-redundancy of the selections.
        *)
       Lemma filter_preserves_non_redundancy rname φ :
         are_non_redundant φ ->
@@ -119,7 +119,9 @@ Section NormalForm.
 End NormalForm.
 
 (** ---- *)
-
+(**
+   This tactic reduces some burdain on proofs with non-redundancy.
+ *)
 Ltac non_red :=
   repeat match goal with
          | [|- is_true (are_non_redundant (filter_queries_with_label _ _))] =>
@@ -128,26 +130,20 @@ Ltac non_red :=
          | [|- is_true (are_non_redundant (_ :: _)) -> _] => simp are_non_redundant
          | [|- is_true (are_non_redundant _)] => simp are_non_redundant
          end.
-(** ---- *)
 
 
-(** * Normalisation 
-
-    In this section we prove things related to the normalisation procedure.
-    
-    In particular, we prove that it does what it is supposed to do
+(** * Normalization 
+    ----
+    In this section we prove that the normalization procedure returns queries in normal form.
  *)
-(** ---- *)
 Section Normalisation.
 
-  
   Transparent qresponse_name.
   
   Variables (Scalar : eqType) (s : wfGraphQLSchema).
 
-  (** ---- *)
   (**
-     This lemma states that the order of filtering queries by response name 
+     This lemma states that the order of filtering selections by response name 
      and normalizing does not affect the result.
    *)
   Lemma filter_normalize_swap rname ty (φ : seq (@Selection Scalar)) :
@@ -194,8 +190,8 @@ Section Normalisation.
   Qed.
 
   (** ** Groundedness *)
-
   (** ---- *)
+
   (**
      This lemma states that [normalize_selections] returns fields.
    *)
@@ -207,7 +203,7 @@ Section Normalisation.
 
   (** ---- *)
   (**
-     This lemma states that the resulting selections of [normalize_selections] are 
+     This lemma states that [normalize_selections] returns selections 
      in ground-typed normal form.
    *)
   Lemma normalized_selections_are_in_gt_nf ts (ss : seq (@Selection Scalar)) :
@@ -273,13 +269,11 @@ Section Normalisation.
   Qed. 
 
   
-  (** ---- *)
   (** ** Non-redundancy *)
   (** ---- *)
   (**
      This lemma states that the result of [normalize_selections] are
-     non-redundant, whenever the type used to normalize 
-     is an Object type.
+     non-redundant.
    *)
   Lemma normalized_selections_are_non_redundant ty (φ : seq (@Selection Scalar)) :
     are_non_redundant (normalize_selections s ty φ).
@@ -300,7 +294,8 @@ Section Normalisation.
 
   (** ---- *)
   (**
-     This theorem states that [normalize] returns a query in normal form. 
+     This theorem states that [normalize] returns a query in normal form, thus proving 
+     its correctness.
    *)
   Theorem normalized_query_is_in_nf (q : @query Scalar) :
     is_in_normal_form s (normalize s q).
@@ -315,3 +310,11 @@ Section Normalisation.
   
 
 End Normalisation.
+
+(** ---- *)
+(** 
+    #<div>
+        <a href='GraphCoQL.QueryNormalForm.html' class="btn btn-light" role='button'> Previous ← Query Normal Form  </a>
+        <a href='GraphCoQL.Graph.html' class="btn btn-info" role='button'>Continue Reading → Graph </a>
+    </div>#
+*)
