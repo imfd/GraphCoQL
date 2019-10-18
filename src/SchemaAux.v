@@ -39,8 +39,8 @@ Section SchemaAux.
   Section TypeDefExtractors.
     
     (** *** Extractors for type definitions *)
-    
     (** ---- *)
+    
     (** Get type definition's name *)
     Definition tdname tdef : Name :=
       match tdef with
@@ -71,7 +71,7 @@ Section SchemaAux.
 
     
     (** ---- *)
-    (** Get type definition's members (only valid for union type) *)
+    (** Get type definition's members (empty for anything else than union) *)
     Definition tmbs tdef : seq Name :=
       match tdef with
       | union _ { mbs }=> mbs
@@ -80,7 +80,7 @@ Section SchemaAux.
 
     
     (** ---- *)
-    (** Get type definition's members (only valid for enum type) *) 
+    (** Get type definition's members (empty for anything else than enum) *) 
     Definition tenums tdef : seq EnumValue :=
       match tdef with
       | enum _ { enums } => enums
@@ -97,8 +97,8 @@ Section SchemaAux.
 
   End TypeDefExtractors.
   
-  (** ---- *)
   (** *** General purpose predicates *)
+  (** ---- *)
   Section Predicates.
 
     Variable schema : graphQLSchema.
@@ -125,11 +125,10 @@ Section SchemaAux.
   
   Variable schema : graphQLSchema.
 
-  (** ---- *)
   (** *** Lookup functions *)
+  (** ---- *)
   Section Lookup.
 
-    (** ---- *)
     (**
        Looks up for a type definition with the given name.
      *)
@@ -184,8 +183,8 @@ Section SchemaAux.
   End Lookup.
 
 
-  (** ---- *)
   (** *** Predicates about types *)
+  (** ---- *)
   Section TypePredicates.
 
     (** ---- *)
@@ -272,8 +271,8 @@ Section SchemaAux.
     
   End TypePredicates.
 
-  (** ---- *)
   (** *** Predicates about types *)
+  (** ---- *)
   Section ValuePredicates.
     
     Variables (Scalar : eqType)
@@ -298,17 +297,17 @@ Section SchemaAux.
   Arguments is_valid_value [Scalar].
   
 
-  (** ---- *)
   (** *** Definitions related to subtyping
-      
+      ----
+
       This includes the definition of the subtyping relation.
    *)
   Section Subtypes.
 
-    (** ---- *)
-    (** *** Subtyping relation.
-       
-       Some observations:
+    (** **** Subtyping relation.
+        ----
+
+        Some observations:
 
         - Subtyping is strictly between objects and interfaces.
           There cannot be an object that is subtype of another, as well as an
@@ -359,13 +358,12 @@ Section SchemaAux.
 
     (** ---- *)
     (**
-       Gets "possible" types from a given type, as #<a href='https://graphql.github.io/graphql-spec/June2018/#GetPossibleTypes()'>defined in the GraphQL Spec</a>#.
+       Gets "possible" types from a given type (cf. #<a href='https://graphql.github.io/graphql-spec/June2018/##GetPossibleTypes()'><span>&#167;</span>5.5.2.3</a>#)
 
        If the type is:
        - object : Possible types are only the type itself.
        - interface : Possible types are all types that declare implementation of this interface.
-       - union : Possible types are all members of the union.
-    
+       - union : Possible types are all members of the union.    
      *)
     Equations get_possible_types (ty : Name) : seq Name :=
       {
