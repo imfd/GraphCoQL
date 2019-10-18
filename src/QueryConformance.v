@@ -67,14 +67,15 @@ Section QueryConformance.
   (** * Conformance Predicates *)
   (** ---- *)
   
-  (** ** Are queries consistent ?
-      
+  (** ** Are selections consistent ?
+      ----
+
       First we define the necessary predicates to establish that a query is consistent 
       by itself.
    *)
-  (** ---- *)
-  (** 
-      #<strong>arguments_conform</strong># : List FieldArgumentDefinition → List (Name * Scalar) → Bool
+  
+  (** *** Arguments conform  
+      ----
 
       The following predicate checks whether a list of arguments (described as a pairing between names and values)
       conform to a list of field arguments.
@@ -82,17 +83,9 @@ Section QueryConformance.
       This is used when checking whether a field selection is consistent with a type in the schema.
 
       For a query argument to be valid it must satisfy the following:
-      - There exists an argument definition with the same name.
-      - The value given to the query argument must be of the "same type" as the type 
-        associated to the argument definition in the Schema (eg. if the argument requires 
-        an Int, then an "Int" value must be passed on when querying).      
-      
-
-      #<div class="hidden-xs hidden-md hidden-lg"><br></div>#
-      **** Observations
-
-      - Required arguments : Since NonNull types are not implemented, we are not checking for required 
-         arguments.
+      - There exists an argument definition with the same name (cf. #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Argument-Names'><span>&#167;</span>5.4.1</a>#).
+      - The value given to the query argument must be valid w.r.t. its expected type (#<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Values-of-Correct-Type'><span>&#167;</span>5.6.1</a>#).      
+     
    **)
   Definition arguments_conform (args : seq FieldArgumentDefinition) (α : seq (Name * @Value Scalar)) : bool :=
     let argument_conforms (arg : Name * @Value Scalar) : bool :=
@@ -107,26 +100,25 @@ Section QueryConformance.
 
 
   (** ---- *)
-  (** 
-     #<strong>is_consistent</strong># : Name → Selection → Bool 
-
+  (** *** Is selection consistent ? 
+    
       Checks whether a query is consistent to a given type in the schema.
 
-      This checks the following things specified in the spec :
+      This checks the following:
 
-      - Fields are defined (if we lookup the field selection's name in our type in context, we must find a field definition).
+      - Fields are defined in the type in scope (cf. #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Field-Selections-on-Objects-Interfaces-and-Unions-Types'><span>&#167;</span>5.3.1</a>#)
 
       - Field selection's arguments should conform to the arguments declared in the field definition obtained previously.
 
-      - Leaf field selections should have Scalar or Enum return type.
+      - Leaf field selections should have Scalar or Enum return type (cf. #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Leaf-Field-Selections'><span>&#167;</span>5.3.3</a>#).
 
-      - Node field selections should have Object, Interface or Union return type.
+      - Node field selections should have Object, Interface or Union return type (cf. #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Leaf-Field-Selections'><span>&#167;</span>5.3.3</a>#).
 
-      - Nested subqueries should not be empty.
+      - Nested subqueries should not be empty (cf. #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Leaf-Field-Selections'><span>&#167;</span>5.3.3</a>#).
 
       - Nested subqueries should be consistent wrt. to its parent type (return type for fields or type condition for fragments).
 
-      - Fragments' type condition must spread in the type in context.
+      - Fragments' type condition must spread in the type in context (cf. #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Fragment-spread-is-possible'><span>&#167;</span>5.5.2.3</a>#).
      
    *)
   Fixpoint is_consistent (type_in_scope : Name) selection : bool :=
@@ -167,20 +159,24 @@ Section QueryConformance.
     end.
   
 
-  (** ---- *)
-  (** ** Do queries have compatible response shapes ?
 
-      In this segment we define the necessary predicates to establish if the queries 
-      have compatible response shapes.
+  (** ** Are selections type-compatible ?
+      ----
+
+      In this segment we define the necessary predicates to establish if selections 
+      are type-compatible.
+
+      Intuitively, this validation forbids selections with the same response name producing 
+      results associated to values of different types 
+      (e.g. a key associated to string values in one case and integer in others).
    *)
+
   (** ---- *)
   (**
-    #<strong>are_compatible_types</strong># : Type → Type → Bool
-
     Checks whether two types are compatible. 
-    This is posteriorly used to check if two queries have compatible response shapes.
-
-    This corresponds to steps 3-6 used in the definition given in _SameResponseShape_ in the 
+    
+    This corresponds to steps 3-6 used in the spec's definition for _SameResponseShape_ 
+    (cf. #<a href='https://graphql.github.io/graphql-spec/June2018/##SameResponseShape()'><span>&#167;</span>5.3.2</a>#).
     spec.  
   *)
   Fixpoint are_compatible_types (ty ty' : type) : bool :=
@@ -197,19 +193,16 @@ Section QueryConformance.
   
  (** ---- *)
  (**
-    #<strong>has_compatible_type</strong># : Name → Type → Selection → Bool 
+    Checks whether a given selection has a return type compatible to the 
+    one given as parameter. 
 
-    Checks whether a given query has a return type compatible to the 
-    one given as parameter. This is posteriorly used to check whether
-    two queries have compatible response shapes. 
+    The first parameter corresponds to the type of another field to which we 
+    wish to know if they are type compatible.
 
-    The first parameter corresponds to the type in context where the 
-    query might live.
+    The pair correspond to the selection along with the type where it was defined. 
 
     Inline fragments do not have a return type, therefore this always 
     returns false for these cases.
-
-    There is a lot of code repetition, which is there only for reading purposes.
   *)
   Fixpoint has_compatible_type (rty : type) (nq : Name * @Selection Scalar) : bool :=
     match nq with
@@ -241,19 +234,30 @@ Section QueryConformance.
     end.
 
   
-  (** ---- *)
-  (**
-    #<strong>are_type_compatible</strong># : Name → List (Name * Selection) → Bool 
+  (** *** Type-Compatible 
+      ----
 
-    Checks whether a list of queries have compatible return types.
-    This means that queries with the same response name should have types that are 
-    somewhat "similar". This ensures that their outputs will also be consistent.
-
-    For example, it doesn't make sense to have two queries with response name "age" but 
-    one is an Int and the other is a String. Both should be Int or Float.
+    Checks whether a list of selections have compatible return types.
+    
+    Two nested field selections are type-compatible if whenever
+    they have the same response name, any two fields in the concatenation of their
+    subselections are also type-compatible. Two single field selections
+    are always type-compatible, unless they have the same response
+    name and different (scalar or enum) type.
+    Fragments are simply lifted, taking care to wrap each subselection with the type condition.
 
     We have to wrap each query with its parent type in order to find their appropriate return type.
-    
+
+    This definition roughly translate to the _SameResponseShape_ function defined in the Spec 
+    (cf. #<a href='https://graphql.github.io/graphql-spec/June2018/##SameResponseShape()'><span>&#167;</span>5.3.2</a>#). 
+    However, we noticed that there are redundant recursive calls between this function and the function _FieldsInSetCanMerge_
+    (cf. #<a href='https://graphql.github.io/graphql-spec/June2018/##FieldsInSetCanMerge()'><span>&#167;</span>5.3.2</a>#), 
+    which meant definition was hard in Coq plus possibly costly (due to repeated recursive calls).
+
+    We also notice that this definition is a little bit conservative, in the sense that it
+    may consider valid queries invalid (See #<a href='https://tinyurl.com/y4uxz3gu'>example</a>#),
+    due to an issue with inline fragments possibly allowing selections over any type
+    (See #<a href='https://github.com/graphql/graphql-spec/issues/367'>issue</a>#).
   *)
  Equations? are_type_compatible (selections : seq (Name * @Selection Scalar)) :
    bool by wf (queries_size_aux selections) :=
@@ -319,23 +323,20 @@ Section QueryConformance.
 
 
 
- (** ---- *)
- (** ** Are renaming-consistent ?
-     In this section we define the predicate that checks if field merging is possible.
-  *)
- (** ---- *)
- (**
-    #<strong>are_renaming_consistent</strong># : Name → List Selection → Bool
+ (** ** Are selections renaming-consistent ?
+     ----
+     
+     Checks whether a list of selections are renaming-consistent.
 
-    Checks whether a list of queries are mergeable.
+     Two field selections are _renaming-consistent_ if whenever they have the
+     same response name and lie under overlapping types in context
+     they have the same (actual) name, the same arguments and any two
+     fields in the concatenation of their subselections are also
+     renaming-consistent.
 
-    In a nutshell, what we do is look for fields with the same _response name_ and then check that:
-    - They are all leaf fields or all node fields.
-    - They all have the same _field name_.
-    - They all have the same arguments.
-
-    We use the type in context to find only the fields that make sense 
-    (because with fragments we can create queries that don't make sense).
+     This definition roughly corresponds to 
+     (cf. #<a href='https://graphql.github.io/graphql-spec/June2018/##FieldsInSetCanMerge()'><span>&#167;</span>5.3.2</a>#).
+     The differences are due to the same reasons given in [are_type_compatible].
   *)
  Equations? are_renaming_consistent (selections : seq (Name * @Selection Scalar)) :
    bool by wf (queries_size_aux selections) :=
@@ -427,21 +428,18 @@ Section QueryConformance.
  Defined.
  
 
- (** ---- *)
- (** ** Selection Conformance *)
- (** ---- *)
- (**
-     #<strong>selections_conform</strong># : Name -> List Selection -> Bool 
+ (** ** Selection Conformance
+     ----
 
      Check whether a list of selections conform to a given type in the schema.
      
      This definition captures the previous validation predicates:
 
-     - ∀ query ∈ queries, query is consistent to the type in scope.
+     - Evey selection is consistent,
 
-     - Queries have compatible response shapes.
+     - selections are type-compatible, and
 
-     - Field merging is possible.
+     - are renaming-consistent.
 
    *)
   Definition selections_conform (ty : Name) σs : bool :=
@@ -461,19 +459,20 @@ Section QueryConformance.
   
  
 End QueryConformance.
-(** ---- *)
 
+(* begin hide *)
 Arguments arguments_conform [Scalar].
 Arguments are_type_compatible [Scalar].
 Arguments are_renaming_consistent [Scalar].
 Arguments is_consistent [Scalar].
 Arguments selections_conform [Scalar].
 Arguments query_conforms [Scalar].
+(* end hide *)
 
 (** ---- *)
 (** 
     #<div>
-        <a href='GraphCoQL.Selection.html' class="btn btn-light" role='button'> Previous ← Selection  </a>
-        <a href='GraphCoQL.SelectionNormalForm.html' class="btn btn-info" role='button'>Continue Reading → Normal Form </a>
+        <a href='GraphCoQL.Query.html' class="btn btn-light" role='button'> Previous ← Query  </a>
+        <a href='GraphCoQL.QueryNormalForm.html' class="btn btn-info" role='button'>Continue Reading → Normal Form </a>
     </div>#
 *)
