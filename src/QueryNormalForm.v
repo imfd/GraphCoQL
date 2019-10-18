@@ -33,14 +33,17 @@ Require Import QueryTactics.
       <div class="container">
         <h1 class="display-4">Normal Form</h1>
         <p class="lead">
-         This file contains the basic predicates for non-redundancy and groundness of queries,
-         and also contains the normalisation procedure.
+         This file contains the basic predicates for groundedness and non-redundancy of queries,
+         and also contains the normalization procedure.
         </p>
          
   </div>
 </div>#
  *)
 
+
+(** * Definitions *)
+(** ---- *)
 Section NormalForm.
 
   Variables Scalar : eqType.
@@ -50,17 +53,15 @@ Section NormalForm.
   Implicit Type query : @Selection Scalar.
   
 
-  (** * Definitions *)
   
   (** ** Groundedness
-      In this section we define the predicates to establish when a 
-      GraphQL Selection is grounded.
-   *)
-  (** ---- *)
-  (**
-     #<strong>is_in_ground_typed_nf</strong># : Selection → Bool 
+      ----
 
-     Checks whether the given selection is in ground-typed normal form, as described in HP.
+      In this section we define the predicates to establish when a 
+      GraphQL Selection is in ground-typed normal form (grounded for short).
+   *)
+  (**
+     Checks whether the given selection is in ground-typed normal form, as defined in H&P.
    *)
   Fixpoint is_in_ground_typed_nf (selection : @Selection Scalar) : bool :=
     match selection with
@@ -72,17 +73,13 @@ Section NormalForm.
 
   (** ---- *)
   (**
-     #<strong>are_in_ground_typed_nf</strong># : List Selection → Bool 
-
-     Checks whether the given selection set is in ground-typed normal form, as described in HP.
+     Checks whether the given selection set is in ground-typed normal form, as defined in H&P.
    *)
   Definition are_in_ground_typed_nf (ss : seq (@Selection Scalar)) : bool :=
     (all (@is_field Scalar) ss || all (@is_inline_fragment Scalar) ss) && all is_in_ground_typed_nf ss.
 
   (** ---- *)
   (**
-    #<strong>is_a_ground_typed_nf_query</strong># : Query → Bool 
-
      Checks whether the given query is in ground-typed normal form, by checking that its selection set is
      in ground-typed normal form.
    *)
@@ -93,15 +90,13 @@ Section NormalForm.
 
 
   (** ** Non-redundancy
-      
+      ----
+
       In this section we define the predicate to establish when a GraphQL Selection 
       is non-redundant.
    *)
-  (** ---- *)
   (**
-     #<strong>are_non_redundant</strong># : List Selection → Bool 
-
-     Checks whether the selection set is non-redundant.
+     Checks whether a selection set is non-redundant.
      This checks that :
      - There are no inline fragments with the same type condition.
      - There are no field selections with the same response name.
@@ -130,37 +125,32 @@ Section NormalForm.
 
   (** ---- *)
   (**
-     #<strong>is_non_redundant</strong># : Query → Bool 
-
-     Checks whether the query is non-redundant by checking that its selection set is 
+     Checks whether a query is non-redundant by checking that its selection set is 
      non-redundant.
    *)
   Definition is_non_redundant (q : @query Scalar) : bool := q.(selection_set).(are_non_redundant).
 
+  
+  (** ** Normal form *)
   (** ---- *)
-  (** ** Normal form
-
-   *)
                                                 
-  (** ---- *)
   (**
-
+     Checks whether a selection set is in normal form.
    *)
   Definition are_in_normal_form (σ : seq Selection) :=
     σ.(are_in_ground_typed_nf) && σ.(are_non_redundant).
     
   (** ---- *)
   (**
-     #<strong>is_in_normal_form</strong># : Query → Bool 
-
      Checks whether a query is in normal form.
    *)
   Definition is_in_normal_form (q : @query Scalar) := q.(selection_set).(are_in_normal_form).
 
 
-  (** ---- *)  
 End NormalForm.
 
+
+(* begin hide *)
 Arguments is_in_ground_typed_nf [Scalar].
 Arguments are_in_ground_typed_nf [Scalar].
 Arguments is_a_ground_typed_nf_query [Scalar].
@@ -170,9 +160,16 @@ Arguments is_non_redundant [Scalar].
 
 Arguments are_in_normal_form [Scalar].
 Arguments is_in_normal_form [Scalar].
+(* end hide *)
 
 
-
+(** * Normalisation
+    ----
+      
+      In this section we will define a normalisation procedure, which 
+      takes a GraphQL Selection and outputs another one in normal form.
+      
+   *)
 Section Normalisation.
 
   Variables Scalar : eqType.
@@ -182,17 +179,7 @@ Section Normalisation.
 
   Variable s : wfGraphQLSchema.
 
-  (** * Normalisation
-      
-      In this section we will define a normalisation procedure, which 
-      takes a GraphQL Selection and outputs another one in normal form.
-      
-      The proof of this is in the file _SelectionNormalizationLemmas_.
-   *)
-  (** ---- *)
   (**
-     #<strong>normalize_selections</strong># : Name → List Selection → List Selection 
-
      Normalizes the given list of selections. 
      The resulting list are non-redundant and in ground-type 
      normal form.
@@ -202,18 +189,16 @@ Section Normalisation.
      - Eliminating redundancies via merging : Fields which share 
         a response name are collapsed/collected into the first occurrence of 
         this set of common fields. This resembles the process carried out 
-        by the semantics (CollectFields & MergeSelectionSets).
+        by the semantics in _CollectFields_ (cf. #<a href='https://graphql.github.io/graphql-spec/June2018/##CollectFields()'><span>&#167;</span>6.3.2</a>#)
+        and _MergeSelectionSets_ (cf. #<a href='https://graphql.github.io/graphql-spec/June2018/##MergeSelectionSets()'><span>&#167;</span>6.4.3</a>#).
 
      - Grounding : Queries which are supposed to occur in abstract types 
         (be it an inline fragment with an abstract type condition or a    
         field with an abstract return type) are specialized into every
-        possible subtype of the given abstract type (minus the abstract type itself). 
+        possible concrete object subtype.
         This means that fragments might be "lifted" (its type condition is removed and its 
-        subqueries lifted) or removed if they do not make sense in the context
-        On the other hand, fields' subqueries might be wrapped in fragments, specializing their contents.
-
-
-     This definition assumes that the given type in scope is actually an Object type.
+        subselections lifted) or removed if they do not make sense in the context
+        On the other hand, fields' subselections might be wrapped in fragments, specializing their contents.
    *)
   Equations? normalize_selections (type_in_scope : Name) (ss : seq (@Selection Scalar)) :
     seq (@Selection Scalar) by wf (queries_size ss) :=
@@ -280,25 +265,23 @@ Section Normalisation.
 
   (** ---- *)
   (**
-     #<strong>normalize</strong># : Query → Query 
-
-     Normalizes a query, using the Query type to normalize the selection set.
+     Normalizes a query, using the _Query_ type to normalize the selection set.
    *)
   Definition normalize (q : @query Scalar) : @query Scalar :=
     let: Query n ss := q in
     Query n (normalize_selections s.(query_type) q.(selection_set)).
   
-  (** ---- *)
 End Normalisation.
 
+(* begin hide *)
 Arguments normalize_selections [Scalar].
 Arguments normalize [Scalar].
-
+(* end hide *)
 
 (** ---- *)
 (** 
     #<div>
-        <a href='GraphCoQL.SelectionConformance.html' class="btn btn-light" role='button'> Previous ← Selection Conformance  </a>
-        <a href='GraphCoQL.Graph.html' class="btn btn-info" role='button'>Continue Reading → GraphQL Graph </a>
+        <a href='GraphCoQL.QueryConformance.html' class="btn btn-light" role='button'> Previous ← Query Conformance  </a>
+        <a href='GraphCoQL.QueryNormalFormLemmas.html' class="btn btn-info" role='button'>Continue Reading → Normal Form Proofs </a>
     </div>#
 *)
