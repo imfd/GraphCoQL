@@ -33,7 +33,7 @@ Require Import Ssromega.
         </p>
 
         <p>
-         Some of these are: query size, extractors for queries, general purpose predicates, etc.
+         Some of these are: query size, extractors for selections, general purpose predicates, etc.
         </p>
   </div>
 </div>#
@@ -48,15 +48,12 @@ Section QueryAux.
   Implicit Type query : @Selection Scalar.
 
 
-  (** ---- *)
   (** *** General purpose predicates *)
+  (** ---- *)
   Section Base.
 
 
-    (** ---- *)
     (** 
-        is_field : Query → Bool 
-
         Checks whether the given query is a field selection.
      *)
     Equations is_field query : bool :=
@@ -68,8 +65,6 @@ Section QueryAux.
     
     (** ---- *)
     (**
-       is_inline_fragment : Query → Bool 
-
        Checks whether the given query is an inline fragment.
      *)
     Equations is_inline_fragment query : bool :=
@@ -81,9 +76,7 @@ Section QueryAux.
     
     (** ---- *)
     (**
-       is_aliased : Query → Bool
-
-       Checks whether the given query is aliased (ie. l:f or l:f { φ })
+       Checks whether the given query is aliased.
      *)
     Definition is_aliased query : bool :=
       match query with
@@ -95,8 +88,6 @@ Section QueryAux.
     
     (** ---- *)
     (**
-       has_subqueries : Query → Bool
-
        Checks whether the given query has subqueries.
      *)
     Definition has_subqueries query : bool :=
@@ -108,13 +99,10 @@ Section QueryAux.
 
 
 
-    (** ---- *)
     (** *** Extractors for queries *)
-
     (** ---- *)
-    (**
-       qname : ∀ query, query.is_field → Name
 
+    (**
        Gets the name of the given query. 
        
        Inline fragments do not have a name, therefore 
@@ -133,8 +121,6 @@ Section QueryAux.
 
     (** ---- *)
     (**
-       qalias : ∀ query, query.is_aliased → Name
-
        Gets the alias of the given query.
 
        It is required that the query is actually aliased.
@@ -150,8 +136,6 @@ Section QueryAux.
 
     (** ---- *)
     (**
-       oqalias : Query → option Name 
-
        Gets the alias of the given query or none if
        the query does not have a label.
      *)
@@ -166,8 +150,6 @@ Section QueryAux.
 
     (** ---- *)
     (**
-       qresponse_name : ∀ query, query.is_field → Name 
-
        Gets the response name of the given query.
        
        For aliased fields this corresponds to their alias, while for 
@@ -188,8 +170,6 @@ Section QueryAux.
 
     (** ---- *)
     (**
-       oqresponse_name : Query → option Name
-    
        Gets the response name of the given query or none if it 
        is an inline fragment.
      *)
@@ -202,8 +182,6 @@ Section QueryAux.
     
     (** ---- *)
     (**
-       has_response_name : Name → Query → Bool 
-
        Checks whether the given query has the given response name.
 
        This is always false for inline fragments.
@@ -218,8 +196,6 @@ Section QueryAux.
 
     (** ---- *)
     (**
-       qsubqueries : Selection → List Selection
-
        Gets the given query's subqueries.
 
        For field selections without subqueries, it returns an empty list.
@@ -235,8 +211,6 @@ Section QueryAux.
 
     (** ---- *)
     (**
-       qargs : ∀ query, query.is_field → List (Name * Value) 
-
        Gets the given query's arguments.
 
        Inline fragment do not have arguments, therefore 
@@ -255,8 +229,6 @@ Section QueryAux.
     
     (** ---- *)
     (**
-       have_same_name : Selection → Selection → Bool 
-
        Checks whether two queries have the same field name.
 
        It is always false if either is an inline fragment.
@@ -271,8 +243,6 @@ Section QueryAux.
 
     (** ---- *)
     (**
-       have_same_response_name : Selection → Selection → Bool 
-
        Checks whether two queries have the same response name.
 
        It is always false if either is an inline fragment.
@@ -287,8 +257,6 @@ Section QueryAux.
 
     (** ---- *)
     (**
-       have_same_arguments : Selection → Selection → Bool
-       
        Checks whether two queries have the same arguments.
 
        It is always false if either is an inline fragment.
@@ -303,9 +271,7 @@ Section QueryAux.
 
     (** ---- *)
     (**
-       is_simple_field_selection : Selection → Bool 
-
-       Checks whether the given query is either a [SingleField] or [LabeledField].
+       Checks whether the given query is either a [SingleField] or [SingleAliasedField].
      *)
     Equations is_simple_field_selection query : bool :=
       {
@@ -317,9 +283,7 @@ Section QueryAux.
 
     (** ---- *)
     (**
-       is_nested_field_selection : Selection → Bool 
-
-       Checks whether the given query is either a [NestedField] or [LabeledNestedField].
+       Checks whether the given query is either a [NestedField] or [NestedAliasedField].
      *)
     Equations is_nested_field_selection query : bool :=
       {
@@ -328,9 +292,8 @@ Section QueryAux.
         is_nested_field_selection _ := false
       }.
 
+    (** ---- *)
     (**
-       #<strong>selection_perm_eq</strong# : Selection → Selection → Bool 
-
        Decides whether two selections are equal, considering possible permutation
        of arguments in field selections.
      *)
@@ -355,8 +318,6 @@ Section QueryAux.
     
     (** ---- *)
     (**
-       are_equivalent : Selection → Selection → Bool 
-
        Checks whether two queries are equivalent.
 
        This equivalence refers to whether both queries will
@@ -365,7 +326,7 @@ Section QueryAux.
 
        
        **** See also
-       - [is_field_merging_possible] (_SelectionConformance_)
+       - [is_field_merging_possible]
      *)
     (* FIXME : Rename *)
     Definition are_equivalent (q1 q2 : @Selection Scalar) : bool :=
@@ -379,20 +340,16 @@ Section QueryAux.
     
   End Base.
 
-  (** ---- *)
   (** *** Size functions 
-      
+      ---- 
+
       In this section we define functions related to
       the size of queries.
    *)
   Section Size.
 
-    (** ---- *)
     (**
-       query_size : Selection → Nat 
-       queries_size : List Selection → Nat 
-
-       Get the query's size, according to Jorge and Olaf's definition.
+       Get the size of a selection and selection set, according to H&P's definition.
      *)
     Equations selection_size query : nat :=
       {
@@ -410,11 +367,15 @@ Section QueryAux.
 
     (** ---- *)
     (**
-
+       Get the size of a selection set paired with its type in scope.
      *)
     Definition queries_size_aux (queries : seq (Name * Selection)) :=
       queries_size [seq nq.2 | nq <- queries].
 
+    (** ---- *)
+    (**
+       Get the size of a query.
+     *)
     Definition query_size (φ : @query Scalar) :=
       queries_size φ.(selection_set).
       
@@ -423,24 +384,20 @@ Section QueryAux.
   
 
 
-  (** ---- *)
   (** *** Other type of predicates *)
+  (** ---- *)
     
   Section DefPreds.
     
     Variable s : wfGraphQLSchema.
 
-    (** ---- *)
     (**       
-       does_fragment_type_apply : Name → Name → Bool 
-
        This predicate checks whether a type condition is valid in 
-       a given object type. 
-       
-       This is used to check if we have to evaluate a fragment.
+       a given object type and is necessary to check if a fragment must be evaluated.
    
-       This definition is similar to the one #<a href='https://graphql.github.io/graphql-spec/June2018/#DoesFragmentTypeApply()'>in the spec</a>#. This one is a bit different to make it clearer and easier to reason about. 
-     
+       This definition is similar to the one in the spec
+       (cf. #<a href='https://graphql.github.io/graphql-spec/June2018/##DoesFragmentTypeApply()'><span>&#167;</span>6.3.2</a>#). 
+       The difference is simply to facilitate reasoning over it.
      *)
     Definition does_fragment_type_apply object_type fragment_type :=
       match lookup_type s object_type, lookup_type s fragment_type with
@@ -453,16 +410,18 @@ Section QueryAux.
       | _, _ => false
       end.
 
-     (** ---- *)
+    (** ---- *)
     (**
-     #<strong>is_fragment_spread_possible</strong># : Name → Name → Bool 
-     
      Checks whether a given type can be used as an inline fragment's type condition 
-     in a given context with another type in scope (parent type).
+     in a given context with another type in scope 
+     (cf. #<a href='https://graphql.github.io/graphql-spec/June2018/#sec-Fragment-spread-is-possible'><span>&#167;</span>5.5.2.3</a>#).
 
      It basically amounts to intersecting the possible subtypes of each
      and checking that the intersection is not empty.     
      *)
+    (* The definition of seqI is a bit annoying, maybe we could change it to 
+       has (fun ty => ty \in parent_possible_types) ty_possible_types, which is 
+       much simpler to reason about *)
     Definition is_fragment_spread_possible parent_type fragment_type : bool :=
       let ty_possible_types := get_possible_types s fragment_type in
       let parent_possible_types := get_possible_types s parent_type in
@@ -475,21 +434,17 @@ Section QueryAux.
   
 
   
+  (** *** Functions related to finding selections that satisfy a predicate *)
   (** ---- *)
-  (** *** Functions related to finding queries that satisfy a predicate *)
   Section Find.
 
     
     Variable (s : wfGraphQLSchema).
 
-    (** ---- *)
     (**
-       find_queries_with_label : Name → Name → List Selection → List Selection 
-
-       Find all queries with response name equal to a given name.
+       Find selections with response name equal to a given name.
        In case there is a fragment, it first checks that the fragment's type condition 
-       applies to the given object type, then it may proceed to find more queries in its
-       subqueries.
+       applies to the given object type, then it may proceed finding in its subselections.
 
      *)
     (* FIXME : Rename to something that makes sense - find_fields_with_response_name ? *)
@@ -515,6 +470,13 @@ Section QueryAux.
     all: do ?simp selection_size; ssromega.
     Qed.
 
+    (** ---- *)
+    (**
+       Find selections with response name equal to a given name.
+       In case there is a fragment, it first checks that the fragment's type condition 
+       applies to the given object type, then it may proceed finding in its subselections.
+
+     *)
     Equations? find_valid_pairs_with_response_name (ts : Name) (rname : Name) (σs : seq (Name * @Selection Scalar)) :
       seq (Name * @Selection Scalar) by wf (queries_size_aux σs) :=
       {
@@ -540,9 +502,7 @@ Section QueryAux.
     
     (** ---- *)
     (** 
-        find_fields_with_response_name : Name → List Selection → List Selection 
-
-        Find all queries with response name equal to a given name.
+        Find all selections with response name equal to a given name.
         It collects every field, regardless of fragment's type condition. This differs 
         with [find_queries_with_label], where the type condition _is_ important.
      *)
@@ -592,7 +552,10 @@ Section QueryAux.
 
     (** ---- *)
     (**
-       
+        Find all selections with response name equal to a given name.
+        It collects every field, regardless of fragment's type condition. This differs 
+        with [find_queries_with_label], where the type condition _is_ important.
+      
      *)
     Equations? find_pairs_with_response_name (rname : Name) (φ : seq (Name * @Selection Scalar)) :
       seq (Name * @Selection Scalar) by wf (queries_size_aux φ) :=
@@ -644,8 +607,6 @@ Section QueryAux.
 
     (** ---- *)
     (**
-       find_fragment_with_type_condition : Name → List Selection → List Selection 
-
        Find all fragments with type condition equal to a given type.
      *)
     Equations find_fragment_with_type_condition : Name -> seq (@Selection Scalar) -> seq (@Selection Scalar) :=
@@ -665,14 +626,11 @@ Section QueryAux.
 
   End Find.
   
-  (** ---- *)
   (** *** Functions related to filtering queries according to some predicate *)
+  (** ---- *)
   Section Filter.
 
-    (** ---- *)
     (** 
-        filter_queries_with_label : Name → List Selection → List Selection 
-        
         Remove all fields with a given response name.
      *)
     Equations? filter_queries_with_label (label : Name) (queries : seq (@Selection Scalar)) :
@@ -697,7 +655,7 @@ Section QueryAux.
 
     (** ---- *)
     (**
-
+       Remove all fields with a given response name.
      *)
      Equations? filter_pairs_with_response_name (response_name : Name) (queries : seq (Name * @Selection Scalar)) :
       seq (Name * @Selection Scalar) by wf (queries_size_aux queries) :=
@@ -724,15 +682,12 @@ Section QueryAux.
     
   End Filter.
 
-  (** ---- *)
   (** *** Functions related to merging queries *)
+  (** ---- *)
   Section Merging.
 
-    (** ---- *)
     (**
-       merge_selection_sets : List Selection → List Selection 
-       
-       Concatenates the subqueries of every query in the given list.
+       Concatenates the subqueries of every selection in the given list.
      *)
     Definition merge_selection_sets queries := flatten [seq q.(qsubqueries) | q <- queries].
     
@@ -741,7 +696,7 @@ Section QueryAux.
 
     (** ---- *)
     (**
-
+       Concatenates the subqueries of every selection in the given list.
      *)
     Equations merge_pairs_selection_sets (nq : seq (Name * @Selection Scalar)) : seq (Name * @Selection Scalar) :=
       {
@@ -780,14 +735,15 @@ End QueryAux.
 
 (** 
     #<div>
-        <a href='GraphCoQL.Selection.html' class="btn btn-light" role='button'> Previous ← Selection  </a>
-        <a href='GraphCoQL.SelectionConformance.html' class="btn btn-info" role='button'>Next → Selection Conformance</a>
+        <a href='GraphCoQL.Query.html' class="btn btn-light" role='button'> Previous ← Query  </a>
+        <a href='GraphCoQL.QueryConformance.html' class="btn btn-info" role='button'>Next → Query Conformance</a>
     </div>#
  *)
 
 
 (** ---- *)
 
+(* begin hide *)
 Arguments is_field [Scalar].
 Arguments is_inline_fragment [Scalar].
 Arguments is_aliased [Scalar].
@@ -828,4 +784,4 @@ Arguments find_fragment_with_type_condition [Scalar].
 Arguments merge_selection_sets [Scalar].
 Arguments merge_pairs_selection_sets [Scalar].
 
-
+(* end hide *)
