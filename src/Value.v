@@ -7,14 +7,38 @@ Unset Printing Implicit Defensive.
 From Equations Require Import Equations.
 
 (* end hide *)
-     
+
+(**
+   #<div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">Values</h1>
+        <p class="lead">
+         This file contains the definition of values used throughout the rest of the 
+         project, in graphs and queries.
+        </p>
+         
+  </div>
+</div>#
+ *)
 
 Section Value.
 
   Variable (Scalar : eqType).
 
+  (* Unsetting because the automatically generated induction principle is not good enough. *)
   Unset Elimination Schemes.
-  
+
+  (** ---- *)
+  (**
+     Values are not specified in the Spec, since GraphQL is agnostic to the underlying technology
+     used. However, it is still possible to distinguish (at least) two types of values: 
+     - Scalar values
+     - List values (collections)
+
+     A third possible type of value could be object values but we do not include this notion yet
+     (nodes in a graph would represent elements of this third kind).
+
+   *)
   Inductive Value : Type :=
   | SValue : Scalar -> Value
   | LValue : seq Value -> Value.
@@ -24,7 +48,7 @@ Section Value.
    
   (** ---- *)
   (**
-     Defining the induction principle for Selection.
+     Defining the induction principle for [Value].
    *)
   Definition Value_rect (P : Value -> Type)
              (Pl : seq Value -> Type)
@@ -67,6 +91,18 @@ Section Value.
         end.
 
 
+  (**
+     We also establish that this type has a decidable procedure for equality but 
+     we omit it here to unclutter the doc (it may still be seen in the source code).
+   *)
+
+  (* begin hide *)
+  (** ---- *)
+  (**
+     #<strong></strong>#: Value → Value → Bool
+
+     Decidable equality between values. 
+   *)
   Equations value_eq (v1 v2 : Value) : bool :=
     {
       value_eq (SValue s1) (SValue s2) := s1 == s2;
@@ -80,7 +116,10 @@ Section Value.
             value_seq_eq _ _ := false
           }.
   
-   
+  (** ---- **)
+  (**
+     Reflexive lemma for [value_eq] and [eq].
+   *)
   Lemma value_eq_axiom : Equality.axiom value_eq.
   Proof.
     rewrite /Equality.axiom => x y.                 
@@ -93,8 +132,10 @@ Section Value.
       * by move=> vs2; simp value_eq => Hvseq; rewrite (IHvs vs2).
       * by move=> v2 vs2 /andP [/IHv -> /IHvs ->].
   Qed.
-
+  
   Canonical value_eqType := EqType Value (EqMixin value_eq_axiom).
+  
+  (* end hide *)
   
 End Value.
 
@@ -103,4 +144,5 @@ Arguments SValue [Scalar].
 Arguments LValue [Scalar].
 
 
-  
+
+(** #<a href='GraphCoQL.Schema.html' class="btn btn-info" role='button'>Continue Reading → Schema </a># *)
