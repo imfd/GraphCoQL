@@ -32,18 +32,18 @@ Require Import SeqExtra.
 
 
 (** * Auxiliary *)
+(** ---- *)
 Section Aux.
 
   
   Variable (s : graphQLSchema).
   
-  (** ---- *)
   (** *** Lookup *)
+  (** ---- *)
   Section Lookup.
 
-    (** ---- *)
     (**
-       This rlemma states that if looking up a type definition by name
+       This lemma states that if looking up a type definition by name
        returns a valid definition, then that definition is in the list 
        of type definitions of the schema.
      *)
@@ -74,11 +74,10 @@ Section Aux.
   End Lookup.
 
   
-  (** ---- *)
   (** *** Subtyping *)
+  (** ---- *)
   Section Subtypes. 
 
-    (** ---- *)
     (**
        This lemma states that if a type is an Object type, then its 
        possible subtypes are only itself.
@@ -113,11 +112,12 @@ End Aux.
 
 
 (** * Well-Formedness *)
+(** ---- *)
 Section WellFormedness.
 
   Variable (s : wfGraphQLSchema).
   
-
+  
   (** Tactic to destroy a wf schema *)
   Ltac wfschema s :=
     let sch := fresh "s" in
@@ -130,7 +130,7 @@ Section WellFormedness.
 
   (** ---- *)
   (**
-     This lemma states that the query type in a wf schema is an Object type.
+     This lemma states that the query type in a wf schema is an object type.
    *)
   Lemma query_has_object_type :
     is_object_type s s.(query_type).
@@ -142,7 +142,7 @@ Section WellFormedness.
   (** ---- *)
   (**
      Reflection lemma between [is_object_type] and its Prop counterpart.
-     It states that being an object type means looking that name up in the schema and getting an Object type definition.
+     It states that being an object type means looking that name up in the schema and getting an object type definition.
    *)
   Lemma is_object_type_wfP ty :
     reflect (exists intfs flds, lookup_type s ty = Some (ObjectTypeDefinition ty intfs flds))
@@ -187,8 +187,7 @@ Section WellFormedness.
   
   (** ---- *)
   (**
-     This lemma states that if a type [t] belongs to a union's members, 
-     then that type must be an Object type.
+     This lemma states that if a type [t] belongs to a union's members, then that type must be an Object type.
    *)
   Lemma union_has_objects ty :
     forall t, t \in union_members s ty ->
@@ -205,8 +204,7 @@ Section WellFormedness.
   (** ---- *)
   (**
      This lemma states that if a list of type definitions has no duplicate names, 
-     then looking up the name of one of its members should return that same 
-     type definition.
+     then looking up the name of one of its members should return that same type definition.
    *)
   Lemma in_tdefs_get_first tdef tdefs :
     uniq [seq t.(tdname) | t <- tdefs] ->
@@ -240,8 +238,8 @@ Section WellFormedness.
   
   (** ---- *)
   (**
-     This lemma states that if a type [t] belongs to the implementors of 
-     another type [ty], then [t] must be an Object type. This is valid 
+     This lemma states that if a type [t] belongs to the [implementation] of 
+     another type [ty], then [t] must be an object type. This is valid only
      for well-formed schemas.
    *)
   Lemma in_implementation_is_object ty t :
@@ -300,7 +298,8 @@ End WellFormedness.
 (** ---- *)
 (** 
     #<div>
-        <a href='GraphCoQL.SchemaAux.html' class="btn btn-info" role='button'> Go Back ← Schema Aux </a>
+        <a href='GraphCoQL.SchemaWellFormedness.html' class="btn btn-info" role='button'> Go Back ← Schema Well-Formedness </a>
+        <a href='GraphCoQL.Query.html' class="btn btn-info" role='button'>Continue Reading → Query </a>
     </div>#
 *)
 
