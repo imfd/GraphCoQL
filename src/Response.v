@@ -30,23 +30,21 @@ Notation Name := string.
 
 Section Response.
 
-  
+  (* Unsetting because the automatically generated induction principle is not good enough. *)
   Unset Elimination Schemes.
 
   Variable (Scalar : eqType).
   
-  (** * Response *)
-  (** ---- *)
-  (**
-     Here we define a general Response structure, which is in essence a JSON tree.
-     We later use this definition to build a GraphQL Response.     
+  (** * Response
+      ----
+      Here we define a general Response structure, which is in essence a JSON tree.
+      We later use this definition to build a GraphQL Response.     
 
-     There are:
-     - Leaf nodes: Contain _scalar_ values.
-     - Object nodes: Contain key-value elements.
-     - Array nodes: Contain elements
+      A response can be either:
+      - an optional _scalar_ values (to account for null values),
+      - an object, mapping keys to other responses, or
+      - an array of response values.
    *)
-
   Inductive ResponseValue : Type :=
   | Leaf : option Scalar -> ResponseValue
   | Object : seq (Name * ResponseValue) -> ResponseValue
@@ -56,18 +54,18 @@ Section Response.
 
   
   (** * GraphQL Response 
-
-   A GraphQL Response is in essence a JSON Object.
-
+      ----      
+      
+      A GraphQL Response is, in essence, a JSON Object, mapping keys 
+      to other response values.
    *)  
   Definition GraphQLResponse := seq (Name * ResponseValue).
 
   
 
+  (** We define some auxiliary definitions *)
   (** ---- *)
   (**
-     #<strong>rsize</strong># : ResponseValue → Nat
-
      Gets the size of the response tree.
    *)
   
@@ -86,11 +84,9 @@ Section Response.
 
   (** ---- *)
   (**
-     #<strong>is_non_redundant</strong># : ResponseValue → Bool 
-
      This predicate checks whether the responses are non-redundant.
      
-     Non-redundancy means that there are no repeated keys.
+     Non-redundancy means that there are no duplicated keys.
    *)
   
   Equations is_non_redundant (response : ResponseValue) : bool :=
@@ -112,16 +108,16 @@ Section Response.
   
   
   
-(** ---- *)    
 End Response.
 
+(* begin hide *)
 Arguments ResponseValue [Scalar].
 Arguments Leaf [Scalar].
 Arguments Object [Scalar].
 Arguments Array [Scalar].
 Arguments is_non_redundant [Scalar].
 Arguments are_non_redundant [Scalar].
-
+(* end hide *)
 
 Delimit Scope response_scope with RESP.
 Open Scope response_scope.
@@ -132,8 +128,8 @@ Notation "{- ρ -}" := (Object ρ) : response_scope.
 (** ---- *)
 (** 
     #<div>
-        <a href='GraphCoQL.Graph.html' class="btn btn-light" role='button'> Previous ← GraphQL Graph </a>
-        <a href='GraphCoQL.QuerySemantic.html' class="btn btn-info" role='button'>Continue Reading → Query Semantics</a>
+        <a href='GraphCoQL.Query.html' class="btn btn-light" role='button'>Previous ← Query</a>
+        <a href='GraphCoQL.QuerySemantics.html' class="btn btn-info" role='button'>Continue Reading → Query Semantics</a>
     </div>#
 *)
 
