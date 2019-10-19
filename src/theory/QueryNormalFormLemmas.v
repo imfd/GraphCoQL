@@ -292,6 +292,21 @@ Section Normalisation.
   Qed.
 
 
+
+  (** ---- **)
+  (**
+     This lemma states that normalized selections are in normal form.
+   *)
+  Lemma normalized_selections_are_in_nf ts (σs : seq (@Selection Scalar)) :
+    are_in_normal_form s (normalize_selections s ts σs).
+  Proof.
+    rewrite /are_in_normal_form; apply_andP; [ by apply: normalized_selections_are_grounded
+                                             | by apply: normalized_selections_are_non_redundant
+                                             ].
+  Qed.
+    
+      
+    
   (** ---- *)
   (**
      This theorem states that [normalize] returns a query in normal form, thus proving 
@@ -300,10 +315,7 @@ Section Normalisation.
   Theorem normalized_query_is_in_nf (q : @query Scalar) :
     is_in_normal_form s (normalize s q).
   Proof.
-    case: q; intros.
-    rewrite /is_in_normal_form /normalize /=; apply_andP.
-    - by apply: normalized_selections_are_grounded.
-    - by apply: normalized_selections_are_non_redundant.
+    by case: q; intros; rewrite /is_in_normal_form /normalize /=; apply: normalized_selections_are_in_nf.
   Qed.
 
    
