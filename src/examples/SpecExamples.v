@@ -280,58 +280,35 @@ Section GraphQLSpecExamples.
 
     (** #<a href='https://graphql.github.io/graphql-spec/June2018/##example-48706'>Counter example 102</a># 
         ---- *)
-    Let example102 : seq (@Selection scalar_eqType) :=  [::
-                                                      on "Dog" {
-                                                        [::
-                                                           "meowVolume" [[ [::] ]]
-                                                        ]
-                                                      }
-                                                   ].
+    Let example102 : @Selection scalar_eqType :=  "meowVolume" [[ [::] ]].
     
-    Let example102' :  seq (@Selection scalar_eqType) := [::
-                                                       on "Dog" {
-                                                         [::
-                                                            "barkVolume" : "kawVolume" [[ [::] ]]
-                                                         ]
-                                                       }
-                                                    ].
+    Let example102' :  (@Selection scalar_eqType) :=  "barkVolume" : "kawVolume" [[ [::] ]].
 
     (** We compute it to show that both selections are invalid *)
-    Example e102 : ~~ (selections_conform is_valid_scalar_value wf_schema "Dog" example102 || selections_conform is_valid_scalar_value wf_schema "Dog" example102').
+    Example e102 : ~~ (is_consistent is_valid_scalar_value wf_schema "Dog" example102 || is_consistent is_valid_scalar_value wf_schema "Dog" example102').
     Proof. by []. Qed.
 
 
     (** #<a href='https://graphql.github.io/graphql-spec/June2018/##example-d34e0'>Example 103</a># 
         ---- *)
-    Let example103 : seq (@Selection scalar_eqType) := [::
-                                                     (* on "Pet" { *)
-                                                     (* [:: *)
-                                                     "name" [[ [::] ]]
-                                                     (* ] *)
-                                                     (* } *)
-                                                  ].
+    Let example103 : @Selection scalar_eqType := "name" [[ [::] ]].
 
     (** We show the selection is valid in the scope of the "Pet" type *)
-    Example e103 : selections_conform is_valid_scalar_value wf_schema "Pet" example103.
+    Example e103 : is_consistent is_valid_scalar_value wf_schema "Pet" example103.
     Proof. by []. Qed.
 
     
     (** #<a href='https://graphql.github.io/graphql-spec/June2018/##example-db33b'>Counter example 104</a># 
         ---- *)
-    Let example104 : seq (@Selection scalar_eqType) := [::
-                                                     (* on "Pet" { *)
-                                                     (* [:: *)
-                                                     "nickname" [[ [::] ]]
-                                                     (* ] *)
-                                                     (* } *)
-                                                  ].
+    Let example104 : @Selection scalar_eqType := "nickname" [[ [::] ]].
+    
 
     (** We show the selection is invalid in the scope of the "Pet" type *)
-    Example e104 : ~~ selections_conform is_valid_scalar_value wf_schema "Pet" example104.
+    Example e104 : ~~ is_consistent is_valid_scalar_value wf_schema "Pet" example104.
     Proof. by []. Qed.
 
     (** And also for any subtype of the "Pet" type (This one is not in the spec). *)
-    Example e104' : all (fun implementor => selections_conform is_valid_scalar_value wf_schema implementor example104) (get_possible_types wf_schema "Pet").
+    Example e104' : all (fun implementor => is_consistent is_valid_scalar_value wf_schema implementor example104) (get_possible_types wf_schema "Pet").
     Proof.
         by [].
     Qed.
@@ -339,22 +316,20 @@ Section GraphQLSpecExamples.
 
     (** #<a href='https://graphql.github.io/graphql-spec/June2018/##example-245fa'>Example 105</a># 
         ---- *)
-    Let example105 : seq (@Selection scalar_eqType) := [::
-                                                     (* on "CatOrDog" { *)
-                                                     (* [:: *)
-                                                     on "Pet" {
-                                                       [::
-                                                          "name" [[ [::] ]]
-                                                       ]
-                                                     };
-                                                     on "Dog" {
-                                                          [::
-                                                             "barkVolume" [[ [::] ]]
-                                                          ]
-                                                        }
-                                                        (* ] *)
-                                                        (* } *)
-                                                  ].
+    Let example105 : seq (@Selection scalar_eqType) :=
+      [::
+         on "Pet" {
+           [::
+              "name" [[ [::] ]]
+           ]
+         };
+         on "Dog" {
+              [::
+                 "barkVolume" [[ [::] ]]
+              ]
+            }
+      ].
+    
     (** We show the selection is invalid in the scope of the "CatOrDog" type *)
     Example e105 : selections_conform is_valid_scalar_value wf_schema "CatOrDog" example105.
     Proof. by []. Qed.
@@ -398,9 +373,9 @@ Section GraphQLSpecExamples.
                                                           ].
       
       Let example107_2 : seq (@Selection scalar_eqType) := [::
-                                                         "otherName" : "name" [[ [::] ]];
-                                                         "otherName" : "name" [[ [::] ]]
-                                                      ].
+                                                             "otherName" : "name" [[ [::] ]];
+                                                             "otherName" : "name" [[ [::] ]]
+                                                          ].
 
       (** We show the selection is renaming-consistent in the scope of the "Dog" type *)
       Example e107_1 : are_renaming_consistent wf_schema "Dog" example107_1.
@@ -419,9 +394,10 @@ Section GraphQLSpecExamples.
         ----
      *)
       Let example108 : seq (@Selection scalar_eqType) := [::
-                                                       "name" : "nickname" [[ [::] ]];
-                                                       "name" [[ [::] ]]
-                                                    ].
+                                                           "name" : "nickname" [[ [::] ]];
+                                                           "name" [[ [::] ]]
+                                                        ].
+      
       (** We show the selection is not renaming-consistent in the scope of the "Dog" type *)
       Example e108 : ~~ are_renaming_consistent wf_schema "Dog" example108.
       Proof.
@@ -474,19 +450,21 @@ Section GraphQLSpecExamples.
       (** #<a href='https://graphql.github.io/graphql-spec/June2018/##example-a8406'>Example 111</a>#
         ----
      *)
-      Let example111_1 : seq (@Selection scalar_eqType) := [::
-                                                         on "Dog" {
-                                                           [::
-                                                              "volume": "barkVolume" [[ [::] ]]
-                                                           ]
-                                                         };
-                                                         
-                                                         on "Cat" {
-                                                              [::
-                                                                 "volume": "meowVolume" [[ [::] ]]
-                                                              ]
-                                                            }
-                                                      ].
+      Let example111_1 : seq (@Selection scalar_eqType) :=
+        [::
+           on "Dog" {
+             [::
+                "volume": "barkVolume" [[ [::] ]]
+             ]
+           };
+           
+           on "Cat" {
+                [::
+                   "volume": "meowVolume" [[ [::] ]]
+                ]
+              }
+        ].
+      
       (** We show the selection is renaming-consistent in the scope of the "Pet" type *)
       Example e111_1 : are_renaming_consistent wf_schema "Pet" example111_1.
       Proof.
@@ -495,19 +473,21 @@ Section GraphQLSpecExamples.
 
 
       
-      Let example111_2 : seq (@Selection scalar_eqType) := [::
-                                                         on "Dog" {
-                                                           [::
-                                                              "doesKnowCommand" [[ [:: ("dogCommand", SValue (VString "SIT"))] ]]
-                                                           ]
-                                                         };
-                                                         
-                                                         on "Cat" {
-                                                              [::
-                                                                 "doesKnowCommand" [[ [:: ("catCommand", SValue (VString "JUMP"))] ]]
-                                                              ]
-                                                            }
-                                                      ].
+      Let example111_2 : seq (@Selection scalar_eqType) :=
+        [::
+           on "Dog" {
+             [::
+                "doesKnowCommand" [[ [:: ("dogCommand", SValue (VString "SIT"))] ]]
+             ]
+           };
+           
+           on "Cat" {
+                [::
+                   "doesKnowCommand" [[ [:: ("catCommand", SValue (VString "JUMP"))] ]]
+                ]
+              }
+        ].
+      
       (** We show the selection is renaming-consistent in the scope of the "Pet" type *)
       Example e111_2 : are_renaming_consistent wf_schema "Pet" example111_2.
       Proof.
@@ -518,26 +498,28 @@ Section GraphQLSpecExamples.
       (** #<a href='https://graphql.github.io/graphql-spec/June2018/##example-54e3d'>Counter example 112</a>#
         ----
      *)
-      Let example112 : seq (@Selection scalar_eqType) := [::
-                                                       on "Dog" {
-                                                         [::
-                                                            "someValue": "nickname" [[ [::] ]]
-                                                         ]
-                                                       };
-                                                       
-                                                       on "Cat" {
-                                                            [::
-                                                               "someValue": "meowVolume" [[ [::] ]]
-                                                            ]
-                                                          }
-                                                    ].
-      (** We show the selection is not renaming-consistent in the scope of the "Pet" type *)
+      Let example112 : seq (@Selection scalar_eqType) :=
+        [::
+           on "Dog" {
+             [::
+                "someValue": "nickname" [[ [::] ]]
+             ]
+           };
+           
+           on "Cat" {
+                [::
+                   "someValue": "meowVolume" [[ [::] ]]
+                ]
+              }
+        ].
+      
+      (** We show the selections are not type-compatible in the scope of the "Pet" type *)
       Example e112 : ~~ are_type_compatible wf_schema [seq pair "Pet" q | q <- example112].
       Proof.
           by [].
       Qed.
       
-      (** We show the selection is not renaming-consistent in the scope of the "Pet" type *)
+      (** We show the selections are not type-compatible in the scope of the "Pet" type *)
       Example e112' : ~~ selections_conform is_valid_scalar_value wf_schema "Pet" example112.
       Proof.
           by [].
@@ -557,12 +539,11 @@ Section GraphQLSpecExamples.
       (** #<a href='https://graphql.github.io/graphql-spec/June2018/##example-e23c5'>Example 113</a>#
         ----
      *)
-      Let example113 : seq (@Selection scalar_eqType) := [::
-                                                       "barkVolume" [[ [::] ]]
-                                                    ].
+      Let example113 : @Selection scalar_eqType := "barkVolume" [[ [::] ]].
+      
 
       (** We show the selection is valid in the scope of the "Pet" type *)
-      Example e113 : selections_conform is_valid_scalar_value wf_schema "Dog" example113.
+      Example e113 : is_consistent is_valid_scalar_value wf_schema "Dog" example113.
       Proof.
           by [].
       Qed.
@@ -570,17 +551,16 @@ Section GraphQLSpecExamples.
       (** #<a href='https://graphql.github.io/graphql-spec/June2018/##example-13b69'>Counter example 114</a>#
         ----
      *)
-      Let example114 : seq (@Selection scalar_eqType) :=
-        [::
-           "barkVolume" [[ [::] ]] {
-             [::
-                "sinceWhen" [[ [::] ]]
-             ]
-           }
-        ].
+      Let example114 : (@Selection scalar_eqType) :=
+        "barkVolume" [[ [::] ]] {
+                       [::
+                          "sinceWhen" [[ [::] ]]
+                       ]
+                     }.
+       
 
       (** We show the selection is invalid in the scope of the "Pet" type *)
-      Example e114 : ~~ selections_conform is_valid_scalar_value wf_schema "Dog" example114.
+      Example e114 : ~~ is_consistent is_valid_scalar_value wf_schema "Dog" example114.
       Proof.
           by [].
       Qed.
@@ -596,7 +576,7 @@ Section GraphQLSpecExamples.
                                           (Field "pet" [::] "Pet");
                                           (Field "catOrDog" [::] "CatOrDog")
                                        ]
-                                         }.
+                                 }.
 
       
      
@@ -607,10 +587,10 @@ Section GraphQLSpecExamples.
                                           [:: StringScalar; BooleanScalar; IntScalar; FloatScalar;
                                              ExtendedQuery;
                                              DogCommandEnum; DogType;
-                                               SentientInterface; PetInterface;
-                                                 AlienType; HumanType;
-                                                   CatCommandEnum; CatType;
-                                                     CatOrDogUnion; DogOrHumanUnion; HumanOrAlienUnion].
+                                             SentientInterface; PetInterface;
+                                             AlienType; HumanType;
+                                             CatCommandEnum; CatType;
+                                             CatOrDogUnion; DogOrHumanUnion; HumanOrAlienUnion].
 
 
       (** We prove it is still a valid schema *)
@@ -627,36 +607,29 @@ Section GraphQLSpecExamples.
       (** #<a href='https://graphql.github.io/graphql-spec/June2018/##example-d68ee'>Counter example 116</a>#
         ----
      *)
-      Let example116_1 : seq (@Selection scalar_eqType) :=
-        [::
-           "human" [[ [::] ]]
-        ].
+      Let example116_1 : @Selection scalar_eqType := "human" [[ [::] ]].
 
 
       (** We show the selection is invalid in the scope of the root query type *)
-      Example e116_1 : ~~selections_conform is_valid_scalar_value extended_wf_schema "ExtendedQuery" example116_1.
+      Example e116_1 : ~~is_consistent is_valid_scalar_value extended_wf_schema "ExtendedQuery" example116_1.
       Proof.
           by [].
       Qed.
 
-      Let example116_2 : seq (@Selection scalar_eqType) :=
-        [::
-           "pet" [[ [::] ]]
-        ].
+      Let example116_2 : @Selection scalar_eqType := "pet" [[ [::] ]].
+      
 
       (** We show the selection is invalid in the scope of the root query type *)
-      Example e116_2 : ~~selections_conform is_valid_scalar_value extended_wf_schema "ExtendedQuery" example116_2.
+      Example e116_2 : ~~is_consistent is_valid_scalar_value extended_wf_schema "ExtendedQuery" example116_2.
       Proof.
           by [].
       Qed.
 
-      (** We show the selection is invalid in the scope of the root query type *)
-      Let example116_3 : seq (@Selection scalar_eqType) :=
-        [::
-           "catOrDog" [[ [::] ]]
-        ].
+      Let example116_3 : @Selection scalar_eqType := "catOrDog" [[ [::] ]].
 
-      Example e116_3 : ~~selections_conform is_valid_scalar_value extended_wf_schema "ExtendedQuery" example116_3.
+      
+      (** We show the selection is invalid in the scope of the root query type *)
+      Example e116_3 : ~~is_consistent is_valid_scalar_value extended_wf_schema "ExtendedQuery" example116_3.
       Proof.
           by [].
       Qed.
@@ -681,25 +654,21 @@ Section GraphQLSpecExamples.
     (** #<a href='https://graphql.github.io/graphql-spec/June2018/##example-760cb'>Example 117</a>#
         ----
      *)
-    Let example117_1 : seq (@Selection scalar_eqType) :=
-      [::
-         "doesKnowCommand" [[ [:: ("dogCommand", SValue (VString "SIT"))] ]]
-      ].
+    Let example117_1 : @Selection scalar_eqType := "doesKnowCommand" [[ [:: ("dogCommand", SValue (VString "SIT"))] ]].
+
 
     (** We show the selection is valid in the scope of the "Dog" type *)
-    Example e117_1 : selections_conform is_valid_scalar_value wf_schema "Dog" example117_1.
+    Example e117_1 : is_consistent is_valid_scalar_value wf_schema "Dog" example117_1.
     Proof.
         by [].
     Qed.
 
     (* Not including the directive @include since directives are not implemented.*)
-    Let example117_2 : seq (@Selection scalar_eqType) :=
-      [::
-         "isHousetrained" [[ [:: ("atOtherHomes", SValue (VBool true))] ]]
-      ].
+    Let example117_2 : @Selection scalar_eqType := "isHousetrained" [[ [:: ("atOtherHomes", SValue (VBool true))] ]].
+    
 
     (** We show the selection is valid in the scope of the "Dog" type *)
-    Example e117_2 : selections_conform is_valid_scalar_value wf_schema "Dog" example117_2.
+    Example e117_2 : is_consistent is_valid_scalar_value wf_schema "Dog" example117_2.
     Proof.
       by [].
     Qed.
@@ -707,13 +676,11 @@ Section GraphQLSpecExamples.
     (** #<a href='https://graphql.github.io/graphql-spec/June2018/##example-d5639'>Counter example 118</a>#
         ----
      *)
-    Let example_118 : seq (@Selection scalar_eqType) :=
-      [::
-         "doesKnowCommand" [[ [:: ("command", SValue (VString "CLEAN_UP_HOUSE")) ] ]]
-      ].
+    Let example_118 : @Selection scalar_eqType := "doesKnowCommand" [[ [:: ("command", SValue (VString "CLEAN_UP_HOUSE")) ] ]].
 
+    
     (** We show the selection is invalid in the scope of the "Dog" type *)
-    Example e118 : ~~selections_conform is_valid_scalar_value wf_schema "Dog" example_118.
+    Example e118 : ~~is_consistent is_valid_scalar_value wf_schema "Dog" example_118.
     Proof.
         by [].
     Qed.
@@ -799,26 +766,20 @@ Section GraphQLSpecExamples.
     (** #<a href='https://graphql.github.io/graphql-spec/June2018/##example-18fab'>Example 121</a>#
         ----
      *)
-    Let example121_1 : seq (@Selection scalar_eqType) :=
-      [::
-         "multipleReqs" [[ [:: ("x", SValue (VInt 1)); ("y", SValue (VInt 2))] ]]
-      ].
+    Let example121_1 : @Selection scalar_eqType := "multipleReqs" [[ [:: ("x", SValue (VInt 1)); ("y", SValue (VInt 2))] ]].
 
     (** We show the selection is valid in the scope of the "Arguments" type *)
-    Example e121_1 : selections_conform is_valid_scalar_value extended_wf_schema "Arguments" example121_1.
+    Example e121_1 : is_consistent is_valid_scalar_value extended_wf_schema "Arguments" example121_1.
     Proof.
         by [].
     Qed.
 
     
-    Let example121_2 : seq (@Selection scalar_eqType) :=
-      [::
-         "multipleReqs" [[ [:: ("y", SValue (VInt 1)); ("x", SValue (VInt 2))] ]]
-      ].
+    Let example121_2 : @Selection scalar_eqType := "multipleReqs" [[ [:: ("y", SValue (VInt 1)); ("x", SValue (VInt 2))] ]].
 
     
     (** We show the selection is valid in the scope of the "Arguments" type *)
-    Example e121_2 : selections_conform is_valid_scalar_value extended_wf_schema "Arguments" example121_2.
+    Example e121_2 : is_consistent is_valid_scalar_value extended_wf_schema "Arguments" example121_2.
     Proof.
         by [].
     Qed.
