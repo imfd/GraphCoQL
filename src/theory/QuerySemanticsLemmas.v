@@ -171,7 +171,7 @@ Section Theory.
         let Hv := fresh "Hv" in
         case Hv : ohead => [v|] //=
      
-      | [H : (ohead (neighbors_with_field _ _ _)) = _ |- context [ ohead (neighbors_with_field _ _ _)] ] =>
+      | [H : (ohead (neighbors_with_label _ _ _)) = _ |- context [ ohead (neighbors_with_label _ _ _)] ] =>
         rewrite H /=
       | [ H : does_fragment_type_apply _ _ _ = _ |- context [ does_fragment_type_apply _ _ _] ] => rewrite H /=
 

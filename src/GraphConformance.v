@@ -126,7 +126,7 @@ Section Conformance.
     (**
        Get a node's neighbors connected via an edge with a given field. 
      *)
-    Definition neighbors_with_field (u : node) (f : label) : seq node :=
+    Definition neighbors_with_label (u : node) (f : label) : seq node :=
       undup [seq edge.(etarget) |  edge <- [seq edge <- graph.(edges) | (esource edge == u) & (efield edge == f)]].
 
 

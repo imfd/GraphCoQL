@@ -58,9 +58,9 @@ Section Theory.
        This lemma states that neighbors of a node also belong to the graph.
      *)
     Lemma neighbors_are_in_nodes u label:
-      forall x, x \in neighbors_with_field graph u label -> x \in graph.(nodes).
+      forall x, x \in neighbors_with_label graph u label -> x \in graph.(nodes).
     Proof.
-      rewrite /neighbors_with_field /nodes => x.
+      rewrite /neighbors_with_label /nodes => x.
       rewrite -?in_undup => /mapP [v].
       rewrite mem_filter => /andP [/andP [/eqP Hsrc /eqP Hlabel] Hin] /= Heq.
       apply/orP; right.
@@ -141,12 +141,12 @@ Section Theory.
      *)
     Lemma neighbors_are_subtype_of_field u label fdef  :
       lookup_field_in_type s u.(ntype) label.(lname) = Some fdef ->
-      forall v, v \in neighbors_with_field g u label ->
+      forall v, v \in neighbors_with_label g u label ->
                  v.(ntype) \in get_possible_types s fdef.(return_type).
     Proof.
       move=> Hlook.
       case: g => g'; rewrite /is_a_conforming_graph /= => /and3P [Hroot Hedges Hnodes] v.
-      rewrite /neighbors_with_field -in_undup => /mapP [v'].
+      rewrite /neighbors_with_label -in_undup => /mapP [v'].
       case: v' => [[src' label'] target].
       rewrite mem_filter => /andP [/andP [/eqP /= Hsrc /eqP Hlabel] Hin] Htrgt.
       simpl in Hin.
