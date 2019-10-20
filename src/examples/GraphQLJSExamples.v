@@ -33,8 +33,8 @@ Require Import QuerySemanticsLemmas.
       <div class="container">
         <h1 class="display-4">GraphQLJS Example</h1>
         <p class="lead">
-         This file contains the example used in [Hartig & Pérez, 2017]; schema,
-         graph, query and response.
+         This file contains the <a href='https://github.com/graphql/graphql-js/tree/master/src/__tests__'>Star Wars example</a>
+         used in the GraphQL reference implementation.         
          </p>
   </div>
 </div>#
@@ -43,49 +43,46 @@ Require Import QuerySemanticsLemmas.
 Open Scope string_scope.
 
 
-(** * Values 
-    
+(** *** Values 
+    ----
+
     We first need to define the values used in the system, the coercion
-    from a value to a JSON object, etc.
+    of values and the predicate to check when a scalar value respects the
+    expected type by the schema.
 *)
 Section Values.
 
   Unset Elimination Schemes.
-  (** ---- *)
-  (** *** Value 
+
+  (** **** Scalar  
+     ----
      
-     Type that wraps all possible values present in the system.
+     In this example, the only value used are strings.    
    *)
   Notation Scalar := string.
 
 
-  (** ---- *)
-  (** *** Coerce function
-
-      #<strong>coerce</strong># : Value → ResponseValue
+  (** **** Coerce function
+      ----
  
       This is the function used in the semantics to coerce 
-      results into JSON values.
-
-      Scalar value are  simply translated as leaf values, while 
-      list values have to be properly formatted as array values.
+      results into "proper" values.
+      
+      Since we use the same type of data everywhere, we
+      actually don't need to coerce, hence coerce is the id function.
+      One could imagine that a technology implementing GraphQL
+      might have different types to represent their values.
    *)
   Definition coerce : Scalar -> Scalar := id.
 
 
   
 
-  (** ---- *)
-  (** *** Is valid value?
-      #<strong>is_valid_value</strong># : type → Value → Bool
+ (** **** Is valid scalar value?
+      ---- 
 
-      The following predicate checks whether a given value respects 
-      the given type. This is used when checking that argument values 
-      are used accordingly to the schema, and similarly for graphs.
-
-      For instance, an integer value in this scenario is valid if the 
-      type is the ID type. However, a string value is valid for the type 
-      String or if it refers to an enum value.
+      The following predicate checks whether a value respects its
+      expected type. 
    *)
   Variable (schema : graphQLSchema). 
   Definition is_valid_scalar_value (ty : type) (v : Scalar) : bool :=
@@ -104,28 +101,35 @@ End Values.
 
 
 
-(** * Example
-
+(** *** Star Wars Example
+    ----
  *)
 Section Example.
 
  
   Coercion namedType_of_string (s : string) := NamedType s.
 
-  (** ---- *)
-  (** ** Schema
+  (** **** Schema
+      ----
+      First, we define the schema. 
+
+       #<div class="row">
+        <div class="col-md-5">
+          <img src="../imgs/GQLJSExample/schema1.png" class="img-fluid" alt="Schema definition">
+        </div>
+        <div class="col-md-5">
+          <img src="../imgs/GQLJSExample/schema2.png" class="img-fluid" alt="Schema definition">
+        </div>
       
-      As described in HP, the schema is the following:
-
-      #<img src="../imgs/HPExample/schema.png" class="img-fluid" alt="Schema definition">#
-
+      </div>#
    *)
   (**
-     We first define the scalar types used in this system.
+     We start by defining the scalar types used in this system.
    *)
   Let StringType := scalar "String".
 
 
+  (** Then the left hand side *)
   Let EpisodeType := enum "Episode" { [:: "NEWHOPE" ; "EMPIRE" ; "JEDI" ] }.
 
   (* The secret backstory is actually implemented as a function that throws error, so
@@ -151,6 +155,7 @@ Section Example.
                            ]
                          }.
 
+  (** And the right hand side *)
   Let DroidType := object "Droid" implements [:: "Character"] {
                            [::
                               Field "id" [::] "String" ;
@@ -172,40 +177,37 @@ Section Example.
                          }.
 
 
-  (** ---- *)
   (**
-     We define the schema as the root operation type and its type definitions.
+     We then define the schema as the root operation type and its type definitions.
    *)
   Let StarWarsSchema  := GraphQLSchema "Query"  [:: StringType; EpisodeType; CharacterType; HumanType; DroidType; QueryType].
 
 
   
-  (** ---- *)
+  
   (**
-     We prove that the schema is well-formed by simple computation.
+     Followed by a proof that the schema is well-formed, by simple computation.
    *)
   Let wf_schema : StarWarsSchema.(is_a_wf_schema). Proof. by []. Qed.
   
 
 
- 
-  (** ---- *)
   (**
-     We build the well-formed schema with the schema, the proof of its well-formedness
-     and the predicate that helps determine when a value respects the type.
+     Finally, we build the well-formed schema with the schema and the proof of its well-formedness.
    *)
   Let ValidStarWarsSchema : wfGraphQLSchema := WFGraphQLSchema wf_schema.
 
-  (** ---- *)
-  (** ** Data 
-        
-      We then define the graph defined in
-      #<a href='https://github.com/graphql/graphql-js/blob/master/src/__tests__/starWarsData.js'>Data</a>#
-        
-      #<img src="../imgs/HPExample/graph.png" class="img-fluid" alt="Graph">#
+  
+  (** **** Graph 
+      ----
+      Secondly, we define the graph. 
+
         
    *)
-  
+
+  (**
+     We define the nodes of the graph.
+   *)
   Let Luke := Node "Human" [::
                              (Label "id" [::], SValue "1000");
                              (Label "name" [::], SValue "Luke Skywalker");
@@ -288,8 +290,12 @@ Section Example.
                            ].
 
 
+  (** The root node *)
   Let Root := @Node string_eqType "Query" [::].
 
+  (**
+     Then the labels on edges.
+   *)
   Let human (id : string) := @Label string_eqType "human" [:: ("id", SValue id)].
 
   Let droid (id : string) := @Label string_eqType "droid" [:: ("id", SValue id)].
@@ -299,7 +305,11 @@ Section Example.
   Let friends := @Label string_eqType "friends" [::].
 
   Let appearsIn := @Label string_eqType "appearsIn" [::].
-  
+
+
+  (**
+     And finally the edges themselves.
+   *)
   Let edges : seq (@node string_eqType * label * node) :=
     [::
        (* Heroes *)
@@ -358,48 +368,46 @@ Section Example.
 
     ].
 
-   (** ---- *)
+
   (**
        We define the graph as the root node and the edges in the graph.
    *)
   Let StarWarsGraph := GraphQLGraph Root edges.
 
 
-  (** ---- *)
+
   (**
-       We prove that the graph conforms to the previous well-formed schema, by simple computation.
-   *)
- 
+       Then, we prove that the graph conforms to the previous well-formed schema and the 
+       predicate on valid values, by simple computation.
+   *) 
   Let graph_conforms : is_a_conforming_graph ValidStarWarsSchema is_valid_scalar_value StarWarsGraph.
   Proof.
       by [].
   Qed.
     
 
-  (** ---- *)
   (**
-       We build the conformed graph, using the graph and the proof of its conformance.
+       Finally, we build the conformed graph, using the graph and the proof of its conformance.
    *)
   Let ValidStarWarsGraph := ConformedGraph graph_conforms.
 
 
 
 
-  (** ---- *)
-  (** ** Query 
+  (** **** Query 
         
         We then define the queries.
-
-        #<img src="../imgs/HPExample/query.png" class="img-fluid" alt="Query">#
-
    *)
 
+  (* Simple commodity *)
   Let val (v : string) := Leaf (Some v).
   
-  (** *** Basic Queries
-
+  (** **** #<a href='https://github.com/graphql/graphql-js/blob/master/src/__tests__/starWarsQuery-test.js##L11'>Basic Queries</a>#
+      ----
    *)
-  (** **** It correctly identifies R2-D2 as the hero of the Star Wars Saga
+  
+  (** It correctly identifies R2-D2 as the hero of the Star Wars Saga.
+      ----
    *)
   Let q1 := @Query string_eqType (Some "HeroNameQuery")
                   [::
@@ -410,6 +418,7 @@ Section Example.
                      }
                   ].
 
+  (** We prove it is a valid query *)
   Let q1_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q1. by []. Qed.
   
   Let result1 :=   [::
@@ -421,14 +430,15 @@ Section Example.
                      )
                   ].
 
+  (** And that it evaluates correctly *)
   Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q1 = result1.
        by [].
    Qed.
 
-   (** **** It allows us to query for the ID and friends of R2-D2
-
-    *)
-  
+  (** ---- *)
+   (** It allows us to query for the ID and friends of R2-D2
+       ----
+    *)  
 
    Let q2 := @Query string_eqType (Some "HeroNameAndFriendsQuery")
                   [::
@@ -445,9 +455,10 @@ Section Example.
                      }
                   ].
 
-  Let q2_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q2. by []. Qed.
+   (** We prove it is a valid query *) 
+   Let q2_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q2. by []. Qed.
 
-  Let result2 :=   [::
+   Let result2 :=   [::
                      ("hero",
                       Response.Object
                         [::
@@ -474,17 +485,17 @@ Section Example.
                      )
                   ].
 
+   (** And that it evaluates correctly *)
+   Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q2 = result2.
+       by [].
+   Qed.
 
-  Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q2 = result2.
-      by [].
-  Qed.
 
-
-  (** **** Nested Queries
-
+  (** **** #<a href='https://github.com/graphql/graphql-js/blob/master/src/__tests__/starWarsQuery-test.js##L86'>Nested Queries</a>#
+      ----
    *)
   (** It allows us to query for the friends of friends of R2-D2
-     
+      ----
    *)
 
    Let q3 := @Query string_eqType (Some "HeroNameAndFriendsQuery")
@@ -507,6 +518,7 @@ Section Example.
                      }
                    ].
 
+   (** We prove it is a valid query *) 
    Let q3_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q3. by []. Qed.
 
 
@@ -611,17 +623,17 @@ Section Example.
                        ]
                     )
                  ].
-
+   (** And that it evaluates correctly *)
    Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q3 = result3.
        by [].
    Qed.
 
    
-   (** *** Using IDs and query parameters to refetch objects
-
+   (** **** #<a href='https://github.com/graphql/graphql-js/blob/master/src/__tests__/starWarsQuery-test.js##L166'>Using IDs and query parameters to refetch objects</a>#
+       ----
     *)
    (** It allows us to query for Luke Skywalker directly, using his ID
-
+       ----
     *)   
    Let q4 := @Query string_eqType (Some "FetchLukeQuery")
                    [::
@@ -631,7 +643,8 @@ Section Example.
                         ]
                       }
                    ].
-
+   
+   (** We prove it is a valid query *)
    Let q4_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q4. by []. Qed.
 
    Let result4 := [::
@@ -642,14 +655,15 @@ Section Example.
                        ]
                     )
                  ].
-
+   (** And that it evaluates correctly *)
    Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q4 = result4.
        by [].
    Qed.
 
 
-   (** **** pass an invalid ID to get null back.
-
+   (** ---- *)
+   (** Pass an invalid ID to get null back.
+       ----
     *)
  
   Let q5 := @Query string_eqType (Some "humanQuery")
@@ -661,23 +675,24 @@ Section Example.
                       }
                    ].
 
+  (** We prove it is a valid query *)
    Let q5_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q5. by []. Qed.
 
    Let result5 := [::
                     ("human", (@Leaf string_eqType None))
                  ].
-
+   (** And that it evaluates correctly *)
    Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q5 = result5.
        by [].
    Qed.
 
 
 
-   (** *** Using aliases to change the key in the response
-
+   (** **** #<a href='https://github.com/graphql/graphql-js/blob/master/src/__tests__/starWarsQuery-test.js##L241'>Using aliases to change the key in the response</a>#
+       ----
     *)
-   (** **** Allows us to query for Luke, changing his key with an alias
-
+   (** Allows us to query for Luke, changing his key with an alias
+       ----
     *)
 
    Let q6 := @Query string_eqType (Some "FetchLukeAliased")
@@ -689,6 +704,7 @@ Section Example.
                       }
                    ].
 
+   (** We prove it is a valid query *)
    Let q6_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q6. by []. Qed.
 
    Let result6 := [::
@@ -699,16 +715,16 @@ Section Example.
                        ]
                     )
                  ].
-
+   (** And that it evaluates correctly *)
    Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q6 = result6.
        by [].
    Qed.
 
-
-   (** **** Allows us to query for both Luke and Leia, using two root fields and an alias
-
+   
+   (** ---- *)
+   (** Allows us to query for both Luke and Leia, using two root fields and an alias
+       ----
     *)
-
    Let q7 := @Query string_eqType (Some "FetchLukeAndLeiaAliased")
                    [::
                       "luke":"human" [[ [:: ("id", SValue "1000")] ]] {
@@ -723,6 +739,7 @@ Section Example.
                                      }
                    ].
 
+   (** We prove it is a valid query *)
    Let q7_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q7. by []. Qed.
 
    Let result7 := [::
@@ -739,19 +756,19 @@ Section Example.
                        ]
                     )
                  ].
-
+   (** And that it evaluates correctly *)
    Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q7 = result7.
        by [].
    Qed.
 
 
 
-   (** *** Uses fragments to express more complex queries
-
+   (** **** #<a href='https://github.com/graphql/graphql-js/blob/master/src/__tests__/starWarsQuery-test.js##L285'>Uses fragments to express more complex queries</a>#
+       ----
     *)
 
-   (** **** Allows us to query using duplicated content
-
+   (** Allows us to query using duplicated content
+       ----
     *)
    Let q8 := @Query string_eqType (Some "DuplicateFields")
                    [::
@@ -769,6 +786,7 @@ Section Example.
                                      }
                    ].
 
+   (** We prove it is a valid query *)
    Let q8_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q8. by []. Qed.
 
    Let result8 := [::
@@ -787,14 +805,15 @@ Section Example.
                        ]
                     )
                  ].
-
+   (** And that it evaluates correctly *)
    Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q8 = result8.
        by [].
    Qed.
 
 
-   (** **** Allows us to use a fragment to avoid duplicating content
-       
+   (** ---- *)
+   (** Allows us to use a fragment to avoid duplicating content
+       ----
        Not doing it bc fragments are not implemented. Instead, checking that inline fragments 
        are still ok.
     *)
@@ -823,6 +842,7 @@ Section Example.
                                      }
                    ].
 
+   (** We prove it is a valid query *)
    Let q9_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q9. by []. Qed.
 
    Let result9 := [::
@@ -841,7 +861,7 @@ Section Example.
                        ]
                     )
                  ].
-
+   (** And that it evaluates correctly *)
    Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q9 = result9.
        by [].
    Qed.
