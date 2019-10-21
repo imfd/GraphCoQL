@@ -7,47 +7,82 @@ The following sections detail how to setup the project, build it and the current
 
 Finally, the README file in the `src` folder specifies how the definitions and proofs are structured.
 
-## Setup
+## Setup & build
 
-GraphCoQL requires the following packages:
-- [Coq v8.9.1](https://coq.inria.fr/download)
-- [Equations v.1.2+8.9](http://mattam82.github.io/Coq-Equations/)
-- [Mathematical Components v.1.9.0](https://github.com/math-comp/math-comp)
+In this section we describe how to setup the project, its dependencies and then build it.
 
-The following setup instructions are based on using [Opam](https://opam.ocaml.org/doc/Install.html) to install the dependencies (so we recommend using it).
+First of all, clone the project and then, in a terminal, navigate to the project's folder.
+```bash
+$ git clone https://github.com/imfd/GraphCoQL.git # Clone the respository
+$ cd GraphCoQL/ # Navigate inside the project's folder
+```
 
-### Initialize Opam
+Then, we proceed to install the dependencies and build the project. We describe how to install each in the following subsections. As a general overview, GraphCoQL depends on the following:
+- Coq v8.9.1
+- Equations v.1.2+8.9
+- Mathematical Components v.1.9.0
+
+
+### Install Opam and initialize it
+
+We describe the process of installing the GraphCoQL dependencies by means of the Ocaml Package Manager ([Opam](https://opam.ocaml.org/)).
+
+Installation of Opam may vary from distribution and operating system, hence we defer the appropriate instructions to their [installation site](https://opam.ocaml.org/doc/Install.html).
+
 After installing Opam, it must be initialized prior to its first usage. The following script initializes it and updates environment variables.
 
 ```bash
-opam init
-eval $(opam env)
+$ opam init # initializes opam
+$ eval $(opam env) # updates opam environment variables
 ```
 
 ### Installing Coq
-The following script pins Opam to a particular version of Coq and installs it.
+
+First, we install [Coq](https://coq.inria.fr/download) using the following command. This command pins Opam to a particular version of Coq (particularly, version 8.9.1) and installs Coq in the system.
 
 ```bash
 # Pin the coq package to version 8.9.1 and install it.
-opam pin add coq 8.9.1
+$ opam pin add coq 8.9.1
 ```
 
 For a more precise guide on installing Coq, you may follow the [instructions in the Coq website](https://coq.inria.fr/opam-using.html).
 
 ### Installing Equations library
+Next, we install the [Equations](http://mattam82.github.io/Coq-Equations/) library, by means of the two following command.
+
+The first command allows Opam to find Coq packages. As stated in the Coq installation site:
+> Coq packages live in a repository separate from the standard OCaml repository. This commands makes them available:
+
 ```bash
-opam install coq-equations
-# Alternatively to install a specific version: opam install coq-equations.1.2+8.9
+$ opam repo add coq-released https://coq.inria.fr/opam/released
+```
+
+Once that step is performed, one can install the Equations package, by means of the following command.
+
+```bash
+$ opam install coq-equations.1.2+8.9
 ```
 
 ### Installing the Mathematical Components library
+
+Then, we install the [Mathematical Components](https://github.com/math-comp/math-comp) library.
+
 ```bash
-opam install coq-mathcomp-ssreflect
-# Alternatively to install a specific version: opam install coq-mathcomp-ssreflect.1.9.0
+$ opam install coq-mathcomp-ssreflect.1.9.0
 ```
 
+### Build the project
 
-## What's implemented?
+Finally, once all dependencies have been installed, it is possible to build the project. This is simply done by calling `make` in the top directory.
+```bash
+$ make
+```
+
+The process will then compile all required `*.v` files and generate the html documentation, stored in the directory `docs`.
+
+It is now possible to start programming in Coq and GraphCoQL or explore its documentation :tada:.
+
+## What GraphQL features does GraphCoQL support?
 
 Here we briefly describe the features that GraphCoQL currently supports. Each feature is linked to the specific section in the latest release of the GraphQL specification (June 2018).
 
