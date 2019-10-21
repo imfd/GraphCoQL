@@ -196,13 +196,13 @@ Section Theory.
     Variable (s : wfGraphQLSchema).
 
     (**
-       This lemma states that the size of the selections found via [find_queries_with_label] is
+       This lemma states that the size of the selections found via [find_valid_fields_with_response_name] is
        less or equal to the original selection list.
      *)
     Lemma found_queries_leq_size l O__t (qs : seq (@Selection Scalar)) :
-      selections_size (find_queries_with_label s l O__t qs) <= selections_size qs.
+      selections_size (find_valid_fields_with_response_name s l O__t qs) <= selections_size qs.
     Proof.
-        by funelim (find_queries_with_label _ _ _ qs) => //=; simp selection_size; rewrite ?selections_size_cat; ssromega.
+        by funelim (find_valid_fields_with_response_name _ _ _ qs) => //=; simp selection_size; rewrite ?selections_size_cat; ssromega.
     Qed.
 
     
@@ -224,14 +224,14 @@ Section Theory.
       
     (** ---- *)
     (**
-       This lemma states that that [find_queries_with_label] distributes over list concatenation.
+       This lemma states that that [find_valid_fields_with_response_name] distributes over list concatenation.
      *)
-    Lemma find_queries_with_label_cat l ty (qs1 qs2 : seq (@Selection Scalar)):
-      find_queries_with_label s l ty (qs1 ++ qs2) = find_queries_with_label s l ty qs1 ++ find_queries_with_label s l ty qs2.
+    Lemma find_valid_fields_with_response_name_cat l ty (qs1 qs2 : seq (@Selection Scalar)):
+      find_valid_fields_with_response_name s l ty (qs1 ++ qs2) = find_valid_fields_with_response_name s l ty qs1 ++ find_valid_fields_with_response_name s l ty qs2.
     Proof.
-      funelim (find_queries_with_label s l ty qs1) => //=.
-      all: do ? by simp find_queries_with_label; rewrite Heq /= H.
-        by simp find_queries_with_label; rewrite Heq /= H0 catA.
+      funelim (find_valid_fields_with_response_name s l ty qs1) => //=.
+      all: do ? by simp find_valid_fields_with_response_name; rewrite Heq /= H.
+        by simp find_valid_fields_with_response_name; rewrite Heq /= H0 catA.
     Qed.
 
     (** ---- *)
@@ -269,10 +269,10 @@ Section Theory.
       uniq ptys ->
       all (is_object_type s) ptys ->
       t \notin ptys ->
-      find_queries_with_label s rname t [seq InlineFragment t' (f t' φ) | t' <- ptys] = [::].
+      find_valid_fields_with_response_name s rname t [seq InlineFragment t' (f t' φ) | t' <- ptys] = [::].
     Proof.      
       elim: ptys => //= t' ptys IH /andP [Hnin Huniq] /andP [Hobj Hinobj] Htnin.
-      simp find_queries_with_label.
+      simp find_valid_fields_with_response_name.
       have -> /= : does_fragment_type_apply s t t' = false.
         by apply: object_diff_name_N_applies => //; move/memPn: Htnin => /(_ t' (mem_head t' ptys)).
       apply: IH => //=.
@@ -290,11 +290,11 @@ Section Theory.
       uniq ptys ->
       all (is_object_type s) ptys ->
       t \notin ptys ->
-      find_queries_with_label s rname t [seq InlineFragment t' φ | t' <- ptys] = [::].
+      find_valid_fields_with_response_name s rname t [seq InlineFragment t' φ | t' <- ptys] = [::].
     Proof.
       
       elim: ptys => //= t' ptys IH /andP [Hnin Huniq] /andP [Hobj Hinobj] Htnin.
-      simp find_queries_with_label.
+      simp find_valid_fields_with_response_name.
       have -> /= : does_fragment_type_apply s t t' = false.
           by apply: object_diff_name_N_applies => //; move/memPn: Htnin => /(_ t' (mem_head t' ptys)).
       apply: IH => //=.
@@ -310,18 +310,18 @@ Section Theory.
      *)
     Lemma find_filter_swap rname1 rname2 ty φ :
       rname1 == rname2 = false ->
-      find_queries_with_label s rname1 ty (filter_queries_with_label rname2 φ) = (find_queries_with_label s rname1 ty φ).
+      find_valid_fields_with_response_name s rname1 ty (filter_queries_with_label rname2 φ) = (find_valid_fields_with_response_name s rname1 ty φ).
     Proof.
       move: {2}(selections_size _) (leqnn (selections_size φ)) => n.
       elim: n φ => /= [| n IH] φ; first by rewrite leqn0 => /selections_size_0_nil ->.
-      case: φ => //= q φ; case_selection q; simp selection_size => Hleq Hneq; simp filter_queries_with_label; simp find_queries_with_label => /=; last first.
+      case: φ => //= q φ; case_selection q; simp selection_size => Hleq Hneq; simp filter_queries_with_label; simp find_valid_fields_with_response_name => /=; last first.
 
       - by case does_fragment_type_apply => /=; [congr cat|]; apply: IH => //; ssromega.
 
         all: do [case: eqP => /= [-> | Hfneq];
                              [ by rewrite eq_sym Hneq /=; apply: IH => //; ssromega
                              | by case: eqP => //= [/eqP Heq | /eqP-/negbTE Hfneq'];
-                                              simp find_queries_with_label => /=; rewrite ?Heq ?Hfneq' /= IH //; ssromega ] ].
+                                              simp find_valid_fields_with_response_name => /=; rewrite ?Heq ?Hfneq' /= IH //; ssromega ] ].
     Qed.
           
 
@@ -331,10 +331,10 @@ Section Theory.
        you filtered those queries, then the result is empty.
      *)
     Lemma find_queries_filter_nil rname O__t φ :
-      find_queries_with_label s rname O__t (filter_queries_with_label rname φ) = [::].
+      find_valid_fields_with_response_name s rname O__t (filter_queries_with_label rname φ) = [::].
     Proof.
-      funelim (filter_queries_with_label rname φ) => //=; do ? by simp find_queries_with_label; move/negbTE in Heq; rewrite Heq /=.
-        by simp find_queries_with_label; case: does_fragment_type_apply => //=; rewrite H H0 /=.
+      funelim (filter_queries_with_label rname φ) => //=; do ? by simp find_valid_fields_with_response_name; move/negbTE in Heq; rewrite Heq /=.
+        by simp find_valid_fields_with_response_name; case: does_fragment_type_apply => //=; rewrite H H0 /=.
     Qed.
 
 
@@ -353,20 +353,20 @@ Section Theory.
 
     (** ---- *)
     (**
-       This lemma states that queries found via [find_queries_with_label] is a subsequence of 
+       This lemma states that queries found via [find_valid_fields_with_response_name] is a subsequence of 
        the fields found via [find_fields_with_response_name].
      *)
     Lemma find_queries_subseq_find_fields ty f φ :
-      subseq (find_queries_with_label s f ty φ) (find_fields_with_response_name f φ).
+      subseq (find_valid_fields_with_response_name s f ty φ) (find_fields_with_response_name f φ).
     Proof.
-      funelim (find_queries_with_label s f ty φ) => //=.
+      funelim (find_valid_fields_with_response_name s f ty φ) => //=.
       all: do ?[simp find_fields_with_response_name; rewrite Heq /=; case: ifP => //=; by move/negbT/eqP].
 
       all: do ? by simp find_fields_with_response_name; rewrite Heq /=.
 
       - by simp find_fields_with_response_name; rewrite cat_subseq.
       - simp find_fields_with_response_name.
-        rewrite -[find_queries_with_label _ _ _ _]cat0s; rewrite cat_subseq //=.
+        rewrite -[find_valid_fields_with_response_name _ _ _ _]cat0s; rewrite cat_subseq //=.
           by apply: sub0seq.
     Qed.
 
@@ -374,11 +374,11 @@ Section Theory.
     (** ---- *)
     (**
        This lemma states that if no field is found via [find_fields_with_response_name] then
-       no field will be found via [find_queries_with_label] (because the latter is a subsequence of the former).
+       no field will be found via [find_valid_fields_with_response_name] (because the latter is a subsequence of the former).
      *)
     Lemma find_queries_nil_if_find_fields_nil ty rname φ :
       find_fields_with_response_name rname φ = [::] ->
-      find_queries_with_label s rname ty φ = [::].
+      find_valid_fields_with_response_name s rname ty φ = [::].
     Proof.
       move=> Hnil.
       have := (find_queries_subseq_find_fields ty rname φ).
@@ -427,7 +427,7 @@ Section Theory.
     (**
        This lemma states that if every inline fragment in a list 
        of inline fragments does not apply to a type [ty], then 
-       [find_queries_with_label] will result in an empty list
+       [find_valid_fields_with_response_name] will result in an empty list
        if [ty] is used to search.
      *)
     Lemma find_fragment_not_applies_is_nil rname ty φ :
@@ -436,9 +436,9 @@ Section Theory.
                  | on (t) {(_)} => ~~ does_fragment_type_apply s ty t
                  | _ => true
                  end) φ ->
-      find_queries_with_label s rname ty φ = [::].
+      find_valid_fields_with_response_name s rname ty φ = [::].
     Proof.
-      funelim (find_queries_with_label s rname ty φ) => //=; bcase; [by rewrite Heq in Hb0 | by apply: H].
+      funelim (find_valid_fields_with_response_name s rname ty φ) => //=; bcase; [by rewrite Heq in Hb0 | by apply: H].
     Qed.
       
 

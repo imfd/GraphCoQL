@@ -31,11 +31,11 @@ Require Import Ssromega.
            | [|- context [ selections_size_aux (_ ++ _) ]] => rewrite selections_size_aux_cat /=
            | [|- context [ selections_size (_ ++ _)]] => rewrite selections_size_cat
 
-           | [|- context [ selections_size (merge_selection_sets (find_queries_with_label ?s ?rname ?ty ?qs)) ]] =>
+           | [|- context [ selections_size (merge_selection_sets (find_valid_fields_with_response_name ?s ?rname ?ty ?qs)) ]] =>
              let Hfleq := fresh in
              let Hmleq := fresh in
              have Hfleq := (found_queries_leq_size s rname ty qs);
-             have Hmleq := (merged_selections_leq (find_queries_with_label s rname ty qs)); ssromega                         
+             have Hmleq := (merged_selections_leq (find_valid_fields_with_response_name s rname ty qs)); ssromega                         
 
            | [|- context [selections_size_aux (merge_pairs_selection_sets ?s (find_valid_pairs_with_response_name ?s ?ts ?rname ?qs)) ]] =>
              let Hfleq := fresh in

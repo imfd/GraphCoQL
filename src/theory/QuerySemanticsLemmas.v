@@ -240,13 +240,13 @@ Section Theory.
       case_selection q; simp selection_size => Hleq Hobj Hunin; exec;
                                         rewrite ?filter_queries_with_label_cat ?filter_map_inline_func ?Hinlineswap ?IH //; leq_selections_size.
 
-    - by congr cons; congr pair; congr Response.Object; rewrite find_queries_with_label_cat find_map_inline_nil_func // cats0.
+    - by congr cons; congr pair; congr Response.Object; rewrite find_valid_fields_with_response_name_cat find_map_inline_nil_func // cats0.
         
-    - by congr cons; rewrite find_queries_with_label_cat find_map_inline_nil_func // cats0.
+    - by congr cons; rewrite find_valid_fields_with_response_name_cat find_map_inline_nil_func // cats0.
 
-    - by congr cons; congr pair; congr Response.Object; rewrite find_queries_with_label_cat find_map_inline_nil_func // cats0.
+    - by congr cons; congr pair; congr Response.Object; rewrite find_valid_fields_with_response_name_cat find_map_inline_nil_func // cats0.
 
-    - by congr cons; rewrite find_queries_with_label_cat find_map_inline_nil_func // cats0.
+    - by congr cons; rewrite find_valid_fields_with_response_name_cat find_map_inline_nil_func // cats0.
 
     - by rewrite catA; apply: IH => //; leq_selections_size.
   Qed.
@@ -641,7 +641,7 @@ Section Theory.
     move: {2}(selections_size _) (leqnn (selections_size φ)) => n.
     elim: n φ β u => /= [| n IH] φ β u; first by rewrite leqn0 => /selections_size_0_nil -> /=; apply: exec_inlines_nil.
     case: φ => //= [_ | q φ]; first by apply: exec_inlines_nil.
-    case_selection q; simp selection_size => Hleq; intros; exec; rewrite ?filter_queries_with_label_cat ?find_queries_with_label_cat ?[find_queries_with_label _ _ _ β]find_fragment_not_applies_is_nil // ?cats0 //.
+    case_selection q; simp selection_size => Hleq; intros; exec; rewrite ?filter_queries_with_label_cat ?find_valid_fields_with_response_name_cat ?[find_valid_fields_with_response_name _ _ _ β]find_fragment_not_applies_is_nil // ?cats0 //.
     all: do ? congr cons.
     all: do ? [apply: IH => //; leq_selections_size].
     all: do ? by apply: filter_preserves_inlines.

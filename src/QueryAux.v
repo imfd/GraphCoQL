@@ -349,24 +349,23 @@ Section QueryAux.
        applies to the given object type, then it may proceed finding in its subselections.
 
      *)
-    (* FIXME : Rename to something that makes sense - find_fields_with_response_name ? *)
-    Equations? find_queries_with_label (label : Name) (object_type : Name) (σs : seq (@Selection Scalar)) :
+    Equations? find_valid_fields_with_response_name (label : Name) (object_type : Name) (σs : seq (@Selection Scalar)) :
       seq (@Selection Scalar) by wf (selections_size σs) :=
       {
-        find_queries_with_label _ _ [::] := [::];
+        find_valid_fields_with_response_name _ _ [::] := [::];
 
-        find_queries_with_label k O__t (on t { βs } :: σs)
+        find_valid_fields_with_response_name k O__t (on t { βs } :: σs)
           with does_fragment_type_apply s O__t t :=
           {
-          | true := find_queries_with_label k O__t βs ++ find_queries_with_label k O__t σs;
-          | _ := find_queries_with_label k O__t σs
+          | true := find_valid_fields_with_response_name k O__t βs ++ find_valid_fields_with_response_name k O__t σs;
+          | _ := find_valid_fields_with_response_name k O__t σs
           };
 
-        find_queries_with_label k O__t (σ :: σs)
+        find_valid_fields_with_response_name k O__t (σ :: σs)
           with (qresponse_name σ _) == k :=
           {
-          | true := σ :: find_queries_with_label k O__t σs;
-          | _ := find_queries_with_label k O__t σs
+          | true := σ :: find_valid_fields_with_response_name k O__t σs;
+          | _ := find_valid_fields_with_response_name k O__t σs
           }
       }.
     all: do ?simp selection_size; ssromega.
@@ -406,7 +405,7 @@ Section QueryAux.
     (** 
         Find all selections with response name equal to a given name.
         It collects every field, regardless of fragment's type condition. This differs 
-        with [find_queries_with_label], where the type condition _is_ important.
+        with [find_valid_fields_with_response_name], where the type condition _is_ important.
      *)
     (* FIXME : Rename considering previous def *)
     Equations? find_fields_with_response_name (rname : Name) (σs : seq (@Selection Scalar)) :
@@ -456,7 +455,7 @@ Section QueryAux.
     (**
         Find all selections with response name equal to a given name.
         It collects every field, regardless of fragment's type condition. This differs 
-        with [find_queries_with_label], where the type condition _is_ important.
+        with [find_valid_fields_with_response_name], where the type condition _is_ important.
       
      *)
     Equations? find_pairs_with_response_name (rname : Name) (σs : seq (Name * @Selection Scalar)) :
@@ -672,7 +671,7 @@ Arguments are_equivalent [Scalar].
 Arguments filter_queries_with_label [Scalar].
 Arguments filter_pairs_with_response_name [Scalar].
 
-Arguments find_queries_with_label [Scalar].
+Arguments find_valid_fields_with_response_name [Scalar].
 Arguments find_valid_pairs_with_response_name [Scalar].
 Arguments find_fields_with_response_name [Scalar].
 Arguments find_pairs_with_response_name [Scalar].

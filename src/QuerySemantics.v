@@ -125,12 +125,12 @@ Section QuerySemantic.
         | Some fld
             with fld.(ftype) :=
             {
-            | [ _ ] := (f, Array [seq {- (⟦ β ++ merge_selection_sets (find_queries_with_label s f u.(ntype) φ) ⟧ˢ in v) -} | v <- neighbors_with_label g u (Label f α)])
+            | [ _ ] := (f, Array [seq {- (⟦ β ++ merge_selection_sets (find_valid_fields_with_response_name s f u.(ntype) φ) ⟧ˢ in v) -} | v <- neighbors_with_label g u (Label f α)])
                               :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
             | NamedType _
                 with ohead (neighbors_with_label g u (Label f α)) :=
                 {
-                | Some v => (f, {- (⟦ β ++ merge_selection_sets (find_queries_with_label s f u.(ntype) φ) ⟧ˢ in v) -}) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
+                | Some v => (f, {- (⟦ β ++ merge_selection_sets (find_valid_fields_with_response_name s f u.(ntype) φ) ⟧ˢ in v) -}) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
                 
                 | _ =>  (f, Leaf None) :: ⟦ filter_queries_with_label f φ ⟧ˢ in u
                 }
@@ -145,12 +145,12 @@ Section QuerySemantic.
         | Some fld
             with fld.(ftype) :=
             {
-            | [ _ ] := (l, Array [seq {- (⟦ β ++ merge_selection_sets (find_queries_with_label s l u.(ntype) φ) ⟧ˢ in v) -} | v <- neighbors_with_label g u (Label f α)])
+            | [ _ ] := (l, Array [seq {- (⟦ β ++ merge_selection_sets (find_valid_fields_with_response_name s l u.(ntype) φ) ⟧ˢ in v) -} | v <- neighbors_with_label g u (Label f α)])
                               :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
             | NamedType _
                 with ohead (neighbors_with_label g u (Label f α)) :=
                 {
-                | Some v => (l, {- (⟦ β ++ merge_selection_sets (find_queries_with_label s l u.(ntype) φ) ⟧ˢ in v) -}) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
+                | Some v => (l, {- (⟦ β ++ merge_selection_sets (find_valid_fields_with_response_name s l u.(ntype) φ) ⟧ˢ in v) -}) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
                 
                 | _ =>  (l, Leaf None) :: ⟦ filter_queries_with_label l φ ⟧ˢ in u
                 }

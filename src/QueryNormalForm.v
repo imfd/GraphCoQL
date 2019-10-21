@@ -225,9 +225,9 @@ Section Normalization.
         | Some fld
             with is_object_type s fld.(ftype) :=
             {
-            | true := f[[α]] { normalize_selections fld.(ftype) (β ++ merge_selection_sets (find_queries_with_label s f ty φ)) }
+            | true := f[[α]] { normalize_selections fld.(ftype) (β ++ merge_selection_sets (find_valid_fields_with_response_name s f ty φ)) }
                                  :: normalize_selections ty (filter_queries_with_label f φ);
-            | _ := f[[α]] { [seq on t { normalize_selections t (β ++ merge_selection_sets (find_queries_with_label s f ty φ)) } | t <- get_possible_types s fld.(ftype)] } ::
+            | _ := f[[α]] { [seq on t { normalize_selections t (β ++ merge_selection_sets (find_valid_fields_with_response_name s f ty φ)) } | t <- get_possible_types s fld.(ftype)] } ::
                               normalize_selections ty (filter_queries_with_label f φ)
             };
         
@@ -240,9 +240,9 @@ Section Normalization.
         | Some fld
             with is_object_type s fld.(ftype) :=
             {
-            | true := l:f[[α]] { normalize_selections fld.(ftype) (β ++ merge_selection_sets (find_queries_with_label s l ty φ)) }
+            | true := l:f[[α]] { normalize_selections fld.(ftype) (β ++ merge_selection_sets (find_valid_fields_with_response_name s l ty φ)) }
                                         :: normalize_selections ty (filter_queries_with_label l φ);
-            | _ := l:f[[α]] { [seq on t { normalize_selections t (β ++ merge_selection_sets (find_queries_with_label s l ty φ)) } | t <- get_possible_types s fld.(ftype)] }
+            | _ := l:f[[α]] { [seq on t { normalize_selections t (β ++ merge_selection_sets (find_valid_fields_with_response_name s l ty φ)) } | t <- get_possible_types s fld.(ftype)] }
                      :: normalize_selections ty (filter_queries_with_label l φ)
             };
         
