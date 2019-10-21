@@ -53,37 +53,6 @@ Section NormalForm.
 
   
   Variables (Scalar : eqType) (s : wfGraphQLSchema).
-
-
-  (** ** Groundedness *)
-  (** ---- *)
-  
-  (**
-     This lemma states that
-   *)
-  (* Unused *)
-  Lemma grounded_fields_are_grounded (σ : seq (@Selection Scalar)) :
-    all (fun σ__i => σ__i.(is_field) && is_in_ground_typed_nf s σ__i) σ ->
-    are_in_ground_typed_nf s σ.
-  Proof.
-    elim: σ => //= σ__i σ IH => /andP [/andP [Hf Hg] /allP Hgs].
-    rewrite /are_in_ground_typed_nf; apply_andP => /=; [apply/orP; left|]; apply_andP.
-    all: do [by apply/allP=> sel Hin; have /(_ sel Hin) := Hgs; case/andP].
-  Qed.
-
-  (** ---- **)
-  (**
-   This lemma states that
-   *)
-  Lemma grounded_fragments_are_grounded (σ : seq (@Selection Scalar)) :
-    all (fun σ__i => σ__i.(is_inline_fragment) && is_in_ground_typed_nf s σ__i) σ ->
-    are_in_ground_typed_nf s σ.
-  Proof.
-    elim: σ => //= σ__i σ IH => /andP [/andP [Hf Hg] /allP Hgs].
-    rewrite /are_in_ground_typed_nf; apply_andP => /=; [apply/orP; right|]; apply_andP.
-    all: do [by apply/allP=> sel Hin; have /(_ sel Hin) := Hgs; case/andP].
-  Qed.
-
   
   
   (** ** Non-redundancy *)
@@ -134,6 +103,7 @@ Ltac non_red :=
 
 (** * Normalization 
     ----
+
     In this section we prove that the normalization procedure returns queries in normal form.
  *)
 Section Normalization.
@@ -147,7 +117,8 @@ Section Normalization.
      and normalizing does not affect the result.
    *)
   Lemma filter_normalize_swap rname ty (φ : seq (@Selection Scalar)) :
-    filter_queries_with_label rname (normalize_selections s ty φ) = normalize_selections s ty (filter_queries_with_label rname φ).
+    filter_queries_with_label rname (normalize_selections s ty φ) =
+    normalize_selections s ty (filter_queries_with_label rname φ).
   Proof.
     move: {2}(selections_size _) (leqnn (selections_size φ)) => n.
     elim: n φ rname => /= [| n IH] φ rname ; first by rewrite leqn0 => /selections_size_0_nil ->.
