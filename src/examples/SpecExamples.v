@@ -847,7 +847,7 @@ Section GraphQLSpecExamples.
     Qed.
 
     (** We show the selection is invalid in the scope of any type in the schema *)
-    Example e129' : all (fun name => ~~selections_conform is_valid_scalar_value wf_schema name example129) wf_schema.(schema_names).
+    Example e129' : all (fun name => ~~selections_conform is_valid_scalar_value wf_schema name example129) wf_schema.(type_names).
     Proof.
         by [].
     Qed.
@@ -909,7 +909,7 @@ Section GraphQLSpecExamples.
                                                    }.
 
     (** We show the selection is invalid in the scope of any type in the shema *)
-    Example e131_1 : all (fun name => ~~is_consistent is_valid_scalar_value wf_schema name example131_1) wf_schema.(schema_names).
+    Example e131_1 : all (fun name => ~~is_consistent is_valid_scalar_value wf_schema name example131_1) wf_schema.(type_names).
     Proof.
         by [].
     Qed.
@@ -925,7 +925,7 @@ Section GraphQLSpecExamples.
                                                    }.
 
     (** We show the selection is invalid in the scope of any type in the shema *)
-    Example e131_2 : all (fun name => ~~is_consistent is_valid_scalar_value wf_schema name example131_2) wf_schema.(schema_names).
+    Example e131_2 : all (fun name => ~~is_consistent is_valid_scalar_value wf_schema name example131_2) wf_schema.(type_names).
     Proof.
         by [].
     Qed.

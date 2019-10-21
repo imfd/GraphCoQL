@@ -195,7 +195,7 @@ Section WellFormedness.
     *)
     Definition is_a_wf_schema : bool :=
       [&& is_object_type s s.(query_type),
-          uniq s.(schema_names) &
+          uniq s.(type_names) &
           all is_a_wf_type_def s.(type_definitions)].
 
 

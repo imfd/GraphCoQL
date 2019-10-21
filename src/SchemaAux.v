@@ -92,7 +92,7 @@ Section SchemaAux.
 
     (** ---- *)
     (** Get all type definitions' names from a schema *)
-    Definition schema_names : seq Name := [seq tdef.(tdname) | tdef <- schema.(type_definitions)]. 
+    Definition type_names : seq Name := [seq tdef.(tdname) | tdef <- schema.(type_definitions)]. 
 
 
   End TypeDefExtractors.
@@ -110,7 +110,7 @@ Section SchemaAux.
 
     (** ---- *)
     (** Checks whether a given name is declared in the schema, as a type definition *)
-    Definition is_declared (name : Name) : bool := name \in schema.(schema_names).
+    Definition is_declared (name : Name) : bool := name \in schema.(type_names).
 
 
     (** ---- *)
