@@ -44,8 +44,8 @@ Section QueryAux.
   
   Variable (Scalar : eqType).
 
-  Implicit Type queries : seq (@Selection Scalar).
-  Implicit Type query : @Selection Scalar.
+  Implicit Type σs : seq (@Selection Scalar).
+  Implicit Type σ : @Selection Scalar.
 
 
   (** *** General purpose predicates *)
@@ -56,7 +56,7 @@ Section QueryAux.
     (** 
         Checks whether the given query is a field selection.
      *)
-    Equations is_field query : bool :=
+    Equations is_field σ : bool :=
       {
         is_field (on _ { _ }) := false;
         is_field _ := true
@@ -67,7 +67,7 @@ Section QueryAux.
     (**
        Checks whether the given query is an inline fragment.
      *)
-    Equations is_inline_fragment query : bool :=
+    Equations is_inline_fragment σ : bool :=
       {
         is_inline_fragment (on _ { _ }) := true;
         is_inline_fragment _ := false
@@ -83,7 +83,7 @@ Section QueryAux.
        Inline fragments do not have a name, therefore 
        it is required that the given query is a field.
      *)
-    Equations qname query (Hfield : query.(is_field)) : Name :=
+    Equations qname σ (Hfield : σ.(is_field)) : Name :=
       {
         qname (name[[ _ ]]) _ := name;
         qname (_:name[[ _ ]]) _ := name;
@@ -100,7 +100,7 @@ Section QueryAux.
        Inline fragment do not have a response name, therefore 
        it is required that the given query is a field.
      *)   
-    Equations qresponse_name query (Hfld : query.(is_field)) :  Name :=
+    Equations qresponse_name σ (Hfld : σ.(is_field)) :  Name :=
       {
         qresponse_name (name [[ _ ]]) _ := name;
         qresponse_name (alias : _ [[ _ ]]) _ := alias;
@@ -116,8 +116,8 @@ Section QueryAux.
 
        For field selections without subqueries, it returns an empty list.
      *)
-    Definition qsubqueries query : seq Selection :=
-      match query with
+    Definition qsubqueries σ : seq Selection :=
+      match σ with
       | _ [[ _ ]] { φ }
       | _ : _ [[ _ ]] { φ }
       | on _ { φ } => φ
@@ -132,7 +132,7 @@ Section QueryAux.
        Inline fragment do not have arguments, therefore 
        it is required that the given query is a field.
      *)
-    Equations qargs query (Hfld : query.(is_field)) :  seq (Name * @Value Scalar) :=
+    Equations qargs σ (Hfld : σ.(is_field)) :  seq (Name * @Value Scalar) :=
       {
         qargs (_ [[ α ]]) _ := α;
         qargs (_ : _ [[ α ]]) _ := α;
@@ -153,7 +153,7 @@ Section QueryAux.
       {
         have_same_name (on _ { _ }) _ := false;
         have_same_name _ (on _ { _ }) := false;
-        have_same_name q1 q2 := (qname q1 _) == (qname q2 _)
+        have_same_name σ1 σ2 := (qname σ1 _) == (qname σ2 _)
       }.
 
 
@@ -167,7 +167,7 @@ Section QueryAux.
       {
         have_same_arguments (on _ { _ }) _ := false;
         have_same_arguments _ (on _ { _ }) := false;
-        have_same_arguments q1 q2 := (qargs q1 _) == (qargs q2 _)
+        have_same_arguments σ1 σ2 := (qargs σ1 _) == (qargs σ2 _)
       }.
 
 
@@ -175,7 +175,7 @@ Section QueryAux.
     (**
        Checks whether the given query is either a [SingleField] or [SingleAliasedField].
      *)
-    Equations is_simple_field_selection query : bool :=
+    Equations is_simple_field_selection σ : bool :=
       {
         is_simple_field_selection (_ [[_]]) := true;
         is_simple_field_selection (_ : _ [[_]]) := true;
@@ -187,7 +187,7 @@ Section QueryAux.
     (**
        Checks whether the given query is either a [NestedField] or [NestedAliasedField].
      *)
-    Equations is_nested_field_selection query : bool :=
+    Equations is_nested_field_selection σ : bool :=
       {
         is_nested_field_selection (_ [[_]] { _ }) := true;
         is_nested_field_selection (_ : _ [[_]] { _ }) := true;
@@ -231,10 +231,10 @@ Section QueryAux.
        - [is_field_merging_possible]
      *)
     (* FIXME : Rename *)
-    Definition are_equivalent (q1 q2 : @Selection Scalar) : bool :=
-      [&& (q1.(is_simple_field_selection) && (q2.(is_simple_field_selection)) ||
-           q1.(is_nested_field_selection) && q2.(is_nested_field_selection)),
-       have_same_name q1 q2 & have_same_arguments q1 q2].
+    Definition are_equivalent (σ1 σ2 : @Selection Scalar) : bool :=
+      [&& (σ1.(is_simple_field_selection) && (σ2.(is_simple_field_selection)) ||
+           σ1.(is_nested_field_selection) && σ2.(is_nested_field_selection)),
+       have_same_name σ1 σ2 & have_same_arguments σ1 σ2].
 
 
    
@@ -253,26 +253,26 @@ Section QueryAux.
     (**
        Get the size of a selection and selection set, according to H&P's definition.
      *)
-    Equations selection_size query : nat :=
+    Equations selection_size σ : nat :=
       {
-        selection_size (_ [[_]] { φ }) := 1 + selections_size φ;
-        selection_size (_ : _ [[_]] { φ }) := 1 + selections_size φ;
-        selection_size (on _ { φ }) := 1 + (selections_size φ);
+        selection_size (_ [[_]] { σs }) := 1 + selections_size σs;
+        selection_size (_ : _ [[_]] { σs }) := 1 + selections_size σs;
+        selection_size (on _ { σs }) := 1 + (selections_size σs);
         selection_size _ := 1
       }
     where
-    selections_size queries : nat :=
+    selections_size σs : nat :=
       {
         selections_size [::] := 0;
-        selections_size (q :: φ) := selection_size q + selections_size φ
+        selections_size (σ :: σs) := selection_size σ + selections_size σs
       }.
 
     (** ---- *)
     (**
        Get the size of a selection set paired with its type in scope.
      *)
-    Definition selections_size_aux (queries : seq (Name * Selection)) :=
-      selections_size [seq nq.2 | nq <- queries].
+    Definition selections_size_aux (scoped_σs : seq (Name * Selection)) :=
+      selections_size [seq sσ.2 | sσ <- scoped_σs].
 
     (** ---- *)
     (**
@@ -350,23 +350,23 @@ Section QueryAux.
 
      *)
     (* FIXME : Rename to something that makes sense - find_fields_with_response_name ? *)
-    Equations? find_queries_with_label (label : Name) (object_type : Name) (queries : seq (@Selection Scalar)) :
-      seq (@Selection Scalar) by wf (selections_size queries) :=
+    Equations? find_queries_with_label (label : Name) (object_type : Name) (σs : seq (@Selection Scalar)) :
+      seq (@Selection Scalar) by wf (selections_size σs) :=
       {
         find_queries_with_label _ _ [::] := [::];
 
-        find_queries_with_label k O__t (on t { φ } :: qs)
+        find_queries_with_label k O__t (on t { βs } :: σs)
           with does_fragment_type_apply s O__t t :=
           {
-          | true := find_queries_with_label k O__t φ ++ find_queries_with_label k O__t qs;
-          | _ := find_queries_with_label k O__t qs
+          | true := find_queries_with_label k O__t βs ++ find_queries_with_label k O__t σs;
+          | _ := find_queries_with_label k O__t σs
           };
 
-        find_queries_with_label k O__t (q :: qs)
-          with (qresponse_name q _) == k :=
+        find_queries_with_label k O__t (σ :: σs)
+          with (qresponse_name σ _) == k :=
           {
-          | true := q :: find_queries_with_label k O__t qs;
-          | _ := find_queries_with_label k O__t qs
+          | true := σ :: find_queries_with_label k O__t σs;
+          | _ := find_queries_with_label k O__t σs
           }
       }.
     all: do ?simp selection_size; ssromega.
@@ -384,11 +384,11 @@ Section QueryAux.
       {
         find_valid_pairs_with_response_name _ _ [::] := [::];
 
-        find_valid_pairs_with_response_name ts rname ((_, on t { βs }) :: qs)
+        find_valid_pairs_with_response_name ts rname ((_, on t { βs }) :: σs)
           with does_fragment_type_apply s ts t :=
           {
-          | true := find_valid_pairs_with_response_name rname ts [seq (t, β) | β <- βs] ++ find_valid_pairs_with_response_name ts rname qs;
-          | _ := find_valid_pairs_with_response_name ts rname qs
+          | true := find_valid_pairs_with_response_name rname ts [seq (t, β) | β <- βs] ++ find_valid_pairs_with_response_name ts rname σs;
+          | _ := find_valid_pairs_with_response_name ts rname σs
           };
 
         find_valid_pairs_with_response_name ts rname ((t, σ) :: σs)
@@ -409,43 +409,43 @@ Section QueryAux.
         with [find_queries_with_label], where the type condition _is_ important.
      *)
     (* FIXME : Rename considering previous def *)
-    Equations? find_fields_with_response_name (rname : Name) (φ : seq (@Selection Scalar)) :
-      seq (@Selection Scalar) by wf (selections_size φ) :=
+    Equations? find_fields_with_response_name (rname : Name) (σs : seq (@Selection Scalar)) :
+      seq (@Selection Scalar) by wf (selections_size σs) :=
       {
         find_fields_with_response_name _ [::] := [::];
         
         
-        find_fields_with_response_name rname (f [[α]] :: qs)
+        find_fields_with_response_name rname (f [[α]] :: σs)
           with f == rname :=
           {
-          | true := f [[α]] :: find_fields_with_response_name rname qs;
-          | _ := find_fields_with_response_name rname qs
+          | true := f [[α]] :: find_fields_with_response_name rname σs;
+          | _ := find_fields_with_response_name rname σs
           };
         
-        find_fields_with_response_name rname (l : f [[α]] :: qs)
+        find_fields_with_response_name rname (l : f [[α]] :: σs)
           with l == rname :=
           {
-          | true := l : f [[α]] :: find_fields_with_response_name rname qs;
-          | _ := find_fields_with_response_name rname qs
+          | true := l : f [[α]] :: find_fields_with_response_name rname σs;
+          | _ := find_fields_with_response_name rname σs
           };
 
         
-        find_fields_with_response_name rname (f [[α]] { φ } :: qs)
+        find_fields_with_response_name rname (f [[α]] { βs } :: σs)
           with f == rname :=
           {
-          | true := f [[α]] { φ } :: find_fields_with_response_name rname qs;
-          | _ := find_fields_with_response_name rname qs
+          | true := f [[α]] { βs } :: find_fields_with_response_name rname σs;
+          | _ := find_fields_with_response_name rname σs
           };
         
-        find_fields_with_response_name rname (l : f [[α]] { φ }:: qs)
+        find_fields_with_response_name rname (l : f [[α]] { βs }:: σs)
           with l == rname :=
           {
-          | true := l : f [[α]] { φ } :: find_fields_with_response_name rname qs;
-          | _ := find_fields_with_response_name rname qs
+          | true := l : f [[α]] { βs } :: find_fields_with_response_name rname σs;
+          | _ := find_fields_with_response_name rname σs
           };
         
-        find_fields_with_response_name rname (on t { φ } :: qs) :=
-          find_fields_with_response_name rname φ ++ find_fields_with_response_name rname qs
+        find_fields_with_response_name rname (on t { βs } :: σs) :=
+          find_fields_with_response_name rname βs ++ find_fields_with_response_name rname σs
       }.
     Proof.
       all: do [by simp selection_size; ssromega].
@@ -459,42 +459,42 @@ Section QueryAux.
         with [find_queries_with_label], where the type condition _is_ important.
       
      *)
-    Equations? find_pairs_with_response_name (rname : Name) (φ : seq (Name * @Selection Scalar)) :
-      seq (Name * @Selection Scalar) by wf (selections_size_aux φ) :=
+    Equations? find_pairs_with_response_name (rname : Name) (σs : seq (Name * @Selection Scalar)) :
+      seq (Name * @Selection Scalar) by wf (selections_size_aux σs) :=
       {
         find_pairs_with_response_name _ [::] := [::];
         
-        find_pairs_with_response_name rname ((ty, f[[α]]) :: qs)
+        find_pairs_with_response_name rname ((ty, f[[α]]) :: σs)
           with f == rname :=
           {
-          | true := (ty, f[[α]]) :: find_pairs_with_response_name rname qs;
-          | _ := find_pairs_with_response_name rname qs
+          | true := (ty, f[[α]]) :: find_pairs_with_response_name rname σs;
+          | _ := find_pairs_with_response_name rname σs
           };
         
-        find_pairs_with_response_name rname ((ty, l:f[[α]]) :: qs)
+        find_pairs_with_response_name rname ((ty, l:f[[α]]) :: σs)
           with l == rname :=
           {
-          | true := (ty, l:f[[α]]) :: find_pairs_with_response_name rname qs;
-          | _ := find_pairs_with_response_name rname qs
+          | true := (ty, l:f[[α]]) :: find_pairs_with_response_name rname σs;
+          | _ := find_pairs_with_response_name rname σs
           };
 
         
-        find_pairs_with_response_name rname ((ty, f[[α]] { φ }) :: qs)
+        find_pairs_with_response_name rname ((ty, f[[α]] { βs }) :: σs)
           with f == rname :=
           {
-          | true := (ty, f[[α]] { φ }) :: find_pairs_with_response_name rname qs;
-          | _ := find_pairs_with_response_name rname qs
+          | true := (ty, f[[α]] { βs }) :: find_pairs_with_response_name rname σs;
+          | _ := find_pairs_with_response_name rname σs
           };
         
-        find_pairs_with_response_name rname ((ty, l:f[[α]] { φ }) :: qs)
+        find_pairs_with_response_name rname ((ty, l:f[[α]] { βs }) :: σs)
           with l == rname :=
           {
-          | true := (ty, l:f[[α]] { φ }) :: find_pairs_with_response_name rname qs;
-          | _ := find_pairs_with_response_name rname qs
+          | true := (ty, l:f[[α]] { βs }) :: find_pairs_with_response_name rname σs;
+          | _ := find_pairs_with_response_name rname σs
           };
         
-        find_pairs_with_response_name rname ((_, on t { φ }) :: qs) :=
-          find_pairs_with_response_name rname [seq (t, q) | q <- φ] ++ find_pairs_with_response_name rname qs
+        find_pairs_with_response_name rname ((_, on t { βs }) :: σs) :=
+          find_pairs_with_response_name rname [seq (t, q) | q <- βs] ++ find_pairs_with_response_name rname σs
       }.
     Proof.
       all: do ? [by rewrite /selections_size_aux /=; simp selection_size; ssromega].
@@ -515,14 +515,14 @@ Section QueryAux.
       {
         find_fragment_with_type_condition _ [::] := [::];
 
-        find_fragment_with_type_condition t (on t' { β } :: φ)
+        find_fragment_with_type_condition t (on t' { β } :: σs)
           with t == t' :=
           {
-          | true := on t { β } :: find_fragment_with_type_condition t φ;
-          | _ := find_fragment_with_type_condition t φ
+          | true := on t { β } :: find_fragment_with_type_condition t σs;
+          | _ := find_fragment_with_type_condition t σs
           };
 
-        find_fragment_with_type_condition t (q :: φ) := find_fragment_with_type_condition t φ
+        find_fragment_with_type_condition t (σ :: σs) := find_fragment_with_type_condition t σs
       }.
 
 
@@ -535,19 +535,19 @@ Section QueryAux.
     (** 
         Remove all fields with a given response name.
      *)
-    Equations? filter_queries_with_label (label : Name) (queries : seq (@Selection Scalar)) :
-      seq (@Selection Scalar) by wf (selections_size queries) :=
+    Equations? filter_queries_with_label (label : Name) (σs : seq (@Selection Scalar)) :
+      seq (@Selection Scalar) by wf (selections_size σs) :=
       {
         filter_queries_with_label _ [::] := [::];
 
-        filter_queries_with_label l (on t { β } :: φ) :=
-          on t { filter_queries_with_label l β } :: filter_queries_with_label l φ;
+        filter_queries_with_label l (on t { β } :: σs) :=
+          on t { filter_queries_with_label l β } :: filter_queries_with_label l σs;
 
-        filter_queries_with_label l (q :: φ)
-          with (qresponse_name q _) != l :=
+        filter_queries_with_label l (σ :: σs)
+          with (qresponse_name σ _) != l :=
           {
-          | true := q :: filter_queries_with_label l φ;
-          | _ := filter_queries_with_label l φ
+          | true := σ :: filter_queries_with_label l σs;
+          | _ := filter_queries_with_label l σs
           }     
 
       }.
@@ -559,19 +559,19 @@ Section QueryAux.
     (**
        Remove all fields with a given response name.
      *)
-     Equations? filter_pairs_with_response_name (response_name : Name) (queries : seq (Name * @Selection Scalar)) :
-      seq (Name * @Selection Scalar) by wf (selections_size_aux queries) :=
+     Equations? filter_pairs_with_response_name (response_name : Name) (σs : seq (Name * @Selection Scalar)) :
+      seq (Name * @Selection Scalar) by wf (selections_size_aux σs) :=
       {
         filter_pairs_with_response_name _ [::] := [::];
 
-        filter_pairs_with_response_name l ((ty, on t { β }) :: φ) :=
-          (ty, on t { filter_queries_with_label l β }) :: filter_pairs_with_response_name l φ;
+        filter_pairs_with_response_name l ((ty, on t { β }) :: σs) :=
+          (ty, on t { filter_queries_with_label l β }) :: filter_pairs_with_response_name l σs;
 
-        filter_pairs_with_response_name l ((ty, q) :: φ)
-          with (qresponse_name q _) != l :=
+        filter_pairs_with_response_name l ((ty, σ) :: σs)
+          with (qresponse_name σ _) != l :=
           {
-          | true := (ty, q) :: filter_pairs_with_response_name l φ;
-          | _ := filter_pairs_with_response_name l φ
+          | true := (ty, σ) :: filter_pairs_with_response_name l σs;
+          | _ := filter_pairs_with_response_name l σs
           }     
 
       }.
@@ -591,7 +591,7 @@ Section QueryAux.
     (**
        Concatenates the subqueries of every selection in the given list.
      *)
-    Definition merge_selection_sets queries := flatten [seq q.(qsubqueries) | q <- queries].
+    Definition merge_selection_sets σs := flatten [seq σ.(qsubqueries) | σ <- σs].
     
 
     Variable (s : wfGraphQLSchema).
@@ -600,28 +600,28 @@ Section QueryAux.
     (**
        Concatenates the subqueries of every selection in the given list.
      *)
-    Equations merge_pairs_selection_sets (nq : seq (Name * @Selection Scalar)) : seq (Name * @Selection Scalar) :=
+    Equations merge_pairs_selection_sets (scoped_σs : seq (Name * @Selection Scalar)) : seq (Name * @Selection Scalar) :=
       {
         merge_pairs_selection_sets [::] := [::];
 
-        merge_pairs_selection_sets ((ty, f[[ _ ]] { β }) :: φ)
+        merge_pairs_selection_sets ((ty, f[[ _ ]] { βs }) :: σs)
           with lookup_field_in_type s ty f :=
           {
-          | Some fld := [seq (fld.(ftype).(tname), q) | q <- β] ++ merge_pairs_selection_sets φ;
-          | _ := merge_pairs_selection_sets φ
+          | Some fld := [seq (fld.(ftype).(tname), σ) | σ <- βs] ++ merge_pairs_selection_sets σs;
+          | _ := merge_pairs_selection_sets σs
           };
 
-        merge_pairs_selection_sets ((ty, _:f[[ _ ]] { β }) :: φ)
+        merge_pairs_selection_sets ((ty, _:f[[ _ ]] { βs }) :: σs)
           with lookup_field_in_type s ty f :=
           {
-          | Some fld := [seq (fld.(ftype).(tname), q) | q <- β] ++ merge_pairs_selection_sets φ;
-          | _ := merge_pairs_selection_sets φ
+          | Some fld := [seq (fld.(ftype).(tname), σ) | σ <- βs] ++ merge_pairs_selection_sets σs;
+          | _ := merge_pairs_selection_sets σs
           };
 
-        merge_pairs_selection_sets ((_, on t { β }) :: φ) :=
-          [seq (t, q) | q <- β] ++ merge_pairs_selection_sets φ;
+        merge_pairs_selection_sets ((_, on t { βs }) :: σs) :=
+          [seq (t, σ) | σ <- βs] ++ merge_pairs_selection_sets σs;
         
-        merge_pairs_selection_sets (nq :: φ) := merge_pairs_selection_sets φ
+        merge_pairs_selection_sets (scoped_σs :: σs) := merge_pairs_selection_sets σs
       }.
 
     
