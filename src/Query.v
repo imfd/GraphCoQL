@@ -206,14 +206,11 @@ Section Equality.
   Variable (Scalar : eqType).
   
   (** * Equality 
-     This section deals with some SSReflect bureaucratic things, in particular 
-     establishing that a Selection has decidable procedure to establish equality (they belong to the 
-     SSReflect type - eqType).
+     In this section we establis that a selection and queries have
+     a decidable procedure to establish equality (they belong to the eqType).
    *)
 
   (**
-     #<strong>selection_eq</strong# : Selection → Selection → Bool 
-
      The equality procedure.
    *)
   Equations selection_eq (σ1 σ2 : @Selection Scalar) : bool :=
@@ -269,17 +266,19 @@ Section Equality.
   Qed.
       
   
-  (**
-     Defining selection_eqType.
-   *)
+  (** Declaring selections in eqType *)
   Canonical selection_eqType := EqType Selection (EqMixin selection_eqP).
 
+
+  (** Queries can be transformed into pairs *)
   Definition tuple_of_query (q : @query Scalar) := let: (Query n b) := q in (n, b).
   Definition query_of_tuple (nb : option Name * seq (@Selection Scalar)) := let: (n, b) := nb in Query n b.
 
+  (** Cancellation lemma for queries *)
   Lemma tuple_of_queryK : cancel tuple_of_query query_of_tuple.
   Proof. by case. Qed.
 
+  (** Declaring queries in eqType *)
   Canonical query_eqType := EqType query (CanEqMixin tuple_of_queryK).
 
 End Equality.
