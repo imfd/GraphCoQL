@@ -195,10 +195,8 @@ Notation "'enum' enum_name '{' enum_members '}'" :=
 (* begin hide *)
 Section Equality.
   (** * Equality 
-     This section deals with some SSReflect bureaucratic things, in particular 
-     establishing that the different components in the schema (type, fields, type definitions, etc.)
-     do have a decidable procedure to establish equality between them (they belong to the 
-     SSReflect type - eqType).
+      In this section we establish that the different components in the schema (type, fields, type definitions, etc.)
+      have a decidable procedure to establish equality between them (they belong to the eqType).
 
      This is basically done by establishing isomorphisms between the different structures
      to others that already have a decidable procedure.
@@ -234,42 +232,44 @@ Section Equality.
   Proof. by elim=> [| t /= ->]. Qed.
 
 
-  
+
+  (** Declaring type in eqType *)
   Canonical type_eqType := EqType type (PcanEqMixin pcan_tree_of_type).
-  Canonical type_choiceType := ChoiceType type (PcanChoiceMixin pcan_tree_of_type).
 
 
 
-  (** Packing and unpacking of a field argument, needed for canonical instances **)
+  (** Field argument can be transformed into a pair *)
   Definition prod_of_arg (arg : FieldArgumentDefinition) := let: FieldArgument n t := arg in (n, t).
   Definition arg_of_prod (p : prod Name type) := let: (n, t) := p in FieldArgument n t.
 
-  (** Cancelation lemma for field arguments **)
+  (** Cancelation lemma for field arguments *)
   Lemma prod_of_argK : cancel prod_of_arg arg_of_prod.  Proof. by case. Qed.
+
   
+  (** Declaring arguments in eqType *)
   Canonical arg_eqType := EqType FieldArgumentDefinition (CanEqMixin prod_of_argK).
-  Canonical arg_choiceType := ChoiceType FieldArgumentDefinition (CanChoiceMixin prod_of_argK).
-
+ 
 
   
-  (** Packing and unpacking of a field, needed for canonical instances **)
+  (** Fields can be transformed into a 3-tuple *)
   Definition prod_of_field (f : FieldDefinition) := let: Field n args t := f in (n, args, t).
   Definition field_of_prod (p : Name * (seq FieldArgumentDefinition) * type)  := let: (n, args, t) := p in Field n args t.
 
-  (** Cancelation lemma for a field **)
+  (** Cancelation lemma for a field *)
   Lemma prod_of_fieldK : cancel prod_of_field field_of_prod. Proof. by case. Qed.
 
-  
+
+  (** Declaring field in eqType *)
   Canonical field_eqType := EqType FieldDefinition (CanEqMixin prod_of_fieldK).
-  Canonical field_choiceType := ChoiceType FieldDefinition (CanChoiceMixin prod_of_fieldK).
 
 
   
-  (** Packing and unpacking of a type definition, needed for canonical instances **)
+  (** Just a notation to then show that type definitions can be transformed into this *)
   Notation tdefRep := (Name + (Name * (seq Name) * seq FieldDefinition) + (Name * seq FieldDefinition) +
                       (Name * (seq Name)) + (Name * (seq EnumValue)))%type.
 
-  
+
+  (** Fields can be transformed back and forth to [tdefRep] *)
   Definition tdef_rep tdef : tdefRep :=
     match tdef with 
     | ScalarTypeDefinition name => inl (inl (inl (inl name)))
@@ -288,27 +288,26 @@ Section Equality.
     | inr (name, enums) => EnumTypeDefinition name enums
     end.
 
-  (** Cancelation lemma for a type definition **)
+  (** Cancelation lemma for a type definition *)
   Lemma tdef_repK : cancel tdef_rep tdef_con.
   Proof. by case. Qed.
 
-  
+
+  (** Declaring type definitions in eqType *)
   Canonical tdef_eqType := EqType TypeDefinition (CanEqMixin tdef_repK).
-  Canonical tdef_choiceType := ChoiceType TypeDefinition (CanChoiceMixin tdef_repK).
-
   
 
   
-  (** Packing and unpacking of a schema **)
+  (** The schema can be transformed into a pair *)
   Definition prod_of_schema (s : graphQLSchema) := let: GraphQLSchema q tdefs := s in (q, tdefs).
   Definition schema_of_prod p := let: (q, tdefs) := p in GraphQLSchema q tdefs.
 
-  (** Cancelation lemma for a schema **)
+  (** Cancelation lemma for a schema *)
   Lemma prod_of_schemaK : cancel prod_of_schema schema_of_prod.  Proof. by case. Qed.
-  
-  Canonical schema_eqType := EqType graphQLSchema (CanEqMixin prod_of_schemaK).
-  Canonical schema_choiceType := ChoiceType graphQLSchema (CanChoiceMixin prod_of_schemaK).
 
+  (** Declaring the schema in eqType *)
+  Canonical schema_eqType := EqType graphQLSchema (CanEqMixin prod_of_schemaK).
+ 
   
 End Equality.
 (* end hide *)
