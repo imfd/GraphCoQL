@@ -60,7 +60,7 @@ Section NormalForm.
   Section NonRedundant.
 
     
-    Implicit Type φ : seq (@Selection Scalar).
+    Implicit Type σs : seq (@Selection Scalar).
 
     
     Section Filter.
@@ -70,11 +70,11 @@ Section NormalForm.
       (**
          This lemma states that filtering preserves non-redundancy of the selections.
        *)
-      Lemma filter_preserves_non_redundancy rname φ :
-        are_non_redundant φ ->
-        are_non_redundant (filter_fields_with_response_name rname φ).
+      Lemma filter_preserves_non_redundancy rname σs :
+        are_non_redundant σs ->
+        are_non_redundant (filter_fields_with_response_name rname σs).
       Proof.
-        funelim (filter_fields_with_response_name rname φ) => //=; simp are_non_redundant; bcase; do ? by apply: H.
+        funelim (filter_fields_with_response_name rname σs) => //=; simp are_non_redundant; bcase; do ? by apply: H.
         all: do [apply_and3P].
         all: do ? by apply/eqP; apply: filter_preserves_find_frags_nil; apply/eqP.
         all: do ? by apply: H.
@@ -116,14 +116,14 @@ Section Normalization.
      This lemma states that the order of filtering selections by response name 
      and normalizing does not affect the result.
    *)
-  Lemma filter_normalize_swap rname ty (φ : seq (@Selection Scalar)) :
-    filter_fields_with_response_name rname (normalize_selections s ty φ) =
-    normalize_selections s ty (filter_fields_with_response_name rname φ).
+  Lemma filter_normalize_swap rname ty (σs : seq (@Selection Scalar)) :
+    filter_fields_with_response_name rname (normalize_selections s ty σs) =
+    normalize_selections s ty (filter_fields_with_response_name rname σs).
   Proof.
-    move: {2}(selections_size _) (leqnn (selections_size φ)) => n.
-    elim: n φ rname => /= [| n IH] φ rname ; first by rewrite leqn0 => /selections_size_0_nil ->.
-    case: φ => //= q φ.
-    case_selection q => /=; simp selection_size => Hleq; simp normalize_selections.
+    move: {2}(selections_size _) (leqnn (selections_size σs)) => n.
+    elim: n σs rname => /= [| n IH] σs rname ; first by rewrite leqn0 => /selections_size_0_nil ->.
+    case: σs => //= σ σs.
+    case_selection σ => /=; simp selection_size => Hleq; simp normalize_selections.
     - lookup => //=; simp filter_fields_with_response_name; case: eqP => /= [/= Heq | Hneq].
       * by rewrite Heq -IH // filter_filter_absorb.
       * simp normalize_selections; rewrite Hlook /= IH //; [by rewrite filter_swap | by leq_selections_size].
@@ -166,10 +166,10 @@ Section Normalization.
   (**
      This lemma states that [normalize_selections] returns fields.
    *)
-  Lemma normalized_selections_are_fields ts ss :
-    all (@is_field Scalar) (normalize_selections s ts ss).
+  Lemma normalized_selections_are_fields ts σs :
+    all (@is_field Scalar) (normalize_selections s ts σs).
   Proof.
-      by funelim (normalize_selections s ts ss).
+      by funelim (normalize_selections s ts σs).
   Qed.
 
   (** ---- *)
@@ -177,10 +177,10 @@ Section Normalization.
      This lemma states that [normalize_selections] returns selections 
      in ground-typed normal form.
    *)
-  Lemma normalized_selections_are_in_gt_nf ts (ss : seq (@Selection Scalar)) :
-    all (is_in_ground_typed_nf s) (normalize_selections s ts ss).
+  Lemma normalized_selections_are_in_gt_nf ts (σs : seq (@Selection Scalar)) :
+    all (is_in_ground_typed_nf s) (normalize_selections s ts σs).
   Proof.
-    funelim (normalize_selections s ts ss) => //=.
+    funelim (normalize_selections s ts σs) => //=.
     - apply_andP; first apply_andP;
         by [ apply/orP; left; apply: normalized_selections_are_fields
            | apply: H
@@ -230,8 +230,8 @@ Section Normalization.
      This corollary is just the conjunction that the normalized selections are 
      both fields and in ground-typed normal form.
    *)
-  Corollary normalized_selections_are_grounded ts (ss : seq (@Selection Scalar)) :
-    are_in_ground_typed_nf s (normalize_selections s ts ss).
+  Corollary normalized_selections_are_grounded ts (σs : seq (@Selection Scalar)) :
+    are_in_ground_typed_nf s (normalize_selections s ts σs).
   Proof.
     rewrite /are_in_ground_typed_nf.
     apply_andP.
@@ -246,10 +246,10 @@ Section Normalization.
      This lemma states that the result of [normalize_selections] are
      non-redundant.
    *)
-  Lemma normalized_selections_are_non_redundant ty (φ : seq (@Selection Scalar)) :
-    are_non_redundant (normalize_selections s ty φ).
+  Lemma normalized_selections_are_non_redundant ty (σs : seq (@Selection Scalar)) :
+    are_non_redundant (normalize_selections s ty σs).
   Proof.
-    apply_funelim (normalize_selections s ty φ) => //=.
+    apply_funelim (normalize_selections s ty σs) => //=.
 
 
     all: do ? [by intros; non_red; apply_and3P; by rewrite -filter_normalize_swap /= find_fields_filter_nil].
@@ -283,10 +283,10 @@ Section Normalization.
      This theorem states that [normalize] returns a query in normal form, thus proving 
      its correctness.
    *)
-  Theorem normalized_query_is_in_nf (q : @query Scalar) :
-    is_in_normal_form s (normalize s q).
+  Theorem normalized_query_is_in_nf (φ : @query Scalar) :
+    is_in_normal_form s (normalize s φ).
   Proof.
-    by case: q; intros; rewrite /is_in_normal_form /normalize /=; apply: normalized_selections_are_in_nf.
+    by case: φ; intros; rewrite /is_in_normal_form /normalize /=; apply: normalized_selections_are_in_nf.
   Qed.
 
    
