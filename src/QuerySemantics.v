@@ -55,8 +55,8 @@ Section QuerySemantic.
 
   
   Implicit Type u : @node Scalar.
-  Implicit Type query : @Selection Scalar.
-  Implicit Type queries : seq (@Selection Scalar).
+  Implicit Type σ : @Selection Scalar.
+  Implicit Type σs : seq (@Selection Scalar).
 
 
   (** *** Complete values (cf. #<a href='https://graphql.github.io/graphql-spec/June2018/##CompleteValue()'><span>&#167;</span>6.4.3</a>#)
@@ -83,7 +83,7 @@ Section QuerySemantic.
                                                                        
   
   
-  Reserved Notation "⟦ φ ⟧ˢ 'in' u" (at level 40).
+  Reserved Notation "⟦ σs ⟧ˢ 'in' u" (at level 40).
   
   (** * Semantics in a Graph setting *)
   (** ---- *)
@@ -95,79 +95,79 @@ Section QuerySemantic.
       validate the generated values, and returns a GraphQL Response.
 
    *)
-  Equations? execute_selection_set u (queries : seq (@Selection Scalar)) :
-    @GraphQLResponse Scalar by wf (selections_size queries) :=
+  Equations? execute_selection_set u (σs : seq (@Selection Scalar)) :
+    @GraphQLResponse Scalar by wf (selections_size σs) :=
     {
       ⟦ [::] ⟧ˢ in _ := [::];
       
-      ⟦ f[[α]] :: φ ⟧ˢ in u
+      ⟦ f[[α]] :: σs ⟧ˢ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some fdef := (f, complete_value fdef.(ftype) (property u (Label f α)))
-                        :: ⟦ filter_fields_with_response_name f φ ⟧ˢ in u;
+                        :: ⟦ filter_fields_with_response_name f σs ⟧ˢ in u;
 
-        | _ := ⟦ φ ⟧ˢ in u (* Should throw error *)
+        | _ := ⟦ σs ⟧ˢ in u (* Should throw error *)
         };
       
-      ⟦ l:f[[α]] :: φ ⟧ˢ in u
+      ⟦ l:f[[α]] :: σs ⟧ˢ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some fdef := (l, complete_value fdef.(ftype) (property u (Label f α)))
-                        :: ⟦ filter_fields_with_response_name l φ ⟧ˢ in u;
+                        :: ⟦ filter_fields_with_response_name l σs ⟧ˢ in u;
 
-        | _ := ⟦ φ ⟧ˢ in u (* Should throw error *)
+        | _ := ⟦ σs ⟧ˢ in u (* Should throw error *)
         };
 
       
-      ⟦ f[[α]] { β } :: φ ⟧ˢ in u 
+      ⟦ f[[α]] { βs } :: σs ⟧ˢ in u 
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some fld
             with fld.(ftype) :=
             {
-            | [ _ ] := (f, Array [seq {- (⟦ β ++ merge_selection_sets (find_valid_fields_with_response_name s f u.(ntype) φ) ⟧ˢ in v) -} | v <- neighbors_with_label g u (Label f α)])
-                              :: ⟦ filter_fields_with_response_name f φ ⟧ˢ in u;
+            | [ _ ] := (f, Array [seq {- (⟦ βs ++ merge_selection_sets (find_valid_fields_with_response_name s f u.(ntype) σs) ⟧ˢ in v) -} | v <- neighbors_with_label g u (Label f α)])
+                              :: ⟦ filter_fields_with_response_name f σs ⟧ˢ in u;
             | NamedType _
                 with ohead (neighbors_with_label g u (Label f α)) :=
                 {
-                | Some v => (f, {- (⟦ β ++ merge_selection_sets (find_valid_fields_with_response_name s f u.(ntype) φ) ⟧ˢ in v) -}) :: ⟦ filter_fields_with_response_name f φ ⟧ˢ in u;
+                | Some v => (f, {- (⟦ βs ++ merge_selection_sets (find_valid_fields_with_response_name s f u.(ntype) σs) ⟧ˢ in v) -}) :: ⟦ filter_fields_with_response_name f σs ⟧ˢ in u;
                 
-                | _ =>  (f, Leaf None) :: ⟦ filter_fields_with_response_name f φ ⟧ˢ in u
+                | _ =>  (f, Leaf None) :: ⟦ filter_fields_with_response_name f σs ⟧ˢ in u
                 }
             };
 
-        | None => ⟦ φ ⟧ˢ in u (* Should throw error *)
+        | None => ⟦ σs ⟧ˢ in u (* Should throw error *)
         };
 
-      ⟦ l:f[[α]] { β } :: φ ⟧ˢ in u
+      ⟦ l:f[[α]] { βs } :: σs ⟧ˢ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some fld
             with fld.(ftype) :=
             {
-            | [ _ ] := (l, Array [seq {- (⟦ β ++ merge_selection_sets (find_valid_fields_with_response_name s l u.(ntype) φ) ⟧ˢ in v) -} | v <- neighbors_with_label g u (Label f α)])
-                              :: ⟦ filter_fields_with_response_name l φ ⟧ˢ in u;
+            | [ _ ] := (l, Array [seq {- (⟦ βs ++ merge_selection_sets (find_valid_fields_with_response_name s l u.(ntype) σs) ⟧ˢ in v) -} | v <- neighbors_with_label g u (Label f α)])
+                              :: ⟦ filter_fields_with_response_name l σs ⟧ˢ in u;
             | NamedType _
                 with ohead (neighbors_with_label g u (Label f α)) :=
                 {
-                | Some v => (l, {- (⟦ β ++ merge_selection_sets (find_valid_fields_with_response_name s l u.(ntype) φ) ⟧ˢ in v) -}) :: ⟦ filter_fields_with_response_name l φ ⟧ˢ in u;
+                | Some v => (l, {- (⟦ βs ++ merge_selection_sets (find_valid_fields_with_response_name s l u.(ntype) σs) ⟧ˢ in v) -}) :: ⟦ filter_fields_with_response_name l σs ⟧ˢ in u;
                 
-                | _ =>  (l, Leaf None) :: ⟦ filter_fields_with_response_name l φ ⟧ˢ in u
+                | _ =>  (l, Leaf None) :: ⟦ filter_fields_with_response_name l σs ⟧ˢ in u
                 }
             };
 
-        | None => ⟦ φ ⟧ˢ in u (* Should throw error *)
+        | None => ⟦ σs ⟧ˢ in u (* Should throw error *)
         };
 
-       ⟦ on t { β } :: φ ⟧ˢ in u
+       ⟦ on t { βs } :: σs ⟧ˢ in u
         with does_fragment_type_apply s u.(ntype) t :=
         {
-        | true := ⟦ β ++ φ ⟧ˢ in u;
-        | _ := ⟦ φ ⟧ˢ in u
+        | true := ⟦ βs ++ σs ⟧ˢ in u;
+        | _ := ⟦ σs ⟧ˢ in u
         }
 
     }
-  where "⟦ queries ⟧ˢ 'in' u" := (execute_selection_set u queries).
+  where "⟦ σs ⟧ˢ 'in' u" := (execute_selection_set u σs).
   Proof.
     all: do [leq_selections_size].
   Qed.
@@ -180,8 +180,8 @@ Section QuerySemantic.
       Evaluates the query, starting from the graph's root node.
       
   *)
-  Definition execute_query (q : query) :=
-    execute_selection_set g.(root) q.(selection_set).
+  Definition execute_query (φ : query) :=
+    execute_selection_set g.(root) φ.(selection_set).
   
 
   
@@ -198,79 +198,79 @@ Section QuerySemantic.
 
       The definition is partially based on H&P's simplified semantics.
    *)
-  Equations? simpl_execute_selection_set u queries :
-    @GraphQLResponse Scalar by wf (selections_size queries) :=
+  Equations? simpl_execute_selection_set u σs :
+    @GraphQLResponse Scalar by wf (selections_size σs) :=
     {
       ≪ [::] ≫ in _ := [::];
 
-      ≪ f[[α]] :: φ ≫ in u
+      ≪ f[[α]] :: σs ≫ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
           | Some fdef := (f, complete_value fdef.(ftype) (property u (Label f α)))
-                          :: ≪ φ ≫ in u;
+                          :: ≪ σs ≫ in u;
           
-          | _ := ≪ φ ≫ in u (* Should throw error *)
+          | _ := ≪ σs ≫ in u (* Should throw error *)
         };
       
-      ≪ l:f[[α]] :: φ ≫ in u
+      ≪ l:f[[α]] :: σs ≫ in u
         with lookup_field_in_type s u.(ntype) f :=
             {
             | Some fdef := (l, complete_value fdef.(ftype) (property u (Label f α)))
-                            :: ≪ φ ≫ in u;
+                            :: ≪ σs ≫ in u;
             
-            | _ := ≪ φ ≫ in u (* Should throw error *)
+            | _ := ≪ σs ≫ in u (* Should throw error *)
             };
 
       
-      ≪ f[[α]] { β } :: φ ≫ in u
+      ≪ f[[α]] { βs } :: σs ≫ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some fld
             with fld.(ftype) :=
             {
-            | ListType _ => (f, Array [seq {- ≪ β ≫ in v -} | v <- neighbors_with_label g u (Label f α)]) :: ≪ φ ≫ in u;
+            | ListType _ => (f, Array [seq {- ≪ βs ≫ in v -} | v <- neighbors_with_label g u (Label f α)]) :: ≪ σs ≫ in u;
         
             | NamedType ty
                 with ohead (neighbors_with_label g u (Label f α)) :=
                 {
-                | Some v => (f, {- ≪ β ≫ in v -}) :: ≪ φ ≫ in u;
+                | Some v => (f, {- ≪ βs ≫ in v -}) :: ≪ σs ≫ in u;
                 
-                | _ =>  (f, Leaf None) :: ≪ φ ≫ in u
+                | _ =>  (f, Leaf None) :: ≪ σs ≫ in u
                 }
             };
 
-        | None => ≪ φ ≫ in u (* Error *)
+        | None => ≪ σs ≫ in u (* Error *)
         };
-    ≪ l:f[[α]] { β } :: φ ≫ in u
+    ≪ l:f[[α]] { βs } :: σs ≫ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some fld
             with fld.(ftype) :=
             {
-            | ListType _ => (l, Array [seq {- ≪ β ≫ in v -} | v <- neighbors_with_label g u (Label f α)]) :: ≪ φ ≫ in u;
+            | ListType _ => (l, Array [seq {- ≪ βs ≫ in v -} | v <- neighbors_with_label g u (Label f α)]) :: ≪ σs ≫ in u;
         
             | NamedType ty
                 with ohead (neighbors_with_label g u (Label f α)) :=
                 {
-                | Some v => (l, {- ≪ β ≫ in v -}) :: ≪ φ ≫ in u;
+                | Some v => (l, {- ≪ βs ≫ in v -}) :: ≪ σs ≫ in u;
                 
-                | _ =>  (l, Leaf None) :: ≪ φ ≫ in u
+                | _ =>  (l, Leaf None) :: ≪ σs ≫ in u
                 }
             };
 
-        | None => ≪ φ ≫ in u (* Error *)
+        | None => ≪ σs ≫ in u (* Error *)
         };
 
        
-        ≪ on t { β } :: φ ≫ in u
+        ≪ on t { βs } :: σs ≫ in u
         with does_fragment_type_apply s u.(ntype) t :=
         {
-        | true := ≪ β ++ φ ≫ in u;
-        | _ := ≪ φ ≫ in u
+        | true := ≪ βs ++ σs ≫ in u;
+        | _ := ≪ σs ≫ in u
         }
 
     }
-  where "≪ queries ≫ 'in' u" := (simpl_execute_selection_set u queries).
+  where "≪ σs ≫ 'in' u" := (simpl_execute_selection_set u σs).
   Proof.
     all: do [leq_selections_size].
   Qed.
@@ -280,8 +280,8 @@ Section QuerySemantic.
       
       Evaluates a query, starting from the graph's root node.
    *)
-  Definition simpl_execute_query (q : @query Scalar) :=
-    ≪ q.(selection_set) ≫ in g.(root).
+  Definition simpl_execute_query (φ : @query Scalar) :=
+    ≪ φ.(selection_set) ≫ in g.(root).
   
 
 End QuerySemantic.
