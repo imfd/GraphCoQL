@@ -72,32 +72,7 @@ Section QueryAux.
         is_inline_fragment (on _ { _ }) := true;
         is_inline_fragment _ := false
       }.
-
     
-    (** ---- *)
-    (**
-       Checks whether the given query is aliased.
-     *)
-    Definition is_aliased query : bool :=
-      match query with
-      | _ : _ [[ _ ]]
-      | _ : _ [[ _ ]] { _ } => true
-      | _ => false
-      end.
-
-    
-    (** ---- *)
-    (**
-       Checks whether the given query has subqueries.
-     *)
-    Definition has_subqueries query : bool :=
-      match query with
-      | _ [[ _ ]]
-      | _ : _ [[ _ ]] => false
-      | _ => true
-      end.
-
-
 
     (** *** Extractors for queries *)
     (** ---- *)
@@ -108,7 +83,6 @@ Section QueryAux.
        Inline fragments do not have a name, therefore 
        it is required that the given query is a field.
      *)
-    (* Not actually using this def *)
     Equations qname query (Hfield : query.(is_field)) : Name :=
       {
         qname (name[[ _ ]]) _ := name;
@@ -117,38 +91,6 @@ Section QueryAux.
         qname (_:name[[ _ ]] { _ }) _ := name;
         qname (on _ { _ }) Hfld := _
       }.
-
-
-    (** ---- *)
-    (**
-       Gets the alias of the given query.
-
-       It is required that the query is actually aliased.
-     *)
-    (* Not actually using this def *)
-    Equations qalias query (Halias : query.(is_aliased)) : Name :=
-      {
-        qalias (alias : _ [[ _ ]]) _ := alias;
-        qalias (alias : _ [[ _ ]] { _ }) _ := alias;
-        qalias _ Halias := _
-      }.
-
-
-    (** ---- *)
-    (**
-       Gets the alias of the given query or none if
-       the query does not have a label.
-     *)
-    (* Not actually using this def *)
-    Equations oqalias query : option Name :=
-      {
-        oqalias (label : _ [[ _ ]]) := Some label;
-        oqalias (label : _ [[ _ ]] { _ }) := Some label;
-        oqalias _ := None
-      }.
-
-
-    (** ---- *)
     (**
        Gets the response name of the given query.
        
@@ -165,32 +107,6 @@ Section QueryAux.
         qresponse_name (name [[ _ ]] { _ }) _ := name;
         qresponse_name (alias : _ [[ _ ]] { _ }) _ := alias;
         qresponse_name (on _ { _ }) Hfld := _
-      }.
-
-
-    (** ---- *)
-    (**
-       Gets the response name of the given query or none if it 
-       is an inline fragment.
-     *)
-    (* Not actually using this def *)
-    Equations oqresponse_name query : option Name :=
-      {
-        oqresponse_name (on _ { _ }) := None;
-        oqresponse_name q := Some (qresponse_name q _)
-      }.
-    
-    (** ---- *)
-    (**
-       Checks whether the given query has the given response name.
-
-       This is always false for inline fragments.
-     *)
-    (* Not actually using this def *)
-    Equations has_response_name : Name -> @Selection Scalar -> bool :=
-      {
-        has_response_name _ (on _ { _ }) := false;
-        has_response_name rname q := (qresponse_name q _) == rname
       }.
 
 
@@ -238,20 +154,6 @@ Section QueryAux.
         have_same_name (on _ { _ }) _ := false;
         have_same_name _ (on _ { _ }) := false;
         have_same_name q1 q2 := (qname q1 _) == (qname q2 _)
-      }.
-
-
-    (** ---- *)
-    (**
-       Checks whether two queries have the same response name.
-
-       It is always false if either is an inline fragment.
-     *)
-    Equations have_same_response_name : @Selection Scalar -> @Selection Scalar -> bool :=
-      {
-        have_same_response_name (on _ { _ }) _ := false;
-        have_same_response_name _ (on _ { _ }) := false;
-        have_same_response_name q1 q2 := (qresponse_name q1 _) == (qresponse_name q2 _)
       }.
 
 
@@ -746,29 +648,24 @@ End QueryAux.
 (* begin hide *)
 Arguments is_field [Scalar].
 Arguments is_inline_fragment [Scalar].
-Arguments is_aliased [Scalar].
-Arguments has_subqueries [Scalar].
+
 Arguments is_simple_field_selection [Scalar].
 Arguments is_nested_field_selection [Scalar].
 
-Arguments qresponse_name [Scalar].
-Arguments oqresponse_name [Scalar].
-Arguments qalias [Scalar].
-Arguments oqalias [Scalar].
+Arguments qname [Scalar].
 Arguments qargs [Scalar].
 
 Arguments qsubqueries [Scalar].
 Arguments qresponse_name [Scalar].
-Arguments oqresponse_name [Scalar].
+
 
 Arguments selection_size [Scalar].
 Arguments selections_size [Scalar].
 Arguments selections_size_aux [Scalar].
 Arguments query_size [Scalar].
 
-Arguments has_response_name [Scalar].
+
 Arguments have_same_name [Scalar].
-Arguments have_same_response_name [Scalar].
 Arguments have_same_arguments [Scalar].
 Arguments are_equivalent [Scalar].
 

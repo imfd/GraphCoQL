@@ -59,7 +59,7 @@ Require Import QuerySemantics.
  *)
 
 Section Theory.
-  Transparent qresponse_name has_response_name.
+  Transparent qresponse_name.
 
   Variables (Scalar : eqType)
             (s : wfGraphQLSchema)

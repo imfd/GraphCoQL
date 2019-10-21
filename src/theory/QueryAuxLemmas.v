@@ -63,7 +63,7 @@ Ltac case_selection q :=
 
 Section Theory.
   
-  Transparent oqresponse_name qresponse_name is_field.
+  Transparent qresponse_name is_field.
 
   Variable (Scalar : eqType).
 
