@@ -93,9 +93,9 @@ Section Query.
              (Pl : seq Selection -> Type)
              (IH_SF : forall n α, P (SingleField n α))
              (IH_LF : forall l n α, P (SingleAliasedField l n α))
-             (IH_NF : forall n α ϕ, Pl ϕ -> P (NestedField n α ϕ))
-             (IH_NLF : forall l n α ϕ, Pl ϕ -> P (NestedAliasedField l n α ϕ))
-             (IH_IF : forall t ϕ, Pl ϕ -> P (InlineFragment t ϕ))
+             (IH_NF : forall n α σs, Pl σs -> P (NestedField n α σs))
+             (IH_NLF : forall l n α σs, Pl σs -> P (NestedAliasedField l n α σs))
+             (IH_IF : forall t σs, Pl σs -> P (InlineFragment t σs))
              (IH_Nil : Pl [::])
              (IH_Cons : forall q, P q -> forall qs, Pl qs -> Pl (q :: qs))
     :=
@@ -109,9 +109,9 @@ Section Query.
       match selection with
       | SingleField n α => IH_SF n α
       | SingleAliasedField l n α => IH_LF l n α
-      | NestedField n α ϕ => IH_NF n α ϕ (F ϕ)
-      | NestedAliasedField l n α ϕ => IH_NLF l n α ϕ (F ϕ)
-      | InlineFragment t ϕ => IH_IF t ϕ (F ϕ)
+      | NestedField n α σs => IH_NF n α σs (F σs)
+      | NestedAliasedField l n α σs => IH_NLF l n α σs (F σs)
+      | InlineFragment t σs => IH_IF t σs (F σs)
       end.
 
   Definition Selection_rec (P : Selection -> Set) := @Selection_rect P.
@@ -120,11 +120,11 @@ Section Query.
              (Pl : seq Selection -> Prop)
             (IH_SF : forall n α, P (SingleField n α))
             (IH_LF : forall l n α, P (SingleAliasedField l n α))
-            (IH_NF : forall n α ϕ, Pl ϕ -> P (NestedField n α ϕ))
-            (IH_NLF : forall l n α ϕ, Pl ϕ -> P (NestedAliasedField l n α ϕ))
-            (IH_IF : forall t ϕ, Pl ϕ -> P (InlineFragment t ϕ))
+            (IH_NF : forall n α σs, Pl σs -> P (NestedField n α σs))
+            (IH_NLF : forall l n α σs, Pl σs -> P (NestedAliasedField l n α σs))
+            (IH_IF : forall t σs, Pl σs -> P (InlineFragment t σs))
             (IH_Nil : Pl [::])
-            (IH_Cons : forall q, P q -> forall qs, Pl qs -> Pl (q :: qs))
+            (IH_Cons : forall σ, P σ -> forall σs, Pl σs -> Pl (σ :: σs))
     :=
       fix loop selection : P selection :=
         let fix F (qs : seq Selection) : Pl qs :=
@@ -136,9 +136,9 @@ Section Query.
         match selection with
         | SingleField n α => IH_SF n α
         | SingleAliasedField l n α => IH_LF l n α
-        | NestedField n α ϕ => IH_NF n α ϕ (F ϕ)
-        | NestedAliasedField l n α ϕ => IH_NLF l n α ϕ (F ϕ)
-        | InlineFragment t ϕ => IH_IF t ϕ (F ϕ)
+        | NestedField n α σs => IH_NF n α σs (F σs)
+        | NestedAliasedField l n α σs => IH_NLF l n α σs (F σs)
+        | InlineFragment t σs => IH_IF t σs (F σs)
         end.
 
 
@@ -186,10 +186,10 @@ Open Scope selection_scope.
    others already used... And I don't really get how to fix it *)
 Notation "f [[ α ]]" := (SingleField f α) (at level 20, α at next level) : selection_scope.
 Notation "l : f [[ α ]]" := (SingleAliasedField l f α) (at level 20, f at next level, α at next level)  : selection_scope.
-Notation "f [[ α ]] { φ }" := (NestedField f α φ) (at level 20, α at next level, φ at next level) : selection_scope.
-Notation "l : f [[ α ]] { φ }" := (NestedAliasedField l f α φ)
-                                 (at level 20, f at next level, α at next level, φ at next level)  : selection_scope.
-Notation "'on' t { φ }" := (InlineFragment t φ) (t at next level, φ at next level) : selection_scope.
+Notation "f [[ α ]] { σs }" := (NestedField f α σs) (at level 20, α at next level, σs at next level) : selection_scope.
+Notation "l : f [[ α ]] { σs }" := (NestedAliasedField l f α σs)
+                                 (at level 20, f at next level, α at next level, σs at next level)  : selection_scope.
+Notation "'on' t { σs }" := (InlineFragment t σs) (t at next level, σs at next level) : selection_scope.
 
 (** ---- *)
 
