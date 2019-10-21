@@ -44,7 +44,10 @@ $ make
 ```
 It is now possible to start programming in Coq and GraphCoQL or explore its documentation :tada:.
 
-### Installing Opam and initialize it
+### Manually setup the project (without Docker)
+
+#### Install Opam and initialize it
+
 We describe the process of installing the GraphCoQL dependencies by means of the Ocaml Package Manager ([Opam](https://opam.ocaml.org/)).
 
 Installation of Opam may vary from distribution and operating system, hence we defer the appropriate instructions to their [installation site](https://opam.ocaml.org/doc/Install.html).
@@ -56,7 +59,7 @@ $ opam init # initializes opam
 $ eval $(opam env) # updates opam environment variables
 ```
 
-### Installing Coq
+#### Install Coq
 
 First, we install [Coq](https://coq.inria.fr/download) using the following command. This command pins Opam to a particular version of Coq (particularly, version 8.9.1) and installs Coq in the system.
 
@@ -67,7 +70,7 @@ $ opam pin add coq 8.9.1
 
 For a more precise guide on installing Coq, you may follow the [instructions in the Coq website](https://coq.inria.fr/opam-using.html).
 
-### Installing Equations library
+#### Install the Equations library
 Next, we install the [Equations](http://mattam82.github.io/Coq-Equations/) library, by means of the two following command.
 
 The first command allows Opam to find Coq packages. As stated in the Coq installation site:
@@ -83,7 +86,7 @@ Once that step is performed, one can install the Equations package, by means of 
 $ opam install coq-equations.1.2+8.9
 ```
 
-### Installing the Mathematical Components library
+#### Install the Mathematical Components library
 
 Then, we install the [Mathematical Components](https://github.com/math-comp/math-comp) library.
 
@@ -91,7 +94,7 @@ Then, we install the [Mathematical Components](https://github.com/math-comp/math
 $ opam install coq-mathcomp-ssreflect.1.9.0
 ```
 
-### Build the project
+#### Build the project
 
 Finally, once all dependencies have been installed, it is possible to build the project. This is simply done by calling `make` in the top directory.
 ```bash
