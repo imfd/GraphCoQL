@@ -54,7 +54,7 @@ Section QueryAux.
 
 
     (** 
-        Checks whether the given query is a field selection.
+        Checks whether the given selection is a field selection.
      *)
     Equations is_field σ : bool :=
       {
@@ -65,7 +65,7 @@ Section QueryAux.
     
     (** ---- *)
     (**
-       Checks whether the given query is an inline fragment.
+       Checks whether the given selection is an inline fragment.
      *)
     Equations is_inline_fragment σ : bool :=
       {
@@ -74,14 +74,14 @@ Section QueryAux.
       }.
     
 
-    (** *** Extractors for queries *)
+    (** *** Extractors for selections *)
     (** ---- *)
 
     (**
-       Gets the name of the given query. 
+       Gets the name of the given selection. 
        
        Inline fragments do not have a name, therefore 
-       it is required that the given query is a field.
+       it is required that the given selection is a field.
      *)
     Equations qname σ (Hfield : σ.(is_field)) : Name :=
       {
@@ -92,13 +92,13 @@ Section QueryAux.
         qname (on _ { _ }) Hfld := _
       }.
     (**
-       Gets the response name of the given query.
+       Gets the response name of the given selection.
        
        For aliased fields this corresponds to their alias, while for 
        non-aliased fields it corresponds to their name.
 
        Inline fragment do not have a response name, therefore 
-       it is required that the given query is a field.
+       it is required that the given selection is a field.
      *)   
     Equations qresponse_name σ (Hfld : σ.(is_field)) :  Name :=
       {
@@ -112,9 +112,9 @@ Section QueryAux.
 
     (** ---- *)
     (**
-       Gets the given query's subqueries.
+       Gets the given selection's subselections.
 
-       For field selections without subqueries, it returns an empty list.
+       For field selections without subselections, it returns an empty list.
      *)
     Definition qsubqueries σ : seq Selection :=
       match σ with
@@ -127,10 +127,10 @@ Section QueryAux.
 
     (** ---- *)
     (**
-       Gets the given query's arguments.
+       Gets the given selection's arguments.
 
        Inline fragment do not have arguments, therefore 
-       it is required that the given query is a field.
+       it is required that the given selection is a field.
      *)
     Equations qargs σ (Hfld : σ.(is_field)) :  seq (Name * @Value Scalar) :=
       {
@@ -145,7 +145,7 @@ Section QueryAux.
     
     (** ---- *)
     (**
-       Checks whether two queries have the same field name.
+       Checks whether two selections have the same field name.
 
        It is always false if either is an inline fragment.
      *)
@@ -159,7 +159,7 @@ Section QueryAux.
 
     (** ---- *)
     (**
-       Checks whether two queries have the same arguments.
+       Checks whether two selections have the same arguments.
 
        It is always false if either is an inline fragment.
      *)
@@ -173,7 +173,7 @@ Section QueryAux.
 
     (** ---- *)
     (**
-       Checks whether the given query is either a [SingleField] or [SingleAliasedField].
+       Checks whether the given selection is either a [SingleField] or [SingleAliasedField].
      *)
     Equations is_simple_field_selection σ : bool :=
       {
@@ -185,7 +185,7 @@ Section QueryAux.
 
     (** ---- *)
     (**
-       Checks whether the given query is either a [NestedField] or [NestedAliasedField].
+       Checks whether the given selection is either a [NestedField] or [NestedAliasedField].
      *)
     Equations is_nested_field_selection σ : bool :=
       {
@@ -220,9 +220,9 @@ Section QueryAux.
     
     (** ---- *)
     (**
-       Checks whether two queries are equivalent.
+       Checks whether two selections are equivalent.
 
-       This equivalence refers to whether both queries will
+       This equivalence refers to whether both selections will
        produce responses with the same name and if both 
        share the same arguments.
 
