@@ -136,7 +136,7 @@ Ltac non_red :=
     ----
     In this section we prove that the normalization procedure returns queries in normal form.
  *)
-Section Normalisation.
+Section Normalization.
 
   Transparent qresponse_name.
   
@@ -321,7 +321,7 @@ Section Normalisation.
    
   
 
-End Normalisation.
+End Normalization.
 
 (** ---- *)
 (** 

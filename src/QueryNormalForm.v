@@ -163,14 +163,14 @@ Arguments is_in_normal_form [Scalar].
 (* end hide *)
 
 
-(** * Normalisation
+(** * Normalization
     ----
       
-      In this section we will define a normalisation procedure, which 
+      In this section we will define a normalization procedure, which 
       takes a GraphQL Selection and outputs another one in normal form.
       
    *)
-Section Normalisation.
+Section Normalization.
 
   Variables Scalar : eqType.
   Implicit Type schema : wfGraphQLSchema.
@@ -271,7 +271,7 @@ Section Normalisation.
     let: Query n ss := q in
     Query n (normalize_selections s.(query_type) q.(selection_set)).
   
-End Normalisation.
+End Normalization.
 
 (* begin hide *)
 Arguments normalize_selections [Scalar].

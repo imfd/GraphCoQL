@@ -38,7 +38,7 @@ Require Import QueryTactics.
         <p class="lead">
          This file contains the definitions for the semantics 
          in a graph setting and the simplified version used 
-         for normalised queries.
+         for normalized queries.
         </p>         
   </div>
 </div>#
