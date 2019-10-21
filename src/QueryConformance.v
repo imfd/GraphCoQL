@@ -58,8 +58,8 @@ Section QueryConformance.
             (is_valid_scalar_value : graphQLSchema -> Name -> Scalar -> bool).
   
   
-  Implicit Type selections : seq (@Selection Scalar).
-  Implicit Type selection : @Selection Scalar.
+  Implicit Type σs : seq (@Selection Scalar).
+  Implicit Type σ : @Selection Scalar.
 
 
   Variable s : wfGraphQLSchema.
@@ -121,8 +121,8 @@ Section QueryConformance.
       - Fragments' type condition must spread in the type in context (cf. #<a href='https://graphql.github.io/graphql-spec/June2018/##sec-Fragment-spread-is-possible'><span>&#167;</span>5.5.2.3</a>#).
      
    *)
-  Fixpoint is_consistent (type_in_scope : Name) selection : bool :=
-    match selection with
+  Fixpoint is_consistent (type_in_scope : Name) σ : bool :=
+    match σ with
     | f[[α]] =>
       if lookup_field_in_type s type_in_scope f is Some fld then
         (is_scalar_type s fld.(ftype) || is_enum_type s fld.(ftype)) && arguments_conform fld.(fargs) α
@@ -135,27 +135,27 @@ Section QueryConformance.
       else
         false
 
-    | f[[α]] { φ } => 
+    | f[[α]] { σs } => 
       if lookup_field_in_type s type_in_scope f is Some fld then
         [&& (is_object_type s fld.(ftype) || is_abstract_type s fld.(ftype)),
          arguments_conform fld.(fargs) α,
-         φ != [::] &
-         all (is_consistent fld.(ftype)) φ]
+         σs != [::] &
+         all (is_consistent fld.(ftype)) σs]
       else
         false 
 
-    | _:f[[α]] { φ } =>
+    | _:f[[α]] { σs } =>
       if lookup_field_in_type s type_in_scope f is Some fld then
         [&& (is_object_type s fld.(ftype) || is_abstract_type s fld.(ftype)),
          arguments_conform fld.(fargs) α,
-         φ != [::] &
-         all (is_consistent fld.(ftype)) φ]
+         σs != [::] &
+         all (is_consistent fld.(ftype)) σs]
       else
         false 
 
-    | on t { φ } => [&& is_fragment_spread_possible s type_in_scope t,
-                    φ != [::] &
-                    all (is_consistent t) φ]
+    | on t { σs } => [&& is_fragment_spread_possible s type_in_scope t,
+                    σs != [::] &
+                    all (is_consistent t) σs]
     end.
   
 
@@ -259,65 +259,65 @@ Section QueryConformance.
     due to an issue with inline fragments possibly allowing selections over any type
     (See #<a href='https://github.com/graphql/graphql-spec/issues/367'>issue</a>#).
   *)
- Equations? are_type_compatible (selections : seq (Name * @Selection Scalar)) :
-   bool by wf (selections_size_aux selections) :=
+ Equations? are_type_compatible (scoped_σs : seq (Name * @Selection Scalar)) :
+   bool by wf (selections_size_aux scoped_σs) :=
    {
      are_type_compatible [::] := true ;
 
-     are_type_compatible ((ty, f[[ _ ]]) :: φ)
+     are_type_compatible ((ty, f[[ _ ]]) :: σs)
        with lookup_field_in_type s ty f :=
        {
-       | Some fld := all (has_compatible_type fld.(ftype)) (find_pairs_with_response_name f φ)
-                        && are_type_compatible (filter_pairs_with_response_name f φ);
+       | Some fld := all (has_compatible_type fld.(ftype)) (find_pairs_with_response_name f σs)
+                        && are_type_compatible (filter_pairs_with_response_name f σs);
        
        | _ := false (* If the field is not defined in its own type in scope it should fail *)
        };
 
-     are_type_compatible ((ty, l:f[[ _ ]]) :: φ)
+     are_type_compatible ((ty, l:f[[ _ ]]) :: σs)
        with lookup_field_in_type s ty f :=
        {
-       | Some fld := all (has_compatible_type fld.(ftype)) (find_pairs_with_response_name l φ)
-                        && are_type_compatible (filter_pairs_with_response_name l φ);
+       | Some fld := all (has_compatible_type fld.(ftype)) (find_pairs_with_response_name l σs)
+                        && are_type_compatible (filter_pairs_with_response_name l σs);
        
        | _ := false (* If the field is not defined in its own type in scope it should fail *)
        };
 
-      are_type_compatible ((ty, f[[ _ ]] { β }) :: φ)
+      are_type_compatible ((ty, f[[ _ ]] { βs }) :: σs)
        with lookup_field_in_type s ty f :=
        {
-       | Some fld := let similar_queries := find_pairs_with_response_name f φ in
+       | Some fld := let similar_queries := find_pairs_with_response_name f σs in
                     [&& all (has_compatible_type fld.(ftype)) similar_queries,
-                     are_type_compatible ([seq (fld.(ftype).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
-                     are_type_compatible (filter_pairs_with_response_name f φ)];
+                     are_type_compatible ([seq (fld.(ftype).(tname), q) | q <- βs] ++ merge_pairs_selection_sets s similar_queries) &
+                     are_type_compatible (filter_pairs_with_response_name f σs)];
                      
                         
        | _ := false (* If the field is not defined in its own type in scope it should fail *)
        };
       
-      are_type_compatible ((ty, l:f[[ _ ]] { β }) :: φ)
+      are_type_compatible ((ty, l:f[[ _ ]] { βs }) :: σs)
        with lookup_field_in_type s ty f :=
        {
-       | Some fld := let similar_queries := find_pairs_with_response_name l φ in
+       | Some fld := let similar_queries := find_pairs_with_response_name l σs in
                     [&& all (has_compatible_type fld.(ftype)) similar_queries,
-                     are_type_compatible ([seq (fld.(ftype).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
-                     are_type_compatible (filter_pairs_with_response_name f φ)];
+                     are_type_compatible ([seq (fld.(ftype).(tname), q) | q <- βs] ++ merge_pairs_selection_sets s similar_queries) &
+                     are_type_compatible (filter_pairs_with_response_name f σs)];
                      
                         
        | _ := false (* If the field is not defined in its own type in scope it should fail *)
        };
 
       
-      are_type_compatible ((ty, on t { β }) :: φ) := are_type_compatible ([seq (t, q) | q <- β] ++ φ)
+      are_type_compatible ((ty, on t { βs }) :: σs) := are_type_compatible ([seq (t, q) | q <- βs] ++ σs)
                                                                                                       
    }.
  all: do ? [rewrite ?/similar_queries; leq_selections_size].
   Qed.
   Next Obligation.
-     move: {2}(selections_size_aux _) (leqnn (selections_size_aux selections)) => n.
-     elim: n selections => /= [| n IH] selections; first by rewrite leqn0 => /selections_size_aux_0_nil ->; constructor.
-     case: selections => /= [| q selections]; first by constructor.
-     case: q => ts q.
-     case_selection q; rewrite /selections_size_aux /= -/(selections_size_aux _); simp selection_size => Hleq;
+     move: {2}(selections_size_aux _) (leqnn (selections_size_aux scoped_σs)) => n.
+     elim: n scoped_σs => /= [| n IH] scoped_σs; first by rewrite leqn0 => /selections_size_aux_0_nil ->; constructor.
+     case: scoped_σs => /= [| scoped_σ scoped_σs]; first by constructor.
+     case: scoped_σ => ts σ.
+     case_selection σ; rewrite /selections_size_aux /= -/(selections_size_aux _); simp selection_size => Hleq;
      simp are_type_compatible; constructor; do ? [lookup; constructor]; apply: IH; leq_selections_size.
   Defined.
 
@@ -338,87 +338,87 @@ Section QueryConformance.
      (cf. #<a href='https://graphql.github.io/graphql-spec/June2018/##FieldsInSetCanMerge()'><span>&#167;</span>5.3.2</a>#).
      The differences are due to the same reasons given in [are_type_compatible].
   *)
- Equations? are_renaming_consistent (selections : seq (Name * @Selection Scalar)) :
-   bool by wf (selections_size_aux selections) :=
+ Equations? are_renaming_consistent (scoped_σs : seq (Name * @Selection Scalar)) :
+   bool by wf (selections_size_aux scoped_σs) :=
    {
      are_renaming_consistent [::] := true;
 
-     are_renaming_consistent ((ty, f[[α]]) :: φ)
+     are_renaming_consistent ((ty, f[[α]]) :: σs)
        with is_object_type s ty :=
        {
-       | true := all (are_equivalent (f[[α]])) [seq p.2 | p <- (find_valid_pairs_with_response_name s ty f φ)] &&
-                 are_renaming_consistent (filter_pairs_with_response_name f φ);
+       | true := all (are_equivalent (f[[α]])) [seq p.2 | p <- (find_valid_pairs_with_response_name s ty f σs)] &&
+                 are_renaming_consistent (filter_pairs_with_response_name f σs);
        
-       | _ := all (are_equivalent (f[[α]])) [seq p.2 | p <- (find_pairs_with_response_name f φ)] &&
-                 are_renaming_consistent (filter_pairs_with_response_name f φ)
+       | _ := all (are_equivalent (f[[α]])) [seq p.2 | p <- (find_pairs_with_response_name f σs)] &&
+                 are_renaming_consistent (filter_pairs_with_response_name f σs)
        };
 
-     are_renaming_consistent ((ty, l:f[[α]]) :: φ)
+     are_renaming_consistent ((ty, l:f[[α]]) :: σs)
        with is_object_type s ty :=
        {
-       | true := all (are_equivalent (l:f[[α]])) [seq p.2 | p <- (find_valid_pairs_with_response_name s ty l φ)] &&
-                 are_renaming_consistent (filter_pairs_with_response_name l φ);
+       | true := all (are_equivalent (l:f[[α]])) [seq p.2 | p <- (find_valid_pairs_with_response_name s ty l σs)] &&
+                 are_renaming_consistent (filter_pairs_with_response_name l σs);
        
-       | _ := all (are_equivalent (l:f[[α]])) [seq p.2 | p <- (find_pairs_with_response_name l φ)] &&
-                 are_renaming_consistent (filter_pairs_with_response_name l φ)
+       | _ := all (are_equivalent (l:f[[α]])) [seq p.2 | p <- (find_pairs_with_response_name l σs)] &&
+                 are_renaming_consistent (filter_pairs_with_response_name l σs)
        };
      
-     are_renaming_consistent ((ty, f[[α]] { β }) :: φ)
+     are_renaming_consistent ((ty, f[[α]] { βs }) :: σs)
        with lookup_field_in_type s ty f :=
        {
        | Some fld
            with is_object_type s ty :=
            {
-           | true := let similar_queries := find_valid_pairs_with_response_name s ty f φ in
-                 [&& all (are_equivalent (f[[α]] { β })) [seq p.2 | p <- similar_queries],
-                  are_renaming_consistent ([seq (fld.(ftype).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
-                  are_renaming_consistent (filter_pairs_with_response_name f φ)];
+           | true := let similar_σs := find_valid_pairs_with_response_name s ty f σs in
+                 [&& all (are_equivalent (f[[α]] { βs })) [seq p.2 | p <- similar_σs],
+                  are_renaming_consistent ([seq (fld.(ftype).(tname), σ) | σ <- βs] ++ merge_pairs_selection_sets s similar_σs) &
+                  are_renaming_consistent (filter_pairs_with_response_name f σs)];
            
-           | _ := let similar_queries := find_pairs_with_response_name f φ in
-                 [&& all (are_equivalent (f[[α]] { β })) [seq p.2 | p <- similar_queries],
-                  are_renaming_consistent ([seq (fld.(ftype).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
-                  are_renaming_consistent (filter_pairs_with_response_name f φ)]
+           | _ := let similar_σs := find_pairs_with_response_name f σs in
+                 [&& all (are_equivalent (f[[α]] { βs })) [seq p.2 | p <- similar_σs],
+                  are_renaming_consistent ([seq (fld.(ftype).(tname), σ) | σ <- βs] ++ merge_pairs_selection_sets s similar_σs) &
+                  are_renaming_consistent (filter_pairs_with_response_name f σs)]
            };
        
        | _ := false 
        };
 
-     are_renaming_consistent ((ty, l:f[[α]] { β }) :: φ)
+     are_renaming_consistent ((ty, l:f[[α]] { βs }) :: σs)
        with lookup_field_in_type s ty f :=
        {
        | Some fld
            with is_object_type s ty :=
            {
-           | true := let similar_queries := find_valid_pairs_with_response_name s ty l φ in
-                 [&& all (are_equivalent (l:f[[α]] { β })) [seq p.2 | p <- similar_queries],
-                  are_renaming_consistent ([seq (fld.(ftype).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
-                  are_renaming_consistent (filter_pairs_with_response_name l φ)];
+           | true := let similar_σs := find_valid_pairs_with_response_name s ty l σs in
+                 [&& all (are_equivalent (l:f[[α]] { βs })) [seq p.2 | p <- similar_σs],
+                  are_renaming_consistent ([seq (fld.(ftype).(tname), σ) | σ <- βs] ++ merge_pairs_selection_sets s similar_σs) &
+                  are_renaming_consistent (filter_pairs_with_response_name l σs)];
            
-           | _ := let similar_queries := find_pairs_with_response_name l φ in
-                 [&& all (are_equivalent (l:f[[α]] { β })) [seq p.2 | p <- similar_queries],
-                  are_renaming_consistent ([seq (fld.(ftype).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
-                  are_renaming_consistent (filter_pairs_with_response_name l φ)]
+           | _ := let similar_σs := find_pairs_with_response_name l σs in
+                 [&& all (are_equivalent (l:f[[α]] { βs })) [seq p.2 | p <- similar_σs],
+                  are_renaming_consistent ([seq (fld.(ftype).(tname), σ) | σ <- βs] ++ merge_pairs_selection_sets s similar_σs) &
+                  are_renaming_consistent (filter_pairs_with_response_name l σs)]
            };
           
        | _ := false 
        };
 
-     are_renaming_consistent ((ty, on t { β }) :: φ)
+     are_renaming_consistent ((ty, on t { βs }) :: σs)
        with is_fragment_spread_possible s ty t :=
        {
-       | true := are_renaming_consistent ([seq (t, sel) | sel <- β] ++ φ);
-       | _ := are_renaming_consistent φ
+       | true := are_renaming_consistent ([seq (t, σ) | σ <- βs] ++ σs);
+       | _ := are_renaming_consistent σs
        }
    }.
  Proof.
-   all: do ? [rewrite ?/similar_queries; leq_selections_size].
+   all: do ? [rewrite ?/similar_σs; leq_selections_size].
  Qed.
  Next Obligation.
-   move: {2}(selections_size_aux _) (leqnn (selections_size_aux selections)) => n.
-   elim: n selections => /= [| n IH] selections; first by rewrite leqn0 => /selections_size_aux_0_nil ->; constructor.
-   case: selections => /= [| q selections]; first by constructor.
-   case: q => ts q.
-   case_selection q; rewrite /selections_size_aux /= -/(selections_size_aux _); simp selection_size => Hle;
+   move: {2}(selections_size_aux _) (leqnn (selections_size_aux scoped_σs)) => n.
+   elim: n scoped_σs => /= [| n IH] scoped_σs; first by rewrite leqn0 => /selections_size_aux_0_nil ->; constructor.
+   case: scoped_σs => /= [| scoped_σ scoped_σs]; first by constructor.
+   case: scoped_σ => ts σ.
+   case_selection σ; rewrite /selections_size_aux /= -/(selections_size_aux _); simp selection_size => Hle;
    simp are_renaming_consistent; constructor; do ? [lookup; constructor]; last first.
    case is_fragment_spread_possible; constructor; last by apply: IH; leq_selections_size.
 
@@ -454,8 +454,8 @@ Section QueryConformance.
       
       A query conforms if its selection set conforms to the Query type.
    *)
-  Definition query_conforms (q : query) : bool :=
-    selections_conform s.(query_type) q.(selection_set).
+  Definition query_conforms (φ : query) : bool :=
+    selections_conform s.(query_type) φ.(selection_set).
   
  
 End QueryConformance.
