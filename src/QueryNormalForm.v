@@ -62,6 +62,11 @@ Section NormalForm.
    *)
   (**
      Checks whether the given selection is in ground-typed normal form, as defined in H&P.
+     
+     A selection set σ̅ is in ground-typed normal form if it satisfies the following grammar, 
+     where t is an object type.
+     
+     #<img src='../imgs/GTNF/gtnf.png' class='img-fluid' alt='Ground-typed normal form grammar'>#     
    *)
   Fixpoint is_in_ground_typed_nf (selection : @Selection Scalar) : bool :=
     match selection with
