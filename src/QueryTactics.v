@@ -63,16 +63,16 @@ Require Import Ssromega.
              let Hfleq := fresh in
              have Hfleq := (filter_pairs_with_response_name_leq rname σs); ssromega
                       
-           | [|- context [selections_size (filter_queries_with_label ?rname ?qs)]] =>
+           | [|- context [selections_size (filter_fields_with_response_name ?rname ?qs)]] =>
              let Hfleq := fresh in
-             have Hfleq := (filter_queries_with_label_leq_size rname qs); ssromega
+             have Hfleq := (filter_fields_with_response_name_leq_size rname qs); ssromega
 
-           | [|- context [selections_size (filter_queries_with_label ?rname1 ?qs1) +
-                         selections_size (filter_queries_with_label ?rname2 ?qs2)]] =>
+           | [|- context [selections_size (filter_fields_with_response_name ?rname1 ?qs1) +
+                         selections_size (filter_fields_with_response_name ?rname2 ?qs2)]] =>
              let Hfleq1 := fresh in
              let Hfleq2 := fresh in
-             have Hfleq1 := (filter_queries_with_label_leq_size rname1 qs1);
-             have Hfleq2 := (filter_queries_with_label_leq_size rname2 qs2); ssromega
+             have Hfleq1 := (filter_fields_with_response_name_leq_size rname1 qs1);
+             have Hfleq2 := (filter_fields_with_response_name_leq_size rname2 qs2); ssromega
 
          
            | [|- _] => ssromega

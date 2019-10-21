@@ -534,19 +534,19 @@ Section QueryAux.
     (** 
         Remove all fields with a given response name.
      *)
-    Equations? filter_queries_with_label (label : Name) (σs : seq (@Selection Scalar)) :
+    Equations? filter_fields_with_response_name (label : Name) (σs : seq (@Selection Scalar)) :
       seq (@Selection Scalar) by wf (selections_size σs) :=
       {
-        filter_queries_with_label _ [::] := [::];
+        filter_fields_with_response_name _ [::] := [::];
 
-        filter_queries_with_label l (on t { β } :: σs) :=
-          on t { filter_queries_with_label l β } :: filter_queries_with_label l σs;
+        filter_fields_with_response_name l (on t { β } :: σs) :=
+          on t { filter_fields_with_response_name l β } :: filter_fields_with_response_name l σs;
 
-        filter_queries_with_label l (σ :: σs)
+        filter_fields_with_response_name l (σ :: σs)
           with (qresponse_name σ _) != l :=
           {
-          | true := σ :: filter_queries_with_label l σs;
-          | _ := filter_queries_with_label l σs
+          | true := σ :: filter_fields_with_response_name l σs;
+          | _ := filter_fields_with_response_name l σs
           }     
 
       }.
@@ -564,7 +564,7 @@ Section QueryAux.
         filter_pairs_with_response_name _ [::] := [::];
 
         filter_pairs_with_response_name l ((ty, on t { β }) :: σs) :=
-          (ty, on t { filter_queries_with_label l β }) :: filter_pairs_with_response_name l σs;
+          (ty, on t { filter_fields_with_response_name l β }) :: filter_pairs_with_response_name l σs;
 
         filter_pairs_with_response_name l ((ty, σ) :: σs)
           with (qresponse_name σ _) != l :=
@@ -668,7 +668,7 @@ Arguments have_same_name [Scalar].
 Arguments have_same_arguments [Scalar].
 Arguments are_equivalent [Scalar].
 
-Arguments filter_queries_with_label [Scalar].
+Arguments filter_fields_with_response_name [Scalar].
 Arguments filter_pairs_with_response_name [Scalar].
 
 Arguments find_valid_fields_with_response_name [Scalar].

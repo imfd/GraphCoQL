@@ -310,11 +310,11 @@ Section Theory.
      *)
     Lemma find_filter_swap rname1 rname2 ty φ :
       rname1 == rname2 = false ->
-      find_valid_fields_with_response_name s rname1 ty (filter_queries_with_label rname2 φ) = (find_valid_fields_with_response_name s rname1 ty φ).
+      find_valid_fields_with_response_name s rname1 ty (filter_fields_with_response_name rname2 φ) = (find_valid_fields_with_response_name s rname1 ty φ).
     Proof.
       move: {2}(selections_size _) (leqnn (selections_size φ)) => n.
       elim: n φ => /= [| n IH] φ; first by rewrite leqn0 => /selections_size_0_nil ->.
-      case: φ => //= q φ; case_selection q; simp selection_size => Hleq Hneq; simp filter_queries_with_label; simp find_valid_fields_with_response_name => /=; last first.
+      case: φ => //= q φ; case_selection q; simp selection_size => Hleq Hneq; simp filter_fields_with_response_name; simp find_valid_fields_with_response_name => /=; last first.
 
       - by case does_fragment_type_apply => /=; [congr cat|]; apply: IH => //; ssromega.
 
@@ -331,9 +331,9 @@ Section Theory.
        you filtered those queries, then the result is empty.
      *)
     Lemma find_queries_filter_nil rname O__t φ :
-      find_valid_fields_with_response_name s rname O__t (filter_queries_with_label rname φ) = [::].
+      find_valid_fields_with_response_name s rname O__t (filter_fields_with_response_name rname φ) = [::].
     Proof.
-      funelim (filter_queries_with_label rname φ) => //=; do ? by simp find_valid_fields_with_response_name; move/negbTE in Heq; rewrite Heq /=.
+      funelim (filter_fields_with_response_name rname φ) => //=; do ? by simp find_valid_fields_with_response_name; move/negbTE in Heq; rewrite Heq /=.
         by simp find_valid_fields_with_response_name; case: does_fragment_type_apply => //=; rewrite H H0 /=.
     Qed.
 
@@ -344,9 +344,9 @@ Section Theory.
        you filtered those queries, then the result is empty.
      *)
     Lemma find_fields_filter_nil rname φ :
-      find_fields_with_response_name rname (filter_queries_with_label rname φ) = [::].
+      find_fields_with_response_name rname (filter_fields_with_response_name rname φ) = [::].
     Proof.
-      funelim (filter_queries_with_label rname φ) => //=; do ? by simp find_fields_with_response_name; move/negbTE in Heq; rewrite Heq /=.
+      funelim (filter_fields_with_response_name rname φ) => //=; do ? by simp find_fields_with_response_name; move/negbTE in Heq; rewrite Heq /=.
         by simp find_fields_with_response_name; rewrite H H0 /=.
     Qed.
 
@@ -459,12 +459,12 @@ Section Theory.
        first projecting and then filtering.
      *)
     Lemma filter_pairs_spec rname (nq : seq (Name * @Selection Scalar)) :
-      [seq q.2 | q <- filter_pairs_with_response_name rname nq] = filter_queries_with_label rname [seq q.2 | q <- nq].
+      [seq q.2 | q <- filter_pairs_with_response_name rname nq] = filter_fields_with_response_name rname [seq q.2 | q <- nq].
     Proof.
       elim: nq => //= q nq IH.
         by case: q => ty; case=> //= [f α | l f α | f α β | l f α β | t β];
                                  simp filter_pairs_with_response_name;
-                                 simp filter_queries_with_label => /=; do ? case: eqP => //= _; rewrite IH.
+                                 simp filter_fields_with_response_name => /=; do ? case: eqP => //= _; rewrite IH.
     Qed.
       
     
@@ -473,10 +473,10 @@ Section Theory.
        This lemma states that the size of filtered selections is less or 
        equal than the size of the original list of selections.
      *)
-    Lemma filter_queries_with_label_leq_size l φ :
-      selections_size (filter_queries_with_label l φ) <= selections_size φ.
+    Lemma filter_fields_with_response_name_leq_size l φ :
+      selections_size (filter_fields_with_response_name l φ) <= selections_size φ.
     Proof.
-      funelim (filter_queries_with_label l φ) => //=; do ?[simp selection_size; ssromega]. 
+      funelim (filter_fields_with_response_name l φ) => //=; do ?[simp selection_size; ssromega]. 
     Qed.
 
 
@@ -490,19 +490,19 @@ Section Theory.
     Proof.
       rewrite /selections_size_aux.
       funelim (filter_pairs_with_response_name rname σ) => //=; simp selection_size; do ? [ssromega].
-      have Hfleq := (filter_queries_with_label_leq_size response_name subselections2); ssromega.
+      have Hfleq := (filter_fields_with_response_name_leq_size response_name subselections2); ssromega.
     Qed.
 
     
     (** ---- *)
     (**
-       This lemma states that [filter_queries_with_label] distributes over list concatenation.
+       This lemma states that [filter_fields_with_response_name] distributes over list concatenation.
      *)
-    Lemma filter_queries_with_label_cat l (qs1 qs2 : seq (@Selection Scalar)) :
-      filter_queries_with_label l (qs1 ++ qs2) = filter_queries_with_label l qs1 ++ filter_queries_with_label l qs2.
+    Lemma filter_fields_with_response_name_cat l (qs1 qs2 : seq (@Selection Scalar)) :
+      filter_fields_with_response_name l (qs1 ++ qs2) = filter_fields_with_response_name l qs1 ++ filter_fields_with_response_name l qs2.
     Proof.
       elim: qs1  => //= hd tl IH.
-      case: hd => //=; intros; simp filter_queries_with_label; do ?[by case: eqP => //= Heq; rewrite IH].
+      case: hd => //=; intros; simp filter_fields_with_response_name; do ?[by case: eqP => //= Heq; rewrite IH].
         by rewrite IH.
     Qed.
 
@@ -512,11 +512,11 @@ Section Theory.
        This lemma states that the order of filtering with two response names does not affect the result.
      *)
     Lemma filter_swap rname1 rname2 (φ : seq (@Selection Scalar)) :
-      filter_queries_with_label rname1 (filter_queries_with_label rname2 φ) =
-      filter_queries_with_label rname2 (filter_queries_with_label rname1 φ).
+      filter_fields_with_response_name rname1 (filter_fields_with_response_name rname2 φ) =
+      filter_fields_with_response_name rname2 (filter_fields_with_response_name rname1 φ).
     Proof.
-      funelim (filter_queries_with_label rname1 φ) => //=; do ? by simp filter_queries_with_label; case: eqP => //= _; simp filter_queries_with_label; rewrite Heq /= H.
-      by simp filter_queries_with_label; rewrite H H0.
+      funelim (filter_fields_with_response_name rname1 φ) => //=; do ? by simp filter_fields_with_response_name; case: eqP => //= _; simp filter_fields_with_response_name; rewrite Heq /= H.
+      by simp filter_fields_with_response_name; rewrite H H0.
     Qed.
 
     
@@ -526,9 +526,9 @@ Section Theory.
        as filtering once.
      *)
     Lemma filter_filter_absorb rname (φ : seq (@Selection Scalar)) :
-      filter_queries_with_label rname (filter_queries_with_label rname φ) = filter_queries_with_label rname φ.
+      filter_fields_with_response_name rname (filter_fields_with_response_name rname φ) = filter_fields_with_response_name rname φ.
     Proof.
-      funelim (filter_queries_with_label rname φ) => //=; simp filter_queries_with_label; do ? by rewrite Heq /= H.
+      funelim (filter_fields_with_response_name rname φ) => //=; simp filter_fields_with_response_name; do ? by rewrite Heq /= H.
         by rewrite H H0.
     Qed.
 
@@ -539,10 +539,10 @@ Section Theory.
        each fragments's subselections, even when they are modified by a function [f].
      *)
     Lemma filter_map_inline_func (f : Name -> seq (@Selection Scalar) -> seq Selection) rname φ ptys :
-      filter_queries_with_label rname [seq InlineFragment t (f t φ) | t <- ptys] =
-      [seq @InlineFragment Scalar t (filter_queries_with_label rname (f t φ)) | t <- ptys].
+      filter_fields_with_response_name rname [seq InlineFragment t (f t φ) | t <- ptys] =
+      [seq @InlineFragment Scalar t (filter_fields_with_response_name rname (f t φ)) | t <- ptys].
     Proof.
-        by elim: ptys => //= t ptys IH; simp filter_queries_with_label; rewrite IH.
+        by elim: ptys => //= t ptys IH; simp filter_fields_with_response_name; rewrite IH.
     Qed.
 
     
@@ -552,10 +552,10 @@ Section Theory.
      *)
     (* Unused *)
     Lemma filter_map_inline rname φ ptys :
-      filter_queries_with_label rname [seq InlineFragment t φ | t <- ptys] =
-      [seq InlineFragment t (filter_queries_with_label rname φ) | t <- ptys].
+      filter_fields_with_response_name rname [seq InlineFragment t φ | t <- ptys] =
+      [seq InlineFragment t (filter_fields_with_response_name rname φ) | t <- ptys].
     Proof.
-        by elim: ptys => //= t ptys IH; simp filter_queries_with_label; rewrite IH.
+        by elim: ptys => //= t ptys IH; simp filter_fields_with_response_name; rewrite IH.
     Qed.
 
 
@@ -571,9 +571,9 @@ Section Theory.
     Lemma filter_find_fields_nil_is_nil rname φ :
       all (fun q => q.(is_field)) φ ->
       find_fields_with_response_name rname φ = [::] ->
-      filter_queries_with_label rname φ = φ.
+      filter_fields_with_response_name rname φ = φ.
     Proof.
-      funelim (filter_queries_with_label rname φ) => //; simp find_fields_with_response_name.
+      funelim (filter_fields_with_response_name rname φ) => //; simp find_fields_with_response_name.
       all: do ? [by move/negbTE in Heq; rewrite Heq /=; intros; rewrite H].
       all: do ? [by move/negbFE in Heq; rewrite Heq /=;intros; rewrite H].
     Qed.
@@ -586,9 +586,9 @@ Section Theory.
      *)
     Lemma filter_preserves_inlines rname φ :
       all (fun q => q.(is_inline_fragment)) φ ->
-      all (fun q => q.(is_inline_fragment)) (filter_queries_with_label rname φ).
+      all (fun q => q.(is_inline_fragment)) (filter_fields_with_response_name rname φ).
     Proof.
-        by funelim (filter_queries_with_label rname φ) => //=.
+        by funelim (filter_fields_with_response_name rname φ) => //=.
     Qed.
 
     
@@ -609,9 +609,9 @@ Section Theory.
       all (fun q : Selection => match q with
                              | on (t) {(_)} => ~~ does_fragment_type_apply s ty t
                              | _ => true
-                             end) (filter_queries_with_label rname φ).
+                             end) (filter_fields_with_response_name rname φ).
     Proof.
-      funelim (filter_queries_with_label rname φ) => //=; bcase; do ? by intros; apply: H.
+      funelim (filter_fields_with_response_name rname φ) => //=; bcase; do ? by intros; apply: H.
         by apply_andP; apply: H0.
     Qed.
 
@@ -624,9 +624,9 @@ Section Theory.
      *)
     Lemma filter_preserves_find_fields_nil rname1 rname2 φ :
       find_fields_with_response_name rname1 φ = [::] ->
-      find_fields_with_response_name rname1 (filter_queries_with_label rname2 φ) = [::].
+      find_fields_with_response_name rname1 (filter_fields_with_response_name rname2 φ) = [::].
     Proof.
-      funelim (filter_queries_with_label rname2 φ) => //=; simp find_fields_with_response_name.
+      funelim (filter_fields_with_response_name rname2 φ) => //=; simp find_fields_with_response_name.
       
       move/cat_nil=> [Hnil1 Hnil2]; rewrite H // H0 //.
       all: do [by case: eqP => //= _; apply: H].
@@ -636,13 +636,13 @@ Section Theory.
     (** ---- *)  
     (**
        This lemma states that if there is no inline fragment that matches the type condition [t] then 
-       [filter_queries_with_label] will preserve this fact.
+       [filter_fields_with_response_name] will preserve this fact.
      *)
     Lemma filter_preserves_find_frags_nil rname ty φ :
       find_fragment_with_type_condition ty φ = [::] ->
-      find_fragment_with_type_condition ty (filter_queries_with_label rname φ) = [::].
+      find_fragment_with_type_condition ty (filter_fields_with_response_name rname φ) = [::].
     Proof.
-      funelim (filter_queries_with_label rname φ) => //=; simp find_fragment_with_type_condition.
+      funelim (filter_fields_with_response_name rname φ) => //=; simp find_fragment_with_type_condition.
         by case: eqP => //= _; apply: H0.
     Qed.
 

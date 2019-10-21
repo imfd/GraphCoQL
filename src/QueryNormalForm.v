@@ -208,14 +208,14 @@ Section Normalization.
       normalize_selections ty (f[[α]] :: φ)
         with lookup_field_in_type s ty f :=
         {
-        | Some _ := f[[α]] :: normalize_selections ty (filter_queries_with_label f φ);
+        | Some _ := f[[α]] :: normalize_selections ty (filter_fields_with_response_name f φ);
         | _ := normalize_selections ty φ
         };
       
       normalize_selections ty (l:f[[α]] :: φ)
         with lookup_field_in_type s ty f :=
         {
-        | Some _ := l:f[[α]] :: normalize_selections ty (filter_queries_with_label l φ);
+        | Some _ := l:f[[α]] :: normalize_selections ty (filter_fields_with_response_name l φ);
         | _ := normalize_selections ty φ
         };
 
@@ -226,9 +226,9 @@ Section Normalization.
             with is_object_type s fld.(ftype) :=
             {
             | true := f[[α]] { normalize_selections fld.(ftype) (β ++ merge_selection_sets (find_valid_fields_with_response_name s f ty φ)) }
-                                 :: normalize_selections ty (filter_queries_with_label f φ);
+                                 :: normalize_selections ty (filter_fields_with_response_name f φ);
             | _ := f[[α]] { [seq on t { normalize_selections t (β ++ merge_selection_sets (find_valid_fields_with_response_name s f ty φ)) } | t <- get_possible_types s fld.(ftype)] } ::
-                              normalize_selections ty (filter_queries_with_label f φ)
+                              normalize_selections ty (filter_fields_with_response_name f φ)
             };
         
         | _ => normalize_selections ty φ
@@ -241,9 +241,9 @@ Section Normalization.
             with is_object_type s fld.(ftype) :=
             {
             | true := l:f[[α]] { normalize_selections fld.(ftype) (β ++ merge_selection_sets (find_valid_fields_with_response_name s l ty φ)) }
-                                        :: normalize_selections ty (filter_queries_with_label l φ);
+                                        :: normalize_selections ty (filter_fields_with_response_name l φ);
             | _ := l:f[[α]] { [seq on t { normalize_selections t (β ++ merge_selection_sets (find_valid_fields_with_response_name s l ty φ)) } | t <- get_possible_types s fld.(ftype)] }
-                     :: normalize_selections ty (filter_queries_with_label l φ)
+                     :: normalize_selections ty (filter_fields_with_response_name l φ)
             };
         
         | _ => normalize_selections ty φ

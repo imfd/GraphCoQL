@@ -220,7 +220,7 @@ Section Theory.
    This lemma states that
    *)
   Lemma exec_cat_frags_func (f : Name -> seq (@Selection Scalar) -> seq Selection) ptys u φ1 φ2 :
-    (forall rname t φ, filter_queries_with_label rname (f t φ) = f t (filter_queries_with_label rname φ)) ->
+    (forall rname t φ, filter_fields_with_response_name rname (f t φ) = f t (filter_fields_with_response_name rname φ)) ->
     uniq ptys ->
     all (is_object_type s) ptys ->
     u.(ntype) \notin ptys ->
@@ -232,13 +232,13 @@ Section Theory.
     move: {2}(selections_size _) (leqnn (selections_size φ1)) => n.
     elim: n φ1 φ2 => /= [| n IH] φ1 φ2; first by rewrite leqn0 => /selections_size_0_nil ->; apply: exec_frags_nil_func.
     case: φ1 => //= [Hleq|q φ1]; first by apply: exec_frags_nil_func.
-    have Hinlineswap : forall ptys rname φ, [seq InlineFragment t (filter_queries_with_label rname (f t φ)) | t <- ptys] =
-                                       [seq InlineFragment t (f t (filter_queries_with_label rname φ)) | t <- ptys].
+    have Hinlineswap : forall ptys rname φ, [seq InlineFragment t (filter_fields_with_response_name rname (f t φ)) | t <- ptys] =
+                                       [seq InlineFragment t (f t (filter_fields_with_response_name rname φ)) | t <- ptys].
       by elim=> //= t' ptys' IH' rname φ; rewrite Hfilterswap IH'.
       
       
       case_selection q; simp selection_size => Hleq Hobj Hunin; exec;
-                                        rewrite ?filter_queries_with_label_cat ?filter_map_inline_func ?Hinlineswap ?IH //; leq_selections_size.
+                                        rewrite ?filter_fields_with_response_name_cat ?filter_map_inline_func ?Hinlineswap ?IH //; leq_selections_size.
 
     - by congr cons; congr pair; congr Response.Object; rewrite find_valid_fields_with_response_name_cat find_map_inline_nil_func // cats0.
         
@@ -283,7 +283,7 @@ Section Theory.
    This lemma states that
    *)
   Lemma exec_inlined_func (f : Name -> seq (@Selection Scalar) -> seq Selection) ptys u φ :
-    (forall rname t φ, filter_queries_with_label rname (f t φ) = f t (filter_queries_with_label rname φ)) ->
+    (forall rname t φ, filter_fields_with_response_name rname (f t φ) = f t (filter_fields_with_response_name rname φ)) ->
     uniq ptys ->
     all (is_object_type s) ptys ->
     u.(ntype) \in ptys ->
@@ -328,12 +328,12 @@ Section Theory.
    *)
   Lemma exec_filter_no_repeat rname φ u :
     all (fun kq => kq.1 != rname)
-        (execute_selection_set s is_valid_scalar_value g coerce u (filter_queries_with_label rname φ)).
+        (execute_selection_set s is_valid_scalar_value g coerce u (filter_fields_with_response_name rname φ)).
   Proof.
     move: {2}(selections_size _) (leqnn (selections_size φ)) => n.
     elim: n φ rname => /= [| n IH] φ rname; first by rewrite leqn0 => /selections_size_0_nil ->.
     case: φ => //= q φ.
-    case_selection q => //=; simp selection_size => Hleq; simp filter_queries_with_label.
+    case_selection q => //=; simp selection_size => Hleq; simp filter_fields_with_response_name.
     
     - case: eqP => //= /eqP Hneq; exec; apply_andP; rewrite filter_swap; apply: IH; leq_selections_size.
     - case: eqP => //= /eqP Hneq; exec; apply_andP; rewrite filter_swap; apply: IH; leq_selections_size.
@@ -342,7 +342,7 @@ Section Theory.
       exec; do ? [apply_andP; rewrite filter_swap]; apply: IH; leq_selections_size.    
     - case: eqP => //= /eqP Hneq; first by apply: IH; leq_selections_size.
       exec; do ? [apply_andP; rewrite filter_swap]; apply: IH; leq_selections_size.
-    - exec; rewrite -?filter_queries_with_label_cat; apply: IH; leq_selections_size.
+    - exec; rewrite -?filter_fields_with_response_name_cat; apply: IH; leq_selections_size.
   Qed.
       
   (* end hide *)
@@ -641,7 +641,7 @@ Section Theory.
     move: {2}(selections_size _) (leqnn (selections_size φ)) => n.
     elim: n φ β u => /= [| n IH] φ β u; first by rewrite leqn0 => /selections_size_0_nil -> /=; apply: exec_inlines_nil.
     case: φ => //= [_ | q φ]; first by apply: exec_inlines_nil.
-    case_selection q; simp selection_size => Hleq; intros; exec; rewrite ?filter_queries_with_label_cat ?find_valid_fields_with_response_name_cat ?[find_valid_fields_with_response_name _ _ _ β]find_fragment_not_applies_is_nil // ?cats0 //.
+    case_selection q; simp selection_size => Hleq; intros; exec; rewrite ?filter_fields_with_response_name_cat ?find_valid_fields_with_response_name_cat ?[find_valid_fields_with_response_name _ _ _ β]find_fragment_not_applies_is_nil // ?cats0 //.
     all: do ? congr cons.
     all: do ? [apply: IH => //; leq_selections_size].
     all: do ? by apply: filter_preserves_inlines.
