@@ -116,7 +116,7 @@ Section QueryAux.
 
        For field selections without subselections, it returns an empty list.
      *)
-    Definition qsubqueries σ : seq Selection :=
+    Definition subselections σ : seq Selection :=
       match σ with
       | _ [[ _ ]] { φ }
       | _ : _ [[ _ ]] { φ }
@@ -591,7 +591,7 @@ Section QueryAux.
     (**
        Concatenates the subqueries of every selection in the given list.
      *)
-    Definition merge_selection_sets σs := flatten [seq σ.(qsubqueries) | σ <- σs].
+    Definition merge_selection_sets σs := flatten [seq σ.(subselections) | σ <- σs].
     
 
     Variable (s : wfGraphQLSchema).
@@ -655,7 +655,7 @@ Arguments is_nested_field_selection [Scalar].
 Arguments qname [Scalar].
 Arguments qargs [Scalar].
 
-Arguments qsubqueries [Scalar].
+Arguments subselections [Scalar].
 Arguments qresponse_name [Scalar].
 
 

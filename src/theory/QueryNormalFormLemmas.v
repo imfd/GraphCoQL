@@ -197,7 +197,7 @@ Section Normalization.
         apply/allP=> sel Hin; apply_andP.
           by move/allP: (normalized_selections_are_fields
                            t
-                 (subselections ++
+                 (subselections0 ++
                              merge_selection_sets (find_queries_with_label s name1 type_in_scope l))) => /(_ sel Hin).
         
         by move/allP: (H t) => /(_ sel Hin).
@@ -219,7 +219,7 @@ Section Normalization.
         apply_andP.
         apply/allP=> sel Hin; apply_andP.
         by move/allP: (normalized_selections_are_fields t
-                 (subselections0 ++
+                 (subselections1 ++
                               merge_selection_sets (find_queries_with_label s alias0 type_in_scope l))) => /(_ sel Hin).
         by move/allP: (H t) => /(_ sel Hin).
         by apply: IHptys; intros; apply: Hinobj; apply: mem_tail.

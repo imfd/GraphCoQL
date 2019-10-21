@@ -113,7 +113,7 @@ Section NormalForm.
 
       are_non_redundant (q :: φ) :=
         [&& find_fields_with_response_name (qresponse_name q _) φ == [::],
-            are_non_redundant q.(qsubqueries) &
+            are_non_redundant q.(subselections) &
             are_non_redundant φ]
 
     }.                 

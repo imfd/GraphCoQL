@@ -490,7 +490,7 @@ Section Theory.
     Proof.
       rewrite /selections_size_aux.
       funelim (filter_pairs_with_response_name rname σ) => //=; simp selection_size; do ? [ssromega].
-      have Hfleq := (filter_queries_with_label_leq_size response_name subselections1); ssromega.
+      have Hfleq := (filter_queries_with_label_leq_size response_name subselections2); ssromega.
     Qed.
 
     
