@@ -353,31 +353,31 @@ Section QueryAux.
      *)
     Equations selection_size query : nat :=
       {
-        selection_size (_ [[_]] { φ }) := 1 + queries_size φ;
-        selection_size (_ : _ [[_]] { φ }) := 1 + queries_size φ;
-        selection_size (on _ { φ }) := 1 + (queries_size φ);
+        selection_size (_ [[_]] { φ }) := 1 + selections_size φ;
+        selection_size (_ : _ [[_]] { φ }) := 1 + selections_size φ;
+        selection_size (on _ { φ }) := 1 + (selections_size φ);
         selection_size _ := 1
       }
     where
-    queries_size queries : nat :=
+    selections_size queries : nat :=
       {
-        queries_size [::] := 0;
-        queries_size (q :: φ) := selection_size q + queries_size φ
+        selections_size [::] := 0;
+        selections_size (q :: φ) := selection_size q + selections_size φ
       }.
 
     (** ---- *)
     (**
        Get the size of a selection set paired with its type in scope.
      *)
-    Definition queries_size_aux (queries : seq (Name * Selection)) :=
-      queries_size [seq nq.2 | nq <- queries].
+    Definition selections_size_aux (queries : seq (Name * Selection)) :=
+      selections_size [seq nq.2 | nq <- queries].
 
     (** ---- *)
     (**
        Get the size of a query.
      *)
     Definition query_size (φ : @query Scalar) :=
-      queries_size φ.(selection_set).
+      selections_size φ.(selection_set).
       
 
   End Size.
@@ -449,7 +449,7 @@ Section QueryAux.
      *)
     (* FIXME : Rename to something that makes sense - find_fields_with_response_name ? *)
     Equations? find_queries_with_label (label : Name) (object_type : Name) (queries : seq (@Selection Scalar)) :
-      seq (@Selection Scalar) by wf (queries_size queries) :=
+      seq (@Selection Scalar) by wf (selections_size queries) :=
       {
         find_queries_with_label _ _ [::] := [::];
 
@@ -478,7 +478,7 @@ Section QueryAux.
 
      *)
     Equations? find_valid_pairs_with_response_name (ts : Name) (rname : Name) (σs : seq (Name * @Selection Scalar)) :
-      seq (Name * @Selection Scalar) by wf (queries_size_aux σs) :=
+      seq (Name * @Selection Scalar) by wf (selections_size_aux σs) :=
       {
         find_valid_pairs_with_response_name _ _ [::] := [::];
 
@@ -496,8 +496,8 @@ Section QueryAux.
           | _ := find_valid_pairs_with_response_name rname ts σs
           }
       }.
-    all: do ? [rewrite /queries_size_aux /=; simp selection_size; rewrite -/(queries_size_aux _); ssromega].
-      by rewrite /queries_size_aux /=; simp selection_size; rewrite -map_comp /funcomp /= map_id; ssromega.
+    all: do ? [rewrite /selections_size_aux /=; simp selection_size; rewrite -/(selections_size_aux _); ssromega].
+      by rewrite /selections_size_aux /=; simp selection_size; rewrite -map_comp /funcomp /= map_id; ssromega.
     Qed.
     
     (** ---- *)
@@ -508,7 +508,7 @@ Section QueryAux.
      *)
     (* FIXME : Rename considering previous def *)
     Equations? find_fields_with_response_name (rname : Name) (φ : seq (@Selection Scalar)) :
-      seq (@Selection Scalar) by wf (queries_size φ) :=
+      seq (@Selection Scalar) by wf (selections_size φ) :=
       {
         find_fields_with_response_name _ [::] := [::];
         
@@ -558,7 +558,7 @@ Section QueryAux.
       
      *)
     Equations? find_pairs_with_response_name (rname : Name) (φ : seq (Name * @Selection Scalar)) :
-      seq (Name * @Selection Scalar) by wf (queries_size_aux φ) :=
+      seq (Name * @Selection Scalar) by wf (selections_size_aux φ) :=
       {
         find_pairs_with_response_name _ [::] := [::];
         
@@ -595,8 +595,8 @@ Section QueryAux.
           find_pairs_with_response_name rname [seq (t, q) | q <- φ] ++ find_pairs_with_response_name rname qs
       }.
     Proof.
-      all: do ? [by rewrite /queries_size_aux /=; simp selection_size; ssromega].
-      rewrite /queries_size_aux /=; simp selection_size.
+      all: do ? [by rewrite /selections_size_aux /=; simp selection_size; ssromega].
+      rewrite /selections_size_aux /=; simp selection_size.
       have -> : forall xs y, [seq x.2 | x <- [seq (y, q) | q <- xs] ] = xs.
         by intros; elim: xs => //= x xs ->.
         by ssromega.
@@ -634,7 +634,7 @@ Section QueryAux.
         Remove all fields with a given response name.
      *)
     Equations? filter_queries_with_label (label : Name) (queries : seq (@Selection Scalar)) :
-      seq (@Selection Scalar) by wf (queries_size queries) :=
+      seq (@Selection Scalar) by wf (selections_size queries) :=
       {
         filter_queries_with_label _ [::] := [::];
 
@@ -658,7 +658,7 @@ Section QueryAux.
        Remove all fields with a given response name.
      *)
      Equations? filter_pairs_with_response_name (response_name : Name) (queries : seq (Name * @Selection Scalar)) :
-      seq (Name * @Selection Scalar) by wf (queries_size_aux queries) :=
+      seq (Name * @Selection Scalar) by wf (selections_size_aux queries) :=
       {
         filter_pairs_with_response_name _ [::] := [::];
 
@@ -674,7 +674,7 @@ Section QueryAux.
 
       }.
      Proof.
-       all: do ? [by rewrite /queries_size_aux /=; simp selection_size; ssromega].
+       all: do ? [by rewrite /selections_size_aux /=; simp selection_size; ssromega].
     Qed.
     
     
@@ -762,8 +762,8 @@ Arguments qresponse_name [Scalar].
 Arguments oqresponse_name [Scalar].
 
 Arguments selection_size [Scalar].
-Arguments queries_size [Scalar].
-Arguments queries_size_aux [Scalar].
+Arguments selections_size [Scalar].
+Arguments selections_size_aux [Scalar].
 Arguments query_size [Scalar].
 
 Arguments has_response_name [Scalar].

@@ -260,7 +260,7 @@ Section QueryConformance.
     (See #<a href='https://github.com/graphql/graphql-spec/issues/367'>issue</a>#).
   *)
  Equations? are_type_compatible (selections : seq (Name * @Selection Scalar)) :
-   bool by wf (queries_size_aux selections) :=
+   bool by wf (selections_size_aux selections) :=
    {
      are_type_compatible [::] := true ;
 
@@ -310,15 +310,15 @@ Section QueryConformance.
       are_type_compatible ((ty, on t { β }) :: φ) := are_type_compatible ([seq (t, q) | q <- β] ++ φ)
                                                                                                       
    }.
- all: do ? [rewrite ?/similar_queries; leq_queries_size].
+ all: do ? [rewrite ?/similar_queries; leq_selections_size].
   Qed.
   Next Obligation.
-     move: {2}(queries_size_aux _) (leqnn (queries_size_aux selections)) => n.
-     elim: n selections => /= [| n IH] selections; first by rewrite leqn0 => /queries_size_aux_0_nil ->; constructor.
+     move: {2}(selections_size_aux _) (leqnn (selections_size_aux selections)) => n.
+     elim: n selections => /= [| n IH] selections; first by rewrite leqn0 => /selections_size_aux_0_nil ->; constructor.
      case: selections => /= [| q selections]; first by constructor.
      case: q => ts q.
-     case_selection q; rewrite /queries_size_aux /= -/(queries_size_aux _); simp selection_size => Hleq;
-     simp are_type_compatible; constructor; do ? [lookup; constructor]; apply: IH; leq_queries_size.
+     case_selection q; rewrite /selections_size_aux /= -/(selections_size_aux _); simp selection_size => Hleq;
+     simp are_type_compatible; constructor; do ? [lookup; constructor]; apply: IH; leq_selections_size.
   Defined.
 
 
@@ -339,7 +339,7 @@ Section QueryConformance.
      The differences are due to the same reasons given in [are_type_compatible].
   *)
  Equations? are_renaming_consistent (selections : seq (Name * @Selection Scalar)) :
-   bool by wf (queries_size_aux selections) :=
+   bool by wf (selections_size_aux selections) :=
    {
      are_renaming_consistent [::] := true;
 
@@ -411,19 +411,19 @@ Section QueryConformance.
        }
    }.
  Proof.
-   all: do ? [rewrite ?/similar_queries; leq_queries_size].
+   all: do ? [rewrite ?/similar_queries; leq_selections_size].
  Qed.
  Next Obligation.
-   move: {2}(queries_size_aux _) (leqnn (queries_size_aux selections)) => n.
-   elim: n selections => /= [| n IH] selections; first by rewrite leqn0 => /queries_size_aux_0_nil ->; constructor.
+   move: {2}(selections_size_aux _) (leqnn (selections_size_aux selections)) => n.
+   elim: n selections => /= [| n IH] selections; first by rewrite leqn0 => /selections_size_aux_0_nil ->; constructor.
    case: selections => /= [| q selections]; first by constructor.
    case: q => ts q.
-   case_selection q; rewrite /queries_size_aux /= -/(queries_size_aux _); simp selection_size => Hle;
+   case_selection q; rewrite /selections_size_aux /= -/(selections_size_aux _); simp selection_size => Hle;
    simp are_renaming_consistent; constructor; do ? [lookup; constructor]; last first.
-   case is_fragment_spread_possible; constructor; last by apply: IH; leq_queries_size.
+   case is_fragment_spread_possible; constructor; last by apply: IH; leq_selections_size.
 
    all: do ? [case is_object_type; constructor].
-   all: do ? [by apply: IH; leq_queries_size].
+   all: do ? [by apply: IH; leq_selections_size].
    
  Defined.
  

@@ -229,8 +229,8 @@ Section Theory.
   Proof.
     move=> Hfilterswap.
     move=> Hnin.
-    move: {2}(queries_size _) (leqnn (queries_size φ1)) => n.
-    elim: n φ1 φ2 => /= [| n IH] φ1 φ2; first by rewrite leqn0 => /queries_size_0_nil ->; apply: exec_frags_nil_func.
+    move: {2}(selections_size _) (leqnn (selections_size φ1)) => n.
+    elim: n φ1 φ2 => /= [| n IH] φ1 φ2; first by rewrite leqn0 => /selections_size_0_nil ->; apply: exec_frags_nil_func.
     case: φ1 => //= [Hleq|q φ1]; first by apply: exec_frags_nil_func.
     have Hinlineswap : forall ptys rname φ, [seq InlineFragment t (filter_queries_with_label rname (f t φ)) | t <- ptys] =
                                        [seq InlineFragment t (f t (filter_queries_with_label rname φ)) | t <- ptys].
@@ -238,7 +238,7 @@ Section Theory.
       
       
       case_selection q; simp selection_size => Hleq Hobj Hunin; exec;
-                                        rewrite ?filter_queries_with_label_cat ?filter_map_inline_func ?Hinlineswap ?IH //; leq_queries_size.
+                                        rewrite ?filter_queries_with_label_cat ?filter_map_inline_func ?Hinlineswap ?IH //; leq_selections_size.
 
     - by congr cons; congr pair; congr Response.Object; rewrite find_queries_with_label_cat find_map_inline_nil_func // cats0.
         
@@ -248,7 +248,7 @@ Section Theory.
 
     - by congr cons; rewrite find_queries_with_label_cat find_map_inline_nil_func // cats0.
 
-    - by rewrite catA; apply: IH => //; leq_queries_size.
+    - by rewrite catA; apply: IH => //; leq_selections_size.
   Qed.
 
   (** ---- **)
@@ -330,19 +330,19 @@ Section Theory.
     all (fun kq => kq.1 != rname)
         (execute_selection_set s is_valid_scalar_value g coerce u (filter_queries_with_label rname φ)).
   Proof.
-    move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
-    elim: n φ rname => /= [| n IH] φ rname; first by rewrite leqn0 => /queries_size_0_nil ->.
+    move: {2}(selections_size _) (leqnn (selections_size φ)) => n.
+    elim: n φ rname => /= [| n IH] φ rname; first by rewrite leqn0 => /selections_size_0_nil ->.
     case: φ => //= q φ.
     case_selection q => //=; simp selection_size => Hleq; simp filter_queries_with_label.
     
-    - case: eqP => //= /eqP Hneq; exec; apply_andP; rewrite filter_swap; apply: IH; leq_queries_size.
-    - case: eqP => //= /eqP Hneq; exec; apply_andP; rewrite filter_swap; apply: IH; leq_queries_size.
+    - case: eqP => //= /eqP Hneq; exec; apply_andP; rewrite filter_swap; apply: IH; leq_selections_size.
+    - case: eqP => //= /eqP Hneq; exec; apply_andP; rewrite filter_swap; apply: IH; leq_selections_size.
       
-    - case: eqP => //= /eqP Hneq; first by apply: IH; leq_queries_size.
-      exec; do ? [apply_andP; rewrite filter_swap]; apply: IH; leq_queries_size.    
-    - case: eqP => //= /eqP Hneq; first by apply: IH; leq_queries_size.
-      exec; do ? [apply_andP; rewrite filter_swap]; apply: IH; leq_queries_size.
-    - exec; rewrite -?filter_queries_with_label_cat; apply: IH; leq_queries_size.
+    - case: eqP => //= /eqP Hneq; first by apply: IH; leq_selections_size.
+      exec; do ? [apply_andP; rewrite filter_swap]; apply: IH; leq_selections_size.    
+    - case: eqP => //= /eqP Hneq; first by apply: IH; leq_selections_size.
+      exec; do ? [apply_andP; rewrite filter_swap]; apply: IH; leq_selections_size.
+    - exec; rewrite -?filter_queries_with_label_cat; apply: IH; leq_selections_size.
   Qed.
       
   (* end hide *)
@@ -570,11 +570,11 @@ Section Theory.
     simpl_execute_selection_set s is_valid_scalar_value g coerce u φ ++
     simpl_execute_selection_set s is_valid_scalar_value g coerce u β. 
   Proof.
-    move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
-    elim: n φ β => /= [| n IH] φ β; first by rewrite leqn0 => /queries_size_0_nil ->.
-    case: φ => // q φ; case_selection q; simp selection_size => Hleq; exec2; rewrite -/cat ?IH //; leq_queries_size.
+    move: {2}(selections_size _) (leqnn (selections_size φ)) => n.
+    elim: n φ β => /= [| n IH] φ β; first by rewrite leqn0 => /selections_size_0_nil ->.
+    case: φ => // q φ; case_selection q; simp selection_size => Hleq; exec2; rewrite -/cat ?IH //; leq_selections_size.
     
-      by case does_fragment_type_apply => /=; rewrite ?catA; apply: IH; leq_queries_size.
+      by case does_fragment_type_apply => /=; rewrite ?catA; apply: IH; leq_selections_size.
   Qed.
 
 
@@ -638,16 +638,16 @@ Section Theory.
     execute_selection_set s is_valid_scalar_value g coerce u (φ ++ β) =
     execute_selection_set s is_valid_scalar_value g coerce u φ. 
   Proof.
-    move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
-    elim: n φ β u => /= [| n IH] φ β u; first by rewrite leqn0 => /queries_size_0_nil -> /=; apply: exec_inlines_nil.
+    move: {2}(selections_size _) (leqnn (selections_size φ)) => n.
+    elim: n φ β u => /= [| n IH] φ β u; first by rewrite leqn0 => /selections_size_0_nil -> /=; apply: exec_inlines_nil.
     case: φ => //= [_ | q φ]; first by apply: exec_inlines_nil.
     case_selection q; simp selection_size => Hleq; intros; exec; rewrite ?filter_queries_with_label_cat ?find_queries_with_label_cat ?[find_queries_with_label _ _ _ β]find_fragment_not_applies_is_nil // ?cats0 //.
     all: do ? congr cons.
-    all: do ? [apply: IH => //; leq_queries_size].
+    all: do ? [apply: IH => //; leq_selections_size].
     all: do ? by apply: filter_preserves_inlines.
     all: do ? by apply: filter_preserves_fragment_not_applies.
 
-    - by rewrite catA; apply: IH; leq_queries_size.
+    - by rewrite catA; apply: IH; leq_selections_size.
   Qed.   
 
 
@@ -701,8 +701,8 @@ Section Theory.
     simpl_execute_selection_set s is_valid_scalar_value g coerce u φ.    
   Proof.
     rewrite /are_in_normal_form; case/andP; rewrite /are_in_ground_typed_nf; case/andP.
-    move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
-    elim: n φ u => /= [| n IH] φ u; first by rewrite leqn0 => /queries_size_0_nil ->.
+    move: {2}(selections_size _) (leqnn (selections_size φ)) => n.
+    elim: n φ u => /= [| n IH] φ u; first by rewrite leqn0 => /selections_size_0_nil ->.
     case: φ => //= q φ; case_selection q; simp selection_size => Hleq /=; simp is_inline_fragment => /=; rewrite ?orbF => Hshape; bcase; non_red => /=; bcase; last first.
 
     - exec; exec2.
@@ -713,7 +713,7 @@ Section Theory.
           by case lookup_type => //=; case.
         rewrite exec_inv_inlines_nil // ?exec2_cat.
         have -> //= := (exec2_inlines_nil φ).
-        rewrite cats0; apply: IH => //; leq_queries_size; [apply/orP; left|];
+        rewrite cats0; apply: IH => //; leq_selections_size; [apply/orP; left|];
                                      by apply/allP=> sel Hin; have /allP-/(_ sel Hin) := Hb5; case/andP.
 
         all: do ? [ apply: find_frags_nil_then_N_applies;
@@ -725,20 +725,20 @@ Section Theory.
                     ]
                   ].
           
-      * by apply: IH => //; leq_queries_size; apply/orP; right. 
+      * by apply: IH => //; leq_selections_size; apply/orP; right. 
          
     all: do ? exec; exec2.
     all: do ? [move=> Hb1; bcase].
     all: do ? congr cons.
     all: do ? rewrite filter_find_fields_nil_is_nil //; do ? by apply/eqP.
-    all: do ? apply: IH => //; leq_queries_size.
+    all: do ? apply: IH => //; leq_selections_size.
     all: do ? [by apply/orP; left].
     all: do ? congr pair.
     all: do ? [congr Array; apply/eq_in_map=> v Hin].
     all: do ? congr Response.Object.
     
     all: do ? [rewrite find_queries_nil_if_find_fields_nil// /merge_selection_sets /= ?cats0 in IH *; last by apply/eqP].
-    all: do ? [by apply: IH => //; leq_queries_size; move: Hb1; bcase].
+    all: do ? [by apply: IH => //; leq_selections_size; move: Hb1; bcase].
 
     simp simpl_execute_selection_set; rewrite Hlook /= Hv Hrty /=; simp complete_value.
       by rewrite IH //; rewrite Hshape.

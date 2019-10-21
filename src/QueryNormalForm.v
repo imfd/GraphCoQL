@@ -102,7 +102,7 @@ Section NormalForm.
      - There are no field selections with the same response name.
    *)
   Equations? are_non_redundant (ss : seq (@Selection Scalar)) : bool
-    by wf (queries_size ss) :=
+    by wf (selections_size ss) :=
     {
       are_non_redundant [::] := true;
       
@@ -201,7 +201,7 @@ Section Normalisation.
         On the other hand, fields' subselections might be wrapped in fragments, specializing their contents.
    *)
   Equations? normalize_selections (type_in_scope : Name) (ss : seq (@Selection Scalar)) :
-    seq (@Selection Scalar) by wf (queries_size ss) :=
+    seq (@Selection Scalar) by wf (selections_size ss) :=
     {
       normalize_selections _ [::] := [::];
 
@@ -259,7 +259,7 @@ Section Normalisation.
 
     }.
   Proof. 
-    all: do [leq_queries_size].
+    all: do [leq_selections_size].
   Qed.
 
 

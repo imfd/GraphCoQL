@@ -149,44 +149,44 @@ Section Normalisation.
   Lemma filter_normalize_swap rname ty (φ : seq (@Selection Scalar)) :
     filter_queries_with_label rname (normalize_selections s ty φ) = normalize_selections s ty (filter_queries_with_label rname φ).
   Proof.
-    move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
-    elim: n φ rname => /= [| n IH] φ rname ; first by rewrite leqn0 => /queries_size_0_nil ->.
+    move: {2}(selections_size _) (leqnn (selections_size φ)) => n.
+    elim: n φ rname => /= [| n IH] φ rname ; first by rewrite leqn0 => /selections_size_0_nil ->.
     case: φ => //= q φ.
     case_selection q => /=; simp selection_size => Hleq; simp normalize_selections.
     - lookup => //=; simp filter_queries_with_label; case: eqP => /= [/= Heq | Hneq].
       * by rewrite Heq -IH // filter_filter_absorb.
-      * simp normalize_selections; rewrite Hlook /= IH //; [by rewrite filter_swap | by leq_queries_size].
+      * simp normalize_selections; rewrite Hlook /= IH //; [by rewrite filter_swap | by leq_selections_size].
       * by apply: IH.
       * by simp normalize_selections; rewrite Hlook /=; apply: IH.
     - lookup => //=; simp filter_queries_with_label; case: eqP => /= Heq.
       * by rewrite Heq -IH // filter_filter_absorb.
-      * simp normalize_selections; rewrite Hlook /= IH //; [by rewrite filter_swap | by leq_queries_size].
+      * simp normalize_selections; rewrite Hlook /= IH //; [by rewrite filter_swap | by leq_selections_size].
       * by apply: IH.
       * by simp normalize_selections; rewrite Hlook /=; apply: IH.
 
-    - lookup => //=; simp filter_queries_with_label; case: eqP => /= Heq; do ? by apply: IH; leq_queries_size.
+    - lookup => //=; simp filter_queries_with_label; case: eqP => /= Heq; do ? by apply: IH; leq_selections_size.
       * case Hscope : is_object_type => //=; simp filter_queries_with_label => //=; case: eqP => //= _;
-                                                                                                by rewrite Heq -IH // ?filter_filter_absorb; leq_queries_size.
-
-      * case Hscope : is_object_type => //=; simp filter_queries_with_label => //=; case: eqP => //= _;
-                                                                                                simp normalize_selections; rewrite Hlook /= Hscope /= find_filter_swap; do ? by apply/eqP.
-        all: do ? [rewrite IH ?filter_filter_absorb; leq_queries_size; by rewrite filter_swap].
-
-      * by simp normalize_selections; rewrite Hlook /=; apply: IH; leq_queries_size.
-
-    - lookup => //=; simp filter_queries_with_label; case: eqP => /= Heq; do ? by apply: IH; leq_queries_size.
-      * case Hscope : is_object_type => //=; simp filter_queries_with_label => //=; case: eqP => //= _;
-                                                                                                by rewrite Heq -IH // ?filter_filter_absorb; leq_queries_size.
+                                                                                                by rewrite Heq -IH // ?filter_filter_absorb; leq_selections_size.
 
       * case Hscope : is_object_type => //=; simp filter_queries_with_label => //=; case: eqP => //= _;
                                                                                                 simp normalize_selections; rewrite Hlook /= Hscope /= find_filter_swap; do ? by apply/eqP.
-        all: do ? [rewrite IH ?filter_filter_absorb; leq_queries_size; by rewrite filter_swap].
+        all: do ? [rewrite IH ?filter_filter_absorb; leq_selections_size; by rewrite filter_swap].
 
-      * by simp normalize_selections; rewrite Hlook /=; apply: IH; leq_queries_size.
+      * by simp normalize_selections; rewrite Hlook /=; apply: IH; leq_selections_size.
+
+    - lookup => //=; simp filter_queries_with_label; case: eqP => /= Heq; do ? by apply: IH; leq_selections_size.
+      * case Hscope : is_object_type => //=; simp filter_queries_with_label => //=; case: eqP => //= _;
+                                                                                                by rewrite Heq -IH // ?filter_filter_absorb; leq_selections_size.
+
+      * case Hscope : is_object_type => //=; simp filter_queries_with_label => //=; case: eqP => //= _;
+                                                                                                simp normalize_selections; rewrite Hlook /= Hscope /= find_filter_swap; do ? by apply/eqP.
+        all: do ? [rewrite IH ?filter_filter_absorb; leq_selections_size; by rewrite filter_swap].
+
+      * by simp normalize_selections; rewrite Hlook /=; apply: IH; leq_selections_size.
 
     - case Hfapplies : does_fragment_type_apply => //=; simp filter_queries_with_label.
-      * by simp normalize_selections; rewrite Hfapplies /= -filter_queries_with_label_cat; apply: IH; leq_queries_size.
-      * by simp normalize_selections; rewrite Hfapplies /=; apply: IH; leq_queries_size.
+      * by simp normalize_selections; rewrite Hfapplies /= -filter_queries_with_label_cat; apply: IH; leq_selections_size.
+      * by simp normalize_selections; rewrite Hfapplies /=; apply: IH; leq_selections_size.
   Qed.
 
   (** ** Groundedness *)

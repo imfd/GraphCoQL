@@ -118,11 +118,11 @@ Section Theory.
 
     (** ---- *)
     (**
-       Equality lemma for [queries_size] without Equations. 
+       Equality lemma for [selections_size] without Equations. 
        It shows equality to the [sumn] function defined in SSreflect.
      *)
-    Lemma queries_size_sumn φ :
-      queries_size φ = sumn [seq selection_size q | q <- φ].
+    Lemma selections_size_sumn φ :
+      selections_size φ = sumn [seq selection_size q | q <- φ].
     Proof.
         by elim: φ => //= q φ IH; case: q => /= *; simp selection_size; rewrite IH.
     Qed.
@@ -130,10 +130,10 @@ Section Theory.
 
     (** ---- *)
     (**
-       This lemma states that [queries_size] distributes over list concatenation.
+       This lemma states that [selections_size] distributes over list concatenation.
      *)
-    Lemma queries_size_cat φ φ' :
-      queries_size (φ ++ φ') = queries_size φ + queries_size φ'.
+    Lemma selections_size_cat φ φ' :
+      selections_size (φ ++ φ') = selections_size φ + selections_size φ'.
     Proof.
       elim: φ φ' => //= hd tl IH φ'.
         by rewrite (IH φ') addnA.
@@ -144,7 +144,7 @@ Section Theory.
     (**
        This lemma states that if the size of queries is 0, that means the list is empty.
      *)
-    Lemma queries_size_0_nil (qs : seq (@Selection Scalar)) : queries_size qs == 0 -> qs = [::].
+    Lemma selections_size_0_nil (qs : seq (@Selection Scalar)) : selections_size qs == 0 -> qs = [::].
     Proof.
         by case: qs => //=; case.
     Qed.
@@ -154,20 +154,20 @@ Section Theory.
     (**
        This lemma states that if the size of queries is 0, that means the list is empty.
      *)
-    Lemma queries_size_aux_0_nil (nq : seq (Name * @Selection Scalar)) : queries_size_aux nq == 0 -> nq = [::].
+    Lemma selections_size_aux_0_nil (nq : seq (Name * @Selection Scalar)) : selections_size_aux nq == 0 -> nq = [::].
     Proof.
         by case: nq => //=; case=> ty; case.
     Qed.
 
     (** ---- *)
     (**
-       This lemma states that [queries_size_aux] distributes over list concatenation.
+       This lemma states that [selections_size_aux] distributes over list concatenation.
      *)
-    Lemma queries_size_aux_cat (σs1 σs2 : seq (Name * @Selection Scalar)) : 
-      queries_size_aux (σs1 ++ σs2) = queries_size_aux σs1 + queries_size_aux σs2.
+    Lemma selections_size_aux_cat (σs1 σs2 : seq (Name * @Selection Scalar)) : 
+      selections_size_aux (σs1 ++ σs2) = selections_size_aux σs1 + selections_size_aux σs2.
     Proof.
       case: σs1 σs2 => //= σ σs1 σs2.
-      by rewrite /queries_size_aux /= map_cat queries_size_cat -?/(queries_size_aux _) addnA.
+      by rewrite /selections_size_aux /= map_cat selections_size_cat -?/(selections_size_aux _) addnA.
       
     Qed.
 
@@ -176,11 +176,11 @@ Section Theory.
        This lemma states that if the size of a selection set is less or equal to [n], then
        the size of the same selection, paired with a type, is also less or equal to [n].
      *)
-    Lemma queries_size_aux_tr (σs : seq (@Selection Scalar)) t n :
-      queries_size σs <= n ->
-      queries_size_aux [seq (t, σ) | σ <- σs] <= n.
+    Lemma selections_size_aux_tr (σs : seq (@Selection Scalar)) t n :
+      selections_size σs <= n ->
+      selections_size_aux [seq (t, σ) | σ <- σs] <= n.
     Proof.
-        by rewrite /queries_size_aux -map_comp /funcomp /= map_id.
+        by rewrite /selections_size_aux -map_comp /funcomp /= map_id.
     Qed.
       
   End Size.
@@ -200,9 +200,9 @@ Section Theory.
        less or equal to the original selection list.
      *)
     Lemma found_queries_leq_size l O__t (qs : seq (@Selection Scalar)) :
-      queries_size (find_queries_with_label s l O__t qs) <= queries_size qs.
+      selections_size (find_queries_with_label s l O__t qs) <= selections_size qs.
     Proof.
-        by funelim (find_queries_with_label _ _ _ qs) => //=; simp selection_size; rewrite ?queries_size_cat; ssromega.
+        by funelim (find_queries_with_label _ _ _ qs) => //=; simp selection_size; rewrite ?selections_size_cat; ssromega.
     Qed.
 
     
@@ -211,14 +211,14 @@ Section Theory.
        less or equal to the original selection list.
      *)
     Lemma found_valid_pairs_leq_size ts rname (σs : seq (Name * @Selection Scalar)) :
-      queries_size_aux (find_valid_pairs_with_response_name s ts rname σs) <=
-      queries_size_aux σs.
+      selections_size_aux (find_valid_pairs_with_response_name s ts rname σs) <=
+      selections_size_aux σs.
     Proof.
       funelim (find_valid_pairs_with_response_name s ts rname σs) => //=;
-      rewrite /queries_size_aux /=; simp selection_size => /=; rewrite -?queries_size_cat -?/(queries_size_aux _);
+      rewrite /selections_size_aux /=; simp selection_size => /=; rewrite -?selections_size_cat -?/(selections_size_aux _);
       do ? ssromega.
-      rewrite /queries_size_aux /= -map_comp /funcomp /= map_id -/(queries_size_aux _) in H.
-      rewrite queries_size_aux_cat -?/(queries_size_aux _).
+      rewrite /selections_size_aux /= -map_comp /funcomp /= map_id -/(selections_size_aux _) in H.
+      rewrite selections_size_aux_cat -?/(selections_size_aux _).
         by ssromega.
     Qed.
       
@@ -240,10 +240,10 @@ Section Theory.
        less or equal to the original queries list.
      *)
     Lemma found_fields_leq_size k φ :
-      queries_size (find_fields_with_response_name k φ) <= queries_size φ.
+      selections_size (find_fields_with_response_name k φ) <= selections_size φ.
     Proof.
       funelim (find_fields_with_response_name k φ) => //=; simp selection_size; do ? ssromega.
-        by rewrite queries_size_cat; ssromega.
+        by rewrite selections_size_cat; ssromega.
     Qed.
 
     (** ---- *)
@@ -252,11 +252,11 @@ Section Theory.
        less or equal to the original queries list.
      *)
     Lemma found_pairs_with_response_name_leq rname (σ : seq (Name * @Selection Scalar)) :
-      queries_size_aux (find_pairs_with_response_name rname σ) <= queries_size_aux σ.
+      selections_size_aux (find_pairs_with_response_name rname σ) <= selections_size_aux σ.
     Proof.
-      rewrite /queries_size_aux.
+      rewrite /selections_size_aux.
       funelim (find_pairs_with_response_name rname σ) => //=; simp selection_size; do ? ssromega.
-      rewrite map_cat queries_size_cat.
+      rewrite map_cat selections_size_cat.
       rewrite -map_comp /funcomp map_id in H; ssromega.
     Qed.
 
@@ -312,8 +312,8 @@ Section Theory.
       rname1 == rname2 = false ->
       find_queries_with_label s rname1 ty (filter_queries_with_label rname2 φ) = (find_queries_with_label s rname1 ty φ).
     Proof.
-      move: {2}(queries_size _) (leqnn (queries_size φ)) => n.
-      elim: n φ => /= [| n IH] φ; first by rewrite leqn0 => /queries_size_0_nil ->.
+      move: {2}(selections_size _) (leqnn (selections_size φ)) => n.
+      elim: n φ => /= [| n IH] φ; first by rewrite leqn0 => /selections_size_0_nil ->.
       case: φ => //= q φ; case_selection q; simp selection_size => Hleq Hneq; simp filter_queries_with_label; simp find_queries_with_label => /=; last first.
 
       - by case does_fragment_type_apply => /=; [congr cat|]; apply: IH => //; ssromega.
@@ -394,11 +394,11 @@ Section Theory.
     Lemma find_pairs_spec rname (nq : seq (Name * @Selection Scalar)) :
       [seq q.2 | q <- find_pairs_with_response_name rname nq] = find_fields_with_response_name rname [seq q.2 | q <- nq].
     Proof.
-      move: {2}(queries_size_aux _) (leqnn (queries_size_aux nq)) => n.
-      rewrite /queries_size_aux.
-      elim: n nq => /= [| n IH] nq; first by rewrite leqn0 => /queries_size_aux_0_nil ->.
+      move: {2}(selections_size_aux _) (leqnn (selections_size_aux nq)) => n.
+      rewrite /selections_size_aux.
+      elim: n nq => /= [| n IH] nq; first by rewrite leqn0 => /selections_size_aux_0_nil ->.
       case: nq => //=; case=> /= ty q φ; case_selection q;
-                              rewrite /queries_size_aux /=; simp selection_size => Hleq;
+                              rewrite /selections_size_aux /=; simp selection_size => Hleq;
                               simp find_pairs_with_response_name;
                               simp find_fields_with_response_name => /=; do ? case: eqP => //= _; rewrite ?IH //; do ? ssromega.
       rewrite map_cat; congr cat; rewrite IH //=; do ? ssromega.
@@ -474,7 +474,7 @@ Section Theory.
        equal than the size of the original list of selections.
      *)
     Lemma filter_queries_with_label_leq_size l φ :
-      queries_size (filter_queries_with_label l φ) <= queries_size φ.
+      selections_size (filter_queries_with_label l φ) <= selections_size φ.
     Proof.
       funelim (filter_queries_with_label l φ) => //=; do ?[simp selection_size; ssromega]. 
     Qed.
@@ -486,9 +486,9 @@ Section Theory.
        equal than the size of the original list of selections.
      *)
     Lemma filter_pairs_with_response_name_leq rname (σ : seq (Name * @Selection Scalar)) :
-      queries_size_aux (filter_pairs_with_response_name rname σ) <= queries_size_aux σ.
+      selections_size_aux (filter_pairs_with_response_name rname σ) <= selections_size_aux σ.
     Proof.
-      rewrite /queries_size_aux.
+      rewrite /selections_size_aux.
       funelim (filter_pairs_with_response_name rname σ) => //=; simp selection_size; do ? [ssromega].
       have Hfleq := (filter_queries_with_label_leq_size response_name subselections1); ssromega.
     Qed.
@@ -678,10 +678,10 @@ Section Theory.
        is less or equal than the size of the original list of queries.
      *)
     Lemma merged_selections_leq φ :
-      queries_size (merge_selection_sets φ) <= queries_size φ.
+      selections_size (merge_selection_sets φ) <= selections_size φ.
     Proof.
       rewrite /merge_selection_sets.
-        by elim: φ => //=; case=> //= *; simp selection_size; rewrite ?queries_size_cat; ssromega.
+        by elim: φ => //=; case=> //= *; simp selection_size; rewrite ?selections_size_cat; ssromega.
     Qed.
 
 
@@ -694,11 +694,11 @@ Section Theory.
        is less or equal than the size of the original list of queries.
      *)
     Lemma merge_pair_selections_leq (nq : seq (Name * @Selection Scalar)) :
-      queries_size_aux (merge_pairs_selection_sets s nq) <= queries_size_aux nq.
+      selections_size_aux (merge_pairs_selection_sets s nq) <= selections_size_aux nq.
     Proof.
-      rewrite /queries_size_aux; funelim (merge_pairs_selection_sets s nq) => //=; simp selection_size; do ? ssromega;
+      rewrite /selections_size_aux; funelim (merge_pairs_selection_sets s nq) => //=; simp selection_size; do ? ssromega;
       have Hpeq : forall xs y, [seq x.2 | x <- [seq (y, q) | q <- xs] ] = xs by intros; elim: xs => //= x xs ->.
-      all: do ? [by rewrite map_cat queries_size_cat Hpeq; ssromega].
+      all: do ? [by rewrite map_cat selections_size_cat Hpeq; ssromega].
     Qed.
 
     

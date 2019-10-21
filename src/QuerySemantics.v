@@ -96,7 +96,7 @@ Section QuerySemantic.
 
    *)
   Equations? execute_selection_set u (queries : seq (@Selection Scalar)) :
-    @GraphQLResponse Scalar by wf (queries_size queries) :=
+    @GraphQLResponse Scalar by wf (selections_size queries) :=
     {
       ⟦ [::] ⟧ˢ in _ := [::];
       
@@ -169,7 +169,7 @@ Section QuerySemantic.
     }
   where "⟦ queries ⟧ˢ 'in' u" := (execute_selection_set u queries).
   Proof.
-    all: do [leq_queries_size].
+    all: do [leq_selections_size].
   Qed.
 
   
@@ -199,7 +199,7 @@ Section QuerySemantic.
       The definition is partially based on H&P's simplified semantics.
    *)
   Equations? simpl_execute_selection_set u queries :
-    @GraphQLResponse Scalar by wf (queries_size queries) :=
+    @GraphQLResponse Scalar by wf (selections_size queries) :=
     {
       ≪ [::] ≫ in _ := [::];
 
@@ -272,7 +272,7 @@ Section QuerySemantic.
     }
   where "≪ queries ≫ 'in' u" := (simpl_execute_selection_set u queries).
   Proof.
-    all: do [leq_queries_size].
+    all: do [leq_selections_size].
   Qed.
 
   (** Simplified evaluation of queries
