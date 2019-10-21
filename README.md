@@ -11,7 +11,7 @@ Finally, the README file in the `src` folder specifies how the definitions and p
 
 In this section we describe how to setup the project, its dependencies and then build it.
 
-First of all, clone the project and then, in a terminal, navigate to the project's folder.
+First of all, clone the project and then, in a terminal, navigate to the project's folder:
 ```bash
 $ git clone https://github.com/imfd/GraphCoQL.git # Clone the respository
 $ cd GraphCoQL/ # Navigate inside the project's folder
@@ -22,9 +22,11 @@ Then, we proceed to install the dependencies and build the project. We describe 
 - Equations v.1.2+8.9
 - Mathematical Components v.1.9.0
 
-### Using [Docker](https://www.docker.com) and Dockerfile
+### Using Docker and Dockerfile
 
-We include a `Dockerfile` with the necessary image and commands to get the project up and running. The image is based on Debian 10 (more information can be found [here](https://github.com/coq-community/docker-coq)) and contains Coq v8.9.1, as well as all necessary dependencies to build the project.
+We include a `Dockerfile` with the necessary image and commands to get the project up and running. The image is based on Debian 10 (more information can be found [in the coq images repository](https://github.com/coq-community/docker-coq)) and contains Coq v8.9.1, as well as all necessary dependencies to build the project.
+
+First of all, you need to install [Docker](https://www.docker.com).
 
 To download the image and setup the necessary environment, run the following command (in the project's root directory), which will search for the `Dockerfile` in the directory where the command is being executed and name the image `gcoql`.
 
@@ -32,17 +34,18 @@ To download the image and setup the necessary environment, run the following com
 $ docker build -t gcoql .
 ```
 
-Once the image is setup, one can start a container and work on the project. The following command starts a container interactively (with a prompt), sets the current directory as a volume (changes made in the container will be reflected in the directory) and sets it as the current working directory.
+Once the image is setup, you can start a container and work on the project. The following command starts a container interactively, sets the current directory as a volume (such that changes made in the container will be reflected in the directory) and sets it as the current working directory.
 
 ```bash
 $ docker run -it -v "$PWD:$PWD" -w "$PWD" gcoql
 ```
 
-It is possible to now build the project, by simply running the following command in the interactive console associated to the container.
+You can now build the project, by simply running the following command in the interactive console associated to the container.
 ```bash
 $ make
 ```
-It is now possible to start programming in Coq and GraphCoQL or explore its documentation :tada:.
+
+The process will then compile all required `*.v` files and generate the html documentation, stored in the directory `docs/html`. You can now start programming in GraphCoQL or explore its documentation :tada:.
 
 ### Manually setup the project (without Docker)
 
@@ -52,7 +55,7 @@ We describe the process of installing the GraphCoQL dependencies by means of the
 
 Installation of Opam may vary from distribution and operating system, hence we defer the appropriate instructions to their [installation site](https://opam.ocaml.org/doc/Install.html).
 
-After installing Opam, it must be initialized prior to its first usage. The following script initializes it and updates environment variables.
+After installing Opam, you must initialize it prior to its first usage. The following script initializes it and updates environment variables.
 
 ```bash
 $ opam init # initializes opam
@@ -61,17 +64,17 @@ $ eval $(opam env) # updates opam environment variables
 
 #### Install Coq
 
-First, we install [Coq](https://coq.inria.fr/download) using the following command. This command pins Opam to a particular version of Coq (particularly, version 8.9.1) and installs Coq in the system.
+First, you need to install [Coq](https://coq.inria.fr/download) using the following command. This command pins Opam to a particular version of Coq (particularly, version 8.9.1) and installs Coq in the system.
 
 ```bash
 # Pin the coq package to version 8.9.1 and install it.
 $ opam pin add coq 8.9.1
 ```
 
-For a more precise guide on installing Coq, you may follow the [instructions in the Coq website](https://coq.inria.fr/opam-using.html).
+For a more precise guide on how to install Coq, you may follow the [instructions in the Coq website](https://coq.inria.fr/opam-using.html).
 
 #### Install the Equations library
-Next, we install the [Equations](http://mattam82.github.io/Coq-Equations/) library, by means of the two following command.
+Next, install the [Equations](http://mattam82.github.io/Coq-Equations/) library, by means of the two following command.
 
 The first command allows Opam to find Coq packages. As stated in the Coq installation site:
 > Coq packages live in a repository separate from the standard OCaml repository. This commands makes them available:
@@ -80,7 +83,7 @@ The first command allows Opam to find Coq packages. As stated in the Coq install
 $ opam repo add coq-released https://coq.inria.fr/opam/released
 ```
 
-Once that step is performed, one can install the Equations package, by means of the following command.
+Once that step is performed, you can install the Equations package:
 
 ```bash
 $ opam install coq-equations.1.2+8.9
@@ -88,7 +91,7 @@ $ opam install coq-equations.1.2+8.9
 
 #### Install the Mathematical Components library
 
-Then, we install the [Mathematical Components](https://github.com/math-comp/math-comp) library.
+Then, you need to install the [Mathematical Components](https://github.com/math-comp/math-comp) library, simply by executing the following command:
 
 ```bash
 $ opam install coq-mathcomp-ssreflect.1.9.0
@@ -101,9 +104,7 @@ Finally, once all dependencies have been installed, it is possible to build the 
 $ make
 ```
 
-The process will then compile all required `*.v` files and generate the html documentation, stored in the directory `docs`.
-
-It is now possible to start programming in Coq and GraphCoQL or explore its documentation :tada:.
+The process will then compile all required `*.v` files and generate the html documentation, stored in the directory `docs/html`. You can now start programming in GraphCoQL or explore its documentation :tada:.
 
 ## What GraphQL features does GraphCoQL support?
 
