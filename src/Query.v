@@ -199,16 +199,6 @@ Notation "'on' t { φ }" := (InlineFragment t φ) (t at next level, φ at next l
    we omit them here to unclutter the doc (they may still be seen in the source code).
  *)
 
-(** ---- *)
-(** 
-    #<div>
-        <a href='GraphCoQL.SchemaWellFormedness.html' class="btn btn-light" role='button'> Previous ← Schema Well-Formedness  </a>
-        <a href='GraphCoQL.QueryConformance.html' class="btn btn-info" role='button'>Continue Reading → Query Conformance </a>
-    </div>#
-*)
-
-
-
 
 (* begin hide *)
 Section Equality.
@@ -295,3 +285,12 @@ Section Equality.
 End Equality.
 
 (* end hide *)
+
+
+(** ---- *)
+(** 
+    #<div>
+        <a href='GraphCoQL.GraphConformance.html' class="btn btn-light" role='button'> Previous ← Graph Conformance  </a>
+        <a href='GraphCoQL.QueryConformance.html' class="btn btn-info" role='button'>Continue Reading → Query Conformance </a>
+    </div>#
+*)

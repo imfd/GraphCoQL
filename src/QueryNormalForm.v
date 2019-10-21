@@ -282,6 +282,6 @@ Arguments normalize [Scalar].
 (** 
     #<div>
         <a href='GraphCoQL.QueryConformance.html' class="btn btn-light" role='button'> Previous ← Query Conformance  </a>
-        <a href='GraphCoQL.QueryNormalFormLemmas.html' class="btn btn-info" role='button'>Continue Reading → Normal Form Proofs </a>
+        <a href='GraphCoQL.theory.QueryNormalFormLemmas.html' class="btn btn-info" role='button'>Continue Reading → Normal Form Proofs </a>
     </div>#
 *)

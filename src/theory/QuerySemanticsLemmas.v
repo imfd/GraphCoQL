@@ -792,11 +792,17 @@ Section Theory.
   
 End Theory.
 
+(**
+   This finalizes the semantics and proofs of preservation and equivalence. 
+        
+   More can be found in the example files, implementing from schema, graphs, to queries 
+   and responses.
+ *)
+
 
 (** ---- *)
 (** 
     #<div>
         <a href='GraphCoQL.QuerySemantics.html' class="btn btn-light" role='button'>Previous ← Query Semantics</a>
-        <a href='GraphCoQL.examples.HPExample.html' class="btn btn-info" role='button'>Continue Reading → H&P Example</a>
     </div>#
 *)

@@ -302,7 +302,7 @@ Open Scope query_eval.
 (** ---- *)
 (** 
     #<div>
-        <a href='GraphCoQL.Response.html' class="btn btn-light" role='button'> Previous ← GraphQL Response </a>
+        <a href='GraphCoQL.NormalFormLemmas.html' class="btn btn-light" role='button'>Previous ← Normal Form Proofs</a>
         <a href='GraphCoQL.theory.QuerySemanticsLemmas.html' class="btn btn-info" role='button'>Continue Reading → Semantics Proofs</a>
     </div>#
 *)

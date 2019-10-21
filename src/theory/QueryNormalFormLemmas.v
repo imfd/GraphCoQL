@@ -327,6 +327,6 @@ End Normalization.
 (** 
     #<div>
         <a href='GraphCoQL.QueryNormalForm.html' class="btn btn-light" role='button'> Previous ← Query Normal Form  </a>
-        <a href='GraphCoQL.Graph.html' class="btn btn-info" role='button'>Continue Reading → Graph </a>
+        <a href='GraphCoQL.QuerySemantics.html' class="btn btn-info" role='button'>Continue Reading → Query Semantics</a>
     </div>#
 *)

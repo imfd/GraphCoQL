@@ -308,7 +308,7 @@ End Conformance.
 (** ---- *)
 (** 
     #<div>
-        <a href='GraphCoQL.Graph.html' class="btn btn-light" role='button'>Previous ← Graph</a>
+        <a href='GraphCoQL.Graph.html' class="btn btn-light" role='button'>Previous ← GraphQL Graph</a>
         <a href='GraphCoQL.Query.html' class="btn btn-info" role='button'>Continue Reading → Query</a>
     </div>#
 *)

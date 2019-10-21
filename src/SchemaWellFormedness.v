@@ -226,8 +226,8 @@ End WellFormedness.
 
 (** 
     #<div>
-        <a href='GraphCoQL.Schema.html' class="btn btn-light" role='button'> Previous ← Schema  </a>
-        <a href='GraphCoQL.Query.html' class="btn btn-info" role='button'>Continue Reading → Query </a>
+        <a href='GraphCoQL.Schema.html' class="btn btn-light" role='button'>Previous ← Schema</a>
+        <a href='GraphCoQL.Graph.html' class="btn btn-info" role='button'>Continue Reading → GraphQL Graph</a>
     </div>#
 *)
 

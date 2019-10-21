@@ -191,10 +191,6 @@ Notation "'enum' enum_name '{' enum_members '}'" :=
    we omit them here to unclutter the doc (they may still be seen in the source code).
  *)
 
-(** ---- *)
-
-(** #<a href='GraphCoQL.SchemaWellFormedness.html' class="btn btn-info" role='button'>Continue Reading → Schema Well-Formedness </a># *)
-
 
 (* begin hide *)
 Section Equality.
@@ -316,3 +312,7 @@ Section Equality.
   
 End Equality.
 (* end hide *)
+
+(** ---- *)
+
+(** #<a href='GraphCoQL.SchemaWellFormedness.html' class="btn btn-info" role='button'>Continue Reading → Schema Well-Formedness </a># *)
