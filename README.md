@@ -22,9 +22,29 @@ Then, we proceed to install the dependencies and build the project. We describe 
 - Equations v.1.2+8.9
 - Mathematical Components v.1.9.0
 
+### Using [Docker](https://www.docker.com) and Dockerfile
 
-### Install Opam and initialize it
+We include a `Dockerfile` with the necessary image and commands to get the project up and running. The image is based on Debian 10 (more information can be found [here](https://github.com/coq-community/docker-coq)) and contains Coq v8.9.1, as well as all necessary dependencies to build the project.
 
+To download the image and setup the necessary environment, run the following command (in the project's root directory), which will search for the `Dockerfile` in the directory where the command is being executed and name the image `gcoql`.
+
+```bash
+$ docker build -t gcoql .
+```
+
+Once the image is setup, one can start a container and work on the project. The following command starts a container interactively (with a prompt), sets the current directory as a volume (changes made in the container will be reflected in the directory) and sets it as the current working directory.
+
+```bash
+$ docker run -it -v "$PWD:$PWD" -w "$PWD" gcoql
+```
+
+It is possible to now build the project, by simply running the following command in the interactive console associated to the container.
+```bash
+$ make
+```
+It is now possible to start programming in Coq and GraphCoQL or explore its documentation :tada:.
+
+### Installing Opam and initialize it
 We describe the process of installing the GraphCoQL dependencies by means of the Ocaml Package Manager ([Opam](https://opam.ocaml.org/)).
 
 Installation of Opam may vary from distribution and operating system, hence we defer the appropriate instructions to their [installation site](https://opam.ocaml.org/doc/Install.html).
