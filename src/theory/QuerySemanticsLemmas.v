@@ -59,7 +59,7 @@ Require Import QuerySemantics.
  *)
 
 Section Theory.
-  Transparent qresponse_name.
+  Transparent qresponse_name is_field.
 
   Variables (Scalar : eqType)
             (s : wfGraphQLSchema)
@@ -201,19 +201,7 @@ Section Theory.
     rewrite (lookup_type_name_wf Hlook) (lookup_type_name_wf Hlook2) => -> /=.
       by apply: IH.
   Qed.
-
-  (** ---- **)
-  (**
-   This lemma states that
-   *)
-  Lemma exec_frags_nil u ptys σs :
-    uniq ptys ->
-    all (is_object_type s) ptys ->
-    u.(ntype) \notin ptys ->
-    execute_selection_set s is_valid_scalar_value g coerce u [seq InlineFragment t σs | t <- ptys] = [::].
-  Proof.
-      by apply: (exec_frags_nil_func (fun t qs => qs)).
-  Qed.
+  
  
   (** ---- **)
   (**
@@ -251,31 +239,8 @@ Section Theory.
     - by rewrite catA; apply: IH => //; leq_selections_size.
   Qed.
 
-  (** ---- **)
-  (**
-   This lemma states that
-   *)
-  Lemma exec_cat_frags ptys u σs1 σs2 :
-    uniq ptys ->
-    all (is_object_type s) ptys ->
-    u.(ntype) \notin ptys -> 
-    execute_selection_set s is_valid_scalar_value g coerce u (σs1 ++ [seq InlineFragment t σs2 | t <- ptys]) =
-    execute_selection_set s is_valid_scalar_value g coerce u σs1.
-  Proof.
-      by apply: (exec_cat_frags_func (fun t qs => qs)).
-  Qed.
+  
 
-  (** ---- **)
-  (**
-   This lemma states that
-   *)
-  Lemma exec_cat_frags_get_types ty u σs1 σs2 :
-    u.(ntype) \notin get_possible_types s ty ->
-    execute_selection_set s is_valid_scalar_value g coerce u (σs1 ++ [seq InlineFragment t σs2 | t <- get_possible_types s ty]) =
-  execute_selection_set s is_valid_scalar_value g coerce u σs1.
-  Proof.
-      by move=> Hnin; apply: exec_cat_frags => //; [apply: uniq_get_possible_types | apply/allP; apply: in_possible_types_is_object].
-  Qed.
   
 
   (** ---- **)
@@ -308,19 +273,6 @@ Section Theory.
       by apply: IH.
   Qed.
 
-  (** ---- **)
-  (**
-   This lemma states that
-   *)
-  Lemma exec_inlined ptys u σs :
-    uniq ptys ->
-    all (is_object_type s) ptys ->
-    u.(ntype) \in ptys ->
-    execute_selection_set s is_valid_scalar_value g coerce u [seq InlineFragment t σs | t <- ptys] =     
-    execute_selection_set s is_valid_scalar_value g coerce u [:: InlineFragment u.(ntype) σs ].
-  Proof.
-      by apply: (exec_inlined_func (fun t σs => σs)).
-  Qed.
 
   (** ---- **)
   (**
@@ -560,7 +512,7 @@ Section Theory.
   
   (* begin hide *)
   
-  Transparent is_field.
+
 
   (**
      This lemma states that [execute_selection_set2] distributes over list concatenation.
