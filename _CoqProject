@@ -24,8 +24,8 @@
 ./src/theory/QueryAuxLemmas.v
 ./src/QueryTactics.v
 ./src/QueryConformance.v
-./src/QueryNormalForm.v
 ./src/theory/QueryConformanceLemmas.v
+./src/QueryNormalForm.v
 ./src/theory/QueryNormalFormLemmas.v
 
 ./src/Graph.v
