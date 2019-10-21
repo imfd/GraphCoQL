@@ -95,8 +95,8 @@ Section Theory.
   Section Conformance.
     
     Variables (s : wfGraphQLSchema)
-              (is_valid_scalar_value : graphQLSchema -> Name -> Scalar -> bool)
-              (g : conformedGraph s is_valid_scalar_value).
+              (check_scalar : graphQLSchema -> Name -> Scalar -> bool)
+              (g : conformedGraph s check_scalar).
 
     (**
      This lemma states that if the root node's type conforms to the schema, 
@@ -113,7 +113,7 @@ Section Theory.
        This lemma states that conformed nodes must have object type.
      *)
     Lemma nodes_conform_have_object_type :
-      nodes_conform s is_valid_scalar_value g.(nodes) -> forall u, u \in g.(nodes) -> is_object_type s u.(ntype).
+      nodes_conform s check_scalar g.(nodes) -> forall u, u \in g.(nodes) -> is_object_type s u.(ntype).
     Proof.
       rewrite /nodes_conform /= => /allP Hconf u Hin.
         by case/andP : (Hconf u Hin).

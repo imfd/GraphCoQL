@@ -116,7 +116,7 @@ Section Values.
    *)
   Variable (schema : graphQLSchema).
   
-  Fixpoint is_valid_scalar_value (ty : type) (v : Scalar) : bool :=
+  Fixpoint check_scalar (ty : type) (v : Scalar) : bool :=
     match v with
     | VInt _ => if ty is NamedType name then
                  name == "ID"
@@ -323,7 +323,7 @@ Section HPExample.
        Then, we prove that the graph conforms to the previous well-formed schema and the 
        predicate on valid values, by simple computation.
    *)
-  Let graph_conforms : is_a_conforming_graph ValidStarWarsSchema is_valid_scalar_value StarWarsGraph. Proof. by []. Qed.
+  Let graph_conforms : is_a_conforming_graph ValidStarWarsSchema check_scalar StarWarsGraph. Proof. by []. Qed.
     
   (**
        Finally, we build the conformed graph, using the graph and the proof of its conformance.
@@ -375,7 +375,7 @@ Section HPExample.
   (**
        We prove it conforms to the schema and has valid values, by simple computation.     
    *)
-  Let example_query_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema example_query. Proof. by []. Qed.
+  Let example_query_conforms : query_conforms check_scalar ValidStarWarsSchema example_query. Proof. by []. Qed.
   
 
 
@@ -432,7 +432,7 @@ Section HPExample.
 
       Lastly, we show that executing the previous query in the context of the well-formed schema, and over the conformed graph, starting from the root node, gives us the expected response (by computation).
    *)
-  Goal (execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce example_query = expected_response).
+  Goal (execute_query ValidStarWarsSchema check_scalar ValidStarWarsGraph coerce example_query = expected_response).
   Proof.
       by [].
   Qed.

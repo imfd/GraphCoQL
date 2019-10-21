@@ -85,7 +85,7 @@ Section Values.
       expected type. 
    *)
   Variable (schema : graphQLSchema). 
-  Definition is_valid_scalar_value (ty : type) (v : Scalar) : bool :=
+  Definition check_scalar (ty : type) (v : Scalar) : bool :=
     if ty is NamedType name then
       (name == "String")
       ||
@@ -380,7 +380,7 @@ Section Example.
        Then, we prove that the graph conforms to the previous well-formed schema and the 
        predicate on valid values, by simple computation.
    *) 
-  Let graph_conforms : is_a_conforming_graph ValidStarWarsSchema is_valid_scalar_value StarWarsGraph.
+  Let graph_conforms : is_a_conforming_graph ValidStarWarsSchema check_scalar StarWarsGraph.
   Proof.
       by [].
   Qed.
@@ -419,7 +419,7 @@ Section Example.
                   ].
 
   (** We prove it is a valid query *)
-  Let q1_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q1. by []. Qed.
+  Let q1_conforms : query_conforms check_scalar ValidStarWarsSchema q1. by []. Qed.
   
   Let result1 :=   [::
                      ("hero",
@@ -431,7 +431,7 @@ Section Example.
                   ].
 
   (** And that it evaluates correctly *)
-  Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q1 = result1.
+  Goal execute_query ValidStarWarsSchema check_scalar ValidStarWarsGraph coerce q1 = result1.
        by [].
    Qed.
 
@@ -456,7 +456,7 @@ Section Example.
                   ].
 
    (** We prove it is a valid query *) 
-   Let q2_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q2. by []. Qed.
+   Let q2_conforms : query_conforms check_scalar ValidStarWarsSchema q2. by []. Qed.
 
    Let result2 :=   [::
                      ("hero",
@@ -486,7 +486,7 @@ Section Example.
                   ].
 
    (** And that it evaluates correctly *)
-   Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q2 = result2.
+   Goal execute_query ValidStarWarsSchema check_scalar ValidStarWarsGraph coerce q2 = result2.
        by [].
    Qed.
 
@@ -519,7 +519,7 @@ Section Example.
                    ].
 
    (** We prove it is a valid query *) 
-   Let q3_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q3. by []. Qed.
+   Let q3_conforms : query_conforms check_scalar ValidStarWarsSchema q3. by []. Qed.
 
 
    Let result3 := [::
@@ -624,7 +624,7 @@ Section Example.
                     )
                  ].
    (** And that it evaluates correctly *)
-   Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q3 = result3.
+   Goal execute_query ValidStarWarsSchema check_scalar ValidStarWarsGraph coerce q3 = result3.
        by [].
    Qed.
 
@@ -645,7 +645,7 @@ Section Example.
                    ].
    
    (** We prove it is a valid query *)
-   Let q4_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q4. by []. Qed.
+   Let q4_conforms : query_conforms check_scalar ValidStarWarsSchema q4. by []. Qed.
 
    Let result4 := [::
                     ("human",
@@ -656,7 +656,7 @@ Section Example.
                     )
                  ].
    (** And that it evaluates correctly *)
-   Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q4 = result4.
+   Goal execute_query ValidStarWarsSchema check_scalar ValidStarWarsGraph coerce q4 = result4.
        by [].
    Qed.
 
@@ -676,13 +676,13 @@ Section Example.
                    ].
 
   (** We prove it is a valid query *)
-   Let q5_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q5. by []. Qed.
+   Let q5_conforms : query_conforms check_scalar ValidStarWarsSchema q5. by []. Qed.
 
    Let result5 := [::
                     ("human", (@Leaf string_eqType None))
                  ].
    (** And that it evaluates correctly *)
-   Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q5 = result5.
+   Goal execute_query ValidStarWarsSchema check_scalar ValidStarWarsGraph coerce q5 = result5.
        by [].
    Qed.
 
@@ -705,7 +705,7 @@ Section Example.
                    ].
 
    (** We prove it is a valid query *)
-   Let q6_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q6. by []. Qed.
+   Let q6_conforms : query_conforms check_scalar ValidStarWarsSchema q6. by []. Qed.
 
    Let result6 := [::
                     ("luke",
@@ -716,7 +716,7 @@ Section Example.
                     )
                  ].
    (** And that it evaluates correctly *)
-   Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q6 = result6.
+   Goal execute_query ValidStarWarsSchema check_scalar ValidStarWarsGraph coerce q6 = result6.
        by [].
    Qed.
 
@@ -740,7 +740,7 @@ Section Example.
                    ].
 
    (** We prove it is a valid query *)
-   Let q7_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q7. by []. Qed.
+   Let q7_conforms : query_conforms check_scalar ValidStarWarsSchema q7. by []. Qed.
 
    Let result7 := [::
                     ("luke",
@@ -757,7 +757,7 @@ Section Example.
                     )
                  ].
    (** And that it evaluates correctly *)
-   Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q7 = result7.
+   Goal execute_query ValidStarWarsSchema check_scalar ValidStarWarsGraph coerce q7 = result7.
        by [].
    Qed.
 
@@ -787,7 +787,7 @@ Section Example.
                    ].
 
    (** We prove it is a valid query *)
-   Let q8_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q8. by []. Qed.
+   Let q8_conforms : query_conforms check_scalar ValidStarWarsSchema q8. by []. Qed.
 
    Let result8 := [::
                     ("luke",
@@ -806,7 +806,7 @@ Section Example.
                     )
                  ].
    (** And that it evaluates correctly *)
-   Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q8 = result8.
+   Goal execute_query ValidStarWarsSchema check_scalar ValidStarWarsGraph coerce q8 = result8.
        by [].
    Qed.
 
@@ -843,7 +843,7 @@ Section Example.
                    ].
 
    (** We prove it is a valid query *)
-   Let q9_conforms : query_conforms is_valid_scalar_value ValidStarWarsSchema q9. by []. Qed.
+   Let q9_conforms : query_conforms check_scalar ValidStarWarsSchema q9. by []. Qed.
 
    Let result9 := [::
                     ("luke",
@@ -862,7 +862,7 @@ Section Example.
                     )
                  ].
    (** And that it evaluates correctly *)
-   Goal execute_query ValidStarWarsSchema is_valid_scalar_value ValidStarWarsGraph coerce q9 = result9.
+   Goal execute_query ValidStarWarsSchema check_scalar ValidStarWarsGraph coerce q9 = result9.
        by [].
    Qed.
 

@@ -72,7 +72,7 @@ Section Values.
   
  
   Variable (schema : graphQLSchema). 
-  Fixpoint is_valid_scalar_value (ty : type) (v : Scalar) : bool :=
+  Fixpoint check_scalar (ty : type) (v : Scalar) : bool :=
     match v with
     | VInt _ => if ty is NamedType name then
                  (name == "Int") || (name == "ID")
@@ -211,7 +211,7 @@ Section WrongGraph.
   
   Let g2 := GraphQLGraph r edges2.
   
-  Example eNc : ~ edges_conform wf_schema is_valid_scalar_value g2.
+  Example eNc : ~ edges_conform wf_schema check_scalar g2.
   Proof. by [].
   Qed.
   
@@ -239,7 +239,7 @@ Section WrongGraph.
   
     Let g3 := GraphQLGraph r edges3.
     
-    Example eNc3 : ~ edges_conform wf_schema is_valid_scalar_value g3.
+    Example eNc3 : ~ edges_conform wf_schema check_scalar g3.
     Proof. by [].
     Qed.
 
@@ -263,7 +263,7 @@ Section WrongGraph.
 
     Let g4 := GraphQLGraph r edges4.
     
-    Example eNc4 : ~ edges_conform wf_schema is_valid_scalar_value g4.
+    Example eNc4 : ~ edges_conform wf_schema check_scalar g4.
     Proof. by [].
     Qed.
 
@@ -288,7 +288,7 @@ Section WrongGraph.
     Let g5 := GraphQLGraph r edges5.
 
     
-    Example fNc : ~ nodes_conform wf_schema is_valid_scalar_value g5.(nodes).
+    Example fNc : ~ nodes_conform wf_schema check_scalar g5.(nodes).
     Proof. by [].
     Qed.
     

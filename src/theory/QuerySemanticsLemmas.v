@@ -63,8 +63,8 @@ Section Theory.
 
   Variables (Scalar : eqType)
             (s : wfGraphQLSchema)
-            (is_valid_scalar_value : graphQLSchema -> Name -> Scalar -> bool)
-            (g : conformedGraph s is_valid_scalar_value)
+            (check_scalar : graphQLSchema -> Name -> Scalar -> bool)
+            (g : conformedGraph s check_scalar)
             (coerce : Scalar -> Scalar).
   
     
@@ -145,7 +145,7 @@ Section Theory.
 
                                                          
       | [H : (ftype ?f) = _ |- context [ ftype ?f ] ] => rewrite H /=
-      | [H : (is_valid_scalar_value ?s ?nty ?c) = ?b |- context [is_valid_scalar_value ?s ?nty ?c] ] =>  rewrite H /=
+      | [H : (check_scalar ?s ?nty ?c) = ?b |- context [check_scalar ?s ?nty ?c] ] =>  rewrite H /=
       | [|- context [(complete_value_clause_1 _ _ _ _ _ (?valid _ _ _))] ] =>
         let Hvalid := fresh "Hvalid" in
         case Hvalid : valid => //=
@@ -187,7 +187,7 @@ Section Theory.
     uniq ptys ->
     all (is_object_type s) ptys ->
     u.(ntype) \notin ptys ->
-    execute_selection_set s is_valid_scalar_value g coerce u  [seq InlineFragment t (f t σs) | t <- ptys] = [::].
+    execute_selection_set s check_scalar g coerce u  [seq InlineFragment t (f t σs) | t <- ptys] = [::].
   Proof.
     elim: ptys => //= t ptys IH /andP [Hnin Huniq] /andP [Hobj Hinobj].
     rewrite /negb; case: ifP => //=.
@@ -212,8 +212,8 @@ Section Theory.
     uniq ptys ->
     all (is_object_type s) ptys ->
     u.(ntype) \notin ptys ->
-    execute_selection_set s is_valid_scalar_value g coerce u (σs1 ++ [seq InlineFragment t (f t σs2) | t <- ptys]) =
-    execute_selection_set s is_valid_scalar_value g coerce u σs1.
+    execute_selection_set s check_scalar g coerce u (σs1 ++ [seq InlineFragment t (f t σs2) | t <- ptys]) =
+    execute_selection_set s check_scalar g coerce u σs1.
   Proof.
     move=> Hfilterswap.
     move=> Hnin.
@@ -252,8 +252,8 @@ Section Theory.
     uniq ptys ->
     all (is_object_type s) ptys ->
     u.(ntype) \in ptys ->
-    execute_selection_set s is_valid_scalar_value g coerce u [seq InlineFragment t (f t σs) | t <- ptys] =
-    execute_selection_set s is_valid_scalar_value g coerce u [:: InlineFragment u.(ntype) (f u.(ntype) σs) ]. 
+    execute_selection_set s check_scalar g coerce u [seq InlineFragment t (f t σs) | t <- ptys] =
+    execute_selection_set s check_scalar g coerce u [:: InlineFragment u.(ntype) (f u.(ntype) σs) ]. 
   Proof.
     move=> Hswap.
     elim: ptys => //= t ptys IH /andP [Hnin Huniq] /andP [/is_object_type_wfP [intfs [flds Hlook] ] Hinobj].
@@ -280,7 +280,7 @@ Section Theory.
    *)
   Lemma exec_filter_no_repeat rname σs u :
     all (fun kq => kq.1 != rname)
-        (execute_selection_set s is_valid_scalar_value g coerce u (filter_fields_with_response_name rname σs)).
+        (execute_selection_set s check_scalar g coerce u (filter_fields_with_response_name rname σs)).
   Proof.
     move: {2}(selections_size _) (leqnn (selections_size σs)) => n.
     elim: n σs rname => /= [| n IH] σs rname; first by rewrite leqn0 => /selections_size_0_nil ->.
@@ -309,9 +309,9 @@ Section Theory.
      This lemma states that [complete_value] returns a non-redundant response.
    *)
   Lemma completed_value_are_non_redundant (ftype : type) (value : option (@Value Scalar)) : 
-    Response.is_non_redundant (complete_value s is_valid_scalar_value coerce ftype value).
+    Response.is_non_redundant (complete_value s check_scalar coerce ftype value).
   Proof.
-    funelim (complete_value s is_valid_scalar_value coerce ftype value) => //=.
+    funelim (complete_value s check_scalar coerce ftype value) => //=.
     simp is_non_redundant.
     rewrite -map_comp /= all_map.
     apply/allP=> v Hin /=.
@@ -323,9 +323,9 @@ Section Theory.
      This means that there are no duplicated names in the response.
    *)
   Lemma exec_non_redundant σs u :
-    Response.are_non_redundant (execute_selection_set s is_valid_scalar_value g coerce u σs).
+    Response.are_non_redundant (execute_selection_set s check_scalar g coerce u σs).
   Proof.
-    funelim (execute_selection_set s is_valid_scalar_value g coerce u σs) => //=.
+    funelim (execute_selection_set s check_scalar g coerce u σs) => //=.
     all: do ? [by apply_and3P; apply: exec_filter_no_repeat].
     - apply_and3P; [by apply: completed_value_are_non_redundant | by apply: exec_filter_no_repeat].
     - apply_and3P; [by apply: completed_value_are_non_redundant | by apply: exec_filter_no_repeat].     
@@ -353,8 +353,8 @@ Section Theory.
    *)
   Lemma normalize_selections_preserves_semantics σs u :
     u \in g.(nodes) ->
-    execute_selection_set s is_valid_scalar_value g coerce u (normalize_selections s u.(ntype) σs) =
-    execute_selection_set s is_valid_scalar_value g coerce u σs.
+    execute_selection_set s check_scalar g coerce u (normalize_selections s u.(ntype) σs) =
+    execute_selection_set s check_scalar g coerce u σs.
   Proof.    
     funelim (normalize_selections s u.(ntype) σs) => //=; do ? by exec.
     all: do ? [by intros; exec; rewrite filter_normalize_swap filter_filter_absorb // H]; exec => Huin.
@@ -372,7 +372,7 @@ Section Theory.
         apply: (in_object_possible_types Heq).
         have Hlook : lookup_field_in_type s u.(ntype) (Label name1 arguments1) = Some f by [].
         move/ohead_in: Hv => Hin.
-        move: (@neighbors_are_subtype_of_field Scalar s is_valid_scalar_value g u (Label name1 arguments1) f Hlook v Hin).
+        move: (@neighbors_are_subtype_of_field Scalar s check_scalar g u (Label name1 arguments1) f Hlook v Hin).
           by rewrite Hrty.
       by apply: H => //; rewrite Hvtype.
       
@@ -385,7 +385,7 @@ Section Theory.
       have Hvtype : v.(ntype) = rty.
         rewrite Hrty in Heq; apply: (in_object_possible_types Heq).
         have Hlook : lookup_field_in_type s u.(ntype) (Label name1 arguments1) = Some f by [].
-        move: (@neighbors_are_subtype_of_field Scalar s is_valid_scalar_value g u (Label name1 arguments1) f Hlook v Hin).
+        move: (@neighbors_are_subtype_of_field Scalar s check_scalar g u (Label name1 arguments1) f Hlook v Hin).
           by rewrite Hrty /=. (* ?? *)
       by apply: H => //; rewrite Hvtype.
             
@@ -406,7 +406,7 @@ Section Theory.
                   by apply/allP; apply: in_possible_types_is_object.
 
                   move/ohead_in: Hv => Hin.
-                  move: (@neighbors_are_subtype_of_field Scalar s is_valid_scalar_value g u (Label name1 arguments1) f Heq0 v Hin).
+                  move: (@neighbors_are_subtype_of_field Scalar s check_scalar g u (Label name1 arguments1) f Heq0 v Hin).
                     by rewrite Hrty.
                     
       * congr cons; congr pair; congr Array.
@@ -422,7 +422,7 @@ Section Theory.
               by apply: uniq_get_possible_types.
                 by apply/allP; apply: in_possible_types_is_object.  
 
-                move: (@neighbors_are_subtype_of_field Scalar s is_valid_scalar_value g u (Label name1 arguments1) f Heq0 v Hin).
+                move: (@neighbors_are_subtype_of_field Scalar s check_scalar g u (Label name1 arguments1) f Heq0 v Hin).
                   by rewrite Hrty.
                   
 
@@ -438,7 +438,7 @@ Section Theory.
       apply: (in_object_possible_types Heq).
       have Hlook : lookup_field_in_type s u.(ntype) (Label name2 arguments2) = Some f by [].
       move/ohead_in: Hv => Hin.
-      move: (@neighbors_are_subtype_of_field Scalar s is_valid_scalar_value g u (Label name2 arguments2) f Hlook v Hin).
+      move: (@neighbors_are_subtype_of_field Scalar s check_scalar g u (Label name2 arguments2) f Hlook v Hin).
         by rewrite Hrty.
           by apply: H => //; rewrite Hvtype.
               
@@ -452,7 +452,7 @@ Section Theory.
       have Hvtype : v.(ntype) = rty.
       rewrite Hrty in Heq; apply: (in_object_possible_types Heq).
       have Hlook : lookup_field_in_type s u.(ntype) (Label name2 arguments2) = Some f by [].
-      move: (@neighbors_are_subtype_of_field Scalar s is_valid_scalar_value g u (Label name2 arguments2) f Hlook v Hin).
+      move: (@neighbors_are_subtype_of_field Scalar s check_scalar g u (Label name2 arguments2) f Hlook v Hin).
         by rewrite Hrty /=. (* ?? *)
           by apply: H => //; rewrite Hvtype.
             
@@ -473,7 +473,7 @@ Section Theory.
                 by apply/allP; apply: in_possible_types_is_object.
                 
                 move/ohead_in: Hv => Hin.
-                move: (@neighbors_are_subtype_of_field Scalar s is_valid_scalar_value g u (Label name2 arguments2) f Heq0 v Hin).
+                move: (@neighbors_are_subtype_of_field Scalar s check_scalar g u (Label name2 arguments2) f Heq0 v Hin).
                   by rewrite Hrty.
                   
 
@@ -490,7 +490,7 @@ Section Theory.
             by apply: uniq_get_possible_types.
               by apply/allP; apply: in_possible_types_is_object.  
               
-              move: (@neighbors_are_subtype_of_field Scalar s is_valid_scalar_value g u (Label name2 arguments2) f Heq0 v Hin).
+              move: (@neighbors_are_subtype_of_field Scalar s check_scalar g u (Label name2 arguments2) f Heq0 v Hin).
                 by rewrite Hrty.
   Qed.
 
@@ -500,8 +500,8 @@ Section Theory.
      This theorem states that normalizing preserves the semantics of a query.
    *)
   Theorem normalize_preserves_query_semantics φ :
-    execute_query s is_valid_scalar_value g coerce (normalize s φ) =
-    execute_query s is_valid_scalar_value g coerce φ.
+    execute_query s check_scalar g coerce (normalize s φ) =
+    execute_query s check_scalar g coerce φ.
   Proof.
     case: φ => n σs; rewrite /execute_query /= -(root_query_type g).    
       by apply: normalize_selections_preserves_semantics; apply: root_in_nodes.
@@ -518,9 +518,9 @@ Section Theory.
      This lemma states that [execute_selection_set2] distributes over list concatenation.
    *)
   Lemma exec2_cat u σs1 σs2 :
-    simpl_execute_selection_set s is_valid_scalar_value g coerce u (σs1 ++ σs2) =
-    simpl_execute_selection_set s is_valid_scalar_value g coerce u σs1 ++
-    simpl_execute_selection_set s is_valid_scalar_value g coerce u σs2. 
+    simpl_execute_selection_set s check_scalar g coerce u (σs1 ++ σs2) =
+    simpl_execute_selection_set s check_scalar g coerce u σs1 ++
+    simpl_execute_selection_set s check_scalar g coerce u σs2. 
   Proof.
     move: {2}(selections_size _) (leqnn (selections_size σs1)) => n.
     elim: n σs1 σs2 => /= [| n IH] σs1 σs2; first by rewrite leqn0 => /selections_size_0_nil ->.
@@ -543,9 +543,9 @@ Section Theory.
                  ~~ does_fragment_type_apply s u.(ntype) t
                else
                  true) σs ->
-    execute_selection_set s is_valid_scalar_value g coerce u σs = [::].
+    execute_selection_set s check_scalar g coerce u σs = [::].
   Proof.
-    funelim (execute_selection_set s is_valid_scalar_value g coerce u σs) => //=; bcase.
+    funelim (execute_selection_set s check_scalar g coerce u σs) => //=; bcase.
       by rewrite Heq in Hb0.
         by apply: H => //; intros; apply: (Hnappl q) => //; apply: mem_tail.
   Qed.
@@ -561,9 +561,9 @@ Section Theory.
                  ~~ does_fragment_type_apply s u.(ntype) t
                else
                  true) σs ->
-    simpl_execute_selection_set s is_valid_scalar_value g coerce u σs = [::].
+    simpl_execute_selection_set s check_scalar g coerce u σs = [::].
   Proof.
-    funelim (simpl_execute_selection_set s is_valid_scalar_value g coerce u σs) => //=; bcase.
+    funelim (simpl_execute_selection_set s check_scalar g coerce u σs) => //=; bcase.
       by rewrite Heq in Hb0.
         by apply: H => //; intros; apply: (Hnappl σ) => //; apply: mem_tail.
   Qed.
@@ -587,8 +587,8 @@ Section Theory.
                  ~~ does_fragment_type_apply s u.(ntype) t
                else
                  true) σs2 ->
-    execute_selection_set s is_valid_scalar_value g coerce u (σs1 ++ σs2) =
-    execute_selection_set s is_valid_scalar_value g coerce u σs1. 
+    execute_selection_set s check_scalar g coerce u (σs1 ++ σs2) =
+    execute_selection_set s check_scalar g coerce u σs1. 
   Proof.
     move: {2}(selections_size _) (leqnn (selections_size σs1)) => n.
     elim: n σs1 σs2 u => /= [| n IH] σs1 σs2 u; first by rewrite leqn0 => /selections_size_0_nil -> /=; apply: exec_inlines_nil.
@@ -649,8 +649,8 @@ Section Theory.
    *)
   Lemma exec_sel_eq_simpl_exec u σs :
     are_in_normal_form s σs ->
-    execute_selection_set s is_valid_scalar_value g coerce u σs =
-    simpl_execute_selection_set s is_valid_scalar_value g coerce u σs.    
+    execute_selection_set s check_scalar g coerce u σs =
+    simpl_execute_selection_set s check_scalar g coerce u σs.    
   Proof.
     rewrite /are_in_normal_form; case/andP; rewrite /are_in_ground_typed_nf; case/andP.
     move: {2}(selections_size _) (leqnn (selections_size σs)) => n.
@@ -707,8 +707,8 @@ Section Theory.
    *)
   Theorem exec_query_eq_simpl_exec φ :
     is_in_normal_form s φ -> 
-    execute_query s is_valid_scalar_value g coerce φ =
-    simpl_execute_query s is_valid_scalar_value g coerce φ.
+    execute_query s check_scalar g coerce φ =
+    simpl_execute_query s check_scalar g coerce φ.
   Proof.
     case: φ => n σs.
     rewrite /is_in_normal_form /= /simpl_execute_query /execute_query /=.
@@ -721,8 +721,8 @@ Section Theory.
    is equivalent in both semantics.
    *)
   Corollary exec_normalized_selections_eq_simpl_exec σs u :
-    execute_selection_set s is_valid_scalar_value g coerce u (normalize_selections s u.(ntype) σs) =
-    simpl_execute_selection_set s is_valid_scalar_value g coerce u (normalize_selections s u.(ntype) σs).
+    execute_selection_set s check_scalar g coerce u (normalize_selections s u.(ntype) σs) =
+    simpl_execute_selection_set s check_scalar g coerce u (normalize_selections s u.(ntype) σs).
   Proof.
     apply: exec_sel_eq_simpl_exec => //=; rewrite /are_in_normal_form; apply_andP.
     - by apply: normalized_selections_are_grounded.
@@ -735,8 +735,8 @@ Section Theory.
      is equivalent in both semantics.
    *)
   Corollary exec_normalized_query_eq_simpl_exec φ :
-    execute_query s is_valid_scalar_value g coerce (normalize s φ) =
-    simpl_execute_query s is_valid_scalar_value g coerce (normalize s φ).
+    execute_query s check_scalar g coerce (normalize s φ) =
+    simpl_execute_query s check_scalar g coerce (normalize s φ).
   Proof.
       by apply: exec_query_eq_simpl_exec; apply: normalized_query_is_in_nf.
   Qed.

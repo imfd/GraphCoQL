@@ -55,7 +55,7 @@ Require Import Ssromega.
 Section QueryConformance.
 
   Variables (Scalar : eqType)
-            (is_valid_scalar_value : graphQLSchema -> Name -> Scalar -> bool).
+            (check_scalar : graphQLSchema -> Name -> Scalar -> bool).
   
   
   Implicit Type σs : seq (@Selection Scalar).
@@ -90,7 +90,7 @@ Section QueryConformance.
   Definition arguments_conform (args : seq FieldArgumentDefinition) (α : seq (Name * @Value Scalar)) : bool :=
     let argument_conforms (arg : Name * @Value Scalar) : bool :=
         let: (name, value) := arg in
-        has (fun argdef => (argdef.(argname) == name) && is_valid_value s is_valid_scalar_value argdef.(argtype) value) args
+        has (fun argdef => (argdef.(argname) == name) && is_valid_value s check_scalar argdef.(argtype) value) args
     in
     all argument_conforms α && uniq [seq arg.1 | arg <- α].
      

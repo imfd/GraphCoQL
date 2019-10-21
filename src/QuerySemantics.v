@@ -48,8 +48,8 @@ Section QuerySemantic.
 
   Variables (Scalar : eqType)
             (s : wfGraphQLSchema)
-            (is_valid_scalar_value : graphQLSchema -> Name -> Scalar -> bool)
-            (g : conformedGraph s is_valid_scalar_value)
+            (check_scalar : graphQLSchema -> Name -> Scalar -> bool)
+            (g : conformedGraph s check_scalar)
             (coerce : Scalar -> Scalar).
 
 
@@ -68,7 +68,7 @@ Section QuerySemantic.
   Equations complete_value (ftype : type) (value : option (@Value Scalar)) : @ResponseValue Scalar :=
     {
       complete_value (NamedType n) (Some (SValue svalue))
-        with is_valid_scalar_value s n (coerce svalue) :=
+        with check_scalar s n (coerce svalue) :=
         {
         | true := Leaf (Some (coerce svalue));
         | _ := Leaf None

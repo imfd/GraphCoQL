@@ -105,7 +105,7 @@ Section Values.
    *)
   Variable (schema : graphQLSchema).
   
-  Fixpoint is_valid_scalar_value (ty : type) (v : Scalar) : bool :=
+  Fixpoint check_scalar (ty : type) (v : Scalar) : bool :=
     match v with
     | VInt _ => if ty is NamedType name then
                  (name == "Int") || (name == "ID")
@@ -285,7 +285,7 @@ Section GraphQLSpecExamples.
     Let example102' :  (@Selection scalar_eqType) :=  "barkVolume" : "kawVolume" [[ [::] ]].
 
     (** We compute it to show that both selections are invalid *)
-    Example e102 : ~~ (is_consistent is_valid_scalar_value wf_schema "Dog" example102 || is_consistent is_valid_scalar_value wf_schema "Dog" example102').
+    Example e102 : ~~ (is_consistent check_scalar wf_schema "Dog" example102 || is_consistent check_scalar wf_schema "Dog" example102').
     Proof. by []. Qed.
 
 
@@ -294,7 +294,7 @@ Section GraphQLSpecExamples.
     Let example103 : @Selection scalar_eqType := "name" [[ [::] ]].
 
     (** We show the selection is valid in the scope of the "Pet" type *)
-    Example e103 : is_consistent is_valid_scalar_value wf_schema "Pet" example103.
+    Example e103 : is_consistent check_scalar wf_schema "Pet" example103.
     Proof. by []. Qed.
 
     
@@ -304,11 +304,11 @@ Section GraphQLSpecExamples.
     
 
     (** We show the selection is invalid in the scope of the "Pet" type *)
-    Example e104 : ~~ is_consistent is_valid_scalar_value wf_schema "Pet" example104.
+    Example e104 : ~~ is_consistent check_scalar wf_schema "Pet" example104.
     Proof. by []. Qed.
 
     (** And also for any subtype of the "Pet" type (This one is not in the spec). *)
-    Example e104' : all (fun implementor => is_consistent is_valid_scalar_value wf_schema implementor example104) (get_possible_types wf_schema "Pet").
+    Example e104' : all (fun implementor => is_consistent check_scalar wf_schema implementor example104) (get_possible_types wf_schema "Pet").
     Proof.
         by [].
     Qed.
@@ -331,7 +331,7 @@ Section GraphQLSpecExamples.
       ].
     
     (** We show the selection is invalid in the scope of the "CatOrDog" type *)
-    Example e105 : selections_conform is_valid_scalar_value wf_schema "CatOrDog" example105.
+    Example e105 : selections_conform check_scalar wf_schema "CatOrDog" example105.
     Proof. by []. Qed.
 
 
@@ -344,7 +344,7 @@ Section GraphQLSpecExamples.
                                                       ].
     
     (** We show the selection is invalid in the scope of the "Pet" type *)
-    Example e106 : ~~ selections_conform is_valid_scalar_value wf_schema "CatOrDog" example106.
+    Example e106 : ~~ selections_conform check_scalar wf_schema "CatOrDog" example106.
     Proof. by []. Qed.
 
     
@@ -355,7 +355,7 @@ Section GraphQLSpecExamples.
     Section FieldSelectionMerging.
 
       (** 
-          Redefining only to ease reading -- Another option would be to use [selections_conform is_valid_scalar_value] but this seems simpler.
+          Redefining only to ease reading -- Another option would be to use [selections_conform check_scalar] but this seems simpler.
           
           This checks that selections are [renaming_consistent] but first wrapping them in 
           their type in scope.
@@ -520,7 +520,7 @@ Section GraphQLSpecExamples.
       Qed.
       
       (** We show the selections are not type-compatible in the scope of the "Pet" type *)
-      Example e112' : ~~ selections_conform is_valid_scalar_value wf_schema "Pet" example112.
+      Example e112' : ~~ selections_conform check_scalar wf_schema "Pet" example112.
       Proof.
           by [].
       Qed.
@@ -543,7 +543,7 @@ Section GraphQLSpecExamples.
       
 
       (** We show the selection is valid in the scope of the "Pet" type *)
-      Example e113 : is_consistent is_valid_scalar_value wf_schema "Dog" example113.
+      Example e113 : is_consistent check_scalar wf_schema "Dog" example113.
       Proof.
           by [].
       Qed.
@@ -560,7 +560,7 @@ Section GraphQLSpecExamples.
        
 
       (** We show the selection is invalid in the scope of the "Pet" type *)
-      Example e114 : ~~ is_consistent is_valid_scalar_value wf_schema "Dog" example114.
+      Example e114 : ~~ is_consistent check_scalar wf_schema "Dog" example114.
       Proof.
           by [].
       Qed.
@@ -611,7 +611,7 @@ Section GraphQLSpecExamples.
 
 
       (** We show the selection is invalid in the scope of the root query type *)
-      Example e116_1 : ~~is_consistent is_valid_scalar_value extended_wf_schema "ExtendedQuery" example116_1.
+      Example e116_1 : ~~is_consistent check_scalar extended_wf_schema "ExtendedQuery" example116_1.
       Proof.
           by [].
       Qed.
@@ -620,7 +620,7 @@ Section GraphQLSpecExamples.
       
 
       (** We show the selection is invalid in the scope of the root query type *)
-      Example e116_2 : ~~is_consistent is_valid_scalar_value extended_wf_schema "ExtendedQuery" example116_2.
+      Example e116_2 : ~~is_consistent check_scalar extended_wf_schema "ExtendedQuery" example116_2.
       Proof.
           by [].
       Qed.
@@ -629,7 +629,7 @@ Section GraphQLSpecExamples.
 
       
       (** We show the selection is invalid in the scope of the root query type *)
-      Example e116_3 : ~~is_consistent is_valid_scalar_value extended_wf_schema "ExtendedQuery" example116_3.
+      Example e116_3 : ~~is_consistent check_scalar extended_wf_schema "ExtendedQuery" example116_3.
       Proof.
           by [].
       Qed.
@@ -658,7 +658,7 @@ Section GraphQLSpecExamples.
 
 
     (** We show the selection is valid in the scope of the "Dog" type *)
-    Example e117_1 : is_consistent is_valid_scalar_value wf_schema "Dog" example117_1.
+    Example e117_1 : is_consistent check_scalar wf_schema "Dog" example117_1.
     Proof.
         by [].
     Qed.
@@ -668,7 +668,7 @@ Section GraphQLSpecExamples.
     
 
     (** We show the selection is valid in the scope of the "Dog" type *)
-    Example e117_2 : is_consistent is_valid_scalar_value wf_schema "Dog" example117_2.
+    Example e117_2 : is_consistent check_scalar wf_schema "Dog" example117_2.
     Proof.
       by [].
     Qed.
@@ -680,7 +680,7 @@ Section GraphQLSpecExamples.
 
     
     (** We show the selection is invalid in the scope of the "Dog" type *)
-    Example e118 : ~~is_consistent is_valid_scalar_value wf_schema "Dog" example_118.
+    Example e118 : ~~is_consistent check_scalar wf_schema "Dog" example_118.
     Proof.
         by [].
     Qed.
@@ -769,7 +769,7 @@ Section GraphQLSpecExamples.
     Let example121_1 : @Selection scalar_eqType := "multipleReqs" [[ [:: ("x", SValue (VInt 1)); ("y", SValue (VInt 2))] ]].
 
     (** We show the selection is valid in the scope of the "Arguments" type *)
-    Example e121_1 : is_consistent is_valid_scalar_value extended_wf_schema "Arguments" example121_1.
+    Example e121_1 : is_consistent check_scalar extended_wf_schema "Arguments" example121_1.
     Proof.
         by [].
     Qed.
@@ -779,7 +779,7 @@ Section GraphQLSpecExamples.
 
     
     (** We show the selection is valid in the scope of the "Arguments" type *)
-    Example e121_2 : is_consistent is_valid_scalar_value extended_wf_schema "Arguments" example121_2.
+    Example e121_2 : is_consistent check_scalar extended_wf_schema "Arguments" example121_2.
     Proof.
         by [].
     Qed.
@@ -821,8 +821,8 @@ Section GraphQLSpecExamples.
       ].
 
     (** We show the selection is valid in the scope of the "Dog" and "Pet" types *)
-    Example e128 : selections_conform is_valid_scalar_value wf_schema "Dog" example128 &&
-                   selections_conform is_valid_scalar_value wf_schema "Pet" example128.                
+    Example e128 : selections_conform check_scalar wf_schema "Dog" example128 &&
+                   selections_conform check_scalar wf_schema "Pet" example128.                
     Proof.
         by [].
     Qed.
@@ -841,13 +841,13 @@ Section GraphQLSpecExamples.
       ].
 
     (** We show the selection is invalid in the scope of the "Dog" type *)
-    Example e129 : ~~selections_conform is_valid_scalar_value wf_schema "Dog" example129.
+    Example e129 : ~~selections_conform check_scalar wf_schema "Dog" example129.
     Proof.
         by [].
     Qed.
 
     (** We show the selection is invalid in the scope of any type in the schema *)
-    Example e129' : all (fun name => ~~selections_conform is_valid_scalar_value wf_schema name example129) wf_schema.(type_names).
+    Example e129' : all (fun name => ~~selections_conform check_scalar wf_schema name example129) wf_schema.(type_names).
     Proof.
         by [].
     Qed.
@@ -863,8 +863,8 @@ Section GraphQLSpecExamples.
                                                      }.
 
     (** We show the selection is valid in the scope of the "Dog" and "Pet" types *)
-    Example e130_1 : is_consistent is_valid_scalar_value wf_schema "Dog" example130_1 &&
-                     is_consistent is_valid_scalar_value wf_schema "Pet" example130_1.
+    Example e130_1 : is_consistent check_scalar wf_schema "Dog" example130_1 &&
+                     is_consistent check_scalar wf_schema "Pet" example130_1.
     Proof.
         by [].
     Qed.
@@ -876,8 +876,8 @@ Section GraphQLSpecExamples.
                                                      }.
 
     (** We show the selection is valid in the scope of the "Dog" and "Pet" types *)
-    Example e130_2 : is_consistent is_valid_scalar_value wf_schema "Dog" example130_2 &&
-                     is_consistent is_valid_scalar_value wf_schema "Pet" example130_2.
+    Example e130_2 : is_consistent check_scalar wf_schema "Dog" example130_2 &&
+                     is_consistent check_scalar wf_schema "Pet" example130_2.
     Proof.
         by [].
     Qed.
@@ -893,7 +893,7 @@ Section GraphQLSpecExamples.
                                                      }.
 
     (** We show the selection is valid in the scope of the "Dog" and "Pet" types *)
-    Example e130_3 : is_consistent is_valid_scalar_value wf_schema "CatOrDog" example130_3.
+    Example e130_3 : is_consistent check_scalar wf_schema "CatOrDog" example130_3.
     Proof.
         by [].
     Qed.
@@ -909,7 +909,7 @@ Section GraphQLSpecExamples.
                                                    }.
 
     (** We show the selection is invalid in the scope of any type in the shema *)
-    Example e131_1 : all (fun name => ~~is_consistent is_valid_scalar_value wf_schema name example131_1) wf_schema.(type_names).
+    Example e131_1 : all (fun name => ~~is_consistent check_scalar wf_schema name example131_1) wf_schema.(type_names).
     Proof.
         by [].
     Qed.
@@ -925,7 +925,7 @@ Section GraphQLSpecExamples.
                                                    }.
 
     (** We show the selection is invalid in the scope of any type in the shema *)
-    Example e131_2 : all (fun name => ~~is_consistent is_valid_scalar_value wf_schema name example131_2) wf_schema.(type_names).
+    Example e131_2 : all (fun name => ~~is_consistent check_scalar wf_schema name example131_2) wf_schema.(type_names).
     Proof.
         by [].
     Qed.
@@ -954,7 +954,7 @@ Section GraphQLSpecExamples.
     Qed.
 
     (** We show the selection is valid in the scope of the "Dog" type *)
-    Example e137 : is_consistent is_valid_scalar_value wf_schema "Dog" example137.
+    Example e137 : is_consistent check_scalar wf_schema "Dog" example137.
     Proof.
         by [].
     Qed.
@@ -975,7 +975,7 @@ Section GraphQLSpecExamples.
     Qed.
 
     (** We show the selection is invalid in the scope of the "Dog" type *)
-    Example e138 : ~~ is_consistent is_valid_scalar_value wf_schema "Dog" example138.
+    Example e138 : ~~ is_consistent check_scalar wf_schema "Dog" example138.
     Proof.
         by [].
     Qed.
@@ -997,7 +997,7 @@ Section GraphQLSpecExamples.
     Qed.
 
     (** We show the selection is valid in the scope of the "Dog" type *)
-    Example e139 : is_consistent is_valid_scalar_value wf_schema "Dog" example139.
+    Example e139 : is_consistent check_scalar wf_schema "Dog" example139.
     Proof.
         by [].
     Qed.
@@ -1023,7 +1023,7 @@ Section GraphQLSpecExamples.
     Qed.
 
     (** We show the selection is valid in the scope of the "Dog" type *)
-    Example e140 : is_consistent is_valid_scalar_value wf_schema "Dog" example140.
+    Example e140 : is_consistent check_scalar wf_schema "Dog" example140.
     Proof.
         by [].
     Qed.
@@ -1050,7 +1050,7 @@ Section GraphQLSpecExamples.
     Qed.
 
     (** We show the selection is valid in the scope of the "Pet" type *)
-    Example e141_1 : selections_conform is_valid_scalar_value wf_schema "Pet" example141_1.
+    Example e141_1 : selections_conform check_scalar wf_schema "Pet" example141_1.
     Proof.
         by [].
     Qed.
@@ -1072,7 +1072,7 @@ Section GraphQLSpecExamples.
     Qed.
 
     (** We show the selection is valid in the scope of the "CatOrDog" type *)
-    Example e141_2 : selections_conform is_valid_scalar_value wf_schema "CatOrDog" example141_2.
+    Example e141_2 : selections_conform check_scalar wf_schema "CatOrDog" example141_2.
     Proof.
         by [].
     Qed.
@@ -1094,7 +1094,7 @@ Section GraphQLSpecExamples.
     Qed.
 
     (** We show the selection is invalid in the scope of the "Sentient" type *)
-    Example e142_1 : ~~ is_consistent is_valid_scalar_value wf_schema "Sentient" example142_1.
+    Example e142_1 : ~~ is_consistent check_scalar wf_schema "Sentient" example142_1.
     Proof.
         by [].
     Qed.
@@ -1112,7 +1112,7 @@ Section GraphQLSpecExamples.
     Qed.
     
     (** We show the selection is invalid in the scope of the "HumanOrAlien" type *)
-    Example e142_2 : ~~ is_consistent is_valid_scalar_value wf_schema "HumanOrAlien" example142_2.
+    Example e142_2 : ~~ is_consistent check_scalar wf_schema "HumanOrAlien" example142_2.
     Proof.
         by [].
     Qed.
@@ -1142,7 +1142,7 @@ Section GraphQLSpecExamples.
     Qed.
 
     (** We show the selection is valid in the scope of the "Pet" type *)
-    Example e143 : selections_conform is_valid_scalar_value wf_schema "Pet" example143.
+    Example e143 : selections_conform check_scalar wf_schema "Pet" example143.
     Proof.
         by [].
     Qed.
@@ -1164,7 +1164,7 @@ Section GraphQLSpecExamples.
     Qed.
 
     (** We show the selection is invalid in the scope of the "Pet" type *)
-    Example e144 : ~~ is_consistent is_valid_scalar_value wf_schema "Pet" example144.
+    Example e144 : ~~ is_consistent check_scalar wf_schema "Pet" example144.
     Proof.
         by [].
     Qed.

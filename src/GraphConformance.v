@@ -158,7 +158,7 @@ Section Conformance.
         expected type in the schema, we parameterize it with a predicate 
         that resolves it *)
     Variables (s : wfGraphQLSchema)
-              (is_valid_scalar_value : graphQLSchema -> Name -> Scalar -> bool).
+              (check_scalar : graphQLSchema -> Name -> Scalar -> bool).
 
 
       
@@ -185,7 +185,7 @@ Section Conformance.
       let argument_conforms (fname : Name) (arg : Name * @Value Scalar) : bool :=
           let: (argname, value) := arg in
           match lookup_argument_in_type_and_field s ty fname argname with
-          | Some field_arg => is_valid_value s is_valid_scalar_value field_arg.(argtype) value
+          | Some field_arg => is_valid_value s check_scalar field_arg.(argtype) value
           | _ => false
           end
       in
@@ -251,7 +251,7 @@ Section Conformance.
     Definition nodes_conform (nodes : seq (@node Scalar)) :=
       let property_conforms ty (fd : label * @Value Scalar) : bool :=
           match lookup_field_in_type s ty fd.1.(lname) with
-          | Some fdef => arguments_conform ty fd.1 && is_valid_value s is_valid_scalar_value fdef.(ftype) fd.2
+          | Some fdef => arguments_conform ty fd.1 && is_valid_value s check_scalar fdef.(ftype) fd.2
           | _ => false
           end
       in
@@ -263,7 +263,7 @@ Section Conformance.
 
   End Predicates.
 
-  Variable (is_valid_scalar_value : graphQLSchema -> Name -> Scalar -> bool).
+  Variable (check_scalar : graphQLSchema -> Name -> Scalar -> bool).
 
   (** *** Conforming graph
       ----
@@ -277,11 +277,11 @@ Section Conformance.
 
    *)
   Definition is_a_conforming_graph (s : wfGraphQLSchema)
-             (is_valid_scalar_value : graphQLSchema -> Name -> Scalar -> bool)
+             (check_scalar : graphQLSchema -> Name -> Scalar -> bool)
              (graph : @graphQLGraph Scalar) : bool :=
     [&& root_type_conforms s graph.(root),
-        edges_conform s is_valid_scalar_value graph &
-        nodes_conform s is_valid_scalar_value graph.(nodes)].
+        edges_conform s check_scalar graph &
+        nodes_conform s check_scalar graph.(nodes)].
 
   
   (** * Conformed GraphQL Graph
@@ -291,10 +291,10 @@ Section Conformance.
 
    **)
   Record conformedGraph (s : wfGraphQLSchema)
-         (is_valid_scalar_value : graphQLSchema -> Name -> Scalar -> bool) :=
+         (check_scalar : graphQLSchema -> Name -> Scalar -> bool) :=
     ConformedGraph {
         graph : graphQLGraph;
-        _ : is_a_conforming_graph s is_valid_scalar_value graph
+        _ : is_a_conforming_graph s check_scalar graph
       }.
 
   Coercion graph_of_conformed_graph s vsv (g : conformedGraph s vsv) := let: ConformedGraph g _ := g in g.             

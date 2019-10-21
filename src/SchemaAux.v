@@ -277,17 +277,17 @@ Section SchemaAux.
     
     Variables (Scalar : eqType)
               (s : graphQLSchema)
-              (is_valid_scalar_value : graphQLSchema -> Name -> Scalar -> bool).
+              (check_scalar : graphQLSchema -> Name -> Scalar -> bool).
 
     (** ---- *)
     (**
        Checks whether the given value matches the expected type in the schema. 
-       To determine scalar values, the [is_valid_scalar_value] predicate must be 
+       To determine scalar values, the [check_scalar] predicate must be 
        provided.
      *)
     Equations is_valid_value (ty : type) (value : @Value Scalar) : bool :=
       {
-        is_valid_value (NamedType n) (SValue value) := is_valid_scalar_value s n value;
+        is_valid_value (NamedType n) (SValue value) := check_scalar s n value;
         is_valid_value (ListType wty) (LValue ls) := all (is_valid_value wty) ls;
         is_valid_value _ _ := false
       }.
