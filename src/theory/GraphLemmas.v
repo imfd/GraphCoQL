@@ -142,7 +142,7 @@ Section Theory.
     Lemma neighbors_are_subtype_of_field u label fdef  :
       lookup_field_in_type s u.(ntype) label.(lname) = Some fdef ->
       forall v, v \in neighbors_with_label g u label ->
-                 v.(ntype) \in get_possible_types s fdef.(return_type).
+                 v.(ntype) \in get_possible_types s fdef.(ftype).
     Proof.
       move=> Hlook.
       case: g => g'; rewrite /is_a_conforming_graph /= => /and3P [Hroot Hedges Hnodes] v.

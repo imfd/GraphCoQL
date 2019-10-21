@@ -102,7 +102,7 @@ Section Schema.
     Record FieldDefinition := Field {
                                     fname : Name;
                                     fargs : seq FieldArgumentDefinition;
-                                    return_type : type
+                                    ftype : type
                                   }.
 
 

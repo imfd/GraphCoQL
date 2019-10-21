@@ -223,11 +223,11 @@ Section Normalisation.
         with lookup_field_in_type s ty f :=
         {
         | Some fld
-            with is_object_type s fld.(return_type) :=
+            with is_object_type s fld.(ftype) :=
             {
-            | true := f[[α]] { normalize_selections fld.(return_type) (β ++ merge_selection_sets (find_queries_with_label s f ty φ)) }
+            | true := f[[α]] { normalize_selections fld.(ftype) (β ++ merge_selection_sets (find_queries_with_label s f ty φ)) }
                                  :: normalize_selections ty (filter_queries_with_label f φ);
-            | _ := f[[α]] { [seq on t { normalize_selections t (β ++ merge_selection_sets (find_queries_with_label s f ty φ)) } | t <- get_possible_types s fld.(return_type)] } ::
+            | _ := f[[α]] { [seq on t { normalize_selections t (β ++ merge_selection_sets (find_queries_with_label s f ty φ)) } | t <- get_possible_types s fld.(ftype)] } ::
                               normalize_selections ty (filter_queries_with_label f φ)
             };
         
@@ -238,11 +238,11 @@ Section Normalisation.
         with lookup_field_in_type s ty f :=
         {
         | Some fld
-            with is_object_type s fld.(return_type) :=
+            with is_object_type s fld.(ftype) :=
             {
-            | true := l:f[[α]] { normalize_selections fld.(return_type) (β ++ merge_selection_sets (find_queries_with_label s l ty φ)) }
+            | true := l:f[[α]] { normalize_selections fld.(ftype) (β ++ merge_selection_sets (find_queries_with_label s l ty φ)) }
                                         :: normalize_selections ty (filter_queries_with_label l φ);
-            | _ := l:f[[α]] { [seq on t { normalize_selections t (β ++ merge_selection_sets (find_queries_with_label s l ty φ)) } | t <- get_possible_types s fld.(return_type)] }
+            | _ := l:f[[α]] { [seq on t { normalize_selections t (β ++ merge_selection_sets (find_queries_with_label s l ty φ)) } | t <- get_possible_types s fld.(ftype)] }
                      :: normalize_selections ty (filter_queries_with_label l φ)
             };
         

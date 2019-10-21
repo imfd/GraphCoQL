@@ -705,14 +705,14 @@ Section QueryAux.
         merge_pairs_selection_sets ((ty, f[[ _ ]] { β }) :: φ)
           with lookup_field_in_type s ty f :=
           {
-          | Some fld := [seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets φ;
+          | Some fld := [seq (fld.(ftype).(tname), q) | q <- β] ++ merge_pairs_selection_sets φ;
           | _ := merge_pairs_selection_sets φ
           };
 
         merge_pairs_selection_sets ((ty, _:f[[ _ ]] { β }) :: φ)
           with lookup_field_in_type s ty f :=
           {
-          | Some fld := [seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets φ;
+          | Some fld := [seq (fld.(ftype).(tname), q) | q <- β] ++ merge_pairs_selection_sets φ;
           | _ := merge_pairs_selection_sets φ
           };
 

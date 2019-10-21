@@ -153,7 +153,7 @@ Section SchemaAux.
      *)
     Definition lookup_field_type (ty : Name) (fname : Name)  : option type :=
       match lookup_field_in_type ty fname with
-      | Some fld => Some fld.(return_type)
+      | Some fld => Some fld.(ftype)
       | None => None
       end.
 

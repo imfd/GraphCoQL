@@ -217,8 +217,8 @@ Section Normalisation.
            ].
     - apply_andP; first apply_andP.
       * apply/orP; right; by elim: get_possible_types.
-      * have := (@in_possible_types_is_object s f.(return_type)).
-        generalize (get_possible_types s f.(return_type)).
+      * have := (@in_possible_types_is_object s f.(ftype)).
+        generalize (get_possible_types s f.(ftype)).
         elim=> //= t ptys IHptys Hinobj.
         have Htobj := (Hinobj t (mem_head _ _)).
         rewrite Htobj andTb.
@@ -240,8 +240,8 @@ Section Normalisation.
            ].
     - apply_andP; first apply_andP.
       * apply/orP; right; by elim: get_possible_types.
-      * have := (@in_possible_types_is_object s f.(return_type)).
-        generalize (get_possible_types s f.(return_type)).
+      * have := (@in_possible_types_is_object s f.(ftype)).
+        generalize (get_possible_types s f.(ftype)).
         elim=> //= t ptys IHptys Hinobj.
         have Htobj := (Hinobj t (mem_head _ _)).
         rewrite Htobj andTb.
@@ -284,8 +284,8 @@ Section Normalisation.
     all: do ? [by intros; non_red; apply_and3P; by rewrite -filter_normalize_swap /= find_fields_filter_nil].
     
     all: do [intros; non_red; apply_and3P => /=; [ by rewrite -filter_normalize_swap /= find_fields_filter_nil |] ].
-    all: do [have  := (@in_possible_types_is_object s f.(return_type))].
-    all: do [have  := (uniq_get_possible_types s f.(return_type))].
+    all: do [have  := (@in_possible_types_is_object s f.(ftype))].
+    all: do [have  := (uniq_get_possible_types s f.(ftype))].
     all: do [elim: get_possible_types => //= t ptys IH /andP [Hnin Huniq] Hinobj].
     all: do [non_red; apply_and3P => /=; last by apply: IH => //= t' Hin'; apply: Hinobj; apply: mem_tail].
     all: do ? by apply/eqP; apply: find_fragment_inlined_nil_func.

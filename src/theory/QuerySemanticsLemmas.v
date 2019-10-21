@@ -91,29 +91,29 @@ Section Theory.
         let Hvalid := fresh "Hvalid" in
         case Hvalid : valid => //=
 
-      | [|- context [complete_value _ _ _ (return_type ?fld)] ] =>
+      | [|- context [complete_value _ _ _ (ftype ?fld)] ] =>
         let Hrty := fresh "Hrty" in
         let nty := fresh "nty" in
         let lty := fresh "lty" in
       
-        case Hrty : fld.(return_type) => [nty | lty] /=
+        case Hrty : fld.(ftype) => [nty | lty] /=
 
                       
-      | [H : (return_type ?f) = _ |- context [ return_type ?f ] ] => rewrite H /=
+      | [H : (ftype ?f) = _ |- context [ ftype ?f ] ] => rewrite H /=
 
-      | [|- context[ execute_selection_set_unfold_clause_4_clause_1 _ _ _ _ _ _ (return_type ?fld)] ] =>
+      | [|- context[ execute_selection_set_unfold_clause_4_clause_1 _ _ _ _ _ _ (ftype ?fld)] ] =>
         let Hrty := fresh "Hrty" in
         let rty := fresh "rty" in
-        case Hrty : fld.(return_type) => [rty | rty] /=
+        case Hrty : fld.(ftype) => [rty | rty] /=
 
       | [|- context[ execute_selection_set_unfold_clause_4_clause_1_clause_2 _ _ _ _ _ _ _ _ (ohead _)] ] =>
         let Hv := fresh "Hv" in
         case Hv : ohead => [v|] //=
                                
-      | [|- context[ execute_selection_set_unfold_clause_5_clause_1 _ _ _ _ _ _ (return_type ?fld)] ] =>
+      | [|- context[ execute_selection_set_unfold_clause_5_clause_1 _ _ _ _ _ _ (ftype ?fld)] ] =>
         let Hrty := fresh "Hrty" in
         let rty := fresh "rty" in
-        case Hrty : fld.(return_type) => [rty | rty] /=
+        case Hrty : fld.(ftype) => [rty | rty] /=
 
       | [|- context[ execute_selection_set_unfold_clause_5_clause_1_clause_2 _ _ _ _ _ _ _ _ (ohead _)] ] =>
         let Hv := fresh "Hv" in
@@ -144,28 +144,28 @@ Section Theory.
         case Hv : (property _ _) => [v |] /=; [case: v Hv => [svalue | lvalue] Hv |]
 
                                                          
-      | [H : (return_type ?f) = _ |- context [ return_type ?f ] ] => rewrite H /=
+      | [H : (ftype ?f) = _ |- context [ ftype ?f ] ] => rewrite H /=
       | [H : (is_valid_scalar_value ?s ?nty ?c) = ?b |- context [is_valid_scalar_value ?s ?nty ?c] ] =>  rewrite H /=
       | [|- context [(complete_value_clause_1 _ _ _ _ _ (?valid _ _ _))] ] =>
         let Hvalid := fresh "Hvalid" in
         case Hvalid : valid => //=
   
-      | [|- context [complete_value _ _ _ (return_type ?fld)] ] => case (return_type fld) => [nty | lty] /=                               
+      | [|- context [complete_value _ _ _ (ftype ?fld)] ] => case (ftype fld) => [nty | lty] /=                               
 
                            
-      | [|- context[ simpl_execute_selection_set_unfold_clause_4_clause_1 _ _ _ _ _ _ (return_type ?fld)] ] =>
+      | [|- context[ simpl_execute_selection_set_unfold_clause_4_clause_1 _ _ _ _ _ _ (ftype ?fld)] ] =>
         let Hrty := fresh "Hrty" in
         let rty := fresh "rty" in
-        case Hrty : fld.(return_type) => [rty | rty] /=
+        case Hrty : fld.(ftype) => [rty | rty] /=
 
       | [|- context[ simpl_execute_selection_set_unfold_clause_4_clause_1_clause_2 _ _ _ _ _ _ _ _ (ohead _)] ] =>
         let Hv := fresh "Hv" in
         case Hv : ohead => [v|] //=
      
-      | [|- context[ simpl_execute_selection_set_unfold_clause_5_clause_1 _ _ _ _ _ _ (return_type ?fld)] ] =>
+      | [|- context[ simpl_execute_selection_set_unfold_clause_5_clause_1 _ _ _ _ _ _ (ftype ?fld)] ] =>
         let Hrty := fresh "Hrty" in
         let rty := fresh "rty" in
-        case Hrty : fld.(return_type) => [rty | rty] /=
+        case Hrty : fld.(ftype) => [rty | rty] /=
 
       | [|- context[ simpl_execute_selection_set_unfold_clause_5_clause_1_clause_2 _ _ _ _ _ _ _ _ (ohead _)] ] =>
         let Hv := fresh "Hv" in

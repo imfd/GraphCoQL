@@ -221,12 +221,12 @@ Section Conformance.
           let: (src, label, target) := edge in
           match lookup_field_in_type s src.(ntype) label.(lname) with
           | Some fdef =>
-            if ~~is_list_type fdef.(return_type) then
-              [&& target.(ntype) \in get_possible_types s fdef.(return_type),
+            if ~~is_list_type fdef.(ftype) then
+              [&& target.(ntype) \in get_possible_types s fdef.(ftype),
                                      is_field_unique_for_src_node graph src label &
                                      arguments_conform src.(ntype) label]
             else
-              (target.(ntype) \in get_possible_types s fdef.(return_type)) && arguments_conform src.(ntype) label
+              (target.(ntype) \in get_possible_types s fdef.(ftype)) && arguments_conform src.(ntype) label
           | _ => false     
           end
       in
@@ -251,7 +251,7 @@ Section Conformance.
     Definition nodes_conform (nodes : seq (@node Scalar)) :=
       let property_conforms ty (fd : label * @Value Scalar) : bool :=
           match lookup_field_in_type s ty fd.1.(lname) with
-          | Some fdef => arguments_conform ty fd.1 && is_valid_value s is_valid_scalar_value fdef.(return_type) fd.2
+          | Some fdef => arguments_conform ty fd.1 && is_valid_value s is_valid_scalar_value fdef.(ftype) fd.2
           | _ => false
           end
       in

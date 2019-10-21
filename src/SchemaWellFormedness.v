@@ -107,7 +107,7 @@ Section WellFormedness.
           | NamedType name => is_declared s name
           end
       in
-      [&& is_valid_field_type fld.(return_type),
+      [&& is_valid_field_type fld.(ftype),
           uniq [seq arg.(argname) | arg <- fld.(fargs)] &  (* Not currently in the spec *)
           all is_a_wf_field_argument fld.(fargs)].
 
@@ -134,7 +134,7 @@ Section WellFormedness.
                has (fun object_field =>
                       [&& object_field.(fname) == interface_field.(fname),
                        all (mem object_field.(fargs)) interface_field.(fargs) & 
-                       s ⊢ object_field.(return_type) <: interface_field.(return_type)]
+                       s ⊢ object_field.(ftype) <: interface_field.(ftype)]
                    ) object_fields
             ) interface_fields
       | _, _ => false

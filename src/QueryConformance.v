@@ -125,31 +125,31 @@ Section QueryConformance.
     match selection with
     | f[[α]] =>
       if lookup_field_in_type s type_in_scope f is Some fld then
-        (is_scalar_type s fld.(return_type) || is_enum_type s fld.(return_type)) && arguments_conform fld.(fargs) α
+        (is_scalar_type s fld.(ftype) || is_enum_type s fld.(ftype)) && arguments_conform fld.(fargs) α
       else
         false
 
     | _:f[[α]] =>
       if lookup_field_in_type s type_in_scope f is Some fld then
-        (is_scalar_type s fld.(return_type) || is_enum_type s fld.(return_type)) && arguments_conform fld.(fargs) α
+        (is_scalar_type s fld.(ftype) || is_enum_type s fld.(ftype)) && arguments_conform fld.(fargs) α
       else
         false
 
     | f[[α]] { φ } => 
       if lookup_field_in_type s type_in_scope f is Some fld then
-        [&& (is_object_type s fld.(return_type) || is_abstract_type s fld.(return_type)),
+        [&& (is_object_type s fld.(ftype) || is_abstract_type s fld.(ftype)),
          arguments_conform fld.(fargs) α,
          φ != [::] &
-         all (is_consistent fld.(return_type)) φ]
+         all (is_consistent fld.(ftype)) φ]
       else
         false 
 
     | _:f[[α]] { φ } =>
       if lookup_field_in_type s type_in_scope f is Some fld then
-        [&& (is_object_type s fld.(return_type) || is_abstract_type s fld.(return_type)),
+        [&& (is_object_type s fld.(ftype) || is_abstract_type s fld.(ftype)),
          arguments_conform fld.(fargs) α,
          φ != [::] &
-         all (is_consistent fld.(return_type)) φ]
+         all (is_consistent fld.(ftype)) φ]
       else
         false 
 
@@ -208,25 +208,25 @@ Section QueryConformance.
     match nq with
     | (ty, f[[ _ ]]) =>
       if lookup_field_in_type s ty f is Some fld then
-        are_compatible_types fld.(return_type) rty
+        are_compatible_types fld.(ftype) rty
       else
         false
           
     | (ty, _:f[[ _ ]]) =>
       if lookup_field_in_type s ty f is Some fld then
-        are_compatible_types fld.(return_type) rty
+        are_compatible_types fld.(ftype) rty
       else
         false
           
     | (ty, f[[ _ ]] { _ }) =>
       if lookup_field_in_type s ty f is Some fld then
-        are_compatible_types fld.(return_type) rty
+        are_compatible_types fld.(ftype) rty
       else
         false
 
     | (ty, _:f[[ _ ]] { _ }) =>
        if lookup_field_in_type s ty f is Some fld then
-        are_compatible_types fld.(return_type) rty
+        are_compatible_types fld.(ftype) rty
       else
         false
 
@@ -267,7 +267,7 @@ Section QueryConformance.
      are_type_compatible ((ty, f[[ _ ]]) :: φ)
        with lookup_field_in_type s ty f :=
        {
-       | Some fld := all (has_compatible_type fld.(return_type)) (find_pairs_with_response_name f φ)
+       | Some fld := all (has_compatible_type fld.(ftype)) (find_pairs_with_response_name f φ)
                         && are_type_compatible (filter_pairs_with_response_name f φ);
        
        | _ := false (* If the field is not defined in its own type in scope it should fail *)
@@ -276,7 +276,7 @@ Section QueryConformance.
      are_type_compatible ((ty, l:f[[ _ ]]) :: φ)
        with lookup_field_in_type s ty f :=
        {
-       | Some fld := all (has_compatible_type fld.(return_type)) (find_pairs_with_response_name l φ)
+       | Some fld := all (has_compatible_type fld.(ftype)) (find_pairs_with_response_name l φ)
                         && are_type_compatible (filter_pairs_with_response_name l φ);
        
        | _ := false (* If the field is not defined in its own type in scope it should fail *)
@@ -286,8 +286,8 @@ Section QueryConformance.
        with lookup_field_in_type s ty f :=
        {
        | Some fld := let similar_queries := find_pairs_with_response_name f φ in
-                    [&& all (has_compatible_type fld.(return_type)) similar_queries,
-                     are_type_compatible ([seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
+                    [&& all (has_compatible_type fld.(ftype)) similar_queries,
+                     are_type_compatible ([seq (fld.(ftype).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
                      are_type_compatible (filter_pairs_with_response_name f φ)];
                      
                         
@@ -298,8 +298,8 @@ Section QueryConformance.
        with lookup_field_in_type s ty f :=
        {
        | Some fld := let similar_queries := find_pairs_with_response_name l φ in
-                    [&& all (has_compatible_type fld.(return_type)) similar_queries,
-                     are_type_compatible ([seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
+                    [&& all (has_compatible_type fld.(ftype)) similar_queries,
+                     are_type_compatible ([seq (fld.(ftype).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
                      are_type_compatible (filter_pairs_with_response_name f φ)];
                      
                         
@@ -371,12 +371,12 @@ Section QueryConformance.
            {
            | true := let similar_queries := find_valid_pairs_with_response_name s ty f φ in
                  [&& all (are_equivalent (f[[α]] { β })) [seq p.2 | p <- similar_queries],
-                  are_renaming_consistent ([seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
+                  are_renaming_consistent ([seq (fld.(ftype).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
                   are_renaming_consistent (filter_pairs_with_response_name f φ)];
            
            | _ := let similar_queries := find_pairs_with_response_name f φ in
                  [&& all (are_equivalent (f[[α]] { β })) [seq p.2 | p <- similar_queries],
-                  are_renaming_consistent ([seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
+                  are_renaming_consistent ([seq (fld.(ftype).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
                   are_renaming_consistent (filter_pairs_with_response_name f φ)]
            };
        
@@ -391,12 +391,12 @@ Section QueryConformance.
            {
            | true := let similar_queries := find_valid_pairs_with_response_name s ty l φ in
                  [&& all (are_equivalent (l:f[[α]] { β })) [seq p.2 | p <- similar_queries],
-                  are_renaming_consistent ([seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
+                  are_renaming_consistent ([seq (fld.(ftype).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
                   are_renaming_consistent (filter_pairs_with_response_name l φ)];
            
            | _ := let similar_queries := find_pairs_with_response_name l φ in
                  [&& all (are_equivalent (l:f[[α]] { β })) [seq p.2 | p <- similar_queries],
-                  are_renaming_consistent ([seq (fld.(return_type).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
+                  are_renaming_consistent ([seq (fld.(ftype).(tname), q) | q <- β] ++ merge_pairs_selection_sets s similar_queries) &
                   are_renaming_consistent (filter_pairs_with_response_name l φ)]
            };
           

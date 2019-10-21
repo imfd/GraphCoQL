@@ -103,7 +103,7 @@ Section QuerySemantic.
       ⟦ f[[α]] :: φ ⟧ˢ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
-        | Some fdef := (f, complete_value fdef.(return_type) (property u (Label f α)))
+        | Some fdef := (f, complete_value fdef.(ftype) (property u (Label f α)))
                         :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
 
         | _ := ⟦ φ ⟧ˢ in u (* Should throw error *)
@@ -112,7 +112,7 @@ Section QuerySemantic.
       ⟦ l:f[[α]] :: φ ⟧ˢ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
-        | Some fdef := (l, complete_value fdef.(return_type) (property u (Label f α)))
+        | Some fdef := (l, complete_value fdef.(ftype) (property u (Label f α)))
                         :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
 
         | _ := ⟦ φ ⟧ˢ in u (* Should throw error *)
@@ -123,7 +123,7 @@ Section QuerySemantic.
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some fld
-            with fld.(return_type) :=
+            with fld.(ftype) :=
             {
             | [ _ ] := (f, Array [seq {- (⟦ β ++ merge_selection_sets (find_queries_with_label s f u.(ntype) φ) ⟧ˢ in v) -} | v <- neighbors_with_label g u (Label f α)])
                               :: ⟦ filter_queries_with_label f φ ⟧ˢ in u;
@@ -143,7 +143,7 @@ Section QuerySemantic.
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some fld
-            with fld.(return_type) :=
+            with fld.(ftype) :=
             {
             | [ _ ] := (l, Array [seq {- (⟦ β ++ merge_selection_sets (find_queries_with_label s l u.(ntype) φ) ⟧ˢ in v) -} | v <- neighbors_with_label g u (Label f α)])
                               :: ⟦ filter_queries_with_label l φ ⟧ˢ in u;
@@ -206,7 +206,7 @@ Section QuerySemantic.
       ≪ f[[α]] :: φ ≫ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
-          | Some fdef := (f, complete_value fdef.(return_type) (property u (Label f α)))
+          | Some fdef := (f, complete_value fdef.(ftype) (property u (Label f α)))
                           :: ≪ φ ≫ in u;
           
           | _ := ≪ φ ≫ in u (* Should throw error *)
@@ -215,7 +215,7 @@ Section QuerySemantic.
       ≪ l:f[[α]] :: φ ≫ in u
         with lookup_field_in_type s u.(ntype) f :=
             {
-            | Some fdef := (l, complete_value fdef.(return_type) (property u (Label f α)))
+            | Some fdef := (l, complete_value fdef.(ftype) (property u (Label f α)))
                             :: ≪ φ ≫ in u;
             
             | _ := ≪ φ ≫ in u (* Should throw error *)
@@ -226,7 +226,7 @@ Section QuerySemantic.
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some fld
-            with fld.(return_type) :=
+            with fld.(ftype) :=
             {
             | ListType _ => (f, Array [seq {- ≪ β ≫ in v -} | v <- neighbors_with_label g u (Label f α)]) :: ≪ φ ≫ in u;
         
@@ -245,7 +245,7 @@ Section QuerySemantic.
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some fld
-            with fld.(return_type) :=
+            with fld.(ftype) :=
             {
             | ListType _ => (l, Array [seq {- ≪ β ≫ in v -} | v <- neighbors_with_label g u (Label f α)]) :: ≪ φ ≫ in u;
         
