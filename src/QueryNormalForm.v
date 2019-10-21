@@ -49,8 +49,8 @@ Section NormalForm.
   Variables Scalar : eqType.
   Variables (s : wfGraphQLSchema).
   
-  Implicit Type queries : seq (@Selection Scalar).
-  Implicit Type query : @Selection Scalar.
+  Implicit Type σs : seq (@Selection Scalar).
+  Implicit Type σ : @Selection Scalar.
   
 
   
@@ -68,11 +68,11 @@ Section NormalForm.
      
      #<img src='../imgs/GTNF/gtnf.png' class='img-fluid' alt='Ground-typed normal form grammar'>#     
    *)
-  Fixpoint is_in_ground_typed_nf (selection : @Selection Scalar) : bool :=
-    match selection with
-    | _[[_]] { ss } => (all (fun s => s.(is_field)) ss || all (fun s => s.(is_inline_fragment)) ss) && all is_in_ground_typed_nf ss
-    | _:_[[_]] { ss } => (all (fun s => s.(is_field)) ss || all (fun s => s.(is_inline_fragment)) ss) && all is_in_ground_typed_nf ss  
-    | on t { ss } => is_object_type s t && all (fun s => s.(is_field) && s.(is_in_ground_typed_nf)) ss
+  Fixpoint is_in_ground_typed_nf (σ : @Selection Scalar) : bool :=
+    match σ with
+    | _[[_]] { σs } => (all (fun s => s.(is_field)) σs || all (fun s => s.(is_inline_fragment)) σs) && all is_in_ground_typed_nf σs
+    | _:_[[_]] { σs } => (all (fun s => s.(is_field)) σs || all (fun s => s.(is_inline_fragment)) σs) && all is_in_ground_typed_nf σs  
+    | on t { σs } => is_object_type s t && all (fun s => s.(is_field) && s.(is_in_ground_typed_nf)) σs
     | _ => true
     end.
 
@@ -80,16 +80,16 @@ Section NormalForm.
   (**
      Checks whether the given selection set is in ground-typed normal form, as defined in H&P.
    *)
-  Definition are_in_ground_typed_nf (ss : seq (@Selection Scalar)) : bool :=
-    (all (@is_field Scalar) ss || all (@is_inline_fragment Scalar) ss) && all is_in_ground_typed_nf ss.
+  Definition are_in_ground_typed_nf (σs : seq (@Selection Scalar)) : bool :=
+    (all (@is_field Scalar) σs || all (@is_inline_fragment Scalar) σs) && all is_in_ground_typed_nf σs.
 
   (** ---- *)
   (**
      Checks whether the given query is in ground-typed normal form, by checking that its selection set is
      in ground-typed normal form.
    *)
-  Definition is_a_ground_typed_nf_query (q : @query Scalar) :=
-    q.(selection_set).(are_in_ground_typed_nf).
+  Definition is_a_ground_typed_nf_query (φ : @query Scalar) :=
+    φ.(selection_set).(are_in_ground_typed_nf).
   
    
 
@@ -106,20 +106,20 @@ Section NormalForm.
      - There are no inline fragments with the same type condition.
      - There are no field selections with the same response name.
    *)
-  Equations? are_non_redundant (ss : seq (@Selection Scalar)) : bool
-    by wf (selections_size ss) :=
+  Equations? are_non_redundant (σs : seq (@Selection Scalar)) : bool
+    by wf (selections_size σs) :=
     {
       are_non_redundant [::] := true;
       
-      are_non_redundant (on t { β } :: φ) :=
-        [&& find_fragment_with_type_condition t φ == [::],
+      are_non_redundant (on t { β } :: σs) :=
+        [&& find_fragment_with_type_condition t σs == [::],
             are_non_redundant β &
-            are_non_redundant φ];
+            are_non_redundant σs];
 
-      are_non_redundant (q :: φ) :=
-        [&& find_fields_with_response_name (qresponse_name q _) φ == [::],
+      are_non_redundant (q :: σs) :=
+        [&& find_fields_with_response_name (qresponse_name q _) σs == [::],
             are_non_redundant q.(subselections) &
-            are_non_redundant φ]
+            are_non_redundant σs]
 
     }.                 
   Proof.
@@ -133,7 +133,7 @@ Section NormalForm.
      Checks whether a query is non-redundant by checking that its selection set is 
      non-redundant.
    *)
-  Definition is_non_redundant (q : @query Scalar) : bool := q.(selection_set).(are_non_redundant).
+  Definition is_non_redundant (φ : @query Scalar) : bool := φ.(selection_set).(are_non_redundant).
 
   
   (** ** Normal form *)
@@ -142,14 +142,14 @@ Section NormalForm.
   (**
      Checks whether a selection set is in normal form.
    *)
-  Definition are_in_normal_form (σ : seq Selection) :=
-    σ.(are_in_ground_typed_nf) && σ.(are_non_redundant).
+  Definition are_in_normal_form (σs : seq Selection) :=
+    σs.(are_in_ground_typed_nf) && σs.(are_non_redundant).
     
   (** ---- *)
   (**
      Checks whether a query is in normal form.
    *)
-  Definition is_in_normal_form (q : @query Scalar) := q.(selection_set).(are_in_normal_form).
+  Definition is_in_normal_form (φ : @query Scalar) := φ.(selection_set).(are_in_normal_form).
 
 
 End NormalForm.
@@ -178,8 +178,8 @@ Arguments is_in_normal_form [Scalar].
 Section Normalization.
 
   Variables Scalar : eqType.
-  Implicit Type schema : wfGraphQLSchema.
-  Implicit Type query : @Selection Scalar.
+  
+  Implicit Type σ : @Selection Scalar.
 
 
   Variable s : wfGraphQLSchema.
@@ -205,61 +205,61 @@ Section Normalization.
         subselections lifted) or removed if they do not make sense in the context
         On the other hand, fields' subselections might be wrapped in fragments, specializing their contents.
    *)
-  Equations? normalize_selections (type_in_scope : Name) (ss : seq (@Selection Scalar)) :
-    seq (@Selection Scalar) by wf (selections_size ss) :=
+  Equations? normalize_selections (type_in_scope : Name) (σs : seq (@Selection Scalar)) :
+    seq (@Selection Scalar) by wf (selections_size σs) :=
     {
       normalize_selections _ [::] := [::];
 
-      normalize_selections ty (f[[α]] :: φ)
+      normalize_selections ty (f[[α]] :: σs)
         with lookup_field_in_type s ty f :=
         {
-        | Some _ := f[[α]] :: normalize_selections ty (filter_fields_with_response_name f φ);
-        | _ := normalize_selections ty φ
+        | Some _ := f[[α]] :: normalize_selections ty (filter_fields_with_response_name f σs);
+        | _ := normalize_selections ty σs
         };
       
-      normalize_selections ty (l:f[[α]] :: φ)
+      normalize_selections ty (l:f[[α]] :: σs)
         with lookup_field_in_type s ty f :=
         {
-        | Some _ := l:f[[α]] :: normalize_selections ty (filter_fields_with_response_name l φ);
-        | _ := normalize_selections ty φ
+        | Some _ := l:f[[α]] :: normalize_selections ty (filter_fields_with_response_name l σs);
+        | _ := normalize_selections ty σs
         };
 
-      normalize_selections ty (f[[α]] { β } :: φ)
+      normalize_selections ty (f[[α]] { β } :: σs)
         with lookup_field_in_type s ty f :=
         {
         | Some fld
             with is_object_type s fld.(ftype) :=
             {
-            | true := f[[α]] { normalize_selections fld.(ftype) (β ++ merge_selection_sets (find_valid_fields_with_response_name s f ty φ)) }
-                                 :: normalize_selections ty (filter_fields_with_response_name f φ);
-            | _ := f[[α]] { [seq on t { normalize_selections t (β ++ merge_selection_sets (find_valid_fields_with_response_name s f ty φ)) } | t <- get_possible_types s fld.(ftype)] } ::
-                              normalize_selections ty (filter_fields_with_response_name f φ)
+            | true := f[[α]] { normalize_selections fld.(ftype) (β ++ merge_selection_sets (find_valid_fields_with_response_name s f ty σs)) }
+                                 :: normalize_selections ty (filter_fields_with_response_name f σs);
+            | _ := f[[α]] { [seq on t { normalize_selections t (β ++ merge_selection_sets (find_valid_fields_with_response_name s f ty σs)) } | t <- get_possible_types s fld.(ftype)] } ::
+                              normalize_selections ty (filter_fields_with_response_name f σs)
             };
         
-        | _ => normalize_selections ty φ
+        | _ => normalize_selections ty σs
         };
       
-      normalize_selections ty (l:f[[α]] { β } :: φ)
+      normalize_selections ty (l:f[[α]] { β } :: σs)
         with lookup_field_in_type s ty f :=
         {
         | Some fld
             with is_object_type s fld.(ftype) :=
             {
-            | true := l:f[[α]] { normalize_selections fld.(ftype) (β ++ merge_selection_sets (find_valid_fields_with_response_name s l ty φ)) }
-                                        :: normalize_selections ty (filter_fields_with_response_name l φ);
-            | _ := l:f[[α]] { [seq on t { normalize_selections t (β ++ merge_selection_sets (find_valid_fields_with_response_name s l ty φ)) } | t <- get_possible_types s fld.(ftype)] }
-                     :: normalize_selections ty (filter_fields_with_response_name l φ)
+            | true := l:f[[α]] { normalize_selections fld.(ftype) (β ++ merge_selection_sets (find_valid_fields_with_response_name s l ty σs)) }
+                                        :: normalize_selections ty (filter_fields_with_response_name l σs);
+            | _ := l:f[[α]] { [seq on t { normalize_selections t (β ++ merge_selection_sets (find_valid_fields_with_response_name s l ty σs)) } | t <- get_possible_types s fld.(ftype)] }
+                     :: normalize_selections ty (filter_fields_with_response_name l σs)
             };
         
-        | _ => normalize_selections ty φ
+        | _ => normalize_selections ty σs
         };
         
       
-      normalize_selections ty (on t { β } :: φ)
+      normalize_selections ty (on t { β } :: σs)
         with does_fragment_type_apply s ty t :=
         {
-        | true := normalize_selections ty (β ++ φ);
-        | _ := normalize_selections ty φ
+        | true := normalize_selections ty (β ++ σs);
+        | _ := normalize_selections ty σs
         }
 
     }.
@@ -272,9 +272,9 @@ Section Normalization.
   (**
      Normalizes a query, using the _Query_ type to normalize the selection set.
    *)
-  Definition normalize (q : @query Scalar) : @query Scalar :=
-    let: Query n ss := q in
-    Query n (normalize_selections s.(query_type) q.(selection_set)).
+  Definition normalize (φ : @query Scalar) : @query Scalar :=
+    let: Query n ss := φ in
+    Query n (normalize_selections s.(query_type) φ.(selection_set)).
   
 End Normalization.
 
