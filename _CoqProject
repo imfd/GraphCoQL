@@ -42,4 +42,5 @@
 ./src/examples/HPExample.v
 ./src/examples/SpecExamples.v
 ./src/examples/GraphQLJSExamples.v
+./src/examples/GoodBoisExample.v
 ./src/examples/OtherExamples.v
