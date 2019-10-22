@@ -11,22 +11,18 @@ Finally, the README file in the `src` folder specifies how the code is structure
 
 In this section we describe how to setup the project, its dependencies and then build it.
 
-First of all, clone the project and then, in a terminal, navigate to the project's folder:
-```bash
-$ git clone https://github.com/imfd/GraphCoQL.git # Clone the respository
-$ cd GraphCoQL/ # Navigate inside the project's folder
-```
+First of all, clone the project and then, in a terminal, navigate to the project's folder.
 
-Then, we proceed to install the dependencies and build the project. We describe how to install each in the following subsections. As a general overview, GraphCoQL depends on the following:
+Then, we can proceed to install the dependencies and build the project. We describe in the following sections how to setup the project with [Docker](https://www.docker.com) and how to do it without it, by installing each dependency manually. As a general overview, GraphCoQL depends on the following:
 - Coq v8.9.1
 - Equations v.1.2+8.9
 - Mathematical Components v.1.9.0
 
 ### Using Docker and Dockerfile
 
-We include a `Dockerfile` with the necessary image and commands to get the project up and running. The image is based on Debian 10 (more information can be found [in the coq images repository](https://github.com/coq-community/docker-coq)) and contains Coq v8.9.1, as well as all necessary dependencies to build the project.
+We include a `Dockerfile` with the necessary image and commands to get the project up and running. The image is based on Debian 10 (more information can be found [in the coq images repository](https://github.com/coq-community/docker-coq)) and contains Coq v8.9.1, as well as all necessary dependencies to build the project and start using it.
 
-First of all, you need to install [Docker](https://www.docker.com).
+First of all, you need to install [Docker](https://docs.docker.com/get-started/).
 
 To download the image and setup the necessary environment, run the following command (in the project's root directory), which will search for the `Dockerfile` in the directory where the command is being executed and name the image `gcoql`.
 
