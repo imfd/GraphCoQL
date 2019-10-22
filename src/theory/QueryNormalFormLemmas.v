@@ -280,10 +280,10 @@ Section Normalization.
     
   (** ---- *)
   (**
-     This theorem states that [normalize] returns a query in normal form, thus proving 
+     This corollary states that [normalize] returns a query in normal form, thus proving 
      its correctness.
    *)
-  Theorem normalized_query_is_in_nf (φ : @query Scalar) :
+  Corollary normalized_query_is_in_nf (φ : @query Scalar) :
     is_in_normal_form s (normalize s φ).
   Proof.
     by case: φ; intros; rewrite /is_in_normal_form /normalize /=; apply: normalized_selections_are_in_nf.

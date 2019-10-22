@@ -499,7 +499,7 @@ Section Theory.
   (**
      This theorem states that normalizing preserves the semantics of a query.
    *)
-  Theorem normalize_preserves_query_semantics φ :
+  Corollary normalize_preserves_query_semantics φ :
     execute_query s check_scalar g coerce (normalize s φ) =
     execute_query s check_scalar g coerce φ.
   Proof.
@@ -701,11 +701,11 @@ Section Theory.
 
   (** ---- *)
   (**
-     This theorem states that, in the presence of a query in normal form, 
+     This corollary states that, in the presence of a query in normal form, 
      both the original semantics and the simplified semantics produce the same 
      response.
    *)
-  Theorem exec_query_eq_simpl_exec φ :
+  Corollary exec_query_eq_simpl_exec φ :
     is_in_normal_form s φ -> 
     execute_query s check_scalar g coerce φ =
     simpl_execute_query s check_scalar g coerce φ.
