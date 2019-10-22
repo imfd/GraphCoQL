@@ -17,6 +17,7 @@
 *.v.d
 *.vio
 *.vo
+*.v~
 .coq-native/
 .csdp.cache
 .lia.cache
@@ -29,3 +30,16 @@ nia.cache
 nlia.cache
 nra.cache
 
+CoqMakefile*
+.coqdeps*
+
+# Docs
+doc/html/*
+
+# autosave files from emacs
+\#*
+
+
+logo
+
+.markdown-preview.html

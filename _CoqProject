@@ -1,0 +1,46 @@
+-arg "-w -notation-overridden"
+
+-R ./lib Lib
+
+./lib/QString.v
+./lib/GeneralTactics.v
+./lib/Ssromega.v
+./lib/SeqExtra.v
+
+
+-R ./src GraphCoQL
+
+./src/Value.v
+
+./src/Schema.v
+./src/SchemaAux.v
+./src/SchemaWellFormedness.v
+
+./src/theory/SchemaLemmas.v
+
+./src/Query.v
+./src/QueryAux.v
+
+./src/theory/QueryAuxLemmas.v
+./src/QueryTactics.v
+./src/QueryConformance.v
+./src/theory/QueryConformanceLemmas.v
+./src/QueryNormalForm.v
+./src/theory/QueryNormalFormLemmas.v
+
+./src/Graph.v
+./src/GraphConformance.v
+./src/theory/GraphLemmas.v
+
+./src/Response.v
+
+./src/QuerySemantics.v
+./src/theory/QuerySemanticsLemmas.v
+
+
+
+./src/examples/HPExample.v
+./src/examples/SpecExamples.v
+./src/examples/GraphQLJSExamples.v
+./src/examples/GoodBoisExample.v
+./src/examples/OtherExamples.v
