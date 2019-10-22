@@ -189,7 +189,7 @@ Section QuerySemantic.
 
   (** * Simplified Semantics *)
   (** ---- *)
-  Reserved Notation "≪ queries ≫ 'in' u" (at level 50).
+  Reserved Notation "⦇ queries ⦈ 'in' u" (at level 50).
   
   (** *** Simplified evaluation of selections 
       ---- 
@@ -201,76 +201,76 @@ Section QuerySemantic.
   Equations? simpl_execute_selection_set u σs :
     @GraphQLResponse Scalar by wf (selections_size σs) :=
     {
-      ≪ [::] ≫ in _ := [::];
+      ⦇ [::] ⦈ in _ := [::];
 
-      ≪ f[[α]] :: σs ≫ in u
+      ⦇ f[[α]] :: σs ⦈ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
           | Some fdef := (f, complete_value fdef.(ftype) (u.(property) (Label f α)))
-                          :: ≪ σs ≫ in u;
+                          :: ⦇ σs ⦈ in u;
           
-          | _ := ≪ σs ≫ in u (* Should throw error *)
+          | _ := ⦇ σs ⦈ in u (* Should throw error *)
         };
       
-      ≪ l:f[[α]] :: σs ≫ in u
+      ⦇ l:f[[α]] :: σs ⦈ in u
         with lookup_field_in_type s u.(ntype) f :=
             {
             | Some fdef := (l, complete_value fdef.(ftype) (u.(property) (Label f α)))
-                            :: ≪ σs ≫ in u;
+                            :: ⦇ σs ⦈ in u;
             
-            | _ := ≪ σs ≫ in u (* Should throw error *)
+            | _ := ⦇ σs ⦈ in u (* Should throw error *)
             };
 
       
-      ≪ f[[α]] { βs } :: σs ≫ in u
+      ⦇ f[[α]] { βs } :: σs ⦈ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some fld
             with fld.(ftype) :=
             {
-            | ListType _ => (f, Array [seq Object (≪ βs ≫ in v) | v <- neighbors_with_label g u (Label f α)]) :: ≪ σs ≫ in u;
+            | ListType _ => (f, Array [seq Object (⦇ βs ⦈ in v) | v <- neighbors_with_label g u (Label f α)]) :: ⦇ σs ⦈ in u;
         
             | NamedType ty
                 with ohead (neighbors_with_label g u (Label f α)) :=
                 {
-                | Some v => (f, Object (≪ βs ≫ in v)) :: ≪ σs ≫ in u;
+                | Some v => (f, Object (⦇ βs ⦈ in v)) :: ⦇ σs ⦈ in u;
                 
-                | _ =>  (f, Leaf None) :: ≪ σs ≫ in u
+                | _ =>  (f, Leaf None) :: ⦇ σs ⦈ in u
                 }
             };
 
-        | None => ≪ σs ≫ in u (* Error *)
+        | None => ⦇ σs ⦈ in u (* Error *)
         };
-    ≪ l:f[[α]] { βs } :: σs ≫ in u
+    ⦇ l:f[[α]] { βs } :: σs ⦈ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
         | Some fld
             with fld.(ftype) :=
             {
-            | ListType _ => (l, Array [seq Object (≪ βs ≫ in v) | v <- neighbors_with_label g u (Label f α)]) :: ≪ σs ≫ in u;
+            | ListType _ => (l, Array [seq Object (⦇ βs ⦈ in v) | v <- neighbors_with_label g u (Label f α)]) :: ⦇ σs ⦈ in u;
         
             | NamedType ty
                 with ohead (neighbors_with_label g u (Label f α)) :=
                 {
-                | Some v => (l, Object (≪ βs ≫ in v)) :: ≪ σs ≫ in u;
+                | Some v => (l, Object (⦇ βs ⦈ in v)) :: ⦇ σs ⦈ in u;
                 
-                | _ =>  (l, Leaf None) :: ≪ σs ≫ in u
+                | _ =>  (l, Leaf None) :: ⦇ σs ⦈ in u
                 }
             };
 
-        | None => ≪ σs ≫ in u (* Error *)
+        | None => ⦇ σs ⦈ in u (* Error *)
         };
 
        
-        ≪ on t { βs } :: σs ≫ in u
+        ⦇ on t { βs } :: σs ⦈ in u
         with does_fragment_type_apply s u.(ntype) t :=
         {
-        | true := ≪ βs ++ σs ≫ in u;
-        | _ := ≪ σs ≫ in u
+        | true := ⦇ βs ++ σs ⦈ in u;
+        | _ := ⦇ σs ⦈ in u
         }
 
     }
-  where "≪ σs ≫ 'in' u" := (simpl_execute_selection_set u σs).
+  where "⦇ σs ⦈ 'in' u" := (simpl_execute_selection_set u σs).
   Proof.
     all: do [leq_selections_size].
   Qed.
@@ -281,7 +281,7 @@ Section QuerySemantic.
       Evaluates a query, starting from the graph's root node.
    *)
   Definition simpl_execute_query (φ : @query Scalar) :=
-    ≪ φ.(selection_set) ≫ in g.(root).
+    ⦇ φ.(selection_set) ⦈ in g.(root).
   
 
 End QuerySemantic.
