@@ -1,0 +1,453 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<link href="coqdocjs.css" rel="stylesheet" type="text/css"/>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<script type="text/javascript" src="config.js"></script>
+<script type="text/javascript" src="coqdocjs.js"></script>
+</head>
+
+<body onload="document.getElementById('content').focus()">
+  <div id="header">
+    <span class="left">
+      <span class="modulename"> <script> document.write(document.title) </script> </span>
+    </span>
+
+    <span class="button" id="toggle-proofs"></span>
+
+    <span class="right">
+      <a href="../">Project Page</a>
+      <a href="./indexpage.html"> Index </a>
+      <a href="./toc.html"> Table of Contents </a>
+    </span>
+</div>
+    <div id="content" tabindex="-1" onblur="document.getElementById('content').focus()">
+    <div id="main">
+<h1 class="libtitle">GraphCoQL.theory.QueryNormalFormLemmas</h1>
+
+<div class="code">
+
+<br/>
+</div>
+
+<div class="doc">
+   <div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">Normal Form Proofs</h1>
+        <p class="lead">
+         This file contains proofs about normal form and the normalization procedure.
+        </p>         
+        <p>
+        In particular, we prove here that the correctness of the normalzation procedure, 
+        meaning that the resulting queries are in normal form. 
+        </p>
+  </div>
+</div>
+ 
+<div class="paragraph"> </div>
+
+<a name="lab66"></a><h1 class="section">Normal Form</h1>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+    In this section we prove several lemmas about groundness and non-redundancy.
+   
+</div>
+<div class="code">
+<span class="id" title="keyword">Section</span> <a name="NormalForm"><span class="id" title="section">NormalForm</span></a>.<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Variables</span> (<a name="NormalForm.Scalar"><span class="id" title="variable">Scalar</span></a> : <span class="id" title="abbreviation">eqType</span>) (<a name="NormalForm.s"><span class="id" title="variable">s</span></a> : <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#wfGraphQLSchema"><span class="id" title="record">wfGraphQLSchema</span></a>).<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab67"></a><h2 class="section">Non-redundancy</h2>
+<hr/>
+ 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a name="NormalForm.NonRedundant"><span class="id" title="section">NonRedundant</span></a>.<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Implicit</span> <span class="id" title="keyword">Type</span> σ<span class="id" title="var">s</span> : <span class="id" title="abbreviation">seq</span> (@<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#NormalForm.Scalar"><span class="id" title="variable">Scalar</span></a>).<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a name="NormalForm.NonRedundant.Filter"><span class="id" title="section">Filter</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Transparent</span> <a class="idref" href="GraphCoQL.QueryAux.html#qresponse_name"><span class="id" title="definition">qresponse_name</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+         This lemma states that filtering preserves non-redundancy of the selections.
+       
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="filter_preserves_non_redundancy"><span class="id" title="lemma">filter_preserves_non_redundancy</span></a> <span class="id" title="var">rname</span> σ<span class="id" title="var">s</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryNormalForm.html#are_non_redundant"><span class="id" title="definition">are_non_redundant</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryNormalForm.html#are_non_redundant"><span class="id" title="definition">are_non_redundant</span></a> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#rname"><span class="id" title="variable">rname</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <span class="id" title="var">rname</span> σ<span class="id" title="var">s</span>) =&gt; //=; <span class="id" title="var">simp</span> <span class="id" title="var">are_non_redundant</span>; <span class="id" title="var">bcase</span>; <span class="id" title="tactic">do</span> ? <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>: <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span>: <span class="id" title="tactic">do</span> [<span class="id" title="var">apply_and3P</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span>: <span class="id" title="tactic">do</span> ? <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>/<span class="id" title="lemma">eqP</span>; <span class="id" title="tactic">apply</span>: <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#filter_preserves_find_frags_nil"><span class="id" title="lemma">filter_preserves_find_frags_nil</span></a>; <span class="id" title="tactic">apply</span>/<span class="id" title="lemma">eqP</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span>: <span class="id" title="tactic">do</span> ? <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>: <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span>: <span class="id" title="tactic">do</span> ? <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>: <span class="id" title="var">H0</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span>: <span class="id" title="tactic">do</span> [<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>/<span class="id" title="lemma">eqP</span>; <span class="id" title="tactic">apply</span>: <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#filter_preserves_find_fields_nil"><span class="id" title="lemma">filter_preserves_find_fields_nil</span></a>; <span class="id" title="tactic">apply</span>/<span class="id" title="lemma">eqP</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#NormalForm.NonRedundant.Filter"><span class="id" title="section">Filter</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#NormalForm.NonRedundant"><span class="id" title="section">NonRedundant</span></a>.<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#NormalForm"><span class="id" title="section">NormalForm</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+   This tactic reduces some burdain on proofs with non-redundancy.
+ 
+</div>
+<div class="code">
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">non_red</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> <span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| [|- <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#is_true"><span class="id" title="definition">is_true</span></a> (<a class="idref" href="GraphCoQL.QueryNormalForm.html#are_non_redundant"><span class="id" title="definition">are_non_redundant</span></a> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <span class="id" title="var">_</span> <span class="id" title="var">_</span>))] =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>: <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#filter_preserves_non_redundancy"><span class="id" title="lemma">filter_preserves_non_redundancy</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| [|- <span class="id" title="keyword">context</span> [<a class="idref" href="GraphCoQL.QueryNormalForm.html#are_non_redundant"><span class="id" title="definition">are_non_redundant</span></a> (<span class="id" title="var">_</span> <span class="id" title="notation">::</span> <span class="id" title="var">_</span>)] ] =&gt; <span class="id" title="var">simp</span> <span class="id" title="var">are_non_redundant</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| [|- <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#is_true"><span class="id" title="definition">is_true</span></a> (<a class="idref" href="GraphCoQL.QueryNormalForm.html#are_non_redundant"><span class="id" title="definition">are_non_redundant</span></a> (<span class="id" title="var">_</span> <span class="id" title="notation">::</span> <span class="id" title="var">_</span>)) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <span class="id" title="var">_</span>] =&gt; <span class="id" title="var">simp</span> <span class="id" title="var">are_non_redundant</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| [|- <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#is_true"><span class="id" title="definition">is_true</span></a> (<a class="idref" href="GraphCoQL.QueryNormalForm.html#are_non_redundant"><span class="id" title="definition">are_non_redundant</span></a> <span class="id" title="var">_</span>)] =&gt; <span class="id" title="var">simp</span> <span class="id" title="var">are_non_redundant</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab68"></a><h1 class="section">Normalization</h1>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+    In this section we prove that the normalization procedure returns queries in normal form.
+ 
+</div>
+<div class="code">
+<span class="id" title="keyword">Section</span> <a name="Normalization"><span class="id" title="section">Normalization</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Transparent</span> <a class="idref" href="GraphCoQL.QueryAux.html#qresponse_name"><span class="id" title="definition">qresponse_name</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Variables</span> (<a name="Normalization.Scalar"><span class="id" title="variable">Scalar</span></a> : <span class="id" title="abbreviation">eqType</span>) (<a name="Normalization.s"><span class="id" title="variable">s</span></a> : <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#wfGraphQLSchema"><span class="id" title="record">wfGraphQLSchema</span></a>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+     This lemma states that the order of filtering selections by response name 
+     and normalizing does not affect the result.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="filter_normalize_swap"><span class="id" title="lemma">filter_normalize_swap</span></a> <span class="id" title="var">rname</span> <span class="id" title="var">ty</span> (σ<span class="id" title="var">s</span> : <span class="id" title="abbreviation">seq</span> (@<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.Scalar"><span class="id" title="variable">Scalar</span></a>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#rname"><span class="id" title="variable">rname</span></a> (<a class="idref" href="GraphCoQL.QueryNormalForm.html#normalize_selections"><span class="id" title="definition">normalize_selections</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryNormalForm.html#normalize_selections"><span class="id" title="definition">normalize_selections</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#ty"><span class="id" title="variable">ty</span></a> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#rname"><span class="id" title="variable">rname</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">move</span>: {2}(<a class="idref" href="GraphCoQL.QueryAux.html#selections_size"><span class="id" title="definition">selections_size</span></a> <span class="id" title="var">_</span>) (<span class="id" title="lemma">leqnn</span> (<a class="idref" href="GraphCoQL.QueryAux.html#selections_size"><span class="id" title="definition">selections_size</span></a> σ<span class="id" title="var">s</span>)) =&gt; <span class="id" title="var">n</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">elim</span>: <span class="id" title="var">n</span> σ<span class="id" title="var">s</span> <span class="id" title="var">rname</span> =&gt; /= [| <span class="id" title="var">n</span> <span class="id" title="var">IH</span>] σ<span class="id" title="var">s</span> <span class="id" title="var">rname</span> ; <span class="id" title="tactic">first</span> <span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">leqn0</span> =&gt; /<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#selections_size_0_nil"><span class="id" title="lemma">selections_size_0_nil</span></a> -&gt;.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">case</span>: σ<span class="id" title="var">s</span> =&gt; //= σ σ<span class="id" title="var">s</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">case_selection</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#filter_fields_with_response_name_leq_size"><span class="id" title="lemma">σ</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#filter_fields_with_response_name_leq_size"><span class="id" title="lemma">=&gt;</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#filter_fields_with_response_name_leq_size"><span class="id" title="lemma">/=;</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#filter_fields_with_response_name_leq_size"><span class="id" title="lemma">simp</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#filter_fields_with_response_name_leq_size"><span class="id" title="lemma">selection_size</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#filter_fields_with_response_name_leq_size"><span class="id" title="lemma">=&gt;</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#filter_fields_with_response_name_leq_size"><span class="id" title="lemma">Hleq</span></a>; <span class="id" title="var">simp</span> <span class="id" title="var">normalize_selections</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="var">lookup</span> =&gt; //=; <span class="id" title="var">simp</span> <span class="id" title="var">filter_fields_with_response_name</span>; <span class="id" title="tactic">case</span>: <span class="id" title="lemma">eqP</span> =&gt; /= [/= <span class="id" title="var">Heq</span> | <span class="id" title="var">Hneq</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Heq</span> -<span class="id" title="var">IH</span> // <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#filter_filter_absorb"><span class="id" title="lemma">filter_filter_absorb</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id" title="var">simp</span> <span class="id" title="var">normalize_selections</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Hlook</span> /= <span class="id" title="var">IH</span> //; [<span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#filter_swap"><span class="id" title="lemma">filter_swap</span></a> | <span class="id" title="tactic">by</span> <span class="id" title="var">leq_selections_size</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>: <span class="id" title="var">IH</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id" title="tactic">by</span> <span class="id" title="var">simp</span> <span class="id" title="var">normalize_selections</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Hlook</span> /=; <span class="id" title="tactic">apply</span>: <span class="id" title="var">IH</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="var">lookup</span> =&gt; //=; <span class="id" title="var">simp</span> <span class="id" title="var">filter_fields_with_response_name</span>; <span class="id" title="tactic">case</span>: <span class="id" title="lemma">eqP</span> =&gt; /= <span class="id" title="var">Heq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Heq</span> -<span class="id" title="var">IH</span> // <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#filter_filter_absorb"><span class="id" title="lemma">filter_filter_absorb</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id" title="var">simp</span> <span class="id" title="var">normalize_selections</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Hlook</span> /= <span class="id" title="var">IH</span> //; [<span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#filter_swap"><span class="id" title="lemma">filter_swap</span></a> | <span class="id" title="tactic">by</span> <span class="id" title="var">leq_selections_size</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>: <span class="id" title="var">IH</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id" title="tactic">by</span> <span class="id" title="var">simp</span> <span class="id" title="var">normalize_selections</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Hlook</span> /=; <span class="id" title="tactic">apply</span>: <span class="id" title="var">IH</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="var">lookup</span> =&gt; //=; <span class="id" title="var">simp</span> <span class="id" title="var">filter_fields_with_response_name</span>; <span class="id" title="tactic">case</span>: <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_field_in_type"><span class="id" title="definition">eqP</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_field_in_type"><span class="id" title="definition">=&gt;</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_field_in_type"><span class="id" title="definition">/=</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_field_in_type"><span class="id" title="definition">Heq</span></a><a class="idref" href="GraphCoQL.SchemaAux.html#lookup_field_in_type"><span class="id" title="definition">;</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_field_in_type"><span class="id" title="definition">do</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_field_in_type"><span class="id" title="definition">?</span></a> <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>: <span class="id" title="var">IH</span>; <span class="id" title="var">leq_selections_size</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id" title="tactic">case</span> <span class="id" title="var">Hscope</span> : <a class="idref" href="GraphCoQL.SchemaAux.html#is_object_type"><span class="id" title="definition">is_object_type</span></a> =&gt; //=; <span class="id" title="var">simp</span> <span class="id" title="var">filter_fields_with_response_name</span> =&gt; //=; <span class="id" title="tactic">case</span>: <span class="id" title="lemma">eqP</span> =&gt; //= <span class="id" title="var">_</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Heq</span> -<span class="id" title="var">IH</span> // ?<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#filter_filter_absorb"><span class="id" title="lemma">filter_filter_absorb</span></a>; <span class="id" title="var">leq_selections_size</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id" title="tactic">case</span> <span class="id" title="var">Hscope</span> : <a class="idref" href="GraphCoQL.SchemaAux.html#is_object_type"><span class="id" title="definition">is_object_type</span></a> =&gt; //=; <span class="id" title="var">simp</span> <span class="id" title="var">filter_fields_with_response_name</span> =&gt; //=; <span class="id" title="tactic">case</span>: <span class="id" title="lemma">eqP</span> =&gt; //= <span class="id" title="var">_</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">simp</span> <span class="id" title="var">normalize_selections</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Hlook</span> /= <span class="id" title="var">Hscope</span> /= <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#find_filter_swap"><span class="id" title="lemma">find_filter_swap</span></a>; <span class="id" title="tactic">do</span> ? <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>/<span class="id" title="lemma">eqP</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span>: <span class="id" title="tactic">do</span> ? [<span class="id" title="tactic">rewrite</span> <span class="id" title="var">IH</span> ?<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#filter_filter_absorb"><span class="id" title="lemma">filter_filter_absorb</span></a>; <span class="id" title="var">leq_selections_size</span>; <span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#filter_swap"><span class="id" title="lemma">filter_swap</span></a>].<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id" title="tactic">by</span> <span class="id" title="var">simp</span> <span class="id" title="var">normalize_selections</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Hlook</span> /=; <span class="id" title="tactic">apply</span>: <span class="id" title="var">IH</span>; <span class="id" title="var">leq_selections_size</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="var">lookup</span> =&gt; //=; <span class="id" title="var">simp</span> <span class="id" title="var">filter_fields_with_response_name</span>; <span class="id" title="tactic">case</span>: <span class="id" title="lemma">eqP</span> =&gt; /= <span class="id" title="var">Heq</span>; <span class="id" title="tactic">do</span> ? <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>: <span class="id" title="var">IH</span>; <span class="id" title="var">leq_selections_size</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id" title="tactic">case</span> <span class="id" title="var">Hscope</span> : <a class="idref" href="GraphCoQL.SchemaAux.html#is_object_type"><span class="id" title="definition">is_object_type</span></a> =&gt; //=; <span class="id" title="var">simp</span> <span class="id" title="var">filter_fields_with_response_name</span> =&gt; //=; <span class="id" title="tactic">case</span>: <span class="id" title="lemma">eqP</span> =&gt; //= <span class="id" title="var">_</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Heq</span> -<span class="id" title="var">IH</span> // ?<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#filter_filter_absorb"><span class="id" title="lemma">filter_filter_absorb</span></a>; <span class="id" title="var">leq_selections_size</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id" title="tactic">case</span> <span class="id" title="var">Hscope</span> : <a class="idref" href="GraphCoQL.SchemaAux.html#is_object_type"><span class="id" title="definition">is_object_type</span></a> =&gt; //=; <span class="id" title="var">simp</span> <span class="id" title="var">filter_fields_with_response_name</span> =&gt; //=; <span class="id" title="tactic">case</span>: <span class="id" title="lemma">eqP</span> =&gt; //= <span class="id" title="var">_</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">simp</span> <span class="id" title="var">normalize_selections</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Hlook</span> /= <span class="id" title="var">Hscope</span> /= <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#find_filter_swap"><span class="id" title="lemma">find_filter_swap</span></a>; <span class="id" title="tactic">do</span> ? <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>/<span class="id" title="lemma">eqP</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span>: <span class="id" title="tactic">do</span> ? [<span class="id" title="tactic">rewrite</span> <span class="id" title="var">IH</span> ?<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#filter_filter_absorb"><span class="id" title="lemma">filter_filter_absorb</span></a>; <span class="id" title="var">leq_selections_size</span>; <span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#filter_swap"><span class="id" title="lemma">filter_swap</span></a>].<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id" title="tactic">by</span> <span class="id" title="var">simp</span> <span class="id" title="var">normalize_selections</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Hlook</span> /=; <span class="id" title="tactic">apply</span>: <span class="id" title="var">IH</span>; <span class="id" title="var">leq_selections_size</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">case</span> <span class="id" title="var">Hfapplies</span> : <a class="idref" href="GraphCoQL.QueryAux.html#does_fragment_type_apply"><span class="id" title="definition">does_fragment_type_apply</span></a> =&gt; //=; <span class="id" title="var">simp</span> <span class="id" title="var">filter_fields_with_response_name</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id" title="tactic">by</span> <span class="id" title="var">simp</span> <span class="id" title="var">normalize_selections</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Hfapplies</span> /= -<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#filter_fields_with_response_name_cat"><span class="id" title="lemma">filter_fields_with_response_name_cat</span></a>; <span class="id" title="tactic">apply</span>: <span class="id" title="var">IH</span>; <span class="id" title="var">leq_selections_size</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id" title="tactic">by</span> <span class="id" title="var">simp</span> <span class="id" title="var">normalize_selections</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Hfapplies</span> /=; <span class="id" title="tactic">apply</span>: <span class="id" title="var">IH</span>; <span class="id" title="var">leq_selections_size</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab69"></a><h2 class="section">Groundedness</h2>
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+
+<div class="paragraph"> </div>
+
+     This lemma states that <span class="inlinecode"><a class="idref" href="GraphCoQL.QueryNormalForm.html#normalize_selections"><span class="id" title="definition">normalize_selections</span></a></span> returns fields.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="normalized_selections_are_fields"><span class="id" title="lemma">normalized_selections_are_fields</span></a> <span class="id" title="var">ts</span> σ<span class="id" title="var">s</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">all</span> (@<a class="idref" href="GraphCoQL.QueryAux.html#is_field"><span class="id" title="definition">is_field</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.Scalar"><span class="id" title="variable">Scalar</span></a>) (<a class="idref" href="GraphCoQL.QueryNormalForm.html#normalize_selections"><span class="id" title="definition">normalize_selections</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#ts"><span class="id" title="variable">ts</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.QueryNormalForm.html#normalize_selections"><span class="id" title="definition">normalize_selections</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">ts</span> σ<span class="id" title="var">s</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     This lemma states that <span class="inlinecode"><a class="idref" href="GraphCoQL.QueryNormalForm.html#normalize_selections"><span class="id" title="definition">normalize_selections</span></a></span> returns selections 
+     in ground-typed normal form.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="normalized_selections_are_in_gt_nf"><span class="id" title="lemma">normalized_selections_are_in_gt_nf</span></a> <span class="id" title="var">ts</span> (σ<span class="id" title="var">s</span> : <span class="id" title="abbreviation">seq</span> (@<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.Scalar"><span class="id" title="variable">Scalar</span></a>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">all</span> (<a class="idref" href="GraphCoQL.QueryNormalForm.html#is_in_ground_typed_nf"><span class="id" title="definition">is_in_ground_typed_nf</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.s"><span class="id" title="variable">s</span></a>) (<a class="idref" href="GraphCoQL.QueryNormalForm.html#normalize_selections"><span class="id" title="definition">normalize_selections</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#ts"><span class="id" title="variable">ts</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.QueryNormalForm.html#normalize_selections"><span class="id" title="definition">normalize_selections</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">ts</span> σ<span class="id" title="var">s</span>) =&gt; //=.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="var">apply_andP</span>; <span class="id" title="tactic">first</span> <span class="id" title="var">apply_andP</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> [ <span class="id" title="tactic">apply</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#orP"><span class="id" title="lemma">orP</span></a>; <span class="id" title="tactic">left</span>; <span class="id" title="tactic">apply</span>: <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#normalized_selections_are_fields"><span class="id" title="lemma">normalized_selections_are_fields</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="tactic">apply</span>: <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="tactic">apply</span>: <span class="id" title="var">H0</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="var">apply_andP</span>; <span class="id" title="tactic">first</span> <span class="id" title="var">apply_andP</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id" title="tactic">apply</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#orP"><span class="id" title="lemma">orP</span></a>; <span class="id" title="tactic">right</span>; <span class="id" title="tactic">by</span> <span class="id" title="tactic">elim</span>: <a class="idref" href="GraphCoQL.SchemaAux.html#get_possible_types"><span class="id" title="definition">get_possible_types</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id" title="var">have</span> := (@<a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#in_possible_types_is_object"><span class="id" title="lemma">in_possible_types_is_object</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">f</span>.(<a class="idref" href="GraphCoQL.Schema.html#ftype"><span class="id" title="projection">ftype</span></a>)).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">generalize</span> (<a class="idref" href="GraphCoQL.SchemaAux.html#get_possible_types"><span class="id" title="definition">get_possible_types</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">f</span>.(<a class="idref" href="GraphCoQL.Schema.html#ftype"><span class="id" title="projection">ftype</span></a>)).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">elim</span>=&gt; //= <span class="id" title="var">t</span> <span class="id" title="var">ptys</span> <span class="id" title="var">IHptys</span> <span class="id" title="var">Hinobj</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">have</span> <span class="id" title="var">Htobj</span> := (<span class="id" title="var">Hinobj</span> <span class="id" title="var">t</span> (<span class="id" title="lemma">mem_head</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>)).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">Htobj</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#andTb"><span class="id" title="lemma">andTb</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">apply_andP</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span>/<span class="id" title="lemma">allP</span>=&gt; <span class="id" title="var">sel</span> <span class="id" title="var">Hin</span>; <span class="id" title="var">apply_andP</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">move</span>/<span class="id" title="lemma">allP</span>: (<a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#normalized_selections_are_fields"><span class="id" title="lemma">normalized_selections_are_fields</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">t</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">subselections0</span> <span class="id" title="notation">++</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#merge_selection_sets"><span class="id" title="definition">merge_selection_sets</span></a> (<a class="idref" href="GraphCoQL.QueryAux.html#find_valid_fields_with_response_name"><span class="id" title="definition">find_valid_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">name1</span> <span class="id" title="var">type_in_scope</span> <span class="id" title="var">l</span>))) =&gt; /(<span class="id" title="var">_</span> <span class="id" title="var">sel</span> <span class="id" title="var">Hin</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">move</span>/<span class="id" title="lemma">allP</span>: (<span class="id" title="var">H</span> <span class="id" title="var">t</span>) =&gt; /(<span class="id" title="var">_</span> <span class="id" title="var">sel</span> <span class="id" title="var">Hin</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>: <span class="id" title="var">IHptys</span>; <span class="id" title="tactic">intros</span>; <span class="id" title="tactic">apply</span>: <span class="id" title="var">Hinobj</span>; <span class="id" title="tactic">apply</span>: <a class="idref" href="Lib.SeqExtra.html#mem_tail"><span class="id" title="lemma">mem_tail</span></a>.<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="var">apply_andP</span>; <span class="id" title="tactic">first</span> <span class="id" title="var">apply_andP</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> [ <span class="id" title="tactic">apply</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#orP"><span class="id" title="lemma">orP</span></a>; <span class="id" title="tactic">left</span>; <span class="id" title="tactic">apply</span>: <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#normalized_selections_are_fields"><span class="id" title="lemma">normalized_selections_are_fields</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="tactic">apply</span>: <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="tactic">apply</span>: <span class="id" title="var">H0</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="var">apply_andP</span>; <span class="id" title="tactic">first</span> <span class="id" title="var">apply_andP</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id" title="tactic">apply</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#orP"><span class="id" title="lemma">orP</span></a>; <span class="id" title="tactic">right</span>; <span class="id" title="tactic">by</span> <span class="id" title="tactic">elim</span>: <a class="idref" href="GraphCoQL.SchemaAux.html#get_possible_types"><span class="id" title="definition">get_possible_types</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id" title="var">have</span> := (@<a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#in_possible_types_is_object"><span class="id" title="lemma">in_possible_types_is_object</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">f</span>.(<a class="idref" href="GraphCoQL.Schema.html#ftype"><span class="id" title="projection">ftype</span></a>)).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">generalize</span> (<a class="idref" href="GraphCoQL.SchemaAux.html#get_possible_types"><span class="id" title="definition">get_possible_types</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">f</span>.(<a class="idref" href="GraphCoQL.Schema.html#ftype"><span class="id" title="projection">ftype</span></a>)).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">elim</span>=&gt; //= <span class="id" title="var">t</span> <span class="id" title="var">ptys</span> <span class="id" title="var">IHptys</span> <span class="id" title="var">Hinobj</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">have</span> <span class="id" title="var">Htobj</span> := (<span class="id" title="var">Hinobj</span> <span class="id" title="var">t</span> (<span class="id" title="lemma">mem_head</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>)).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">Htobj</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#andTb"><span class="id" title="lemma">andTb</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">apply_andP</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span>/<span class="id" title="lemma">allP</span>=&gt; <span class="id" title="var">sel</span> <span class="id" title="var">Hin</span>; <span class="id" title="var">apply_andP</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">move</span>/<span class="id" title="lemma">allP</span>: (<a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#normalized_selections_are_fields"><span class="id" title="lemma">normalized_selections_are_fields</span></a> <span class="id" title="var">t</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">subselections1</span> <span class="id" title="notation">++</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#merge_selection_sets"><span class="id" title="definition">merge_selection_sets</span></a> (<a class="idref" href="GraphCoQL.QueryAux.html#find_valid_fields_with_response_name"><span class="id" title="definition">find_valid_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">alias0</span> <span class="id" title="var">type_in_scope</span> <span class="id" title="var">l</span>))) =&gt; /(<span class="id" title="var">_</span> <span class="id" title="var">sel</span> <span class="id" title="var">Hin</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">move</span>/<span class="id" title="lemma">allP</span>: (<span class="id" title="var">H</span> <span class="id" title="var">t</span>) =&gt; /(<span class="id" title="var">_</span> <span class="id" title="var">sel</span> <span class="id" title="var">Hin</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>: <span class="id" title="var">IHptys</span>; <span class="id" title="tactic">intros</span>; <span class="id" title="tactic">apply</span>: <span class="id" title="var">Hinobj</span>; <span class="id" title="tactic">apply</span>: <a class="idref" href="Lib.SeqExtra.html#mem_tail"><span class="id" title="lemma">mem_tail</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     This corollary is just the conjunction that the normalized selections are 
+     both fields and in ground-typed normal form.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <a name="normalized_selections_are_grounded"><span class="id" title="lemma">normalized_selections_are_grounded</span></a> <span class="id" title="var">ts</span> (σ<span class="id" title="var">s</span> : <span class="id" title="abbreviation">seq</span> (@<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.Scalar"><span class="id" title="variable">Scalar</span></a>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryNormalForm.html#are_in_ground_typed_nf"><span class="id" title="definition">are_in_ground_typed_nf</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.s"><span class="id" title="variable">s</span></a> (<a class="idref" href="GraphCoQL.QueryNormalForm.html#normalize_selections"><span class="id" title="definition">normalize_selections</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#ts"><span class="id" title="variable">ts</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.QueryNormalForm.html#are_in_ground_typed_nf"><span class="id" title="definition">are_in_ground_typed_nf</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">apply_andP</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#orP"><span class="id" title="lemma">orP</span></a>; <span class="id" title="tactic">left</span>; <span class="id" title="tactic">apply</span>: <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#normalized_selections_are_fields"><span class="id" title="lemma">normalized_selections_are_fields</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>: <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#normalized_selections_are_in_gt_nf"><span class="id" title="lemma">normalized_selections_are_in_gt_nf</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab70"></a><h2 class="section">Non-redundancy</h2>
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     This lemma states that the result of <span class="inlinecode"><a class="idref" href="GraphCoQL.QueryNormalForm.html#normalize_selections"><span class="id" title="definition">normalize_selections</span></a></span> are
+     non-redundant.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="normalized_selections_are_non_redundant"><span class="id" title="lemma">normalized_selections_are_non_redundant</span></a> <span class="id" title="var">ty</span> (σ<span class="id" title="var">s</span> : <span class="id" title="abbreviation">seq</span> (@<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.Scalar"><span class="id" title="variable">Scalar</span></a>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryNormalForm.html#are_non_redundant"><span class="id" title="definition">are_non_redundant</span></a> (<a class="idref" href="GraphCoQL.QueryNormalForm.html#normalize_selections"><span class="id" title="definition">normalize_selections</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">apply_funelim</span> (<a class="idref" href="GraphCoQL.QueryNormalForm.html#normalize_selections"><span class="id" title="definition">normalize_selections</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">ty</span> σ<span class="id" title="var">s</span>) =&gt; //=.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span>: <span class="id" title="tactic">do</span> ? [<span class="id" title="tactic">by</span> <span class="id" title="tactic">intros</span>; <span class="id" title="var">non_red</span>; <span class="id" title="var">apply_and3P</span>; <span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> -<a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#filter_normalize_swap"><span class="id" title="lemma">filter_normalize_swap</span></a> /= <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#find_fields_filter_nil"><span class="id" title="lemma">find_fields_filter_nil</span></a>].<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span>: <span class="id" title="tactic">do</span> [<span class="id" title="tactic">intros</span>; <span class="id" title="var">non_red</span>; <span class="id" title="var">apply_and3P</span> =&gt; /=; [ <span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> -<a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#filter_normalize_swap"><span class="id" title="lemma">filter_normalize_swap</span></a> /= <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#find_fields_filter_nil"><span class="id" title="lemma">find_fields_filter_nil</span></a> |] ].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span>: <span class="id" title="tactic">do</span> [<span class="id" title="var">have</span>  := (@<a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#in_possible_types_is_object"><span class="id" title="lemma">in_possible_types_is_object</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">f</span>.(<a class="idref" href="GraphCoQL.Schema.html#ftype"><span class="id" title="projection">ftype</span></a>))].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span>: <span class="id" title="tactic">do</span> [<span class="id" title="var">have</span>  := (<a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#uniq_get_possible_types"><span class="id" title="lemma">uniq_get_possible_types</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">f</span>.(<a class="idref" href="GraphCoQL.Schema.html#ftype"><span class="id" title="projection">ftype</span></a>))].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span>: <span class="id" title="tactic">do</span> [<span class="id" title="tactic">elim</span>: <a class="idref" href="GraphCoQL.SchemaAux.html#get_possible_types"><span class="id" title="definition">get_possible_types</span></a> =&gt; //= <span class="id" title="var">t</span> <span class="id" title="var">ptys</span> <span class="id" title="var">IH</span> /<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#andP"><span class="id" title="lemma">andP</span></a> [<span class="id" title="var">Hnin</span> <span class="id" title="var">Huniq</span>] <span class="id" title="var">Hinobj</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span>: <span class="id" title="tactic">do</span> [<span class="id" title="var">non_red</span>; <span class="id" title="var">apply_and3P</span> =&gt; /=; <span class="id" title="var">last</span> <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>: <span class="id" title="var">IH</span> =&gt; //= <span class="id" title="var">t'</span> <span class="id" title="var">Hin'</span>; <span class="id" title="tactic">apply</span>: <span class="id" title="var">Hinobj</span>; <span class="id" title="tactic">apply</span>: <a class="idref" href="Lib.SeqExtra.html#mem_tail"><span class="id" title="lemma">mem_tail</span></a>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span>: <span class="id" title="tactic">do</span> ? <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>/<span class="id" title="lemma">eqP</span>; <span class="id" title="tactic">apply</span>: <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#find_fragment_inlined_nil_func"><span class="id" title="lemma">find_fragment_inlined_nil_func</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     This lemma states that normalized selections are in normal form.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="normalized_selections_are_in_nf"><span class="id" title="lemma">normalized_selections_are_in_nf</span></a> <span class="id" title="var">ts</span> (σ<span class="id" title="var">s</span> : <span class="id" title="abbreviation">seq</span> (@<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.Scalar"><span class="id" title="variable">Scalar</span></a>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryNormalForm.html#are_in_normal_form"><span class="id" title="definition">are_in_normal_form</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.s"><span class="id" title="variable">s</span></a> (<a class="idref" href="GraphCoQL.QueryNormalForm.html#normalize_selections"><span class="id" title="definition">normalize_selections</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#ts"><span class="id" title="variable">ts</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.QueryNormalForm.html#are_in_normal_form"><span class="id" title="definition">are_in_normal_form</span></a>; <span class="id" title="var">apply_andP</span>; [ <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>: <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#normalized_selections_are_grounded"><span class="id" title="lemma">normalized_selections_are_grounded</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>: <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#normalized_selections_are_non_redundant"><span class="id" title="lemma">normalized_selections_are_non_redundant</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;].<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     This corollary states that <span class="inlinecode"><a class="idref" href="GraphCoQL.QueryNormalForm.html#normalize"><span class="id" title="definition">normalize</span></a></span> returns a query in normal form, thus proving 
+     its correctness.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <a name="normalized_query_is_in_nf"><span class="id" title="lemma">normalized_query_is_in_nf</span></a> (φ : @<a class="idref" href="GraphCoQL.Query.html#query"><span class="id" title="record">query</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.Scalar"><span class="id" title="variable">Scalar</span></a>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryNormalForm.html#is_in_normal_form"><span class="id" title="definition">is_in_normal_form</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.s"><span class="id" title="variable">s</span></a> (<a class="idref" href="GraphCoQL.QueryNormalForm.html#normalize"><span class="id" title="definition">normalize</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#7f48d4a68765673379b41e1b1ee20edf"><span class="id" title="variable">φ</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">case</span>: φ; <span class="id" title="tactic">intros</span>; <span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.QueryNormalForm.html#is_in_normal_form"><span class="id" title="definition">is_in_normal_form</span></a> /<a class="idref" href="GraphCoQL.QueryNormalForm.html#normalize"><span class="id" title="definition">normalize</span></a> /=; <span class="id" title="tactic">apply</span>: <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#normalized_selections_are_in_nf"><span class="id" title="lemma">normalized_selections_are_in_nf</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.theory.QueryNormalFormLemmas.html#Normalization"><span class="id" title="section">Normalization</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+    <div>
+        <a href='GraphCoQL.QueryNormalForm.html' class="btn btn-light" role='button'> Previous ← Query Normal Form  </a>
+        <a href='GraphCoQL.QuerySemantics.html' class="btn btn-info" role='button'>Continue Reading → Query Semantics</a>
+    </div>
+
+</div>
+<div class="code">
+</div>
+</div>
+<div id="footer">
+  Generated by <a href="http://coq.inria.fr/">coqdoc</a> and improved with <a href="https://github.com/tebbi/coqdocjs">CoqdocJS</a>
+</div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
+<script>
+  $(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+  })
+  </script>
+
+</body>
+
+</html>

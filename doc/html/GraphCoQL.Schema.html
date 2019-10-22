@@ -1,0 +1,373 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<link href="coqdocjs.css" rel="stylesheet" type="text/css"/>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<script type="text/javascript" src="config.js"></script>
+<script type="text/javascript" src="coqdocjs.js"></script>
+</head>
+
+<body onload="document.getElementById('content').focus()">
+  <div id="header">
+    <span class="left">
+      <span class="modulename"> <script> document.write(document.title) </script> </span>
+    </span>
+
+    <span class="button" id="toggle-proofs"></span>
+
+    <span class="right">
+      <a href="../">Project Page</a>
+      <a href="./indexpage.html"> Index </a>
+      <a href="./toc.html"> Table of Contents </a>
+    </span>
+</div>
+    <div id="content" tabindex="-1" onblur="document.getElementById('content').focus()">
+    <div id="main">
+<h1 class="libtitle">GraphCoQL.Schema</h1>
+
+<div class="code">
+
+<br/>
+</div>
+
+<div class="doc">
+   <div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">GraphQL Schema</h1>
+        <p class="lead">
+         This file contains the basic definitions necessary to build a GraphQL Schema. 
+        </p>
+
+        <p>
+         Some of these are: Type definitions (Objects, Interfaces, etc.), Field definitions and its arguments, amongst others.
+        </p>
+        <p>
+        These definitions allow building a Schema but they do not guarantee that the schema is well-formed.
+        The notion of well-formedness is covered in the <a href='GraphCoQL.SchemaWellFormedness.html'>SchemaWellFormedness</a> file.
+    
+        </p>
+  </div>
+</div>
+ 
+<div class="paragraph"> </div>
+
+<a name="lab1"></a><h4 class="section">Names (cf. <a href='https://graphql.github.io/graphql-spec/June2018/#sec-Names'><span>&#167;</span>2.1.9</a>)</h4>
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Notation</span> <a name="Name"><span class="id" title="abbreviation">Name</span></a> := <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Strings.String.html#string"><span class="id" title="inductive">string</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab2"></a><h4 class="section">Enum values (cf. <a href='https://graphql.github.io/graphql-spec/June2018/#sec-Enum-Value'><span>&#167;</span>2.9.6</a>)</h4>
+
+
+<div class="paragraph"> </div>
+
+     Same as names, except that it can't be true, false or null. 
+     Right now it is just the same as Name.
+ 
+</div>
+<div class="code">
+<span class="id" title="keyword">Notation</span> <a name="EnumValue"><span class="id" title="abbreviation">EnumValue</span></a> := <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Strings.String.html#string"><span class="id" title="inductive">string</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <a name="Schema"><span class="id" title="section">Schema</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab3"></a><h1 class="section">Base types</h1>
+
+<hr/>
+
+      This section includes the basic definition for base types.
+   
+</div>
+<div class="code">
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a name="Schema.Base"><span class="id" title="section">Base</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab4"></a><h3 class="section">Type (cf. <a href='https://graphql.github.io/graphql-spec/June2018/#sec-Type-References'><span>&#167;</span>2.11</a>)</h3>
+
+<hr/>
+ 
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Inductive</span> <a name="type"><span class="id" title="inductive">type</span></a> : <span class="id" title="keyword">Type</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a name="NamedType"><span class="id" title="constructor">NamedType</span></a> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.Schema.html#type"><span class="id" title="inductive">type</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a name="ListType"><span class="id" title="constructor">ListType</span></a> : <a class="idref" href="GraphCoQL.Schema.html#type"><span class="id" title="inductive">type</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.Schema.html#type"><span class="id" title="inductive">type</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+  Get a type's wrapped name. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <a name="tname"><span class="id" title="definition">tname</span></a> (<span class="id" title="var">ty</span> : <a class="idref" href="GraphCoQL.Schema.html#type"><span class="id" title="inductive">type</span></a>) : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.Schema.html#ty"><span class="id" title="variable">ty</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Schema.html#NamedType"><span class="id" title="constructor">NamedType</span></a> <span class="id" title="var">name</span> =&gt; <span class="id" title="var">name</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Schema.html#ListType"><span class="id" title="constructor">ListType</span></a> <span class="id" title="var">ty'</span> =&gt; <a class="idref" href="GraphCoQL.Schema.html#tname"><span class="id" title="definition">tname</span></a> <span class="id" title="var">ty'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Coercion</span> <a class="idref" href="GraphCoQL.Schema.html#tname"><span class="id" title="definition">tname</span></a> <a class="idref" href="GraphCoQL.Schema.html#tname"><span class="id" title="definition">:</span></a> <a class="idref" href="GraphCoQL.Schema.html#tname"><span class="id" title="definition">type</span></a> <a class="idref" href="GraphCoQL.Schema.html#tname"><span class="id" title="definition">&gt;-&gt;</span></a> <a class="idref" href="GraphCoQL.Schema.html#tname"><span class="id" title="definition">Name</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.Schema.html#Schema.Base"><span class="id" title="section">Base</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab5"></a><h1 class="section">Type System</h1>
+
+      (cf. <a href='https://graphql.github.io/graphql-spec/June2018/#sec-Type-System'><span>&#167;</span>3</a>)
+<hr/>
+ 
+
+<div class="paragraph"> </div>
+
+      In this section we will define the necessary types and structures needed 
+      to build a GraphQL Schema. These are:
+<ul class="doclist">
+<li> Arguments
+
+</li>
+<li> Fields 
+
+</li>
+<li> Type definition 
+
+</li>
+<li> Schema 
+
+</li>
+</ul>
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a name="Schema.TypeSystem"><span class="id" title="section">TypeSystem</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab6"></a><h3 class="section">Argument Definition (cf. <a href='https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments'><span>&#167;</span>3.6.1</a>)</h3>
+
+<hr/>
+
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Record</span> <a name="FieldArgumentDefinition"><span class="id" title="record">FieldArgumentDefinition</span></a> := <a name="FieldArgument"><span class="id" title="constructor">FieldArgument</span></a> {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a name="argname"><span class="id" title="projection">argname</span></a> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a name="argtype"><span class="id" title="projection">argtype</span></a> : <a class="idref" href="GraphCoQL.Schema.html#type"><span class="id" title="inductive">type</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab7"></a><h3 class="section">Field Definition (cf. <a href='https://graphql.github.io/graphql-spec/June2018/#FieldDefinition'><span>&#167;</span>3.6</a>)</h3>
+
+<hr/>
+
+    
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Record</span> <a name="FieldDefinition"><span class="id" title="record">FieldDefinition</span></a> := <a name="Field"><span class="id" title="constructor">Field</span></a> {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a name="fname"><span class="id" title="projection">fname</span></a> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a name="fargs"><span class="id" title="projection">fargs</span></a> : <span class="id" title="abbreviation">seq</span> <a class="idref" href="GraphCoQL.Schema.html#FieldArgumentDefinition"><span class="id" title="record">FieldArgumentDefinition</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a name="ftype"><span class="id" title="projection">ftype</span></a> : <a class="idref" href="GraphCoQL.Schema.html#type"><span class="id" title="inductive">type</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab8"></a><h3 class="section">Type Definition (cf. <a href='https://graphql.github.io/graphql-spec/June2018/#sec-Types'><span>&#167;</span>3.4</a>)</h3>
+
+<hr/>
+ 
+
+<div class="paragraph"> </div>
+
+        Possible type definitions in a GraphQL service.
+
+<div class="paragraph"> </div>
+
+     
+</div>
+<div class="code">
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Inductive</span> <a name="TypeDefinition"><span class="id" title="inductive">TypeDefinition</span></a> : <span class="id" title="keyword">Type</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a name="ScalarTypeDefinition"><span class="id" title="constructor">ScalarTypeDefinition</span></a> (<span class="id" title="var">name</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a name="ObjectTypeDefinition"><span class="id" title="constructor">ObjectTypeDefinition</span></a> (<span class="id" title="var">name</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">interfaces</span> : <span class="id" title="abbreviation">seq</span> <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">fields</span> : <span class="id" title="abbreviation">seq</span> <a class="idref" href="GraphCoQL.Schema.html#FieldDefinition"><span class="id" title="record">FieldDefinition</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a name="InterfaceTypeDefinition"><span class="id" title="constructor">InterfaceTypeDefinition</span></a> (<span class="id" title="var">name</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">fields</span> : <span class="id" title="abbreviation">seq</span> <a class="idref" href="GraphCoQL.Schema.html#FieldDefinition"><span class="id" title="record">FieldDefinition</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a name="UnionTypeDefinition"><span class="id" title="constructor">UnionTypeDefinition</span></a> (<span class="id" title="var">name</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">members</span> : <span class="id" title="abbreviation">seq</span> <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a name="EnumTypeDefinition"><span class="id" title="constructor">EnumTypeDefinition</span></a> (<span class="id" title="var">name</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">members</span> : <span class="id" title="abbreviation">seq</span> <a class="idref" href="GraphCoQL.Schema.html#EnumValue"><span class="id" title="abbreviation">EnumValue</span></a>).<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab9"></a><h3 class="section">Schema Definition (cf. <a href='https://graphql.github.io/graphql-spec/June2018/sec-Schema'&gt;&lt;span&gt;&amp;167;</span>3.2</a>)</h3>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+        Here we define the actual structure of a GraphQL Schema, which consists of:
+<ul class="doclist">
+<li> A root type operation for query.
+
+</li>
+<li> A list of type definitions.        
+
+</li>
+</ul>
+    
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Record</span> <a name="graphQLSchema"><span class="id" title="record">graphQLSchema</span></a> := <a name="GraphQLSchema"><span class="id" title="constructor">GraphQLSchema</span></a> {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a name="query_type"><span class="id" title="projection">query_type</span></a> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a name="type_definitions"><span class="id" title="projection">type_definitions</span></a> : <span class="id" title="abbreviation">seq</span> <a class="idref" href="GraphCoQL.Schema.html#TypeDefinition"><span class="id" title="inductive">TypeDefinition</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.Schema.html#Schema.TypeSystem"><span class="id" title="section">TypeSystem</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.Schema.html#Schema"><span class="id" title="section">Schema</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab10"></a><h3 class="section">Notations</h3>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+    Just some notations to make it easier to read (or at least closer to how it is in
+    the Spec).
+ 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Delimit</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">schema_scope</span> <span class="id" title="keyword">with</span> <span class="id" title="var">SCHEMA</span>.<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">schema_scope</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Notation</span> <a name="1e2518ff2e78f907c94429897ac7861a"><span class="id" title="notation">&quot;</span></a>[ name ]" := (<a class="idref" href="GraphCoQL.Schema.html#ListType"><span class="id" title="constructor">ListType</span></a> <span class="id" title="var">name</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Notation</span> <a name="39c6dd05b4549ac7479c94fe9cba1a12"><span class="id" title="notation">&quot;</span></a>'scalar' scalar_name" := (<a class="idref" href="GraphCoQL.Schema.html#ScalarTypeDefinition"><span class="id" title="constructor">ScalarTypeDefinition</span></a> <span class="id" title="var">scalar_name</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 0) : <span class="id" title="var">schema_scope</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;Using&nbsp;'type',&nbsp;as&nbsp;in&nbsp;the&nbsp;spec,&nbsp;clashes&nbsp;with&nbsp;the&nbsp;actual&nbsp;type&nbsp;called&nbsp;'type'...&nbsp;So&nbsp;I&nbsp;preferred&nbsp;object&nbsp;instead&nbsp;*)</span><br/>
+<span class="id" title="keyword">Notation</span> <a name="befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">&quot;</span></a>'object' object_name 'implements' interfaces '{' fields '}'" :=<br/>
+&nbsp;&nbsp;(<a class="idref" href="GraphCoQL.Schema.html#ObjectTypeDefinition"><span class="id" title="constructor">ObjectTypeDefinition</span></a> <span class="id" title="var">object_name</span> <span class="id" title="var">interfaces</span> <span class="id" title="var">fields</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">object_name</span> <span class="id" title="tactic">at</span> <span class="id" title="var">next</span> <span class="id" title="keyword">level</span>, <span class="id" title="var">interfaces</span> <span class="id" title="tactic">at</span> <span class="id" title="var">next</span> <span class="id" title="keyword">level</span>, <span class="id" title="var">fields</span> <span class="id" title="tactic">at</span> <span class="id" title="var">next</span> <span class="id" title="keyword">level</span>) : <span class="id" title="var">schema_scope</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Notation</span> <a name="ce0c37d1f6b5642e2e0ed8a4275975df"><span class="id" title="notation">&quot;</span></a>'interface' interface_name '{' fields '}'" :=<br/>
+&nbsp;&nbsp;(<a class="idref" href="GraphCoQL.Schema.html#InterfaceTypeDefinition"><span class="id" title="constructor">InterfaceTypeDefinition</span></a> <span class="id" title="var">interface_name</span> <span class="id" title="var">fields</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">interface_name</span> <span class="id" title="tactic">at</span> <span class="id" title="var">next</span> <span class="id" title="keyword">level</span>, <span class="id" title="var">fields</span> <span class="id" title="tactic">at</span> <span class="id" title="var">next</span> <span class="id" title="keyword">level</span>) : <span class="id" title="var">schema_scope</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Notation</span> <a name="9ccffccefc7814fff468e3da30938090"><span class="id" title="notation">&quot;</span></a>'union' union_name '{' union_members '}'" :=<br/>
+&nbsp;&nbsp;(<a class="idref" href="GraphCoQL.Schema.html#UnionTypeDefinition"><span class="id" title="constructor">UnionTypeDefinition</span></a> <span class="id" title="var">union_name</span> <span class="id" title="var">union_members</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">union_name</span> <span class="id" title="tactic">at</span> <span class="id" title="var">next</span> <span class="id" title="keyword">level</span>, <span class="id" title="var">union_members</span> <span class="id" title="tactic">at</span> <span class="id" title="var">next</span> <span class="id" title="keyword">level</span>) : <span class="id" title="var">schema_scope</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Notation</span> <a name="8e2a60c2c99876bfbd87dbddb2381d4f"><span class="id" title="notation">&quot;</span></a>'enum' enum_name '{' enum_members '}'" :=<br/>
+&nbsp;&nbsp;(<a class="idref" href="GraphCoQL.Schema.html#EnumTypeDefinition"><span class="id" title="constructor">EnumTypeDefinition</span></a> <span class="id" title="var">enum_name</span> <span class="id" title="var">enum_members</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">enum_name</span> <span class="id" title="tactic">at</span> <span class="id" title="var">next</span> <span class="id" title="keyword">level</span>, <span class="id" title="var">enum_members</span> <span class="id" title="tactic">at</span> <span class="id" title="var">next</span> <span class="id" title="keyword">level</span>) : <span class="id" title="var">schema_scope</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+
+<div class="paragraph"> </div>
+
+   We also establish that all these structures have a decidable procedure for equality but 
+   we omit them here to unclutter the doc (they may still be seen in the source code).
+ 
+</div>
+<div class="code">
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+ <a href='GraphCoQL.SchemaWellFormedness.html' class="btn btn-info" role='button'>Continue Reading → Schema Well-Formedness </a> 
+</div>
+<div class="code">
+</div>
+</div>
+<div id="footer">
+  Generated by <a href="http://coq.inria.fr/">coqdoc</a> and improved with <a href="https://github.com/tebbi/coqdocjs">CoqdocJS</a>
+</div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
+<script>
+  $(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+  })
+  </script>
+
+</body>
+
+</html>

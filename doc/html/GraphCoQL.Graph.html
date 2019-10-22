@@ -1,0 +1,196 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<link href="coqdocjs.css" rel="stylesheet" type="text/css"/>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<script type="text/javascript" src="config.js"></script>
+<script type="text/javascript" src="coqdocjs.js"></script>
+</head>
+
+<body onload="document.getElementById('content').focus()">
+  <div id="header">
+    <span class="left">
+      <span class="modulename"> <script> document.write(document.title) </script> </span>
+    </span>
+
+    <span class="button" id="toggle-proofs"></span>
+
+    <span class="right">
+      <a href="../">Project Page</a>
+      <a href="./indexpage.html"> Index </a>
+      <a href="./toc.html"> Table of Contents </a>
+    </span>
+</div>
+    <div id="content" tabindex="-1" onblur="document.getElementById('content').focus()">
+    <div id="main">
+<h1 class="libtitle">GraphCoQL.Graph</h1>
+
+<div class="code">
+
+<br/>
+</div>
+
+<div class="doc">
+   <div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">GraphQL Graph</h1>
+        <p class="lead">
+         This file contains the basic building blocks to define a GraphQL Graph.
+        </p>
+         
+  </div>
+</div>
+ 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Section</span> <a name="GraphQLGraph"><span class="id" title="section">GraphQLGraph</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Variables</span> (<a name="GraphQLGraph.Scalar"><span class="id" title="variable">Scalar</span></a> : <span class="id" title="abbreviation">eqType</span>).<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab71"></a><h3 class="section">Label</h3>
+
+<hr/>
+ 
+      It corresponds to an edge's label or a property's key.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Record</span> <a name="label"><span class="id" title="record">label</span></a> := <a name="Label"><span class="id" title="constructor">Label</span></a> {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a name="lname"><span class="id" title="projection">lname</span></a> : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Strings.String.html#string"><span class="id" title="inductive">string</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a name="args"><span class="id" title="projection">args</span></a> : <span class="id" title="abbreviation">seq</span> (<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Strings.String.html#string"><span class="id" title="inductive">string</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> @<a class="idref" href="GraphCoQL.Value.html#Value"><span class="id" title="inductive">Value</span></a> <a class="idref" href="GraphCoQL.Graph.html#GraphQLGraph.Scalar"><span class="id" title="variable">Scalar</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Coercion</span> <span class="id" title="var">label_of_label</span> (<span class="id" title="var">f</span> : <a class="idref" href="GraphCoQL.Graph.html#label"><span class="id" title="record">label</span></a>) := <span class="id" title="keyword">let</span>: <a class="idref" href="GraphCoQL.Graph.html#Label"><span class="id" title="constructor">Label</span></a> <span class="id" title="var">l</span> <span class="id" title="var">_</span> := <a class="idref" href="GraphCoQL.Graph.html#f"><span class="id" title="variable">f</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">l</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Coercion</span> <span class="id" title="var">fun_of_label</span> (<span class="id" title="var">f</span> : <a class="idref" href="GraphCoQL.Graph.html#label"><span class="id" title="record">label</span></a>) := <span class="id" title="keyword">let</span>: <a class="idref" href="GraphCoQL.Graph.html#Label"><span class="id" title="constructor">Label</span></a> <span class="id" title="var">_</span> <span class="id" title="var">a</span> := <a class="idref" href="GraphCoQL.Graph.html#f"><span class="id" title="variable">f</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">a</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab72"></a><h3 class="section">Node</h3>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+      It corresponds to a node in a graph.
+      It contains its type and its properties (as a list of key-value pairs).
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Record</span> <a name="node"><span class="id" title="record">node</span></a> := <a name="Node"><span class="id" title="constructor">Node</span></a> {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a name="ntype"><span class="id" title="projection">ntype</span></a> : <a class="idref" href="GraphCoQL.Graph.html#Name"><span class="id" title="abbreviation">Name</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a name="nprops"><span class="id" title="projection">nprops</span></a> : <span class="id" title="abbreviation">seq</span> (<a class="idref" href="GraphCoQL.Graph.html#label"><span class="id" title="record">label</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> @<a class="idref" href="GraphCoQL.Value.html#Value"><span class="id" title="inductive">Value</span></a> <a class="idref" href="GraphCoQL.Graph.html#GraphQLGraph.Scalar"><span class="id" title="variable">Scalar</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab73"></a><h3 class="section">GraphQL Graph</h3>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+      The collection of edges and a root node.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Record</span> <a name="graphQLGraph"><span class="id" title="record">graphQLGraph</span></a> := <a name="GraphQLGraph"><span class="id" title="constructor">GraphQLGraph</span></a> {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a name="root"><span class="id" title="projection">root</span></a> : <a class="idref" href="GraphCoQL.Graph.html#node"><span class="id" title="record">node</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a name="edges"><span class="id" title="projection">edges</span></a> : <span class="id" title="abbreviation">seq</span> (<a class="idref" href="GraphCoQL.Graph.html#node"><span class="id" title="record">node</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> <a class="idref" href="GraphCoQL.Graph.html#label"><span class="id" title="record">label</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> <a class="idref" href="GraphCoQL.Graph.html#node"><span class="id" title="record">node</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Coercion</span> <span class="id" title="var">edges_of_graph</span> (<span class="id" title="var">g</span> : <a class="idref" href="GraphCoQL.Graph.html#graphQLGraph"><span class="id" title="record">graphQLGraph</span></a>) := <a class="idref" href="GraphCoQL.Graph.html#g"><span class="id" title="variable">g</span></a>.(<a class="idref" href="GraphCoQL.Graph.html#edges"><span class="id" title="projection">edges</span></a>).<br/>
+
+<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.Graph.html#GraphQLGraph"><span class="id" title="section">GraphQLGraph</span></a>.<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+</div>
+<div class="code">
+
+<br/>
+
+<br/>
+<span class="id" title="keyword">Delimit</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">graph_scope</span> <span class="id" title="keyword">with</span> <span class="id" title="var">graph</span>.<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">graph_scope</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;Keep&nbsp;an&nbsp;eye&nbsp;that&nbsp;→&nbsp;is&nbsp;the&nbsp;symbol,&nbsp;not&nbsp;pretty&nbsp;printing&nbsp;of&nbsp;'-&gt;'&nbsp;*)</span><br/>
+<span class="id" title="keyword">Notation</span> <a name="164d2bdc58e813080f21bfd2c16e825f"><span class="id" title="notation">&quot;</span></a>src '⟜' lab '→' tgt" := <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a><span class="id" title="var">src</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <span class="id" title="var">lab</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <span class="id" title="var">tgt</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a> (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 20) : <span class="id" title="var">graph_scope</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+   We also establish that all these structures have a decidable procedure for equality but 
+   we omit them here to unclutter the doc (they may still be seen in the source code).
+ 
+</div>
+<div class="code">
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+    <div>
+        <a href='GraphCoQL.SchemaWellFormedness.html' class="btn btn-light" role='button'>Previous ← SchemaWellFormedness</a>
+        <a href='GraphCoQL.GraphConformance.html' class="btn btn-info" role='button'>Continue Reading → Graph Conformance</a>
+    </div>
+
+</div>
+<div class="code">
+</div>
+</div>
+<div id="footer">
+  Generated by <a href="http://coq.inria.fr/">coqdoc</a> and improved with <a href="https://github.com/tebbi/coqdocjs">CoqdocJS</a>
+</div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
+<script>
+  $(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+  })
+  </script>
+
+</body>
+
+</html>

@@ -1,0 +1,200 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<link href="coqdocjs.css" rel="stylesheet" type="text/css"/>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<script type="text/javascript" src="config.js"></script>
+<script type="text/javascript" src="coqdocjs.js"></script>
+</head>
+
+<body onload="document.getElementById('content').focus()">
+  <div id="header">
+    <span class="left">
+      <span class="modulename"> <script> document.write(document.title) </script> </span>
+    </span>
+
+    <span class="button" id="toggle-proofs"></span>
+
+    <span class="right">
+      <a href="../">Project Page</a>
+      <a href="./indexpage.html"> Index </a>
+      <a href="./toc.html"> Table of Contents </a>
+    </span>
+</div>
+    <div id="content" tabindex="-1" onblur="document.getElementById('content').focus()">
+    <div id="main">
+<h1 class="libtitle">GraphCoQL.Value</h1>
+
+<div class="code">
+
+<br/>
+</div>
+
+<div class="doc">
+   <div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">Values</h1>
+        <p class="lead">
+         This file contains the definition of values used throughout the rest of the 
+         project, in graphs and queries.
+        </p>
+         
+  </div>
+</div>
+ 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Section</span> <a name="Value"><span class="id" title="section">Value</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Variable</span> (<a name="Value.Scalar"><span class="id" title="variable">Scalar</span></a> : <span class="id" title="abbreviation">eqType</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;Unsetting&nbsp;because&nbsp;the&nbsp;automatically&nbsp;generated&nbsp;induction&nbsp;principle&nbsp;is&nbsp;not&nbsp;good&nbsp;enough.&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Unset</span> <span class="id" title="var">Elimination</span> <span class="id" title="var">Schemes</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     Values are not specified in the Spec, since GraphQL is agnostic to the underlying technology
+     used. However, it is still possible to distinguish (at least) two types of values: 
+<ul class="doclist">
+<li> Scalar values
+
+</li>
+<li> List values (collections)
+
+</li>
+</ul>
+
+<div class="paragraph"> </div>
+
+     A third possible type of value could be object values but we do not include this notion yet
+     (nodes in a graph would represent elements of this third kind).
+
+<div class="paragraph"> </div>
+
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Inductive</span> <a name="Value"><span class="id" title="inductive">Value</span></a> : <span class="id" title="keyword">Type</span> :=<br/>
+&nbsp;&nbsp;| <a name="SValue"><span class="id" title="constructor">SValue</span></a> : <a class="idref" href="GraphCoQL.Value.html#Value.Scalar"><span class="id" title="variable">Scalar</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.Value.html#Value"><span class="id" title="inductive">Value</span></a><br/>
+&nbsp;&nbsp;| <a name="LValue"><span class="id" title="constructor">LValue</span></a> : <span class="id" title="abbreviation">seq</span> <a class="idref" href="GraphCoQL.Value.html#Value"><span class="id" title="inductive">Value</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.Value.html#Value"><span class="id" title="inductive">Value</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Set</span> <span class="id" title="var">Elimination</span> <span class="id" title="var">Schemes</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     Defining the induction principle for <span class="inlinecode"><a class="idref" href="GraphCoQL.Value.html#Value"><span class="id" title="inductive">Value</span></a></span>.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="Value_rect"><span class="id" title="definition">Value_rect</span></a> (<span class="id" title="var">P</span> : <a class="idref" href="GraphCoQL.Value.html#Value"><span class="id" title="inductive">Value</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <span class="id" title="keyword">Type</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">Pl</span> : <span class="id" title="abbreviation">seq</span> <a class="idref" href="GraphCoQL.Value.html#Value"><span class="id" title="inductive">Value</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <span class="id" title="keyword">Type</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">IH_SValue</span> : <span class="id" title="keyword">forall</span> <span class="id" title="var">s</span>, <a class="idref" href="GraphCoQL.Value.html#P"><span class="id" title="variable">P</span></a> (<a class="idref" href="GraphCoQL.Value.html#SValue"><span class="id" title="constructor">SValue</span></a> <a class="idref" href="GraphCoQL.Value.html#s"><span class="id" title="variable">s</span></a>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">IH_LValue</span> : <span class="id" title="keyword">forall</span> <span class="id" title="var">vs</span>, <a class="idref" href="GraphCoQL.Value.html#Pl"><span class="id" title="variable">Pl</span></a> <a class="idref" href="GraphCoQL.Value.html#vs"><span class="id" title="variable">vs</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.Value.html#P"><span class="id" title="variable">P</span></a> (<a class="idref" href="GraphCoQL.Value.html#LValue"><span class="id" title="constructor">LValue</span></a> <a class="idref" href="GraphCoQL.Value.html#vs"><span class="id" title="variable">vs</span></a>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">IH_Nil</span> : <a class="idref" href="GraphCoQL.Value.html#Pl"><span class="id" title="variable">Pl</span></a> <span class="id" title="notation">[::]</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">IH_Cons</span> : <span class="id" title="keyword">forall</span> <span class="id" title="var">v</span>, <a class="idref" href="GraphCoQL.Value.html#P"><span class="id" title="variable">P</span></a> <a class="idref" href="GraphCoQL.Value.html#v"><span class="id" title="variable">v</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <span class="id" title="keyword">forall</span> <span class="id" title="var">vs</span>, <a class="idref" href="GraphCoQL.Value.html#Pl"><span class="id" title="variable">Pl</span></a> <a class="idref" href="GraphCoQL.Value.html#vs"><span class="id" title="variable">vs</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.Value.html#Pl"><span class="id" title="variable">Pl</span></a> (<a class="idref" href="GraphCoQL.Value.html#v"><span class="id" title="variable">v</span></a> <span class="id" title="notation">::</span> <a class="idref" href="GraphCoQL.Value.html#vs"><span class="id" title="variable">vs</span></a>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fix</span> <span class="id" title="var">loop</span> <span class="id" title="var">value</span> : <a class="idref" href="GraphCoQL.Value.html#P"><span class="id" title="variable">P</span></a> <a class="idref" href="GraphCoQL.Value.html#value"><span class="id" title="variable">value</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="keyword">fix</span> <span class="id" title="var">F</span> (<span class="id" title="var">qs</span> : <span class="id" title="abbreviation">seq</span> <a class="idref" href="GraphCoQL.Value.html#Value"><span class="id" title="inductive">Value</span></a>) : <a class="idref" href="GraphCoQL.Value.html#Pl"><span class="id" title="variable">Pl</span></a> <a class="idref" href="GraphCoQL.Value.html#qs"><span class="id" title="variable">qs</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.Value.html#qs"><span class="id" title="variable">qs</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="notation">[::]</span> =&gt; <a class="idref" href="GraphCoQL.Value.html#IH_Nil"><span class="id" title="variable">IH_Nil</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">hd</span> <span class="id" title="notation">::</span> <span class="id" title="var">tl</span> =&gt; <a class="idref" href="GraphCoQL.Value.html#IH_Cons"><span class="id" title="variable">IH_Cons</span></a> <span class="id" title="var">hd</span> (<a class="idref" href="GraphCoQL.Value.html#loop"><span class="id" title="variable">loop</span></a> <span class="id" title="var">hd</span>) <span class="id" title="var">tl</span> (<a class="idref" href="GraphCoQL.Value.html#F"><span class="id" title="variable">F</span></a> <span class="id" title="var">tl</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.Value.html#value"><span class="id" title="variable">value</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Value.html#SValue"><span class="id" title="constructor">SValue</span></a> <span class="id" title="var">s</span> =&gt; <a class="idref" href="GraphCoQL.Value.html#IH_SValue"><span class="id" title="variable">IH_SValue</span></a> <span class="id" title="var">s</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Value.html#LValue"><span class="id" title="constructor">LValue</span></a> <span class="id" title="var">vs</span> =&gt; <a class="idref" href="GraphCoQL.Value.html#IH_LValue"><span class="id" title="variable">IH_LValue</span></a> <span class="id" title="var">vs</span> (<a class="idref" href="GraphCoQL.Value.html#F"><span class="id" title="variable">F</span></a> <span class="id" title="var">vs</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="Value_rec"><span class="id" title="definition">Value_rec</span></a> (<span class="id" title="var">P</span> : <a class="idref" href="GraphCoQL.Value.html#Value"><span class="id" title="inductive">Value</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <span class="id" title="keyword">Set</span>) := @<a class="idref" href="GraphCoQL.Value.html#Value_rect"><span class="id" title="definition">Value_rect</span></a> <a class="idref" href="GraphCoQL.Value.html#P"><span class="id" title="variable">P</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="Value_ind"><span class="id" title="definition">Value_ind</span></a> (<span class="id" title="var">P</span> : <a class="idref" href="GraphCoQL.Value.html#Value"><span class="id" title="inductive">Value</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <span class="id" title="keyword">Prop</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">Pl</span> : <span class="id" title="abbreviation">seq</span> <a class="idref" href="GraphCoQL.Value.html#Value"><span class="id" title="inductive">Value</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <span class="id" title="keyword">Prop</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">IH_SValue</span> : <span class="id" title="keyword">forall</span> <span class="id" title="var">s</span>, <a class="idref" href="GraphCoQL.Value.html#P"><span class="id" title="variable">P</span></a> (<a class="idref" href="GraphCoQL.Value.html#SValue"><span class="id" title="constructor">SValue</span></a> <a class="idref" href="GraphCoQL.Value.html#s"><span class="id" title="variable">s</span></a>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">IH_LValue</span> : <span class="id" title="keyword">forall</span> <span class="id" title="var">vs</span>, <a class="idref" href="GraphCoQL.Value.html#Pl"><span class="id" title="variable">Pl</span></a> <a class="idref" href="GraphCoQL.Value.html#vs"><span class="id" title="variable">vs</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.Value.html#P"><span class="id" title="variable">P</span></a> (<a class="idref" href="GraphCoQL.Value.html#LValue"><span class="id" title="constructor">LValue</span></a> <a class="idref" href="GraphCoQL.Value.html#vs"><span class="id" title="variable">vs</span></a>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">IH_Nil</span> : <a class="idref" href="GraphCoQL.Value.html#Pl"><span class="id" title="variable">Pl</span></a> <span class="id" title="notation">[::]</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">IH_Cons</span> : <span class="id" title="keyword">forall</span> <span class="id" title="var">v</span>, <a class="idref" href="GraphCoQL.Value.html#P"><span class="id" title="variable">P</span></a> <a class="idref" href="GraphCoQL.Value.html#v"><span class="id" title="variable">v</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <span class="id" title="keyword">forall</span> <span class="id" title="var">vs</span>, <a class="idref" href="GraphCoQL.Value.html#Pl"><span class="id" title="variable">Pl</span></a> <a class="idref" href="GraphCoQL.Value.html#vs"><span class="id" title="variable">vs</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.Value.html#Pl"><span class="id" title="variable">Pl</span></a> (<a class="idref" href="GraphCoQL.Value.html#v"><span class="id" title="variable">v</span></a> <span class="id" title="notation">::</span> <a class="idref" href="GraphCoQL.Value.html#vs"><span class="id" title="variable">vs</span></a>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fix</span> <span class="id" title="var">loop</span> <span class="id" title="var">value</span> : <a class="idref" href="GraphCoQL.Value.html#P"><span class="id" title="variable">P</span></a> <a class="idref" href="GraphCoQL.Value.html#value"><span class="id" title="variable">value</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="keyword">fix</span> <span class="id" title="var">F</span> (<span class="id" title="var">qs</span> : <span class="id" title="abbreviation">seq</span> <a class="idref" href="GraphCoQL.Value.html#Value"><span class="id" title="inductive">Value</span></a>) : <a class="idref" href="GraphCoQL.Value.html#Pl"><span class="id" title="variable">Pl</span></a> <a class="idref" href="GraphCoQL.Value.html#qs"><span class="id" title="variable">qs</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.Value.html#qs"><span class="id" title="variable">qs</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="notation">[::]</span> =&gt; <a class="idref" href="GraphCoQL.Value.html#IH_Nil"><span class="id" title="variable">IH_Nil</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">hd</span> <span class="id" title="notation">::</span> <span class="id" title="var">tl</span> =&gt; <a class="idref" href="GraphCoQL.Value.html#IH_Cons"><span class="id" title="variable">IH_Cons</span></a> <span class="id" title="var">hd</span> (<a class="idref" href="GraphCoQL.Value.html#loop"><span class="id" title="variable">loop</span></a> <span class="id" title="var">hd</span>) <span class="id" title="var">tl</span> (<a class="idref" href="GraphCoQL.Value.html#F"><span class="id" title="variable">F</span></a> <span class="id" title="var">tl</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.Value.html#value"><span class="id" title="variable">value</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Value.html#SValue"><span class="id" title="constructor">SValue</span></a> <span class="id" title="var">s</span> =&gt; <a class="idref" href="GraphCoQL.Value.html#IH_SValue"><span class="id" title="variable">IH_SValue</span></a> <span class="id" title="var">s</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Value.html#LValue"><span class="id" title="constructor">LValue</span></a> <span class="id" title="var">vs</span> =&gt; <a class="idref" href="GraphCoQL.Value.html#IH_LValue"><span class="id" title="variable">IH_LValue</span></a> <span class="id" title="var">vs</span> (<a class="idref" href="GraphCoQL.Value.html#F"><span class="id" title="variable">F</span></a> <span class="id" title="var">vs</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+     We also establish that this type has a decidable procedure for equality but 
+     we omit it here to unclutter the doc (it may still be seen in the source code).
+   
+</div>
+<div class="code">
+
+<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.Value.html#Value"><span class="id" title="section">Value</span></a>.<br/>
+
+<br/>
+<span class="id" title="var">Arguments</span> <a class="idref" href="GraphCoQL.Value.html#Value"><span class="id" title="inductive">Value</span></a> [<span class="id" title="var">Scalar</span>].<br/>
+<span class="id" title="var">Arguments</span> <a class="idref" href="GraphCoQL.Value.html#SValue"><span class="id" title="constructor">SValue</span></a> [<span class="id" title="var">Scalar</span>].<br/>
+<span class="id" title="var">Arguments</span> <a class="idref" href="GraphCoQL.Value.html#LValue"><span class="id" title="constructor">LValue</span></a> [<span class="id" title="var">Scalar</span>].<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a href='GraphCoQL.Schema.html' class="btn btn-info" role='button'>Continue Reading → Schema </a> 
+</div>
+<div class="code">
+</div>
+</div>
+<div id="footer">
+  Generated by <a href="http://coq.inria.fr/">coqdoc</a> and improved with <a href="https://github.com/tebbi/coqdocjs">CoqdocJS</a>
+</div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
+<script>
+  $(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+  })
+  </script>
+
+</body>
+
+</html>

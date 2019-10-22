@@ -1,0 +1,637 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<link href="coqdocjs.css" rel="stylesheet" type="text/css"/>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<script type="text/javascript" src="config.js"></script>
+<script type="text/javascript" src="coqdocjs.js"></script>
+</head>
+
+<body onload="document.getElementById('content').focus()">
+  <div id="header">
+    <span class="left">
+      <span class="modulename"> <script> document.write(document.title) </script> </span>
+    </span>
+
+    <span class="button" id="toggle-proofs"></span>
+
+    <span class="right">
+      <a href="../">Project Page</a>
+      <a href="./indexpage.html"> Index </a>
+      <a href="./toc.html"> Table of Contents </a>
+    </span>
+</div>
+    <div id="content" tabindex="-1" onblur="document.getElementById('content').focus()">
+    <div id="main">
+<h1 class="libtitle">GraphCoQL.examples.GoodBoisExample</h1>
+
+<div class="code">
+
+<br/>
+</div>
+
+<div class="doc">
+   <div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">GoodBois Example</h1>
+        <p class="lead">
+         This file contains the GoodBois example used in the paper.
+         </p>
+  </div>
+</div>
+ 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">string_scope</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab128"></a><h3 class="section">Values</h3>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+    We first need to define the values used in the system, the coercion
+    of values and the predicate to check when a scalar value respects the
+    expected type by the schema.
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Section</span> <a name="Values"><span class="id" title="section">Values</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab129"></a><h4 class="section">Scalar</h4>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+     Type that wraps all possible values present in the system, which in this 
+     case correspond to: integer, string and floats (we model integers as nat and floats as two nats 
+     for simplicity).
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Inductive</span> <a name="Scalar"><span class="id" title="inductive">Scalar</span></a> : <span class="id" title="keyword">Type</span> :=<br/>
+&nbsp;&nbsp;| <a name="VInt"><span class="id" title="constructor">VInt</span></a> : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#Scalar"><span class="id" title="inductive">Scalar</span></a><br/>
+&nbsp;&nbsp;| <a name="VString"><span class="id" title="constructor">VString</span></a> : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Strings.String.html#string"><span class="id" title="inductive">string</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#Scalar"><span class="id" title="inductive">Scalar</span></a><br/>
+&nbsp;&nbsp;| <a name="VFloat"><span class="id" title="constructor">VFloat</span></a> : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#Scalar"><span class="id" title="inductive">Scalar</span></a>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+We need to prove that Value has a decidable equality procedure,
+      we hide it to unclutter the docs
+   
+</div>
+<div class="code">
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab130"></a><h4 class="section">Coerce function</h4>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+      This is the function used in the semantics to coerce 
+      results into "proper" values.
+
+<div class="paragraph"> </div>
+
+      Since we use the same type of data everywhere, we
+      actually don't need to coerce, hence coerce is the id function.
+      One could imagine that a technology implementing GraphQL
+      might have different types to represent their values.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="coerce"><span class="id" title="definition">coerce</span></a> : <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#Scalar"><span class="id" title="inductive">Scalar</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#Scalar"><span class="id" title="inductive">Scalar</span></a> := <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrfun.html#id"><span class="id" title="abbreviation">id</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab131"></a><h4 class="section">Is valid scalar value?</h4>
+
+<hr/>
+ 
+
+<div class="paragraph"> </div>
+
+      The following predicate checks whether a value respects its
+      expected type. 
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Variable</span> (<a name="Values.schema"><span class="id" title="variable">schema</span></a> : <a class="idref" href="GraphCoQL.Schema.html#graphQLSchema"><span class="id" title="record">graphQLSchema</span></a>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <a name="check_scalar"><span class="id" title="definition">check_scalar</span></a> (<span class="id" title="var">ty</span> : <a class="idref" href="GraphCoQL.Schema.html#type"><span class="id" title="inductive">type</span></a>) (<span class="id" title="var">v</span> : <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#Scalar"><span class="id" title="inductive">Scalar</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#v"><span class="id" title="variable">v</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#VInt"><span class="id" title="constructor">VInt</span></a> <span class="id" title="var">_</span> =&gt; <span class="id" title="keyword">if</span> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#ty"><span class="id" title="variable">ty</span></a> <span class="id" title="keyword">is</span> <a class="idref" href="GraphCoQL.Schema.html#NamedType"><span class="id" title="constructor">NamedType</span></a> <span class="id" title="var">name</span> <span class="id" title="keyword">then</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">name</span> <span class="id" title="notation">==</span> "Int"<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">else</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#false"><span class="id" title="constructor">false</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#VString"><span class="id" title="constructor">VString</span></a> <span class="id" title="var">s</span> =&gt; <span class="id" title="keyword">if</span> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#ty"><span class="id" title="variable">ty</span></a> <span class="id" title="keyword">is</span> <a class="idref" href="GraphCoQL.Schema.html#NamedType"><span class="id" title="constructor">NamedType</span></a> <span class="id" title="var">name</span> <span class="id" title="keyword">then</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#081ff67d3116402bb680e8692aa39185"><span class="id" title="notation">(</span></a><span class="id" title="var">name</span> <span class="id" title="notation">==</span> "String"<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#081ff67d3116402bb680e8692aa39185"><span class="id" title="notation">)</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#081ff67d3116402bb680e8692aa39185"><span class="id" title="notation">||</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">if</span> <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_type"><span class="id" title="definition">lookup_type</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#Values.schema"><span class="id" title="variable">schema</span></a> <span class="id" title="var">name</span> <span class="id" title="keyword">is</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.Schema.html#8e2a60c2c99876bfbd87dbddb2381d4f"><span class="id" title="notation">enum</span></a> <span class="id" title="var">_</span> { <span class="id" title="var">members</span> }) <span class="id" title="keyword">then</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">s</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <span class="id" title="var">members</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">else</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#false"><span class="id" title="constructor">false</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">else</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#false"><span class="id" title="constructor">false</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#VFloat"><span class="id" title="constructor">VFloat</span></a> <span class="id" title="var">_</span> <span class="id" title="var">_</span> =&gt; <span class="id" title="keyword">if</span> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#ty"><span class="id" title="variable">ty</span></a> <span class="id" title="keyword">is</span> <a class="idref" href="GraphCoQL.Schema.html#NamedType"><span class="id" title="constructor">NamedType</span></a> <span class="id" title="var">name</span> <span class="id" title="keyword">then</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">name</span> <span class="id" title="notation">==</span> "Float"<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">else</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#false"><span class="id" title="constructor">false</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#Values"><span class="id" title="section">Values</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab132"></a><h3 class="section">GoodBois example</h3>
+
+<hr/>
+
+ 
+</div>
+<div class="code">
+<span class="id" title="keyword">Section</span> <a name="GoodBoisExample"><span class="id" title="section">GoodBoisExample</span></a>.<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Coercion</span> <span class="id" title="var">namedType_of_string</span> (<span class="id" title="var">s</span> : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Strings.String.html#string"><span class="id" title="inductive">string</span></a>) := <a class="idref" href="GraphCoQL.Schema.html#NamedType"><span class="id" title="constructor">NamedType</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#s"><span class="id" title="variable">s</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab133"></a><h4 class="section">Schema</h4>
+
+<hr/>
+
+      First, we define the schema. 
+
+<div class="paragraph"> </div>
+
+      <div class="row">
+            <div class="col-md-6">
+                 <img src="../imgs/GoodBoisExample/schema.png" class="img-fluid" alt="Schema definition">
+            </div>
+      </div>
+
+<div class="paragraph"> </div>
+
+   
+<div class="paragraph"> </div>
+
+     We start by defining the scalar types used in this system.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.IntType"><span class="id" title="variable">IntType</span></a> := <a class="idref" href="GraphCoQL.Schema.html#39c6dd05b4549ac7479c94fe9cba1a12"><span class="id" title="notation">scalar</span></a> "Int".<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.StringType"><span class="id" title="variable">StringType</span></a> := <a class="idref" href="GraphCoQL.Schema.html#39c6dd05b4549ac7479c94fe9cba1a12"><span class="id" title="notation">scalar</span></a> "String".<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.FloatType"><span class="id" title="variable">FloatType</span></a> := <a class="idref" href="GraphCoQL.Schema.html#39c6dd05b4549ac7479c94fe9cba1a12"><span class="id" title="notation">scalar</span></a> "Float".<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Then the objects and interfaces 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.AnimalType"><span class="id" title="variable">AnimalType</span></a> := <a class="idref" href="GraphCoQL.Schema.html#ce0c37d1f6b5642e2e0ed8a4275975df"><span class="id" title="notation">interface</span></a> "Animal" <a class="idref" href="GraphCoQL.Schema.html#ce0c37d1f6b5642e2e0ed8a4275975df"><span class="id" title="notation">{</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[::</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Schema.html#Field"><span class="id" title="constructor">Field</span></a> "name" <span class="id" title="notation">[::]</span> "String"<span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Schema.html#Field"><span class="id" title="constructor">Field</span></a> "age" <span class="id" title="notation">[::]</span> "Int"<span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Schema.html#Field"><span class="id" title="constructor">Field</span></a> "friends" <span class="id" title="notation">[::]</span> <a class="idref" href="GraphCoQL.Schema.html#1e2518ff2e78f907c94429897ac7861a"><span class="id" title="notation">[</span></a>"Animal"<a class="idref" href="GraphCoQL.Schema.html#1e2518ff2e78f907c94429897ac7861a"><span class="id" title="notation">]</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">]</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Schema.html#ce0c37d1f6b5642e2e0ed8a4275975df"><span class="id" title="notation">}</span></a>.<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.DogType"><span class="id" title="variable">DogType</span></a> := <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">object</span></a> "Dog" <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">implements</span></a> <span class="id" title="notation">[::</span> "Animal"<span class="id" title="notation">]</span> <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">{</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[::</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Schema.html#Field"><span class="id" title="constructor">Field</span></a> "name" <span class="id" title="notation">[::]</span> "String"<span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Schema.html#Field"><span class="id" title="constructor">Field</span></a> "age" <span class="id" title="notation">[::]</span> "Int"<span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Schema.html#Field"><span class="id" title="constructor">Field</span></a> "friends" <span class="id" title="notation">[::]</span> <a class="idref" href="GraphCoQL.Schema.html#1e2518ff2e78f907c94429897ac7861a"><span class="id" title="notation">[</span></a> "Animal" <a class="idref" href="GraphCoQL.Schema.html#1e2518ff2e78f907c94429897ac7861a"><span class="id" title="notation">]</span></a><span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Schema.html#Field"><span class="id" title="constructor">Field</span></a> "favoriteToy" <span class="id" title="notation">[::]</span> "Toy"<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">]</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">}</span></a>.<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.PigType"><span class="id" title="variable">PigType</span></a> := <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">object</span></a> "Pig" <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">implements</span></a> <span class="id" title="notation">[::</span> "Animal"<span class="id" title="notation">]</span> <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">{</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[::</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Schema.html#Field"><span class="id" title="constructor">Field</span></a> "name" <span class="id" title="notation">[::]</span> "String"<span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Schema.html#Field"><span class="id" title="constructor">Field</span></a> "age" <span class="id" title="notation">[::]</span> "Int"<span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Schema.html#Field"><span class="id" title="constructor">Field</span></a> "friends" <span class="id" title="notation">[::]</span> <a class="idref" href="GraphCoQL.Schema.html#1e2518ff2e78f907c94429897ac7861a"><span class="id" title="notation">[</span></a> "Animal" <a class="idref" href="GraphCoQL.Schema.html#1e2518ff2e78f907c94429897ac7861a"><span class="id" title="notation">]</span></a><span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Schema.html#Field"><span class="id" title="constructor">Field</span></a> "oink" <span class="id" title="notation">[::]</span> "Int"<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">]</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">}</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.ToyType"><span class="id" title="variable">ToyType</span></a> := <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">object</span></a> "Toy" <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">implements</span></a> <span class="id" title="notation">[::]</span> <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">{</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[::</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Schema.html#Field"><span class="id" title="constructor">Field</span></a> "chewiness" <span class="id" title="notation">[::]</span> "Float"<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">]</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">}</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The enum and union types 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.GoodType"><span class="id" title="variable">GoodType</span></a> := <a class="idref" href="GraphCoQL.Schema.html#8e2a60c2c99876bfbd87dbddb2381d4f"><span class="id" title="notation">enum</span></a> "Good" <a class="idref" href="GraphCoQL.Schema.html#8e2a60c2c99876bfbd87dbddb2381d4f"><span class="id" title="notation">{</span></a> <span class="id" title="notation">[::</span> "BESTBOI" <span class="id" title="notation">;</span> "GOODBOI" <span class="id" title="notation">;</span> "OKBOI"<span class="id" title="notation">;</span> "BADBOI" <span class="id" title="notation">]</span> <a class="idref" href="GraphCoQL.Schema.html#8e2a60c2c99876bfbd87dbddb2381d4f"><span class="id" title="notation">}</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.SearchType"><span class="id" title="variable">SearchType</span></a> := <a class="idref" href="GraphCoQL.Schema.html#9ccffccefc7814fff468e3da30938090"><span class="id" title="notation">union</span></a> "Search" <a class="idref" href="GraphCoQL.Schema.html#9ccffccefc7814fff468e3da30938090"><span class="id" title="notation">{</span></a> <span class="id" title="notation">[::</span> "Dog"<span class="id" title="notation">;</span> "Pig" <span class="id" title="notation">;</span> "Toy"<span class="id" title="notation">]</span> <a class="idref" href="GraphCoQL.Schema.html#9ccffccefc7814fff468e3da30938090"><span class="id" title="notation">}</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+And finally the Query type 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.QueryType"><span class="id" title="variable">QueryType</span></a> := <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">object</span></a> "Query" <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">implements</span></a> <span class="id" title="notation">[::]</span> <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">{</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[::</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Schema.html#Field"><span class="id" title="constructor">Field</span></a> "goodboi" <span class="id" title="notation">[::</span> <a class="idref" href="GraphCoQL.Schema.html#FieldArgument"><span class="id" title="constructor">FieldArgument</span></a> "goodness" "Good"<span class="id" title="notation">]</span> "Animal"<span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Schema.html#Field"><span class="id" title="constructor">Field</span></a> "search" <span class="id" title="notation">[::</span> <a class="idref" href="GraphCoQL.Schema.html#FieldArgument"><span class="id" title="constructor">FieldArgument</span></a> "text" "String"<span class="id" title="notation">]</span> <a class="idref" href="GraphCoQL.Schema.html#1e2518ff2e78f907c94429897ac7861a"><span class="id" title="notation">[</span></a> "Search" <a class="idref" href="GraphCoQL.Schema.html#1e2518ff2e78f907c94429897ac7861a"><span class="id" title="notation">]</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">]</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">}</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+     We then define the schema as the root operation type and its type definitions.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.GoodBoisSchema"><span class="id" title="variable">GoodBoisSchema</span></a>  := <a class="idref" href="GraphCoQL.Schema.html#GraphQLSchema"><span class="id" title="constructor">GraphQLSchema</span></a> "Query"  <span class="id" title="notation">[::</span> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.IntType"><span class="id" title="variable">IntType</span></a><span class="id" title="notation">;</span> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.StringType"><span class="id" title="variable">StringType</span></a><span class="id" title="notation">;</span> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.FloatType"><span class="id" title="variable">FloatType</span></a><span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.AnimalType"><span class="id" title="variable">AnimalType</span></a><span class="id" title="notation">;</span> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.DogType"><span class="id" title="variable">DogType</span></a><span class="id" title="notation">;</span> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.PigType"><span class="id" title="variable">PigType</span></a><span class="id" title="notation">;</span> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.ToyType"><span class="id" title="variable">ToyType</span></a><span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.GoodType"><span class="id" title="variable">GoodType</span></a><span class="id" title="notation">;</span> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.SearchType"><span class="id" title="variable">SearchType</span></a><span class="id" title="notation">;</span> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.QueryType"><span class="id" title="variable">QueryType</span></a><span class="id" title="notation">]</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+     Next, we prove that the schema is well-formed by simple computation.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.wf_schema"><span class="id" title="variable">wf_schema</span></a> : <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.GoodBoisSchema"><span class="id" title="variable">GoodBoisSchema</span></a>.(<a class="idref" href="GraphCoQL.SchemaWellFormedness.html#is_a_wf_schema"><span class="id" title="definition">is_a_wf_schema</span></a>). <span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">by</span> []. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+     Finally, we build the well-formed schema with the schema and the proof of its well-formedness.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.ValidGoodBoisSchema"><span class="id" title="variable">ValidGoodBoisSchema</span></a> : <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#wfGraphQLSchema"><span class="id" title="record">wfGraphQLSchema</span></a> := <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#WFGraphQLSchema"><span class="id" title="constructor">WFGraphQLSchema</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.wf_schema"><span class="id" title="variable">wf_schema</span></a>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab134"></a><h4 class="section">Graph</h4>
+
+<hr/>
+
+      Secondly, we define the graph. 
+
+<div class="paragraph"> </div>
+
+      <div class="row">
+            <div class="col-md-6">
+            <img src="../imgs/GoodBoisExample/graph.png" class="img-fluid" alt="Graph">
+            </div>
+       </div>
+
+<div class="paragraph"> </div>
+
+   
+<div class="paragraph"> </div>
+
+
+<div class="paragraph"> </div>
+
+     Some auxiliary definitions.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.name"><span class="id" title="variable">name</span></a> (<span class="id" title="var">val</span> : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Strings.String.html#string"><span class="id" title="inductive">string</span></a>) := <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a>@<a class="idref" href="GraphCoQL.Graph.html#Label"><span class="id" title="constructor">Label</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#scalar_eqType"><span class="id" title="definition">scalar_eqType</span></a> "name" <span class="id" title="notation">[::]</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <a class="idref" href="GraphCoQL.Value.html#SValue"><span class="id" title="constructor">SValue</span></a> (<a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#VString"><span class="id" title="constructor">VString</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#val"><span class="id" title="variable">val</span></a>)<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.age"><span class="id" title="variable">age</span></a> (<span class="id" title="var">val</span> : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a>) :=  <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a>@<a class="idref" href="GraphCoQL.Graph.html#Label"><span class="id" title="constructor">Label</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#scalar_eqType"><span class="id" title="definition">scalar_eqType</span></a> "age" <span class="id" title="notation">[::]</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a>  <a class="idref" href="GraphCoQL.Value.html#SValue"><span class="id" title="constructor">SValue</span></a> (<a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#VInt"><span class="id" title="constructor">VInt</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#val"><span class="id" title="variable">val</span></a>)<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+     We define the nodes of the graph, starting with the root node.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.Root"><span class="id" title="variable">Root</span></a> := @<a class="idref" href="GraphCoQL.Graph.html#Node"><span class="id" title="constructor">Node</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#scalar_eqType"><span class="id" title="definition">scalar_eqType</span></a> "Query" <span class="id" title="notation">[::]</span>.<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.Casel"><span class="id" title="variable">Casel</span></a> := <a class="idref" href="GraphCoQL.Graph.html#Node"><span class="id" title="constructor">Node</span></a> "Dog" <span class="id" title="notation">[::</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.name"><span class="id" title="variable">name</span></a> "Casel"<span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.age"><span class="id" title="variable">age</span></a> 10<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">]</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.ChrisPBacon"><span class="id" title="variable">ChrisPBacon</span></a> := <a class="idref" href="GraphCoQL.Graph.html#Node"><span class="id" title="constructor">Node</span></a> "Pig" <span class="id" title="notation">[::</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.name"><span class="id" title="variable">name</span></a> "Chris P. Bacon"<span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.age"><span class="id" title="variable">age</span></a> 18<span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a><a class="idref" href="GraphCoQL.Graph.html#Label"><span class="id" title="constructor">Label</span></a> "oink" <span class="id" title="notation">[::]</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <a class="idref" href="GraphCoQL.Value.html#SValue"><span class="id" title="constructor">SValue</span></a> (<a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#VInt"><span class="id" title="constructor">VInt</span></a> 9000)<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">]</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.Marle"><span class="id" title="variable">Marle</span></a> := <a class="idref" href="GraphCoQL.Graph.html#Node"><span class="id" title="constructor">Node</span></a> "Dog" <span class="id" title="notation">[::</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.name"><span class="id" title="variable">name</span></a> "Marle"<span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.age"><span class="id" title="variable">age</span></a> 4<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">]</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.MarlesToy"><span class="id" title="variable">MarlesToy</span></a> := <a class="idref" href="GraphCoQL.Graph.html#Node"><span class="id" title="constructor">Node</span></a> "Toy" <span class="id" title="notation">[::</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a><a class="idref" href="GraphCoQL.Graph.html#Label"><span class="id" title="constructor">Label</span></a> "chewiness" <span class="id" title="notation">[::]</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <a class="idref" href="GraphCoQL.Value.html#SValue"><span class="id" title="constructor">SValue</span></a> (<a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#VFloat"><span class="id" title="constructor">VFloat</span></a> 23 0)<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">]</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+     Then the labels on edges.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.goodboi"><span class="id" title="variable">goodboi</span></a> (<span class="id" title="var">val</span> : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Strings.String.html#string"><span class="id" title="inductive">string</span></a>) := <a class="idref" href="GraphCoQL.Graph.html#Label"><span class="id" title="constructor">Label</span></a> "goodboi" <span class="id" title="notation">[::</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a>"goodness"<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <a class="idref" href="GraphCoQL.Value.html#SValue"><span class="id" title="constructor">SValue</span></a> (<a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#VString"><span class="id" title="constructor">VString</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#val"><span class="id" title="variable">val</span></a>)<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a><span class="id" title="notation">]</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.friends"><span class="id" title="variable">friends</span></a> := @<a class="idref" href="GraphCoQL.Graph.html#Label"><span class="id" title="constructor">Label</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#scalar_eqType"><span class="id" title="definition">scalar_eqType</span></a> "friends" <span class="id" title="notation">[::]</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.favoriteToy"><span class="id" title="variable">favoriteToy</span></a> := @<a class="idref" href="GraphCoQL.Graph.html#Label"><span class="id" title="constructor">Label</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#scalar_eqType"><span class="id" title="definition">scalar_eqType</span></a> "favoriteToy" <span class="id" title="notation">[::]</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+     And finally the edges themselves.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.edges"><span class="id" title="variable">edges</span></a> : <span class="id" title="abbreviation">seq</span> (@<a class="idref" href="GraphCoQL.Graph.html#node"><span class="id" title="record">node</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#scalar_eqType"><span class="id" title="definition">scalar_eqType</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> <a class="idref" href="GraphCoQL.Graph.html#label"><span class="id" title="record">label</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> <a class="idref" href="GraphCoQL.Graph.html#node"><span class="id" title="record">node</span></a>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[::</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.Root"><span class="id" title="variable">Root</span></a> <a class="idref" href="GraphCoQL.Graph.html#164d2bdc58e813080f21bfd2c16e825f"><span class="id" title="notation">⟜</span></a> <a class="idref" href="GraphCoQL.Graph.html#164d2bdc58e813080f21bfd2c16e825f"><span class="id" title="notation">(</span></a><a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.goodboi"><span class="id" title="variable">goodboi</span></a> "BESTBOI"<a class="idref" href="GraphCoQL.Graph.html#164d2bdc58e813080f21bfd2c16e825f"><span class="id" title="notation">)</span></a> <a class="idref" href="GraphCoQL.Graph.html#164d2bdc58e813080f21bfd2c16e825f"><span class="id" title="notation">→</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.Casel"><span class="id" title="variable">Casel</span></a><span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.Root"><span class="id" title="variable">Root</span></a> <a class="idref" href="GraphCoQL.Graph.html#164d2bdc58e813080f21bfd2c16e825f"><span class="id" title="notation">⟜</span></a> <a class="idref" href="GraphCoQL.Graph.html#164d2bdc58e813080f21bfd2c16e825f"><span class="id" title="notation">(</span></a><a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.goodboi"><span class="id" title="variable">goodboi</span></a> "BADBOI"<a class="idref" href="GraphCoQL.Graph.html#164d2bdc58e813080f21bfd2c16e825f"><span class="id" title="notation">)</span></a> <a class="idref" href="GraphCoQL.Graph.html#164d2bdc58e813080f21bfd2c16e825f"><span class="id" title="notation">→</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.ChrisPBacon"><span class="id" title="variable">ChrisPBacon</span></a><span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.Casel"><span class="id" title="variable">Casel</span></a> <a class="idref" href="GraphCoQL.Graph.html#164d2bdc58e813080f21bfd2c16e825f"><span class="id" title="notation">⟜</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.friends"><span class="id" title="variable">friends</span></a> <a class="idref" href="GraphCoQL.Graph.html#164d2bdc58e813080f21bfd2c16e825f"><span class="id" title="notation">→</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.Marle"><span class="id" title="variable">Marle</span></a><span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.Marle"><span class="id" title="variable">Marle</span></a> <a class="idref" href="GraphCoQL.Graph.html#164d2bdc58e813080f21bfd2c16e825f"><span class="id" title="notation">⟜</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.friends"><span class="id" title="variable">friends</span></a> <a class="idref" href="GraphCoQL.Graph.html#164d2bdc58e813080f21bfd2c16e825f"><span class="id" title="notation">→</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.Casel"><span class="id" title="variable">Casel</span></a><span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.Casel"><span class="id" title="variable">Casel</span></a> <a class="idref" href="GraphCoQL.Graph.html#164d2bdc58e813080f21bfd2c16e825f"><span class="id" title="notation">⟜</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.friends"><span class="id" title="variable">friends</span></a> <a class="idref" href="GraphCoQL.Graph.html#164d2bdc58e813080f21bfd2c16e825f"><span class="id" title="notation">→</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.ChrisPBacon"><span class="id" title="variable">ChrisPBacon</span></a><span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.ChrisPBacon"><span class="id" title="variable">ChrisPBacon</span></a> <a class="idref" href="GraphCoQL.Graph.html#164d2bdc58e813080f21bfd2c16e825f"><span class="id" title="notation">⟜</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.friends"><span class="id" title="variable">friends</span></a> <a class="idref" href="GraphCoQL.Graph.html#164d2bdc58e813080f21bfd2c16e825f"><span class="id" title="notation">→</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.Casel"><span class="id" title="variable">Casel</span></a><span class="id" title="notation">;</span><br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.Marle"><span class="id" title="variable">Marle</span></a> <a class="idref" href="GraphCoQL.Graph.html#164d2bdc58e813080f21bfd2c16e825f"><span class="id" title="notation">⟜</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.favoriteToy"><span class="id" title="variable">favoriteToy</span></a> <a class="idref" href="GraphCoQL.Graph.html#164d2bdc58e813080f21bfd2c16e825f"><span class="id" title="notation">→</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.MarlesToy"><span class="id" title="variable">MarlesToy</span></a> <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">]</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+       We define the graph as the root node and the edges in the graph.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.GoodBoisGraph"><span class="id" title="variable">GoodBoisGraph</span></a> := <a class="idref" href="GraphCoQL.Graph.html#GraphQLGraph"><span class="id" title="constructor">GraphQLGraph</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.Root"><span class="id" title="variable">Root</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.edges"><span class="id" title="variable">edges</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+       Then, we prove that the graph conforms to the previous well-formed schema and the 
+       predicate on valage values, by simple computation.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.graph_conforms"><span class="id" title="variable">graph_conforms</span></a> : <a class="idref" href="GraphCoQL.GraphConformance.html#is_a_conforming_graph"><span class="id" title="definition">is_a_conforming_graph</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.ValidGoodBoisSchema"><span class="id" title="variable">ValidGoodBoisSchema</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#check_scalar"><span class="id" title="definition">check_scalar</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.GoodBoisGraph"><span class="id" title="variable">GoodBoisGraph</span></a>. <span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">by</span> []. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+       Finally, we build the conformed graph, using the graph and the proof of its conformance.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.ValidGoodBoisGraph"><span class="id" title="variable">ValidGoodBoisGraph</span></a> := <a class="idref" href="GraphCoQL.GraphConformance.html#ConformedGraph"><span class="id" title="constructor">ConformedGraph</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.graph_conforms"><span class="id" title="variable">graph_conforms</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab135"></a><h4 class="section">Query</h4>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+      Thirdly, we define the query.
+
+<div class="paragraph"> </div>
+
+        <div class="row">
+              <div class="col-md-4">
+              <img src="../imgs/GoodBoisExample/query.png" class="img-fluid" alt="Query">
+              </div>
+         </div>
+
+<div class="paragraph"> </div>
+
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.example_query"><span class="id" title="variable">example_query</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Query.html#Query"><span class="id" title="constructor">Query</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#None"><span class="id" title="constructor">None</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[::</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"goodboi" <a class="idref" href="GraphCoQL.Query.html#3888c407a0b5a78bf13c92ec54cfab73"><span class="id" title="notation">[[</span></a> <span class="id" title="notation">[::</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a>"goodness"<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <a class="idref" href="GraphCoQL.Value.html#SValue"><span class="id" title="constructor">SValue</span></a> (<a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#VString"><span class="id" title="constructor">VString</span></a> "BESTBOI")<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a> <span class="id" title="notation">]</span> <a class="idref" href="GraphCoQL.Query.html#3888c407a0b5a78bf13c92ec54cfab73"><span class="id" title="notation">]]</span></a> <a class="idref" href="GraphCoQL.Query.html#3888c407a0b5a78bf13c92ec54cfab73"><span class="id" title="notation">{</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[::</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"name" <a class="idref" href="GraphCoQL.Query.html#98e1012699f08870762b607c45b5fa3b"><span class="id" title="notation">[[</span></a> <span class="id" title="notation">[::]</span> <a class="idref" href="GraphCoQL.Query.html#98e1012699f08870762b607c45b5fa3b"><span class="id" title="notation">]]</span></a> <span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"friends" <a class="idref" href="GraphCoQL.Query.html#3888c407a0b5a78bf13c92ec54cfab73"><span class="id" title="notation">[[</span></a> <span class="id" title="notation">[::]</span> <a class="idref" href="GraphCoQL.Query.html#3888c407a0b5a78bf13c92ec54cfab73"><span class="id" title="notation">]]</span></a> <a class="idref" href="GraphCoQL.Query.html#3888c407a0b5a78bf13c92ec54cfab73"><span class="id" title="notation">{</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[::</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"name" <a class="idref" href="GraphCoQL.Query.html#98e1012699f08870762b607c45b5fa3b"><span class="id" title="notation">[[</span></a> <span class="id" title="notation">[::]</span> <a class="idref" href="GraphCoQL.Query.html#98e1012699f08870762b607c45b5fa3b"><span class="id" title="notation">]]</span></a><span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Query.html#ccb33ca3f1a560174215aee39fd888c4"><span class="id" title="notation">on</span></a> "Dog" <a class="idref" href="GraphCoQL.Query.html#ccb33ca3f1a560174215aee39fd888c4"><span class="id" title="notation">{</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[::</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"favoriteToy" <a class="idref" href="GraphCoQL.Query.html#3888c407a0b5a78bf13c92ec54cfab73"><span class="id" title="notation">[[</span></a> <span class="id" title="notation">[::]</span> <a class="idref" href="GraphCoQL.Query.html#3888c407a0b5a78bf13c92ec54cfab73"><span class="id" title="notation">]]</span></a> <a class="idref" href="GraphCoQL.Query.html#3888c407a0b5a78bf13c92ec54cfab73"><span class="id" title="notation">{</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[::</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"chewiness" <a class="idref" href="GraphCoQL.Query.html#98e1012699f08870762b607c45b5fa3b"><span class="id" title="notation">[[</span></a> <span class="id" title="notation">[::]</span> <a class="idref" href="GraphCoQL.Query.html#98e1012699f08870762b607c45b5fa3b"><span class="id" title="notation">]]</span></a><br/>
+                                     <span class="id" title="notation">]</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Query.html#3888c407a0b5a78bf13c92ec54cfab73"><span class="id" title="notation">}</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">]</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Query.html#ccb33ca3f1a560174215aee39fd888c4"><span class="id" title="notation">}</span></a><span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Query.html#ccb33ca3f1a560174215aee39fd888c4"><span class="id" title="notation">on</span></a> "Pig" <a class="idref" href="GraphCoQL.Query.html#ccb33ca3f1a560174215aee39fd888c4"><span class="id" title="notation">{</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[::</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"loudness" <a class="idref" href="GraphCoQL.Query.html#733561a2d94bd7a99b0d600c93878697"><span class="id" title="notation">:</span></a> "oink" <a class="idref" href="GraphCoQL.Query.html#733561a2d94bd7a99b0d600c93878697"><span class="id" title="notation">[[</span></a> <span class="id" title="notation">[::]</span> <a class="idref" href="GraphCoQL.Query.html#733561a2d94bd7a99b0d600c93878697"><span class="id" title="notation">]]</span></a><br/>
+                                <span class="id" title="notation">]</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Query.html#ccb33ca3f1a560174215aee39fd888c4"><span class="id" title="notation">}</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">]</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Query.html#3888c407a0b5a78bf13c92ec54cfab73"><span class="id" title="notation">}</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">]</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Query.html#3888c407a0b5a78bf13c92ec54cfab73"><span class="id" title="notation">}</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">]</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+       We prove it conforms to the schema and has valage values, by simple computation.     
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.example_query_conforms"><span class="id" title="variable">example_query_conforms</span></a> : <a class="idref" href="GraphCoQL.QueryConformance.html#query_conforms"><span class="id" title="definition">query_conforms</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#check_scalar"><span class="id" title="definition">check_scalar</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.ValidGoodBoisSchema"><span class="id" title="variable">ValidGoodBoisSchema</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.example_query"><span class="id" title="variable">example_query</span></a>. <span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">by</span> []. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab136"></a><h4 class="section">Response</h4>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+      Fourthly, we define the response expected for the previous query.
+
+<div class="paragraph"> </div>
+
+        <div class="row">
+              <div class="col-md-4">
+              <img src="../imgs/GoodBoisExample/response.png" class="img-fluid" alt="Response">
+              </div>
+         </div>
+
+<div class="paragraph"> </div>
+
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <a name="GoodBoisExample.expected_response"><span class="id" title="variable">expected_response</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[::</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a>"goodboi"<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Response.html#018ad147dad4f1368e0212dfa8229d0e"><span class="id" title="notation">{-</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[::</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a>"name"<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <a class="idref" href="GraphCoQL.Response.html#Leaf"><span class="id" title="constructor">Leaf</span></a> (<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#VString"><span class="id" title="constructor">VString</span></a> "Casel"))<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a><span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a>"friends"<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a><a class="idref" href="GraphCoQL.Response.html#Array"><span class="id" title="constructor">Array</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[::</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Response.html#018ad147dad4f1368e0212dfa8229d0e"><span class="id" title="notation">{-</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[::</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a>"name"<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <a class="idref" href="GraphCoQL.Response.html#Leaf"><span class="id" title="constructor">Leaf</span></a> (<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#VString"><span class="id" title="constructor">VString</span></a> "Marle"))<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a><span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a>"favoriteToy"<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Response.html#018ad147dad4f1368e0212dfa8229d0e"><span class="id" title="notation">{-</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[::</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a>"chewiness"<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <a class="idref" href="GraphCoQL.Response.html#Leaf"><span class="id" title="constructor">Leaf</span></a> (<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#VFloat"><span class="id" title="constructor">VFloat</span></a> 23 0))<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">]</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Response.html#018ad147dad4f1368e0212dfa8229d0e"><span class="id" title="notation">-}</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">]</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Response.html#018ad147dad4f1368e0212dfa8229d0e"><span class="id" title="notation">-}</span></a><span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Response.html#018ad147dad4f1368e0212dfa8229d0e"><span class="id" title="notation">{-</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[::</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a>"name"<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <a class="idref" href="GraphCoQL.Response.html#Leaf"><span class="id" title="constructor">Leaf</span></a> (<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#VString"><span class="id" title="constructor">VString</span></a> "Chris P. Bacon"))<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a><span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a>"loudness"<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <a class="idref" href="GraphCoQL.Response.html#Leaf"><span class="id" title="constructor">Leaf</span></a> (<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#VInt"><span class="id" title="constructor">VInt</span></a> 9000))<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">]</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Response.html#018ad147dad4f1368e0212dfa8229d0e"><span class="id" title="notation">-}</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">]</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">]</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.Response.html#018ad147dad4f1368e0212dfa8229d0e"><span class="id" title="notation">-}</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">]</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab137"></a><h4 class="section">Evaluation</h4>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+      Lastly, we show that executing the previous query in the context of the well-formed schema, and over the conformed graph, starting from the root node, gives us the expected response (by computation).
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Goal</span> (<a class="idref" href="GraphCoQL.QuerySemantics.html#execute_query"><span class="id" title="definition">execute_query</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.ValidGoodBoisSchema"><span class="id" title="variable">ValidGoodBoisSchema</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#check_scalar"><span class="id" title="definition">check_scalar</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.ValidGoodBoisGraph"><span class="id" title="variable">ValidGoodBoisGraph</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#coerce"><span class="id" title="definition">coerce</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.example_query"><span class="id" title="variable">example_query</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample.expected_response"><span class="id" title="variable">expected_response</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> [].<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.examples.GoodBoisExample.html#GoodBoisExample"><span class="id" title="section">GoodBoisExample</span></a>.<br/>
+</div>
+</div>
+<div id="footer">
+  Generated by <a href="http://coq.inria.fr/">coqdoc</a> and improved with <a href="https://github.com/tebbi/coqdocjs">CoqdocJS</a>
+</div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
+<script>
+  $(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+  })
+  </script>
+
+</body>
+
+</html>
