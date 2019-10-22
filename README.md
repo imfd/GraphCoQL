@@ -3,7 +3,7 @@
 GraphCoQL is the first mechanized formalization of the [GraphQL](https://graphql.github.io/graphql-spec/June2018/) specification, developed
 in the [Coq Proof Assistant](https://coq.inria.fr). GraphCoQL covers the schema definition DSL, query definitions, as well as the semantics over a graph data model.
 
-The following sections detail how to setup the project, build it and the features GraphCoQL currently supports. For the complete documentation on the formalization you may either look at the corresponding paper, build the project and look at the generated documentation in the `docs` folder (generated via `coqdoc`), or look at the following (WIP) [documentation website](graphcoql.netlify.com).
+The following sections detail how to setup the project, build it and the features GraphCoQL currently supports. For the complete documentation on the formalization you may either look at the corresponding paper, build the project and look at the generated documentation in the `docs` folder (generated via `coqdoc` and improved with [CoqdocJS](https://github.com/tebbi/coqdocjs)), or look at the following (WIP) [documentation website](graphcoql.netlify.com).
 
 Finally, the README file in the `src` folder specifies how the code is structured in the project.
 
