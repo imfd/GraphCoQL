@@ -1,0 +1,434 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<link href="coqdocjs.css" rel="stylesheet" type="text/css"/>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<script type="text/javascript" src="config.js"></script>
+<script type="text/javascript" src="coqdocjs.js"></script>
+</head>
+
+<body onload="document.getElementById('content').focus()">
+  <div id="header">
+    <span class="left">
+      <span class="modulename"> <script> document.write(document.title) </script> </span>
+    </span>
+
+    <span class="button" id="toggle-proofs"></span>
+
+    <span class="right">
+      <a href="../">Project Page</a>
+      <a href="./indexpage.html"> Index </a>
+      <a href="./toc.html"> Table of Contents </a>
+    </span>
+</div>
+    <div id="content" tabindex="-1" onblur="document.getElementById('content').focus()">
+    <div id="main">
+<h1 class="libtitle">Lib.SeqExtra</h1>
+
+<div class="code">
+
+<br/>
+</div>
+
+<div class="doc">
+   <div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">Seq Extra</h1>
+        <p class="lead">
+         This file contains some basic lemmas over seq and extra definitions used in the project.
+        </p>         
+  </div>
+</div>
+ 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Section</span> <a name="SeqExtra"><span class="id" title="section">SeqExtra</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Variables</span> (<a name="SeqExtra.A"><span class="id" title="variable">A</span></a> <a name="SeqExtra.B"><span class="id" title="variable">B</span></a> <a name="SeqExtra.C"><span class="id" title="variable">C</span></a> : <span class="id" title="abbreviation">eqType</span>) (<a name="SeqExtra.T"><span class="id" title="variable">T</span></a> : <span class="id" title="keyword">Type</span>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     <strong>get_first</strong> : (A → Bool) → seq A → option A
+
+<div class="paragraph"> </div>
+
+     Gets the first element in the list that satisfies the predicate.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <a name="get_first"><span class="id" title="definition">get_first</span></a> <span class="id" title="var">p</span> (<span class="id" title="var">lst</span> : <span class="id" title="abbreviation">seq</span> <a class="idref" href="Lib.SeqExtra.html#SeqExtra.A"><span class="id" title="variable">A</span></a>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">if</span> <a class="idref" href="Lib.SeqExtra.html#lst"><span class="id" title="variable">lst</span></a> <span class="id" title="keyword">is</span> <span class="id" title="var">hd</span> <span class="id" title="notation">::</span> <span class="id" title="var">tl</span> <span class="id" title="keyword">then</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssreflect.html#00a1a5b58aac8f1e3f1abff064a39f9d"><span class="id" title="notation">if</span></a> <a class="idref" href="Lib.SeqExtra.html#p"><span class="id" title="variable">p</span></a> <span class="id" title="var">hd</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssreflect.html#00a1a5b58aac8f1e3f1abff064a39f9d"><span class="id" title="notation">then</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <span class="id" title="var">hd</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssreflect.html#00a1a5b58aac8f1e3f1abff064a39f9d"><span class="id" title="notation">else</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Lib.SeqExtra.html#get_first"><span class="id" title="definition">get_first</span></a> <a class="idref" href="Lib.SeqExtra.html#p"><span class="id" title="variable">p</span></a> <span class="id" title="var">tl</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">else</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#None"><span class="id" title="constructor">None</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     This lemma states that the first element obtained by <span class="inlinecode"><a class="idref" href="Lib.SeqExtra.html#get_first"><span class="id" title="definition">get_first</span></a></span> satisfies
+     the predicate.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="get_first_pred"><span class="id" title="lemma">get_first_pred</span></a> (<span class="id" title="var">p</span> : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#pred"><span class="id" title="definition">pred</span></a> <a class="idref" href="Lib.SeqExtra.html#SeqExtra.A"><span class="id" title="variable">A</span></a>) (<span class="id" title="var">s</span> : <span class="id" title="abbreviation">seq</span> <a class="idref" href="Lib.SeqExtra.html#SeqExtra.A"><span class="id" title="variable">A</span></a>) (<span class="id" title="var">x</span> : <a class="idref" href="Lib.SeqExtra.html#SeqExtra.A"><span class="id" title="variable">A</span></a>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Lib.SeqExtra.html#get_first"><span class="id" title="definition">get_first</span></a> <a class="idref" href="Lib.SeqExtra.html#p"><span class="id" title="variable">p</span></a> <a class="idref" href="Lib.SeqExtra.html#s"><span class="id" title="variable">s</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <a class="idref" href="Lib.SeqExtra.html#x"><span class="id" title="variable">x</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Lib.SeqExtra.html#p"><span class="id" title="variable">p</span></a> <a class="idref" href="Lib.SeqExtra.html#x"><span class="id" title="variable">x</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">elim</span>: <span class="id" title="var">s</span> =&gt; //= <span class="id" title="var">y</span> <span class="id" title="var">s</span> <span class="id" title="var">IH</span>; <span class="id" title="tactic">case</span>: <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#ifP"><span class="id" title="lemma">ifP</span></a> =&gt; //= <span class="id" title="var">Hp</span>; <span class="id" title="tactic">case</span>=&gt; &lt;-.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     This lemma states that an element belongs both to a list and the 
+     same list without duplicates.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="in_undup"><span class="id" title="lemma">in_undup</span></a> (<span class="id" title="var">s</span> : <span class="id" title="abbreviation">seq</span> <a class="idref" href="Lib.SeqExtra.html#SeqExtra.A"><span class="id" title="variable">A</span></a>) (<span class="id" title="var">x</span> : <a class="idref" href="Lib.SeqExtra.html#SeqExtra.A"><span class="id" title="variable">A</span></a>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Lib.SeqExtra.html#x"><span class="id" title="variable">x</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="Lib.SeqExtra.html#s"><span class="id" title="variable">s</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#4bfb4f2d0721ba668e3a802ab1b745a1"><span class="id" title="notation">&lt;-&gt;</span></a> <a class="idref" href="Lib.SeqExtra.html#x"><span class="id" title="variable">x</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <span class="id" title="definition">undup</span> <a class="idref" href="Lib.SeqExtra.html#s"><span class="id" title="variable">s</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">elim</span>: <span class="id" title="var">s</span> =&gt; //= <span class="id" title="var">y</span> <span class="id" title="var">s</span> [<span class="id" title="var">IHl</span> <span class="id" title="var">IHr</span>]; <span class="id" title="tactic">split</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">rewrite</span> <span class="id" title="definition">inE</span> =&gt; /<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#orP"><span class="id" title="lemma">orP</span></a> [/<span class="id" title="lemma">eqP</span> &lt;- | <span class="id" title="var">Hin</span>]; <span class="id" title="tactic">case</span>: <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#ifP"><span class="id" title="lemma">ifP</span></a> =&gt; //=.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id" title="tactic">by</span> <span class="id" title="tactic">intros</span>; <span class="id" title="tactic">apply</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#orP"><span class="id" title="lemma">orP</span></a>; <span class="id" title="tactic">left</span>; <span class="id" title="tactic">apply</span>/<span class="id" title="lemma">eqP</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id" title="tactic">by</span> <span class="id" title="tactic">intros</span>; <span class="id" title="tactic">apply</span>: <span class="id" title="var">IHl</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id" title="tactic">by</span> <span class="id" title="tactic">intros</span>; <span class="id" title="tactic">apply</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#orP"><span class="id" title="lemma">orP</span></a>; <span class="id" title="tactic">right</span>; <span class="id" title="tactic">apply</span>: <span class="id" title="var">IHl</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">case</span>: <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#ifP"><span class="id" title="lemma">ifP</span></a> =&gt; //=; <span class="id" title="tactic">intros</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="definition">inE</span>; <span class="id" title="tactic">apply</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#orP"><span class="id" title="lemma">orP</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id" title="tactic">by</span> <span class="id" title="tactic">right</span>; <span class="id" title="tactic">apply</span>: <span class="id" title="var">IHr</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="id" title="tactic">by</span> <span class="id" title="tactic">case</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#orP"><span class="id" title="lemma">orP</span></a>: <span class="id" title="var">H</span> =&gt; [/<span class="id" title="lemma">eqP</span> &lt;- | <span class="id" title="var">Hin</span>]; [<span class="id" title="tactic">left</span>; <span class="id" title="tactic">apply</span>/<span class="id" title="lemma">eqP</span> | <span class="id" title="tactic">right</span>; <span class="id" title="tactic">apply</span>: <span class="id" title="var">IHr</span>].<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     This lemma states that if <span class="inlinecode"><span class="id" title="definition">ohead</span></span> returns an element <span class="inlinecode"><a class="idref" href="Lib.SeqExtra.html#v"><span class="id" title="variable">v</span></a></span>
+     then that element belongs to the list.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="ohead_in"><span class="id" title="lemma">ohead_in</span></a> (<span class="id" title="var">lst</span> : <span class="id" title="abbreviation">seq</span> <a class="idref" href="Lib.SeqExtra.html#SeqExtra.A"><span class="id" title="variable">A</span></a>) (<span class="id" title="var">v</span> : <a class="idref" href="Lib.SeqExtra.html#SeqExtra.A"><span class="id" title="variable">A</span></a>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">ohead</span> <a class="idref" href="Lib.SeqExtra.html#lst"><span class="id" title="variable">lst</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <a class="idref" href="Lib.SeqExtra.html#v"><span class="id" title="variable">v</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Lib.SeqExtra.html#v"><span class="id" title="variable">v</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="Lib.SeqExtra.html#lst"><span class="id" title="variable">lst</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">elim</span>: <span class="id" title="var">lst</span> =&gt; // <span class="id" title="var">x</span> <span class="id" title="var">lst'</span> <span class="id" title="var">IH</span> /=.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">case</span>=&gt; -&gt;; <span class="id" title="tactic">rewrite</span> <span class="id" title="definition">inE</span>; <span class="id" title="tactic">apply</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#orP"><span class="id" title="lemma">orP</span></a>; <span class="id" title="tactic">left</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     This lemma states that if a list belongs to a list then
+     it belongs to the tail of the cons (similar to <span class="inlinecode"><span class="id" title="lemma">mem_head</span></span>).
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="mem_tail"><span class="id" title="lemma">mem_tail</span></a> <span class="id" title="var">s</span> (<span class="id" title="var">x</span> <span class="id" title="var">hd</span> : <a class="idref" href="Lib.SeqExtra.html#SeqExtra.A"><span class="id" title="variable">A</span></a>) : <a class="idref" href="Lib.SeqExtra.html#x"><span class="id" title="variable">x</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="Lib.SeqExtra.html#s"><span class="id" title="variable">s</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="Lib.SeqExtra.html#x"><span class="id" title="variable">x</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">(</span></a><a class="idref" href="Lib.SeqExtra.html#hd"><span class="id" title="variable">hd</span></a> <span class="id" title="notation">::</span> <a class="idref" href="Lib.SeqExtra.html#s"><span class="id" title="variable">s</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">)</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">in_cons</span> =&gt; <span class="id" title="var">Hin</span>; <span class="id" title="tactic">apply</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#orP"><span class="id" title="lemma">orP</span></a>; <span class="id" title="tactic">right</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="Lib.SeqExtra.html#SeqExtra"><span class="id" title="section">SeqExtra</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Set Implicit Arguments</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <a name="SeqI"><span class="id" title="section">SeqI</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Variable</span> (<a name="SeqI.A"><span class="id" title="variable">A</span></a> : <span class="id" title="abbreviation">eqType</span>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     <strong></strong>: seq A → seq A → seq A
+
+<div class="paragraph"> </div>
+
+     Intersects two lists.
+
+<div class="paragraph"> </div>
+
+     This is used in <span class="inlinecode"><a class="idref" href="GraphCoQL.QueryAux.html#is_fragment_spread_possible"><span class="id" title="definition">is_fragment_spread_possible</span></a></span>.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="seqI"><span class="id" title="definition">seqI</span></a> (<span class="id" title="var">s1</span> <span class="id" title="var">s2</span> : <span class="id" title="abbreviation">seq</span> <a class="idref" href="Lib.SeqExtra.html#SeqI.A"><span class="id" title="variable">A</span></a>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">undup</span> (<span class="id" title="definition">filter</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">s</span> =&gt; <a class="idref" href="Lib.SeqExtra.html#s"><span class="id" title="variable">s</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="Lib.SeqExtra.html#s1"><span class="id" title="variable">s1</span></a>) <a class="idref" href="Lib.SeqExtra.html#s2"><span class="id" title="variable">s2</span></a>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Infix</span> <a name="2191c82036b82f80dfbf5758d3cf8a17"><span class="id" title="notation">&quot;</span></a>:&amp;:" := <a class="idref" href="Lib.SeqExtra.html#seqI"><span class="id" title="definition">seqI</span></a> : <span class="id" title="var">seq_scope</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">SEQ</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     This lemma states that an element in the intersection of two lists 
+     belongs to each individually.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="in_seqI"><span class="id" title="lemma">in_seqI</span></a> (<span class="id" title="var">x</span> : <a class="idref" href="Lib.SeqExtra.html#SeqI.A"><span class="id" title="variable">A</span></a>) <span class="id" title="var">s1</span> <span class="id" title="var">s2</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Lib.SeqExtra.html#x"><span class="id" title="variable">x</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">(</span></a><a class="idref" href="Lib.SeqExtra.html#s1"><span class="id" title="variable">s1</span></a> <a class="idref" href="Lib.SeqExtra.html#2191c82036b82f80dfbf5758d3cf8a17"><span class="id" title="notation">:&amp;:</span></a> <a class="idref" href="Lib.SeqExtra.html#s2"><span class="id" title="variable">s2</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">)</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#9ddeac0ab66152bd1d64bedb507a795e"><span class="id" title="notation">(</span></a><a class="idref" href="Lib.SeqExtra.html#x"><span class="id" title="variable">x</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="Lib.SeqExtra.html#s1"><span class="id" title="variable">s1</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#9ddeac0ab66152bd1d64bedb507a795e"><span class="id" title="notation">)</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#9ddeac0ab66152bd1d64bedb507a795e"><span class="id" title="notation">&amp;&amp;</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#9ddeac0ab66152bd1d64bedb507a795e"><span class="id" title="notation">(</span></a><a class="idref" href="Lib.SeqExtra.html#x"><span class="id" title="variable">x</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="Lib.SeqExtra.html#s2"><span class="id" title="variable">s2</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#9ddeac0ab66152bd1d64bedb507a795e"><span class="id" title="notation">)</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> /<a class="idref" href="Lib.SeqExtra.html#seqI"><span class="id" title="definition">seqI</span></a> <span class="id" title="lemma">mem_undup</span> <span class="id" title="lemma">mem_filter</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     This lemma states that the intersection of a singleton list 
+     to any other list results in either the same singleton list or 
+     an empty list.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="seq1I"><span class="id" title="lemma">seq1I</span></a> (<span class="id" title="var">x</span> : <a class="idref" href="Lib.SeqExtra.html#SeqI.A"><span class="id" title="variable">A</span></a>) <span class="id" title="var">s</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[::</span> <a class="idref" href="Lib.SeqExtra.html#x"><span class="id" title="variable">x</span></a><span class="id" title="notation">]</span> <a class="idref" href="Lib.SeqExtra.html#2191c82036b82f80dfbf5758d3cf8a17"><span class="id" title="notation">:&amp;:</span></a> <a class="idref" href="Lib.SeqExtra.html#s"><span class="id" title="variable">s</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssreflect.html#00a1a5b58aac8f1e3f1abff064a39f9d"><span class="id" title="notation">if</span></a> <a class="idref" href="Lib.SeqExtra.html#x"><span class="id" title="variable">x</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="Lib.SeqExtra.html#s"><span class="id" title="variable">s</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssreflect.html#00a1a5b58aac8f1e3f1abff064a39f9d"><span class="id" title="notation">then</span></a> <span class="id" title="notation">[::</span> <a class="idref" href="Lib.SeqExtra.html#x"><span class="id" title="variable">x</span></a><span class="id" title="notation">]</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssreflect.html#00a1a5b58aac8f1e3f1abff064a39f9d"><span class="id" title="notation">else</span></a> <span class="id" title="notation">[::]</span> .<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="Lib.SeqExtra.html#seqI"><span class="id" title="definition">seqI</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">elim</span>: <span class="id" title="var">s</span> =&gt; //= <span class="id" title="var">s1</span> <span class="id" title="var">s</span> <span class="id" title="var">IH</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">case</span>: <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#ifP"><span class="id" title="lemma">ifP</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">mem_seq1</span> =&gt; /<span class="id" title="lemma">eqP</span> <span class="id" title="var">Heq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">Heq</span> <span class="id" title="tactic">in</span> <span class="id" title="var">IH</span> *; <span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">mem_head</span> /= <span class="id" title="lemma">mem_filter</span> <span class="id" title="lemma">mem_head</span> /=.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">case</span>: <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#ifP"><span class="id" title="lemma">ifP</span></a> =&gt; // <span class="id" title="var">Hin</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Hin</span> <span class="id" title="tactic">in</span> <span class="id" title="var">IH</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">IH</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">mem_seq1</span> =&gt; <span class="id" title="var">Hneq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="definition">inE</span> <span class="id" title="lemma">eq_sym</span> <span class="id" title="var">Hneq</span> /= <span class="id" title="var">IH</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;These&nbsp;lemmas&nbsp;are&nbsp;repeated...&nbsp;It&nbsp;should&nbsp;suffice&nbsp;to&nbsp;prove<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;commutativity&nbsp;of&nbsp;the&nbsp;intersection,&nbsp;but&nbsp;for&nbsp;some&nbsp;reason&nbsp;I&nbsp;cannot&nbsp;do&nbsp;it&nbsp;--<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;my&nbsp;mind&nbsp;is&nbsp;not&nbsp;on&nbsp;the&nbsp;mood&nbsp;apparently&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;*)</span><br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     This lemma states that if an element <span class="inlinecode"><a class="idref" href="Lib.SeqExtra.html#x"><span class="id" title="variable">x</span></a></span> is in a list, then 
+     intersecting it to the list returns the same element.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="mem_seqI1"><span class="id" title="lemma">mem_seqI1</span></a> (<span class="id" title="var">x</span> : <a class="idref" href="Lib.SeqExtra.html#SeqI.A"><span class="id" title="variable">A</span></a>) <span class="id" title="var">s1</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Lib.SeqExtra.html#x"><span class="id" title="variable">x</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="Lib.SeqExtra.html#s1"><span class="id" title="variable">s1</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#4bfb4f2d0721ba668e3a802ab1b745a1"><span class="id" title="notation">&lt;-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Lib.SeqExtra.html#s1"><span class="id" title="variable">s1</span></a> <a class="idref" href="Lib.SeqExtra.html#2191c82036b82f80dfbf5758d3cf8a17"><span class="id" title="notation">:&amp;:</span></a> <span class="id" title="notation">[::</span> <a class="idref" href="Lib.SeqExtra.html#x"><span class="id" title="variable">x</span></a><span class="id" title="notation">]</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="notation">[::</span> <a class="idref" href="Lib.SeqExtra.html#x"><span class="id" title="variable">x</span></a><span class="id" title="notation">]</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">split</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> /<a class="idref" href="Lib.SeqExtra.html#seqI"><span class="id" title="definition">seqI</span></a> /= =&gt; -&gt;.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> /<a class="idref" href="Lib.SeqExtra.html#seqI"><span class="id" title="definition">seqI</span></a> /=; <span class="id" title="tactic">case</span>: <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#ifP"><span class="id" title="lemma">ifP</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     This lemma states that if an element <span class="inlinecode"><a class="idref" href="Lib.SeqExtra.html#x"><span class="id" title="variable">x</span></a></span> is in a list, then 
+     intersecting it to the list returns the same element.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="mem_seq1I"><span class="id" title="lemma">mem_seq1I</span></a> (<span class="id" title="var">x</span> : <a class="idref" href="Lib.SeqExtra.html#SeqI.A"><span class="id" title="variable">A</span></a>) <span class="id" title="var">s1</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Lib.SeqExtra.html#x"><span class="id" title="variable">x</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="Lib.SeqExtra.html#s1"><span class="id" title="variable">s1</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#4bfb4f2d0721ba668e3a802ab1b745a1"><span class="id" title="notation">&lt;-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[::</span> <a class="idref" href="Lib.SeqExtra.html#x"><span class="id" title="variable">x</span></a><span class="id" title="notation">]</span> <a class="idref" href="Lib.SeqExtra.html#2191c82036b82f80dfbf5758d3cf8a17"><span class="id" title="notation">:&amp;:</span></a> <a class="idref" href="Lib.SeqExtra.html#s1"><span class="id" title="variable">s1</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="notation">[::</span> <a class="idref" href="Lib.SeqExtra.html#x"><span class="id" title="variable">x</span></a><span class="id" title="notation">]</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> <a class="idref" href="Lib.SeqExtra.html#seq1I"><span class="id" title="lemma">seq1I</span></a>; <span class="id" title="tactic">case</span>: <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#ifP"><span class="id" title="lemma">ifP</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     This lemma states that if the intersection of a list with a singleton list 
+     is not empty then the intersection must be that singleton list.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="seqI1_Nnil"><span class="id" title="lemma">seqI1_Nnil</span></a> <span class="id" title="var">s1</span> <span class="id" title="var">x</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Lib.SeqExtra.html#s1"><span class="id" title="variable">s1</span></a> <a class="idref" href="Lib.SeqExtra.html#2191c82036b82f80dfbf5758d3cf8a17"><span class="id" title="notation">:&amp;:</span></a> <span class="id" title="notation">[::</span> <a class="idref" href="Lib.SeqExtra.html#x"><span class="id" title="variable">x</span></a><span class="id" title="notation">]</span> <span class="id" title="notation">!=</span> <span class="id" title="notation">[::]</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#4bfb4f2d0721ba668e3a802ab1b745a1"><span class="id" title="notation">&lt;-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Lib.SeqExtra.html#s1"><span class="id" title="variable">s1</span></a> <a class="idref" href="Lib.SeqExtra.html#2191c82036b82f80dfbf5758d3cf8a17"><span class="id" title="notation">:&amp;:</span></a> <span class="id" title="notation">[::</span> <a class="idref" href="Lib.SeqExtra.html#x"><span class="id" title="variable">x</span></a><span class="id" title="notation">]</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="notation">[::</span> <a class="idref" href="Lib.SeqExtra.html#x"><span class="id" title="variable">x</span></a><span class="id" title="notation">]</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">elim</span>: <span class="id" title="var">s1</span> =&gt; //= <span class="id" title="var">x1</span> <span class="id" title="var">s1</span> <span class="id" title="var">IH</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="Lib.SeqExtra.html#seqI"><span class="id" title="definition">seqI</span></a> /=.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">case</span>: <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#ifP"><span class="id" title="lemma">ifP</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     This lemma states that if the intersection of a list with a singleton list 
+     is not empty then the intersection must be that singleton list.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="seq1I_Nnil"><span class="id" title="lemma">seq1I_Nnil</span></a> <span class="id" title="var">s</span> <span class="id" title="var">x</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[::</span> <a class="idref" href="Lib.SeqExtra.html#x"><span class="id" title="variable">x</span></a><span class="id" title="notation">]</span> <a class="idref" href="Lib.SeqExtra.html#2191c82036b82f80dfbf5758d3cf8a17"><span class="id" title="notation">:&amp;:</span></a> <a class="idref" href="Lib.SeqExtra.html#s"><span class="id" title="variable">s</span></a> <span class="id" title="notation">!=</span> <span class="id" title="notation">[::]</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#4bfb4f2d0721ba668e3a802ab1b745a1"><span class="id" title="notation">&lt;-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[::</span> <a class="idref" href="Lib.SeqExtra.html#x"><span class="id" title="variable">x</span></a><span class="id" title="notation">]</span> <a class="idref" href="Lib.SeqExtra.html#2191c82036b82f80dfbf5758d3cf8a17"><span class="id" title="notation">:&amp;:</span></a> <a class="idref" href="Lib.SeqExtra.html#s"><span class="id" title="variable">s</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="notation">[::</span> <a class="idref" href="Lib.SeqExtra.html#x"><span class="id" title="variable">x</span></a><span class="id" title="notation">]</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">elim</span>: <span class="id" title="var">s</span> =&gt; //= <span class="id" title="var">x1</span> <span class="id" title="var">s</span> <span class="id" title="var">IH</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Lib.SeqExtra.html#seq1I"><span class="id" title="lemma">seq1I</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">case</span>: <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#ifP"><span class="id" title="lemma">ifP</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="Lib.SeqExtra.html#SeqI"><span class="id" title="section">SeqI</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <a name="Cat"><span class="id" title="section">Cat</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Variable</span> (<a name="Cat.A"><span class="id" title="variable">A</span></a> : <span class="id" title="keyword">Type</span>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     This lemma states that if a concatenation of two lists is empty 
+     then both lists are empty.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="cat_nil"><span class="id" title="lemma">cat_nil</span></a> (<span class="id" title="var">s1</span> <span class="id" title="var">s2</span> : <span class="id" title="abbreviation">seq</span> <a class="idref" href="Lib.SeqExtra.html#Cat.A"><span class="id" title="variable">A</span></a>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Lib.SeqExtra.html#s1"><span class="id" title="variable">s1</span></a> <span class="id" title="notation">++</span> <a class="idref" href="Lib.SeqExtra.html#s2"><span class="id" title="variable">s2</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="notation">[::]</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Lib.SeqExtra.html#s1"><span class="id" title="variable">s1</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="notation">[::]</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#ba2b0e492d2b4675a0acf3ea92aabadd"><span class="id" title="notation">/\</span></a> <a class="idref" href="Lib.SeqExtra.html#s2"><span class="id" title="variable">s2</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="notation">[::]</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">case</span>: <span class="id" title="var">s1</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="Lib.SeqExtra.html#Cat"><span class="id" title="section">Cat</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <a name="list_size"><span class="id" title="section">list_size</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">f</span> : <a class="idref" href="Lib.SeqExtra.html#A"><span class="id" title="variable">A</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     <strong>list_size</strong>: (A → Nat) → seq A → Nat
+
+<div class="paragraph"> </div>
+
+     Calculates the size of the list based on the length of the list plus 
+     the result of applying an auxiliary function.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <a name="list_size"><span class="id" title="definition">list_size</span></a> (<span class="id" title="var">l</span> : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> <a class="idref" href="Lib.SeqExtra.html#list_size.A"><span class="id" title="variable">A</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="Lib.SeqExtra.html#l"><span class="id" title="variable">l</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="notation">[::]</span> =&gt; 0<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">x</span> <span class="id" title="notation">::</span> <span class="id" title="var">xs</span> =&gt; <span class="id" title="notation">(</span><a class="idref" href="Lib.SeqExtra.html#list_size.f"><span class="id" title="variable">f</span></a> <span class="id" title="var">x</span> <span class="id" title="notation">+</span> <a class="idref" href="Lib.SeqExtra.html#list_size"><span class="id" title="definition">list_size</span></a> <span class="id" title="var">xs</span><span class="id" title="notation">).+1</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="Lib.SeqExtra.html#list_size"><span class="id" title="section">list_size</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Notation</span> <a name="0ca0f22eabd1673440125c2acd57876f"><span class="id" title="notation">&quot;</span></a>s1 :&amp;: s2" := (<a class="idref" href="Lib.SeqExtra.html#seqI"><span class="id" title="definition">seqI</span></a> <span class="id" title="var">s1</span> <span class="id" title="var">s2</span>) : <span class="id" title="var">seq_scope</span>.<br/>
+
+<br/>
+</div>
+</div>
+<div id="footer">
+  Generated by <a href="http://coq.inria.fr/">coqdoc</a> and improved with <a href="https://github.com/tebbi/coqdocjs">CoqdocJS</a>
+</div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
+<script>
+  $(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+  })
+  </script>
+
+</body>
+
+</html>

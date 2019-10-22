@@ -1,0 +1,586 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<link href="coqdocjs.css" rel="stylesheet" type="text/css"/>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<script type="text/javascript" src="config.js"></script>
+<script type="text/javascript" src="coqdocjs.js"></script>
+</head>
+
+<body onload="document.getElementById('content').focus()">
+  <div id="header">
+    <span class="left">
+      <span class="modulename"> <script> document.write(document.title) </script> </span>
+    </span>
+
+    <span class="button" id="toggle-proofs"></span>
+
+    <span class="right">
+      <a href="../">Project Page</a>
+      <a href="./indexpage.html"> Index </a>
+      <a href="./toc.html"> Table of Contents </a>
+    </span>
+</div>
+    <div id="content" tabindex="-1" onblur="document.getElementById('content').focus()">
+    <div id="main">
+<h1 class="libtitle">GraphCoQL.GraphConformance</h1>
+
+<div class="code">
+
+<br/>
+</div>
+
+<div class="doc">
+   <div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">Graph Conformance</h1>
+        <p class="lead">
+         This file contains the necessary definitions to check when a GraphQL Graph
+         is valid wrt. to a GraphQL Schema. 
+        </p>
+         <p>
+         This notion includes validations such as: 
+          <ul>
+           <li> Root node's type is same as the root query operation type. </li>
+           <li> Fields in edges are defined in the Schema. </li>
+           <li> Values used in arguments and properties correspond to the expected type in the Schema. </li>
+           <li> Etc. </li>
+         </ul>
+        </p>
+         <p>
+         We will progressively define predicates that check different aspects of a graph.
+         From these we will ultimately define the predicate and structure for conformed graphs.
+        </p>
+  </div>
+</div>
+ 
+<div class="paragraph"> </div>
+
+<a name="lab74"></a><h1 class="section">Conformance Predicates</h1>
+<hr/>
+ 
+</div>
+<div class="code">
+<span class="id" title="keyword">Section</span> <a name="Conformance"><span class="id" title="section">Conformance</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Variable</span> (<a name="Conformance.Scalar"><span class="id" title="variable">Scalar</span></a> : <span class="id" title="abbreviation">eqType</span>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab75"></a><h2 class="section">Auxiliary definitions</h2>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+      In this section we define some auxiliary definitions.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a name="Conformance.GraphAux"><span class="id" title="section">GraphAux</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Variable</span> (<a name="Conformance.GraphAux.graph"><span class="id" title="variable">graph</span></a> :  @<a class="idref" href="GraphCoQL.Graph.html#graphQLGraph"><span class="id" title="record">graphQLGraph</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Scalar"><span class="id" title="variable">Scalar</span></a>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Implicit</span> <span class="id" title="keyword">Type</span> <span class="id" title="var">edge</span> : @<a class="idref" href="GraphCoQL.Graph.html#node"><span class="id" title="record">node</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Scalar"><span class="id" title="variable">Scalar</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> @<a class="idref" href="GraphCoQL.Graph.html#label"><span class="id" title="record">label</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Scalar"><span class="id" title="variable">Scalar</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> @<a class="idref" href="GraphCoQL.Graph.html#node"><span class="id" title="record">node</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Scalar"><span class="id" title="variable">Scalar</span></a>.<br/>
+
+<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab76"></a><h3 class="section">Extractors for an edge</h3>
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+
+<div class="paragraph"> </div>
+
+       Returns an edge's target node.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="etarget"><span class="id" title="definition">etarget</span></a> <span class="id" title="var">edge</span> : <a class="idref" href="GraphCoQL.Graph.html#node"><span class="id" title="record">node</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span>: <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a><span class="id" title="var">_</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <span class="id" title="var">_</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <span class="id" title="var">v</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a> := <a class="idref" href="GraphCoQL.GraphConformance.html#edge"><span class="id" title="variable">edge</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">v</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       Returns an edge's source node.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="esource"><span class="id" title="definition">esource</span></a> <span class="id" title="var">edge</span> : <a class="idref" href="GraphCoQL.Graph.html#node"><span class="id" title="record">node</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span>: <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a><span class="id" title="var">u</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <span class="id" title="var">_</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <span class="id" title="var">_</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a> := <a class="idref" href="GraphCoQL.GraphConformance.html#edge"><span class="id" title="variable">edge</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">u</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       Returns an edge's label.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="efield"><span class="id" title="definition">efield</span></a> <span class="id" title="var">edge</span> : <a class="idref" href="GraphCoQL.Graph.html#label"><span class="id" title="record">label</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span>: <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a><span class="id" title="var">_</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <span class="id" title="var">f</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <span class="id" title="var">_</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a> := <a class="idref" href="GraphCoQL.GraphConformance.html#edge"><span class="id" title="variable">edge</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">f</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       Returns the nodes of an edge (source and target).
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="enodes"><span class="id" title="definition">enodes</span></a> <span class="id" title="var">edge</span> : <span class="id" title="abbreviation">seq</span> <a class="idref" href="GraphCoQL.Graph.html#node"><span class="id" title="record">node</span></a> := <span class="id" title="notation">[::</span> <a class="idref" href="GraphCoQL.GraphConformance.html#edge"><span class="id" title="variable">edge</span></a>.(<a class="idref" href="GraphCoQL.GraphConformance.html#esource"><span class="id" title="definition">esource</span></a>) <span class="id" title="notation">;</span> <a class="idref" href="GraphCoQL.GraphConformance.html#edge"><span class="id" title="variable">edge</span></a>.(<a class="idref" href="GraphCoQL.GraphConformance.html#etarget"><span class="id" title="definition">etarget</span></a>)<span class="id" title="notation">]</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab77"></a><h3 class="section">Node related functions</h3>
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+
+<div class="paragraph"> </div>
+
+        Returns all nodes from a graph.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="nodes"><span class="id" title="definition">nodes</span></a> <span class="id" title="var">graph</span> : <span class="id" title="abbreviation">seq</span> <a class="idref" href="GraphCoQL.Graph.html#node"><span class="id" title="record">node</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">undup</span> (<a class="idref" href="GraphCoQL.GraphConformance.html#graph"><span class="id" title="variable">graph</span></a>.(<a class="idref" href="GraphCoQL.Graph.html#root"><span class="id" title="projection">root</span></a>) <span class="id" title="notation">::</span>  <span class="id" title="definition">flatten</span> <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="GraphCoQL.GraphConformance.html#edge"><span class="id" title="variable">edge</span></a>.(<a class="idref" href="GraphCoQL.GraphConformance.html#enodes"><span class="id" title="definition">enodes</span></a>) <span class="id" title="notation">|</span> <span class="id" title="var">edge</span> <span class="id" title="notation">&lt;-</span> <a class="idref" href="GraphCoQL.GraphConformance.html#graph"><span class="id" title="variable">graph</span></a>.(<a class="idref" href="GraphCoQL.Graph.html#edges"><span class="id" title="projection">edges</span></a>)<span class="id" title="notation">]</span>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       Get the value of the property with the given label.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="property"><span class="id" title="definition">property</span></a> (<span class="id" title="var">u</span> : <a class="idref" href="GraphCoQL.Graph.html#node"><span class="id" title="record">node</span></a>) (<span class="id" title="var">lab</span> : <a class="idref" href="GraphCoQL.Graph.html#label"><span class="id" title="record">label</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#option"><span class="id" title="inductive">option</span></a> (@<a class="idref" href="GraphCoQL.Value.html#Value"><span class="id" title="inductive">Value</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Scalar"><span class="id" title="variable">Scalar</span></a>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">if</span> <a class="idref" href="Lib.SeqExtra.html#get_first"><span class="id" title="definition">get_first</span></a> (<span class="id" title="keyword">fun</span> <span class="id" title="var">prop</span> =&gt; <a class="idref" href="GraphCoQL.GraphConformance.html#prop"><span class="id" title="variable">prop</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrfun.html#e0817251e7d67ad994b4d9b1aa82a412"><span class="id" title="notation">.1</span></a> <span class="id" title="notation">==</span> <a class="idref" href="GraphCoQL.GraphConformance.html#lab"><span class="id" title="variable">lab</span></a>) <a class="idref" href="GraphCoQL.GraphConformance.html#u"><span class="id" title="variable">u</span></a>.(<a class="idref" href="GraphCoQL.Graph.html#nprops"><span class="id" title="projection">nprops</span></a>) <span class="id" title="keyword">is</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a><span class="id" title="var">_</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <span class="id" title="var">value</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a> <span class="id" title="keyword">then</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <span class="id" title="var">value</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">else</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#None"><span class="id" title="constructor">None</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       Returns a node's neighbors.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="neighbors"><span class="id" title="definition">neighbors</span></a> (<span class="id" title="var">u</span> : <a class="idref" href="GraphCoQL.Graph.html#node"><span class="id" title="record">node</span></a>) (<span class="id" title="var">edges</span> : <span class="id" title="abbreviation">seq</span> (<a class="idref" href="GraphCoQL.Graph.html#node"><span class="id" title="record">node</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> <a class="idref" href="GraphCoQL.Graph.html#label"><span class="id" title="record">label</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> <a class="idref" href="GraphCoQL.Graph.html#node"><span class="id" title="record">node</span></a>)) : <span class="id" title="abbreviation">seq</span> <a class="idref" href="GraphCoQL.Graph.html#node"><span class="id" title="record">node</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">undup</span> <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="GraphCoQL.GraphConformance.html#edge"><span class="id" title="variable">edge</span></a>.(<a class="idref" href="GraphCoQL.GraphConformance.html#etarget"><span class="id" title="definition">etarget</span></a>) <span class="id" title="notation">|</span> <span class="id" title="var">edge</span> <span class="id" title="notation">&lt;-</span> <a class="idref" href="GraphCoQL.GraphConformance.html#edges"><span class="id" title="variable">edges</span></a> <span class="id" title="notation">&amp;</span> <a class="idref" href="GraphCoQL.GraphConformance.html#edge"><span class="id" title="variable">edge</span></a>.(<a class="idref" href="GraphCoQL.GraphConformance.html#esource"><span class="id" title="definition">esource</span></a>) <span class="id" title="notation">==</span> <a class="idref" href="GraphCoQL.GraphConformance.html#u"><span class="id" title="variable">u</span></a><span class="id" title="notation">]</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       Get a node's neighbors connected via an edge with a given field. 
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="neighbors_with_label"><span class="id" title="definition">neighbors_with_label</span></a> (<span class="id" title="var">u</span> : <a class="idref" href="GraphCoQL.Graph.html#node"><span class="id" title="record">node</span></a>) (<span class="id" title="var">f</span> : <a class="idref" href="GraphCoQL.Graph.html#label"><span class="id" title="record">label</span></a>) : <span class="id" title="abbreviation">seq</span> <a class="idref" href="GraphCoQL.Graph.html#node"><span class="id" title="record">node</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">undup</span> <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="GraphCoQL.GraphConformance.html#edge"><span class="id" title="variable">edge</span></a>.(<a class="idref" href="GraphCoQL.GraphConformance.html#etarget"><span class="id" title="definition">etarget</span></a>) <span class="id" title="notation">|</span>  <span class="id" title="var">edge</span> <span class="id" title="notation">&lt;-</span> <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <span class="id" title="var">edge</span> <span class="id" title="notation">&lt;-</span> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.GraphAux.graph"><span class="id" title="variable">graph</span></a>.(<a class="idref" href="GraphCoQL.Graph.html#edges"><span class="id" title="projection">edges</span></a>) <span class="id" title="notation">|</span> <span class="id" title="notation">(</span><a class="idref" href="GraphCoQL.GraphConformance.html#esource"><span class="id" title="definition">esource</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#edge"><span class="id" title="variable">edge</span></a> <span class="id" title="notation">==</span> <a class="idref" href="GraphCoQL.GraphConformance.html#u"><span class="id" title="variable">u</span></a><span class="id" title="notation">)</span> <span class="id" title="notation">&amp;</span> <span class="id" title="notation">(</span><a class="idref" href="GraphCoQL.GraphConformance.html#efield"><span class="id" title="definition">efield</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#edge"><span class="id" title="variable">edge</span></a> <span class="id" title="notation">==</span> <a class="idref" href="GraphCoQL.GraphConformance.html#f"><span class="id" title="variable">f</span></a><span class="id" title="notation">)]</span><span class="id" title="notation">]</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+      This predicate checks whether there is only one edge coming out of the source node and 
+      having the given field.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="is_field_unique_for_src_node"><span class="id" title="definition">is_field_unique_for_src_node</span></a> <span class="id" title="var">graph</span> (<span class="id" title="var">src_node</span> : <a class="idref" href="GraphCoQL.Graph.html#node"><span class="id" title="record">node</span></a>) (<span class="id" title="var">f</span> : <a class="idref" href="GraphCoQL.Graph.html#label"><span class="id" title="record">label</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">uniq</span> <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <span class="id" title="var">edge</span> <span class="id" title="notation">&lt;-</span> <a class="idref" href="GraphCoQL.GraphConformance.html#graph"><span class="id" title="variable">graph</span></a>.(<a class="idref" href="GraphCoQL.Graph.html#edges"><span class="id" title="projection">edges</span></a>) <span class="id" title="notation">|</span> <span class="id" title="notation">(</span><a class="idref" href="GraphCoQL.GraphConformance.html#esource"><span class="id" title="definition">esource</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#edge"><span class="id" title="variable">edge</span></a> <span class="id" title="notation">==</span> <a class="idref" href="GraphCoQL.GraphConformance.html#src_node"><span class="id" title="variable">src_node</span></a><span class="id" title="notation">)</span> <span class="id" title="notation">&amp;</span> <span class="id" title="notation">(</span><a class="idref" href="GraphCoQL.GraphConformance.html#efield"><span class="id" title="definition">efield</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#edge"><span class="id" title="variable">edge</span></a> <span class="id" title="notation">==</span> <a class="idref" href="GraphCoQL.GraphConformance.html#f"><span class="id" title="variable">f</span></a><span class="id" title="notation">)]</span>.<br/>
+
+<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.GraphAux"><span class="id" title="section">GraphAux</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab78"></a><h2 class="section">Predicates</h2>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+      In this section we define predicates to establish when a graph conforms 
+      to a given schema.
+   
+</div>
+<div class="code">
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a name="Conformance.Predicates"><span class="id" title="section">Predicates</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+In order to determine whether a value used in the graph correspond to the 
+        expected type in the schema, we parameterize it with a predicate 
+        that resolves it 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Variables</span> (<a name="Conformance.Predicates.s"><span class="id" title="variable">s</span></a> : <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#wfGraphQLSchema"><span class="id" title="record">wfGraphQLSchema</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a name="Conformance.Predicates.check_scalar"><span class="id" title="variable">check_scalar</span></a> : <a class="idref" href="GraphCoQL.Schema.html#graphQLSchema"><span class="id" title="record">graphQLSchema</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.Graph.html#Name"><span class="id" title="abbreviation">Name</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Scalar"><span class="id" title="variable">Scalar</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a>).<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab79"></a><h3 class="section">Root type conforms</h3>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+        This predicate checks that a Graph's root node must have the same type as the Schema's query type.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="root_type_conforms"><span class="id" title="definition">root_type_conforms</span></a> (<span class="id" title="var">root</span> : @<a class="idref" href="GraphCoQL.Graph.html#node"><span class="id" title="record">node</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Scalar"><span class="id" title="variable">Scalar</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> := (<a class="idref" href="GraphCoQL.GraphConformance.html#root"><span class="id" title="variable">root</span></a>).(<a class="idref" href="GraphCoQL.Graph.html#ntype"><span class="id" title="projection">ntype</span></a>) <span class="id" title="notation">==</span> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Predicates.s"><span class="id" title="variable">s</span></a>.(<a class="idref" href="GraphCoQL.Schema.html#query_type"><span class="id" title="projection">query_type</span></a>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab80"></a><h3 class="section">Arguments conform</h3>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+      This predicate checks a field's arguments conform to 
+      what the Schema requires of them.
+<ul class="doclist">
+<li> The arguments must be declared in the given type for that given field.
+
+</li>
+<li> The arguments' values must be of the type declared for each argument in the schema.  
+
+</li>
+</ul>
+
+<div class="paragraph"> </div>
+
+      This is used when validating edges' fields and nodes' properties.
+     
+</div>
+<div class="code">
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="arguments_conform"><span class="id" title="definition">arguments_conform</span></a> <span class="id" title="var">ty</span> (<span class="id" title="var">f</span> : <a class="idref" href="GraphCoQL.Graph.html#label"><span class="id" title="record">label</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">argument_conforms</span> (<span class="id" title="var">fname</span> : <a class="idref" href="GraphCoQL.Graph.html#Name"><span class="id" title="abbreviation">Name</span></a>) (<span class="id" title="var">arg</span> : <a class="idref" href="GraphCoQL.Graph.html#Name"><span class="id" title="abbreviation">Name</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> @<a class="idref" href="GraphCoQL.Value.html#Value"><span class="id" title="inductive">Value</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Scalar"><span class="id" title="variable">Scalar</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span>: <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a><span class="id" title="var">argname</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <span class="id" title="var">value</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a> := <a class="idref" href="GraphCoQL.GraphConformance.html#arg"><span class="id" title="variable">arg</span></a> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_argument_in_type_and_field"><span class="id" title="definition">lookup_argument_in_type_and_field</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Predicates.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#fname"><span class="id" title="variable">fname</span></a> <span class="id" title="var">argname</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <span class="id" title="var">field_arg</span> =&gt; <a class="idref" href="GraphCoQL.SchemaAux.html#is_valid_value"><span class="id" title="definition">is_valid_value</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Predicates.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Predicates.check_scalar"><span class="id" title="variable">check_scalar</span></a> <span class="id" title="var">field_arg</span>.(<a class="idref" href="GraphCoQL.Schema.html#argtype"><span class="id" title="projection">argtype</span></a>) <span class="id" title="var">value</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> =&gt; <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#false"><span class="id" title="constructor">false</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">all</span> (<a class="idref" href="GraphCoQL.GraphConformance.html#argument_conforms"><span class="id" title="variable">argument_conforms</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#f"><span class="id" title="variable">f</span></a>.(<a class="idref" href="GraphCoQL.Graph.html#lname"><span class="id" title="projection">lname</span></a>)) <a class="idref" href="GraphCoQL.GraphConformance.html#f"><span class="id" title="variable">f</span></a>.(<a class="idref" href="GraphCoQL.Graph.html#args"><span class="id" title="projection">args</span></a>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab81"></a><h3 class="section">Edges conform</h3>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+        This predicate checks whether a graph's edges conform to a Schema.
+
+<div class="paragraph"> </div>
+
+        This checks the following:
+<ul class="doclist">
+<li> There are no repeated edges. 
+
+</li>
+<li> Each edge conforms.
+
+</li>
+</ul>
+
+<div class="paragraph"> </div>
+
+        And the latter is done by checking that:
+<ul class="doclist">
+<li> The edge's field is defined in the source node.
+
+</li>
+<li> The target node's type is a subtype of the edge's field type.
+
+</li>
+<li> If the field's type is not a List type, then there must be only one edge connecting the source node 
+
+</li>
+</ul>
+        with the target node using the given label. 
+<ul class="doclist">
+<li> The field's arguments conform.
+
+</li>
+</ul>
+
+<div class="paragraph"> </div>
+
+       <div class="hidden-xs hidden-md hidden-lg"><br></div>    
+       When checking that the target node's type is a subtype of the field's type, 
+       the predicate simply ignores whether there is any nesting of list type. It takes the 
+       base wrapped type and uses it to compare. This is due to the open question on how to
+       properly model nested list types in a graph.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="edges_conform"><span class="id" title="definition">edges_conform</span></a> <span class="id" title="var">graph</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">edge_conforms</span> (<span class="id" title="var">edge</span> : <a class="idref" href="GraphCoQL.Graph.html#node"><span class="id" title="record">node</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> <a class="idref" href="GraphCoQL.Graph.html#label"><span class="id" title="record">label</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> @<a class="idref" href="GraphCoQL.Graph.html#node"><span class="id" title="record">node</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Scalar"><span class="id" title="variable">Scalar</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span>: <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a><span class="id" title="var">src</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <span class="id" title="var">label</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <span class="id" title="var">target</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a> := <a class="idref" href="GraphCoQL.GraphConformance.html#edge"><span class="id" title="variable">edge</span></a> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_field_in_type"><span class="id" title="definition">lookup_field_in_type</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Predicates.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">src</span>.(<a class="idref" href="GraphCoQL.Graph.html#ntype"><span class="id" title="projection">ntype</span></a>) <span class="id" title="var">label</span>.(<a class="idref" href="GraphCoQL.Graph.html#lname"><span class="id" title="projection">lname</span></a>) <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <span class="id" title="var">fdef</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssreflect.html#00a1a5b58aac8f1e3f1abff064a39f9d"><span class="id" title="notation">if</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b3ebd0deddd84fd60e149cb5ef719351"><span class="id" title="notation">~~</span></a><a class="idref" href="GraphCoQL.SchemaAux.html#is_list_type"><span class="id" title="definition">is_list_type</span></a> <span class="id" title="var">fdef</span>.(<a class="idref" href="GraphCoQL.Schema.html#ftype"><span class="id" title="projection">ftype</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssreflect.html#00a1a5b58aac8f1e3f1abff064a39f9d"><span class="id" title="notation">then</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">[&amp;&amp;</span></a> <span class="id" title="var">target</span>.(<a class="idref" href="GraphCoQL.Graph.html#ntype"><span class="id" title="projection">ntype</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#get_possible_types"><span class="id" title="definition">get_possible_types</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Predicates.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">fdef</span>.(<a class="idref" href="GraphCoQL.Schema.html#ftype"><span class="id" title="projection">ftype</span></a>)<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">,</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.GraphConformance.html#is_field_unique_for_src_node"><span class="id" title="definition">is_field_unique_for_src_node</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#graph"><span class="id" title="variable">graph</span></a> <span class="id" title="var">src</span> <span class="id" title="var">label</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">&amp;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.GraphConformance.html#arguments_conform"><span class="id" title="definition">arguments_conform</span></a> <span class="id" title="var">src</span>.(<a class="idref" href="GraphCoQL.Graph.html#ntype"><span class="id" title="projection">ntype</span></a>) <span class="id" title="var">label</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">]</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssreflect.html#00a1a5b58aac8f1e3f1abff064a39f9d"><span class="id" title="notation">else</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#9ddeac0ab66152bd1d64bedb507a795e"><span class="id" title="notation">(</span></a><span class="id" title="var">target</span>.(<a class="idref" href="GraphCoQL.Graph.html#ntype"><span class="id" title="projection">ntype</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#get_possible_types"><span class="id" title="definition">get_possible_types</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Predicates.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">fdef</span>.(<a class="idref" href="GraphCoQL.Schema.html#ftype"><span class="id" title="projection">ftype</span></a>)<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#9ddeac0ab66152bd1d64bedb507a795e"><span class="id" title="notation">)</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#9ddeac0ab66152bd1d64bedb507a795e"><span class="id" title="notation">&amp;&amp;</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#arguments_conform"><span class="id" title="definition">arguments_conform</span></a> <span class="id" title="var">src</span>.(<a class="idref" href="GraphCoQL.Graph.html#ntype"><span class="id" title="projection">ntype</span></a>) <span class="id" title="var">label</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> =&gt; <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#false"><span class="id" title="constructor">false</span></a>     <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">uniq</span> <a class="idref" href="GraphCoQL.GraphConformance.html#graph"><span class="id" title="variable">graph</span></a>.(<a class="idref" href="GraphCoQL.Graph.html#edges"><span class="id" title="projection">edges</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#9ddeac0ab66152bd1d64bedb507a795e"><span class="id" title="notation">&amp;&amp;</span></a> <span class="id" title="definition">all</span> <a class="idref" href="GraphCoQL.GraphConformance.html#edge_conforms"><span class="id" title="variable">edge_conforms</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#graph"><span class="id" title="variable">graph</span></a>.(<a class="idref" href="GraphCoQL.Graph.html#edges"><span class="id" title="projection">edges</span></a>).<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab82"></a><h3 class="section">Nodes conform</h3>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+        The following predicate checks whether a graph's nodes conform to a given Schema.
+        This is done by checking that:
+<ul class="doclist">
+<li> Every node's type is an object type.
+
+</li>
+<li> Every property conforms.
+
+</li>
+</ul>
+
+<div class="paragraph"> </div>
+
+        The latter is done by checking that:
+<ul class="doclist">
+<li> The properties are actually defined in the type of the node.
+
+</li>
+<li> The field's arguments conform.
+
+</li>
+<li> The properties values have a valid type wrt. to what is expected in the Schema.
+
+</li>
+</ul>
+
+<div class="paragraph"> </div>
+
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="nodes_conform"><span class="id" title="definition">nodes_conform</span></a> (<span class="id" title="var">nodes</span> : <span class="id" title="abbreviation">seq</span> (@<a class="idref" href="GraphCoQL.Graph.html#node"><span class="id" title="record">node</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Scalar"><span class="id" title="variable">Scalar</span></a>)) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">property_conforms</span> <span class="id" title="var">ty</span> (<span class="id" title="var">fd</span> : <a class="idref" href="GraphCoQL.Graph.html#label"><span class="id" title="record">label</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> @<a class="idref" href="GraphCoQL.Value.html#Value"><span class="id" title="inductive">Value</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Scalar"><span class="id" title="variable">Scalar</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_field_in_type"><span class="id" title="definition">lookup_field_in_type</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Predicates.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#fd"><span class="id" title="variable">fd</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrfun.html#e0817251e7d67ad994b4d9b1aa82a412"><span class="id" title="notation">.1</span></a>.(<a class="idref" href="GraphCoQL.Graph.html#lname"><span class="id" title="projection">lname</span></a>) <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <span class="id" title="var">fdef</span> =&gt; <a class="idref" href="GraphCoQL.GraphConformance.html#arguments_conform"><span class="id" title="definition">arguments_conform</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#fd"><span class="id" title="variable">fd</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrfun.html#e0817251e7d67ad994b4d9b1aa82a412"><span class="id" title="notation">.1</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#9ddeac0ab66152bd1d64bedb507a795e"><span class="id" title="notation">&amp;&amp;</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#is_valid_value"><span class="id" title="definition">is_valid_value</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Predicates.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Predicates.check_scalar"><span class="id" title="variable">check_scalar</span></a> <span class="id" title="var">fdef</span>.(<a class="idref" href="GraphCoQL.Schema.html#ftype"><span class="id" title="projection">ftype</span></a>) <a class="idref" href="GraphCoQL.GraphConformance.html#fd"><span class="id" title="variable">fd</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrfun.html#675082cc4d4538da052b547bdc6ea4c9"><span class="id" title="notation">.2</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> =&gt; <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#false"><span class="id" title="constructor">false</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">node_conforms</span> (<span class="id" title="var">u</span> : <a class="idref" href="GraphCoQL.Graph.html#node"><span class="id" title="record">node</span></a>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaAux.html#is_object_type"><span class="id" title="definition">is_object_type</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Predicates.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#u"><span class="id" title="variable">u</span></a>.(<a class="idref" href="GraphCoQL.Graph.html#ntype"><span class="id" title="projection">ntype</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#9ddeac0ab66152bd1d64bedb507a795e"><span class="id" title="notation">&amp;&amp;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">all</span> (<a class="idref" href="GraphCoQL.GraphConformance.html#property_conforms"><span class="id" title="variable">property_conforms</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#u"><span class="id" title="variable">u</span></a>.(<a class="idref" href="GraphCoQL.Graph.html#ntype"><span class="id" title="projection">ntype</span></a>)) <a class="idref" href="GraphCoQL.GraphConformance.html#u"><span class="id" title="variable">u</span></a>.(<a class="idref" href="GraphCoQL.Graph.html#nprops"><span class="id" title="projection">nprops</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">all</span> <a class="idref" href="GraphCoQL.GraphConformance.html#node_conforms"><span class="id" title="variable">node_conforms</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#nodes"><span class="id" title="variable">nodes</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Predicates"><span class="id" title="section">Predicates</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Variable</span> (<a name="Conformance.check_scalar"><span class="id" title="variable">check_scalar</span></a> : <a class="idref" href="GraphCoQL.Schema.html#graphQLSchema"><span class="id" title="record">graphQLSchema</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.Graph.html#Name"><span class="id" title="abbreviation">Name</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Scalar"><span class="id" title="variable">Scalar</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab83"></a><h3 class="section">Conforming graph</h3>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+     The following predicate checks whether a graph conforms to a given schema.
+
+<div class="paragraph"> </div>
+
+     A GraphQL graph conforms to a given Schema if:
+<ul class="doclist">
+<li> Its root conforms to the Schema.
+
+</li>
+<li> Its edges conform to the Schema.
+
+</li>
+<li> Its nodes conform to the Schema.
+
+</li>
+</ul>
+
+<div class="paragraph"> </div>
+
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="is_a_conforming_graph"><span class="id" title="definition">is_a_conforming_graph</span></a> (<span class="id" title="var">s</span> : <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#wfGraphQLSchema"><span class="id" title="record">wfGraphQLSchema</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">check_scalar</span> : <a class="idref" href="GraphCoQL.Schema.html#graphQLSchema"><span class="id" title="record">graphQLSchema</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.Graph.html#Name"><span class="id" title="abbreviation">Name</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Scalar"><span class="id" title="variable">Scalar</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">graph</span> : @<a class="idref" href="GraphCoQL.Graph.html#graphQLGraph"><span class="id" title="record">graphQLGraph</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Scalar"><span class="id" title="variable">Scalar</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">[&amp;&amp;</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#root_type_conforms"><span class="id" title="definition">root_type_conforms</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#graph"><span class="id" title="variable">graph</span></a>.(<a class="idref" href="GraphCoQL.Graph.html#root"><span class="id" title="projection">root</span></a>)<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">,</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.GraphConformance.html#edges_conform"><span class="id" title="definition">edges_conform</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#check_scalar"><span class="id" title="variable">check_scalar</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#graph"><span class="id" title="variable">graph</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">&amp;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.GraphConformance.html#nodes_conform"><span class="id" title="definition">nodes_conform</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#check_scalar"><span class="id" title="variable">check_scalar</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#graph"><span class="id" title="variable">graph</span></a>.(<a class="idref" href="GraphCoQL.GraphConformance.html#nodes"><span class="id" title="definition">nodes</span></a>)<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">]</span></a>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab84"></a><h1 class="section">Conformed GraphQL Graph</h1>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+     A conformed GraphQL graph is a graph which conforms to a given schema.
+
+<div class="paragraph"> </div>
+
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Record</span> <a name="conformedGraph"><span class="id" title="record">conformedGraph</span></a> (<span class="id" title="var">s</span> : <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#wfGraphQLSchema"><span class="id" title="record">wfGraphQLSchema</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">check_scalar</span> : <a class="idref" href="GraphCoQL.Schema.html#graphQLSchema"><span class="id" title="record">graphQLSchema</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.Graph.html#Name"><span class="id" title="abbreviation">Name</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance.Scalar"><span class="id" title="variable">Scalar</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a name="ConformedGraph"><span class="id" title="constructor">ConformedGraph</span></a> {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a name="graph"><span class="id" title="projection">graph</span></a> : <a class="idref" href="GraphCoQL.Graph.html#graphQLGraph"><span class="id" title="record">graphQLGraph</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">_</span> : <a class="idref" href="GraphCoQL.GraphConformance.html#is_a_conforming_graph"><span class="id" title="definition">is_a_conforming_graph</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#check_scalar"><span class="id" title="variable">check_scalar</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#graph"><span class="id" title="method">graph</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Coercion</span> <span class="id" title="var">graph_of_conformed_graph</span> <span class="id" title="var">s</span> <span class="id" title="var">vsv</span> (<span class="id" title="var">g</span> : <a class="idref" href="GraphCoQL.GraphConformance.html#conformedGraph"><span class="id" title="record">conformedGraph</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#vsv"><span class="id" title="variable">vsv</span></a>) := <span class="id" title="keyword">let</span>: <a class="idref" href="GraphCoQL.GraphConformance.html#ConformedGraph"><span class="id" title="constructor">ConformedGraph</span></a> <span class="id" title="var">g</span> <span class="id" title="var">_</span> := <a class="idref" href="GraphCoQL.GraphConformance.html#g"><span class="id" title="variable">g</span></a> <span class="id" title="tactic">in</span> <a class="idref" href="GraphCoQL.GraphConformance.html#g"><span class="id" title="variable">g</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.GraphConformance.html#Conformance"><span class="id" title="section">Conformance</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+    <div>
+        <a href='GraphCoQL.Graph.html' class="btn btn-light" role='button'>Previous ← GraphQL Graph</a>
+        <a href='GraphCoQL.Query.html' class="btn btn-info" role='button'>Continue Reading → Query</a>
+    </div>
+
+</div>
+<div class="code">
+</div>
+</div>
+<div id="footer">
+  Generated by <a href="http://coq.inria.fr/">coqdoc</a> and improved with <a href="https://github.com/tebbi/coqdocjs">CoqdocJS</a>
+</div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
+<script>
+  $(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+  })
+  </script>
+
+</body>
+
+</html>

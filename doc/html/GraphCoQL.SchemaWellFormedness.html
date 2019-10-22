@@ -1,0 +1,403 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<link href="coqdocjs.css" rel="stylesheet" type="text/css"/>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<script type="text/javascript" src="config.js"></script>
+<script type="text/javascript" src="coqdocjs.js"></script>
+</head>
+
+<body onload="document.getElementById('content').focus()">
+  <div id="header">
+    <span class="left">
+      <span class="modulename"> <script> document.write(document.title) </script> </span>
+    </span>
+
+    <span class="button" id="toggle-proofs"></span>
+
+    <span class="right">
+      <a href="../">Project Page</a>
+      <a href="./indexpage.html"> Index </a>
+      <a href="./toc.html"> Table of Contents </a>
+    </span>
+</div>
+    <div id="content" tabindex="-1" onblur="document.getElementById('content').focus()">
+    <div id="main">
+<h1 class="libtitle">GraphCoQL.SchemaWellFormedness</h1>
+
+<div class="code">
+
+<br/>
+</div>
+
+<div class="doc">
+   <div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">Schema Well-formedness</h1>
+        <p class="lead">
+         This file contains the necessary definitions to validate 
+         when a GraphQL Schema is well-formed. 
+        </p>
+
+        <p>
+         This notion includes things such as: 
+         <ul>
+           <li> An object type cannot have empty fields. </li>
+           <li> A field's return type must be defined in the Schema. </li>
+           <li> Union type must contain existent object types. </li>
+           <li> Etc. </li>
+         </ul>
+        </p>
+        <p>
+         We will progressively define predicates that check if a structure is well-formed;
+    check if an argument is well-formed, then a field, the implementation of an interface, etc.
+    From these we will ultimately define a well-formed GraphQL Schema, which will 
+    be the collection of the predicates defined previously.  
+        </p>
+  </div>
+</div>
+ 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Section</span> <a name="WellFormedness"><span class="id" title="section">WellFormedness</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab18"></a><h1 class="section">Well-formedness predicates</h1>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+      In this section we define the predicates necessary to establish the well-formedness
+      of a GraphQL Schema 
+   
+</div>
+<div class="code">
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a name="WellFormedness.Defs"><span class="id" title="section">Defs</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Variable</span> (<a name="WellFormedness.Defs.s"><span class="id" title="variable">s</span></a> : <a class="idref" href="GraphCoQL.Schema.html#graphQLSchema"><span class="id" title="record">graphQLSchema</span></a>).<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab19"></a><h2 class="section">Well-formed Argument</h2>
+
+        (cf. 
+        <a href='https://graphql.github.io/graphql-spec/June2018/#sec-Objects'><span>&#167;</span>3.6</a>,
+        <a href='https://graphql.github.io/graphql-spec/June2018/#sec-Interfaces'><span>&#167;</span>3.7</a>-Type validation)
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+      The following predicate checks whether an argument definition is well-formed.
+      This is done by simply checking that its type is a valid type for an argument (cf. https://graphql.github.io/graphql-spec/June2018/#IsInputType()'><span>&#167;</span>3.4.2</a>). 
+
+<div class="paragraph"> </div>
+
+      This check is necessary when checking that an Object or Interface type is well-formed.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="is_a_wf_field_argument"><span class="id" title="definition">is_a_wf_field_argument</span></a> (<span class="id" title="var">arg</span> : <a class="idref" href="GraphCoQL.Schema.html#FieldArgumentDefinition"><span class="id" title="record">FieldArgumentDefinition</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="keyword">fix</span> <span class="id" title="var">is_valid_argument_type</span> (<span class="id" title="var">ty</span> : <a class="idref" href="GraphCoQL.Schema.html#type"><span class="id" title="inductive">type</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#ty"><span class="id" title="variable">ty</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Schema.html#ListType"><span class="id" title="constructor">ListType</span></a> <span class="id" title="var">ty'</span> =&gt; <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#is_valid_argument_type"><span class="id" title="variable">is_valid_argument_type</span></a> <span class="id" title="var">ty'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Schema.html#NamedType"><span class="id" title="constructor">NamedType</span></a> <span class="id" title="var">name</span> =&gt; <a class="idref" href="GraphCoQL.SchemaAux.html#is_scalar_type"><span class="id" title="definition">is_scalar_type</span></a> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#WellFormedness.Defs.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">name</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#081ff67d3116402bb680e8692aa39185"><span class="id" title="notation">||</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#is_enum_type"><span class="id" title="definition">is_enum_type</span></a> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#WellFormedness.Defs.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">name</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaWellFormedness.html#is_valid_argument_type"><span class="id" title="variable">is_valid_argument_type</span></a> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#arg"><span class="id" title="variable">arg</span></a>.(<a class="idref" href="GraphCoQL.Schema.html#argtype"><span class="id" title="projection">argtype</span></a>).<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab20"></a><h2 class="section">Well-formed Field</h2>
+
+        (cf. 
+        <a href='https://graphql.github.io/graphql-spec/June2018/#sec-Objects'><span>&#167;</span>3.6</a>,
+        <a href='https://graphql.github.io/graphql-spec/June2018/#sec-Interfaces'><span>&#167;</span>3.7</a>-Type validation)
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+     The following predicate checks whether a field is well-formed. This is done by
+     checking the following things:
+<ul class="doclist">
+<li> Its return type is valid (cf. <a href='https://graphql.github.io/graphql-spec/June2018/#IsOutputType()'><span>&#167;</span>3.4.2</a>).
+
+</li>
+<li> There are no two arguments with the same name.
+
+</li>
+<li> All of its arguments are well-formed.
+
+</li>
+</ul>
+
+<div class="paragraph"> </div>
+
+     This check is necessary when checking that an Object or Interface are well-formed.
+
+<div class="paragraph"> </div>
+
+     <div class="hidden-xs hidden-md hidden-lg"><br></div>
+<a name="lab21"></a><h4 class="section">Observations:</h4>
+
+<ul class="doclist">
+<li> Arguments's uniqueness : We could not find a reference in the spec
+        stating whether it is valid or not to have repeated arguments in a type's field
+        but we are including this notion in this definition.
+
+</li>
+</ul>
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="is_a_wf_field"><span class="id" title="definition">is_a_wf_field</span></a> (<span class="id" title="var">fld</span> : <a class="idref" href="GraphCoQL.Schema.html#FieldDefinition"><span class="id" title="record">FieldDefinition</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="keyword">fix</span> <span class="id" title="var">is_valid_field_type</span> (<span class="id" title="var">ty</span> : <a class="idref" href="GraphCoQL.Schema.html#type"><span class="id" title="inductive">type</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#ty"><span class="id" title="variable">ty</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Schema.html#ListType"><span class="id" title="constructor">ListType</span></a> <span class="id" title="var">ty'</span> =&gt; <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#is_valid_field_type"><span class="id" title="variable">is_valid_field_type</span></a> <span class="id" title="var">ty'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Schema.html#NamedType"><span class="id" title="constructor">NamedType</span></a> <span class="id" title="var">name</span> =&gt; <a class="idref" href="GraphCoQL.SchemaAux.html#is_declared"><span class="id" title="definition">is_declared</span></a> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#WellFormedness.Defs.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">name</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">[&amp;&amp;</span></a> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#is_valid_field_type"><span class="id" title="variable">is_valid_field_type</span></a> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#fld"><span class="id" title="variable">fld</span></a>.(<a class="idref" href="GraphCoQL.Schema.html#ftype"><span class="id" title="projection">ftype</span></a>)<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">,</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">uniq</span> <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#arg"><span class="id" title="variable">arg</span></a>.(<a class="idref" href="GraphCoQL.Schema.html#argname"><span class="id" title="projection">argname</span></a>) <span class="id" title="notation">|</span> <span class="id" title="var">arg</span> <span class="id" title="notation">&lt;-</span> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#fld"><span class="id" title="variable">fld</span></a>.(<a class="idref" href="GraphCoQL.Schema.html#fargs"><span class="id" title="projection">fargs</span></a>)<span class="id" title="notation">]</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">&amp;</span></a>  <span class="comment">(*&nbsp;Not&nbsp;currently&nbsp;in&nbsp;the&nbsp;spec&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">all</span> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#is_a_wf_field_argument"><span class="id" title="definition">is_a_wf_field_argument</span></a> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#fld"><span class="id" title="variable">fld</span></a>.(<a class="idref" href="GraphCoQL.Schema.html#fargs"><span class="id" title="projection">fargs</span></a>)<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">]</span></a>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab22"></a><h2 class="section">Valid interface implementation</h2>
+
+        (cf. <a href='https://graphql.github.io/graphql-spec/June2018/#sec-Objects'><span>&#167;</span>3.6</a>-Type validation)
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+     The following predicate checks whether an object correctly implements an interface,
+     by properly implementing <i>every</i> field defined in the interface.
+
+<div class="paragraph"> </div>
+
+     For an Object to properly implement an interface field, there must exist a field in the Object type 
+     such that:
+<ul class="doclist">
+<li> The object's field has the same name as the interface's.
+
+</li>
+<li> The arguments of the interface field must be a subset of the arguments contained in the object's field
+       (the types of the arguments are invariant, therefore we can simply check that it's a subset).
+
+</li>
+<li> The object's field return type must be a subtype of the interface's field return type.
+
+</li>
+</ul>
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="implements_interface_correctly"><span class="id" title="definition">implements_interface_correctly</span></a> (<span class="id" title="var">object_tdef</span> : <a class="idref" href="GraphCoQL.Schema.html#TypeDefinition"><span class="id" title="inductive">TypeDefinition</span></a>) (<span class="id" title="var">interface_type</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#object_tdef"><span class="id" title="variable">object_tdef</span></a>, <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_type"><span class="id" title="definition">lookup_type</span></a> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#WellFormedness.Defs.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#interface_type"><span class="id" title="variable">interface_type</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">object</span></a> <span class="id" title="var">_</span> <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">implements</span></a> <span class="id" title="var">_</span> { <span class="id" title="var">object_fields</span> }, <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.Schema.html#ce0c37d1f6b5642e2e0ed8a4275975df"><span class="id" title="notation">interface</span></a> <span class="id" title="var">_</span> { <span class="id" title="var">interface_fields</span> }) =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">all</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">interface_field</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">has</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">object_field</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">[&amp;&amp;</span></a> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#object_field"><span class="id" title="variable">object_field</span></a>.(<a class="idref" href="GraphCoQL.Schema.html#fname"><span class="id" title="projection">fname</span></a>) <span class="id" title="notation">==</span> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#interface_field"><span class="id" title="variable">interface_field</span></a>.(<a class="idref" href="GraphCoQL.Schema.html#fname"><span class="id" title="projection">fname</span></a>)<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">,</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">all</span> (<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#mem"><span class="id" title="definition">mem</span></a> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#object_field"><span class="id" title="variable">object_field</span></a>.(<a class="idref" href="GraphCoQL.Schema.html#fargs"><span class="id" title="projection">fargs</span></a>)) <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#interface_field"><span class="id" title="variable">interface_field</span></a>.(<a class="idref" href="GraphCoQL.Schema.html#fargs"><span class="id" title="projection">fargs</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">&amp;</span></a> <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaWellFormedness.html#WellFormedness.Defs.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#8b3377c8e53ee4e40bbd5b6ae2a85a44"><span class="id" title="notation">⊢</span></a> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#object_field"><span class="id" title="variable">object_field</span></a>.(<a class="idref" href="GraphCoQL.Schema.html#ftype"><span class="id" title="projection">ftype</span></a>) <a class="idref" href="GraphCoQL.SchemaAux.html#8b3377c8e53ee4e40bbd5b6ae2a85a44"><span class="id" title="notation">&lt;:</span></a> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#interface_field"><span class="id" title="variable">interface_field</span></a>.(<a class="idref" href="GraphCoQL.Schema.html#ftype"><span class="id" title="projection">ftype</span></a>)<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">]</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;) <span class="id" title="var">object_fields</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;) <span class="id" title="var">interface_fields</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span>, <span class="id" title="var">_</span> =&gt; <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#false"><span class="id" title="constructor">false</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab23"></a><h2 class="section">Well-formed TypeDefinition</h2>
+
+        (cf. 
+        <a href='https://graphql.github.io/graphql-spec/June2018/#sec-Objects'><span>&#167;</span>3.6</a>,
+        <a href='https://graphql.github.io/graphql-spec/June2018/#sec-Interfaces'><span>&#167;</span>3.7</a>,
+        <a href='https://graphql.github.io/graphql-spec/June2018/#sec-Unions'><span>&#167;</span>3.8</a>,
+        <a href='https://graphql.github.io/graphql-spec/June2018/#sec-Enums'><span>&#167;</span>3.9</a>-Type validation)
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+        The following predicate checks whether a type definition is <i>well-formed</i>, which in turn is used
+        when checking that a Schema is <i>well-formed</i>.
+
+<div class="paragraph"> </div>
+
+<a name="lab24"></a><h4 class="section">Observations</h4>
+
+<ul class="doclist">
+<li> Enums : The spec does not specify whether the enum members must be different from 
+       other defined types in the schema (eg. object type 'Human' cannot be part of a 
+       defined Enum type). We follow the same approach.
+
+</li>
+</ul>
+
+<div class="paragraph"> </div>
+
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <a name="is_a_wf_type_def"><span class="id" title="definition">is_a_wf_type_def</span></a> (<span class="id" title="var">tdef</span> : <a class="idref" href="GraphCoQL.Schema.html#TypeDefinition"><span class="id" title="inductive">TypeDefinition</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#tdef"><span class="id" title="variable">tdef</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Schema.html#39c6dd05b4549ac7479c94fe9cba1a12"><span class="id" title="notation">scalar</span></a> <span class="id" title="var">_</span> =&gt; <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#true"><span class="id" title="constructor">true</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">object</span></a> <span class="id" title="var">name</span> <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">implements</span></a> <span class="id" title="var">interfaces</span> { <span class="id" title="var">fields</span> } =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">[&amp;&amp;</span></a> <span class="id" title="var">fields</span> <span class="id" title="notation">!=</span> <span class="id" title="notation">[::]</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">,</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">uniq</span> <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#fld"><span class="id" title="variable">fld</span></a>.(<a class="idref" href="GraphCoQL.Schema.html#fname"><span class="id" title="projection">fname</span></a>) <span class="id" title="notation">|</span> <span class="id" title="var">fld</span> <span class="id" title="notation">&lt;-</span> <span class="id" title="var">fields</span><span class="id" title="notation">]</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">,</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">all</span> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#is_a_wf_field"><span class="id" title="definition">is_a_wf_field</span></a> <span class="id" title="var">fields</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">,</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">uniq</span> <span class="id" title="var">interfaces</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">,</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">all</span> (<a class="idref" href="GraphCoQL.SchemaAux.html#is_interface_type"><span class="id" title="definition">is_interface_type</span></a> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#WellFormedness.Defs.s"><span class="id" title="variable">s</span></a>) <span class="id" title="var">interfaces</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">&amp;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">all</span> (<a class="idref" href="GraphCoQL.SchemaWellFormedness.html#implements_interface_correctly"><span class="id" title="definition">implements_interface_correctly</span></a> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#tdef"><span class="id" title="variable">tdef</span></a>) <span class="id" title="var">interfaces</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">]</span></a><br/>
+&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Schema.html#ce0c37d1f6b5642e2e0ed8a4275975df"><span class="id" title="notation">interface</span></a> <span class="id" title="var">_</span> { <span class="id" title="var">fields</span> } =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">[&amp;&amp;</span></a> <span class="id" title="var">fields</span> <span class="id" title="notation">!=</span> <span class="id" title="notation">[::]</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">,</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">uniq</span> <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#fld"><span class="id" title="variable">fld</span></a>.(<a class="idref" href="GraphCoQL.Schema.html#fname"><span class="id" title="projection">fname</span></a>) <span class="id" title="notation">|</span> <span class="id" title="var">fld</span> <span class="id" title="notation">&lt;-</span> <span class="id" title="var">fields</span><span class="id" title="notation">]</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">&amp;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">all</span> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#is_a_wf_field"><span class="id" title="definition">is_a_wf_field</span></a> <span class="id" title="var">fields</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">]</span></a><br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Schema.html#9ccffccefc7814fff468e3da30938090"><span class="id" title="notation">union</span></a> <span class="id" title="var">name</span> { <span class="id" title="var">members</span> } =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">[&amp;&amp;</span></a> <span class="id" title="var">members</span> <span class="id" title="notation">!=</span> <span class="id" title="notation">[::]</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">,</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">uniq</span> <span class="id" title="var">members</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">&amp;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">all</span> (<a class="idref" href="GraphCoQL.SchemaAux.html#is_object_type"><span class="id" title="definition">is_object_type</span></a> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#WellFormedness.Defs.s"><span class="id" title="variable">s</span></a>) <span class="id" title="var">members</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">]</span></a><br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Schema.html#8e2a60c2c99876bfbd87dbddb2381d4f"><span class="id" title="notation">enum</span></a> <span class="id" title="var">_</span> { <span class="id" title="var">enumValues</span> } =&gt; <span class="id" title="var">enumValues</span> <span class="id" title="notation">!=</span> <span class="id" title="notation">[::]</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab25"></a><h2 class="section">Well-formed Schema</h2>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+        A schema is <i>well-formed</i> if:
+<ul class="doclist">
+<li> its root type (is defined and) is an object type,
+
+</li>
+<li> there are no duplicated type names, and
+
+</li>
+<li> every type definition is <i>well-formed</i>.
+
+</li>
+</ul>
+    
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="is_a_wf_schema"><span class="id" title="definition">is_a_wf_schema</span></a> : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">[&amp;&amp;</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#is_object_type"><span class="id" title="definition">is_object_type</span></a> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#WellFormedness.Defs.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#WellFormedness.Defs.s"><span class="id" title="variable">s</span></a>.(<a class="idref" href="GraphCoQL.Schema.html#query_type"><span class="id" title="projection">query_type</span></a>)<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">,</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">uniq</span> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#WellFormedness.Defs.s"><span class="id" title="variable">s</span></a>.(<a class="idref" href="GraphCoQL.SchemaAux.html#type_names"><span class="id" title="definition">type_names</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">&amp;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">all</span> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#is_a_wf_type_def"><span class="id" title="definition">is_a_wf_type_def</span></a> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#WellFormedness.Defs.s"><span class="id" title="variable">s</span></a>.(<a class="idref" href="GraphCoQL.Schema.html#type_definitions"><span class="id" title="projection">type_definitions</span></a>)<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#5a7d806905be2a0d04047156433535f1"><span class="id" title="notation">]</span></a>.<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#WellFormedness.Defs"><span class="id" title="section">Defs</span></a>.<br/>
+</div>
+
+<div class="doc">
+     This finishes the necessary predicates to establish whether a GraphQL Schema is well-formed. 
+     With them in hand we can proceed to define the structure that holds it all together.
+   
+<div class="paragraph"> </div>
+
+<a name="lab26"></a><h1 class="section">Well-formed GraphQL Schema</h1>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+      A well-formed GraphQL Schema is a Schema that satisfies the <i>well-formedness</i> property.
+
+<div class="paragraph"> </div>
+
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Record</span> <a name="wfGraphQLSchema"><span class="id" title="record">wfGraphQLSchema</span></a> := <a name="WFGraphQLSchema"><span class="id" title="constructor">WFGraphQLSchema</span></a> {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a name="schema"><span class="id" title="projection">schema</span></a> : <a class="idref" href="GraphCoQL.Schema.html#graphQLSchema"><span class="id" title="record">graphQLSchema</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">_</span> : <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#is_a_wf_schema"><span class="id" title="definition">is_a_wf_schema</span></a> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#schema"><span class="id" title="method">schema</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Coercion</span> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#schema"><span class="id" title="projection">schema</span></a> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#schema"><span class="id" title="projection">:</span></a> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#schema"><span class="id" title="projection">wfGraphQLSchema</span></a> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#schema"><span class="id" title="projection">&gt;-&gt;</span></a> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#schema"><span class="id" title="projection">graphQLSchema</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#WellFormedness"><span class="id" title="section">WellFormedness</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+
+<div class="paragraph"> </div>
+
+    <div>
+        <a href='GraphCoQL.Schema.html' class="btn btn-light" role='button'>Previous ← Schema</a>
+        <a href='GraphCoQL.Graph.html' class="btn btn-info" role='button'>Continue Reading → GraphQL Graph</a>
+    </div>
+
+</div>
+<div class="code">
+
+<br/>
+</div>
+</div>
+<div id="footer">
+  Generated by <a href="http://coq.inria.fr/">coqdoc</a> and improved with <a href="https://github.com/tebbi/coqdocjs">CoqdocJS</a>
+</div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
+<script>
+  $(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+  })
+  </script>
+
+</body>
+
+</html>

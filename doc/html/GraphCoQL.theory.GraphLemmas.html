@@ -1,0 +1,279 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<link href="coqdocjs.css" rel="stylesheet" type="text/css"/>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<script type="text/javascript" src="config.js"></script>
+<script type="text/javascript" src="coqdocjs.js"></script>
+</head>
+
+<body onload="document.getElementById('content').focus()">
+  <div id="header">
+    <span class="left">
+      <span class="modulename"> <script> document.write(document.title) </script> </span>
+    </span>
+
+    <span class="button" id="toggle-proofs"></span>
+
+    <span class="right">
+      <a href="../">Project Page</a>
+      <a href="./indexpage.html"> Index </a>
+      <a href="./toc.html"> Table of Contents </a>
+    </span>
+</div>
+    <div id="content" tabindex="-1" onblur="document.getElementById('content').focus()">
+    <div id="main">
+<h1 class="libtitle">GraphCoQL.theory.GraphLemmas</h1>
+
+<div class="code">
+
+<br/>
+</div>
+
+<div class="doc">
+   <div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">Graph Theory</h1>
+        <p class="lead">
+         This file contains lemmas about functions and conformance predicates over GraphQL Graphs.
+        </p>         
+  </div>
+</div>
+ 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Section</span> <a name="Theory"><span class="id" title="section">Theory</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Variables</span> (<a name="Theory.Scalar"><span class="id" title="variable">Scalar</span></a> : <span class="id" title="abbreviation">eqType</span>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab85"></a><h3 class="section">Auxiliary definitions</h3>
+<hr/>
+ 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a name="Theory.Aux"><span class="id" title="section">Aux</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Variable</span> (<a name="Theory.Aux.graph"><span class="id" title="variable">graph</span></a> :  @<a class="idref" href="GraphCoQL.Graph.html#graphQLGraph"><span class="id" title="record">graphQLGraph</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Implicit</span> <span class="id" title="keyword">Type</span> <span class="id" title="var">edge</span> : @<a class="idref" href="GraphCoQL.Graph.html#node"><span class="id" title="record">node</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> @<a class="idref" href="GraphCoQL.Graph.html#label"><span class="id" title="record">label</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> @<a class="idref" href="GraphCoQL.Graph.html#node"><span class="id" title="record">node</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+       This lemma states that the graph's root node is included in the list
+       of nodes.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="root_in_nodes"><span class="id" title="lemma">root_in_nodes</span></a> : <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Aux.graph"><span class="id" title="variable">graph</span></a>.(<a class="idref" href="GraphCoQL.Graph.html#root"><span class="id" title="projection">root</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Aux.graph"><span class="id" title="variable">graph</span></a>.(<a class="idref" href="GraphCoQL.GraphConformance.html#nodes"><span class="id" title="definition">nodes</span></a>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.GraphConformance.html#nodes"><span class="id" title="definition">nodes</span></a> -<a class="idref" href="Lib.SeqExtra.html#in_undup"><span class="id" title="lemma">in_undup</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#orP"><span class="id" title="lemma">orP</span></a>; <span class="id" title="tactic">left</span>; <span class="id" title="tactic">apply</span>/<span class="id" title="lemma">eqP</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that neighbors of a node also belong to the graph.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="neighbors_are_in_nodes"><span class="id" title="lemma">neighbors_are_in_nodes</span></a> <span class="id" title="var">u</span> <span class="id" title="var">label</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">forall</span> <span class="id" title="var">x</span>, <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#x"><span class="id" title="variable">x</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#neighbors_with_label"><span class="id" title="definition">neighbors_with_label</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Aux.graph"><span class="id" title="variable">graph</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#u"><span class="id" title="variable">u</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#label"><span class="id" title="variable">label</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#x"><span class="id" title="variable">x</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Aux.graph"><span class="id" title="variable">graph</span></a>.(<a class="idref" href="GraphCoQL.GraphConformance.html#nodes"><span class="id" title="definition">nodes</span></a>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.GraphConformance.html#neighbors_with_label"><span class="id" title="definition">neighbors_with_label</span></a> /<a class="idref" href="GraphCoQL.GraphConformance.html#nodes"><span class="id" title="definition">nodes</span></a> =&gt; <span class="id" title="var">x</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> -?<a class="idref" href="Lib.SeqExtra.html#in_undup"><span class="id" title="lemma">in_undup</span></a> =&gt; /<span class="id" title="lemma">mapP</span> [<span class="id" title="var">v</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">mem_filter</span> =&gt; /<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#andP"><span class="id" title="lemma">andP</span></a> [/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#andP"><span class="id" title="lemma">andP</span></a> [/<span class="id" title="lemma">eqP</span> <span class="id" title="var">Hsrc</span> /<span class="id" title="lemma">eqP</span> <span class="id" title="var">Hlabel</span>] <span class="id" title="var">Hin</span>] /= <span class="id" title="var">Heq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#orP"><span class="id" title="lemma">orP</span></a>; <span class="id" title="tactic">right</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span>/<span class="id" title="lemma">flatten_mapP</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exists</span> <span class="id" title="var">v</span> =&gt; //=.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.GraphConformance.html#enodes"><span class="id" title="definition">enodes</span></a> <span class="id" title="definition">inE</span>; <span class="id" title="tactic">apply</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#orP"><span class="id" title="lemma">orP</span></a>; <span class="id" title="tactic">right</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">mem_seq1</span>; <span class="id" title="tactic">apply</span>/<span class="id" title="lemma">eqP</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that getting the head of a list of nodes 
+       from the graph, returns a node that is in the graph.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="ohead_in_nodes"><span class="id" title="lemma">ohead_in_nodes</span></a> <span class="id" title="var">nds</span> <span class="id" title="var">v</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">all</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">node</span> =&gt; <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#node"><span class="id" title="variable">node</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Aux.graph"><span class="id" title="variable">graph</span></a>.(<a class="idref" href="GraphCoQL.GraphConformance.html#nodes"><span class="id" title="definition">nodes</span></a>)) <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#nds"><span class="id" title="variable">nds</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">ohead</span> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#nds"><span class="id" title="variable">nds</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#v"><span class="id" title="variable">v</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.theory.GraphLemmas.html#v"><span class="id" title="variable">v</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Aux.graph"><span class="id" title="variable">graph</span></a>.(<a class="idref" href="GraphCoQL.GraphConformance.html#nodes"><span class="id" title="definition">nodes</span></a>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">elim</span>: <span class="id" title="var">nds</span> =&gt; // <span class="id" title="var">x</span> <span class="id" title="var">nds</span> <span class="id" title="var">IH</span> /=.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">move</span>=&gt; <span class="id" title="var">H</span>; <span class="id" title="tactic">case</span>=&gt; <span class="id" title="var">Heq</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Heq</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">move</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#andP"><span class="id" title="lemma">andP</span></a>: <span class="id" title="var">H</span> =&gt; [<span class="id" title="var">H</span> <span class="id" title="var">_</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Aux"><span class="id" title="section">Aux</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab86"></a><h3 class="section">Graph Conformance</h3>
+<hr/>
+ 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a name="Theory.Conformance"><span class="id" title="section">Conformance</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Variables</span> (<a name="Theory.Conformance.s"><span class="id" title="variable">s</span></a> : <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#wfGraphQLSchema"><span class="id" title="record">wfGraphQLSchema</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a name="Theory.Conformance.check_scalar"><span class="id" title="variable">check_scalar</span></a> : <a class="idref" href="GraphCoQL.Schema.html#graphQLSchema"><span class="id" title="record">graphQLSchema</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.Graph.html#Name"><span class="id" title="abbreviation">Name</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a name="Theory.Conformance.g"><span class="id" title="variable">g</span></a> : <a class="idref" href="GraphCoQL.GraphConformance.html#conformedGraph"><span class="id" title="record">conformedGraph</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#check_scalar"><span class="id" title="variable">check_scalar</span></a>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+     This lemma states that if the root node's type conforms to the schema, 
+     then its type must be the <i>Query</i> type.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="root_query_type"><span class="id" title="lemma">root_query_type</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Conformance.g"><span class="id" title="variable">g</span></a>.(<a class="idref" href="GraphCoQL.Graph.html#root"><span class="id" title="projection">root</span></a>).(<a class="idref" href="GraphCoQL.Graph.html#ntype"><span class="id" title="projection">ntype</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Conformance.s"><span class="id" title="variable">s</span></a>.(<a class="idref" href="GraphCoQL.Schema.html#query_type"><span class="id" title="projection">query_type</span></a>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">case</span>: <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Conformance.g"><span class="id" title="variable">g</span></a> =&gt; <span class="id" title="var">g'</span>; <span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.GraphConformance.html#is_a_conforming_graph"><span class="id" title="definition">is_a_conforming_graph</span></a> /= /<a class="idref" href="GraphCoQL.GraphConformance.html#root_type_conforms"><span class="id" title="definition">root_type_conforms</span></a>; <span class="id" title="tactic">case</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#and3P"><span class="id" title="lemma">and3P</span></a> =&gt; /<span class="id" title="lemma">eqP</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that conformed nodes must have object type.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="nodes_conform_have_object_type"><span class="id" title="lemma">nodes_conform_have_object_type</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.GraphConformance.html#nodes_conform"><span class="id" title="definition">nodes_conform</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Conformance.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Conformance.check_scalar"><span class="id" title="variable">check_scalar</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Conformance.g"><span class="id" title="variable">g</span></a>.(<a class="idref" href="GraphCoQL.GraphConformance.html#nodes"><span class="id" title="definition">nodes</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <span class="id" title="keyword">forall</span> <span class="id" title="var">u</span>, <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#u"><span class="id" title="variable">u</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Conformance.g"><span class="id" title="variable">g</span></a>.(<a class="idref" href="GraphCoQL.GraphConformance.html#nodes"><span class="id" title="definition">nodes</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#is_object_type"><span class="id" title="definition">is_object_type</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Conformance.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#u"><span class="id" title="variable">u</span></a>.(<a class="idref" href="GraphCoQL.Graph.html#ntype"><span class="id" title="projection">ntype</span></a>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.GraphConformance.html#nodes_conform"><span class="id" title="definition">nodes_conform</span></a> /= =&gt; /<span class="id" title="lemma">allP</span> <span class="id" title="var">Hconf</span> <span class="id" title="var">u</span> <span class="id" title="var">Hin</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">case</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#andP"><span class="id" title="lemma">andP</span></a> : (<span class="id" title="var">Hconf</span> <span class="id" title="var">u</span> <span class="id" title="var">Hin</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that every node in the conformed graph 
+       must have object type.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="node_in_graph_has_object_type"><span class="id" title="lemma">node_in_graph_has_object_type</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">forall</span> <span class="id" title="var">u</span>, <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#u"><span class="id" title="variable">u</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Conformance.g"><span class="id" title="variable">g</span></a>.(<a class="idref" href="GraphCoQL.GraphConformance.html#nodes"><span class="id" title="definition">nodes</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#is_object_type"><span class="id" title="definition">is_object_type</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Conformance.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#u"><span class="id" title="variable">u</span></a>.(<a class="idref" href="GraphCoQL.Graph.html#ntype"><span class="id" title="projection">ntype</span></a>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span>: <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#nodes_conform_have_object_type"><span class="id" title="lemma">nodes_conform_have_object_type</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">case</span>: <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Conformance.g"><span class="id" title="variable">g</span></a> =&gt; <span class="id" title="var">g'</span>; <span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.GraphConformance.html#is_a_conforming_graph"><span class="id" title="definition">is_a_conforming_graph</span></a> /=; <span class="id" title="tactic">case</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#and3P"><span class="id" title="lemma">and3P</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     This lemma states that every node reached by a labeled edge 
+     must have a type that is subtype of the type associated to the 
+     field used in the edge.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="neighbors_are_subtype_of_field"><span class="id" title="lemma">neighbors_are_subtype_of_field</span></a> <span class="id" title="var">u</span> <span class="id" title="var">label</span> <span class="id" title="var">fdef</span>  :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaAux.html#lookup_field_in_type"><span class="id" title="definition">lookup_field_in_type</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Conformance.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#u"><span class="id" title="variable">u</span></a>.(<a class="idref" href="GraphCoQL.Graph.html#ntype"><span class="id" title="projection">ntype</span></a>) <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#label"><span class="id" title="variable">label</span></a>.(<a class="idref" href="GraphCoQL.Graph.html#lname"><span class="id" title="projection">lname</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#fdef"><span class="id" title="variable">fdef</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">forall</span> <span class="id" title="var">v</span>, <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#v"><span class="id" title="variable">v</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="GraphCoQL.GraphConformance.html#neighbors_with_label"><span class="id" title="definition">neighbors_with_label</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Conformance.g"><span class="id" title="variable">g</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#u"><span class="id" title="variable">u</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#label"><span class="id" title="variable">label</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.theory.GraphLemmas.html#v"><span class="id" title="variable">v</span></a>.(<a class="idref" href="GraphCoQL.Graph.html#ntype"><span class="id" title="projection">ntype</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#get_possible_types"><span class="id" title="definition">get_possible_types</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Conformance.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#fdef"><span class="id" title="variable">fdef</span></a>.(<a class="idref" href="GraphCoQL.Schema.html#ftype"><span class="id" title="projection">ftype</span></a>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">move</span>=&gt; <span class="id" title="var">Hlook</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">case</span>: <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Conformance.g"><span class="id" title="variable">g</span></a> =&gt; <span class="id" title="var">g'</span>; <span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.GraphConformance.html#is_a_conforming_graph"><span class="id" title="definition">is_a_conforming_graph</span></a> /= =&gt; /<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#and3P"><span class="id" title="lemma">and3P</span></a> [<span class="id" title="var">Hroot</span> <span class="id" title="var">Hedges</span> <span class="id" title="var">Hnodes</span>] <span class="id" title="var">v</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.GraphConformance.html#neighbors_with_label"><span class="id" title="definition">neighbors_with_label</span></a> -<a class="idref" href="Lib.SeqExtra.html#in_undup"><span class="id" title="lemma">in_undup</span></a> =&gt; /<span class="id" title="lemma">mapP</span> [<span class="id" title="var">v'</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">case</span>: <span class="id" title="var">v'</span> =&gt; [[<span class="id" title="var">src'</span> <span class="id" title="var">label'</span>] <span class="id" title="var">target</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">mem_filter</span> =&gt; /<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#andP"><span class="id" title="lemma">andP</span></a> [/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#andP"><span class="id" title="lemma">andP</span></a> [/<span class="id" title="lemma">eqP</span> /= <span class="id" title="var">Hsrc</span> /<span class="id" title="lemma">eqP</span> <span class="id" title="var">Hlabel</span>] <span class="id" title="var">Hin</span>] <span class="id" title="var">Htrgt</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">simpl</span> <span class="id" title="tactic">in</span> <span class="id" title="var">Hin</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">move</span>: <span class="id" title="var">Hedges</span>; <span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.GraphConformance.html#edges_conform"><span class="id" title="definition">edges_conform</span></a> /=.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">case</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#andP"><span class="id" title="lemma">andP</span></a>=&gt; <span class="id" title="var">_</span> /<span class="id" title="lemma">allP</span>-/(<span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">Hin</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">Hsrc</span> <span class="id" title="var">Hlabel</span> <span class="id" title="var">Htrgt</span> <span class="id" title="var">Hlook</span> /=.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">case</span>: <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#ifP"><span class="id" title="lemma">ifP</span></a> =&gt; //= <span class="id" title="var">_</span>; [<span class="id" title="tactic">case</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#and3P"><span class="id" title="lemma">and3P</span></a> | <span class="id" title="tactic">case</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#andP"><span class="id" title="lemma">andP</span></a>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory.Conformance"><span class="id" title="section">Conformance</span></a>.<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.theory.GraphLemmas.html#Theory"><span class="id" title="section">Theory</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+    <div>
+        <a href='GraphCoQL.GraphConformance.html' class="btn btn-light" role='button'>Previous ← Graph Conformance</a>
+        <a href='GraphCoQL.Query.html' class="btn btn-info" role='button'>Continue Reading → Query</a>
+    </div>
+
+</div>
+<div class="code">
+</div>
+</div>
+<div id="footer">
+  Generated by <a href="http://coq.inria.fr/">coqdoc</a> and improved with <a href="https://github.com/tebbi/coqdocjs">CoqdocJS</a>
+</div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
+<script>
+  $(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+  })
+  </script>
+
+</body>
+
+</html>

@@ -1,0 +1,487 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<link href="coqdocjs.css" rel="stylesheet" type="text/css"/>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<script type="text/javascript" src="config.js"></script>
+<script type="text/javascript" src="coqdocjs.js"></script>
+</head>
+
+<body onload="document.getElementById('content').focus()">
+  <div id="header">
+    <span class="left">
+      <span class="modulename"> <script> document.write(document.title) </script> </span>
+    </span>
+
+    <span class="button" id="toggle-proofs"></span>
+
+    <span class="right">
+      <a href="../">Project Page</a>
+      <a href="./indexpage.html"> Index </a>
+      <a href="./toc.html"> Table of Contents </a>
+    </span>
+</div>
+    <div id="content" tabindex="-1" onblur="document.getElementById('content').focus()">
+    <div id="main">
+<h1 class="libtitle">GraphCoQL.theory.SchemaLemmas</h1>
+
+<div class="code">
+
+<br/>
+</div>
+
+<div class="doc">
+   <div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">Schema Theory</h1>
+        <p class="lead">
+         This file contains lemmas about the auxiliary definitions for a 
+         GraphQL Schema and for the well-formedness predicates.
+        </p>         
+  </div>
+</div>
+ 
+<div class="paragraph"> </div>
+
+<a name="lab27"></a><h1 class="section">Auxiliary</h1>
+<hr/>
+ 
+</div>
+<div class="code">
+<span class="id" title="keyword">Section</span> <a name="Aux"><span class="id" title="section">Aux</span></a>.<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Variable</span> (<a name="Aux.s"><span class="id" title="variable">s</span></a> : <a class="idref" href="GraphCoQL.Schema.html#graphQLSchema"><span class="id" title="record">graphQLSchema</span></a>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab28"></a><h3 class="section">Lookup</h3>
+<hr/>
+ 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a name="Aux.Lookup"><span class="id" title="section">Lookup</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+       This lemma states that if looking up a type definition by name
+       returns a valid definition, then that definition is in the list 
+       of type definitions of the schema.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="lookup_type_in_tdefs"><span class="id" title="lemma">lookup_type_in_tdefs</span></a> <span class="id" title="var">ty</span> <span class="id" title="var">tdef</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaAux.html#lookup_type"><span class="id" title="definition">lookup_type</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#Aux.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#tdef"><span class="id" title="variable">tdef</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#tdef"><span class="id" title="variable">tdef</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#Aux.s"><span class="id" title="variable">s</span></a>.(<a class="idref" href="GraphCoQL.Schema.html#type_definitions"><span class="id" title="projection">type_definitions</span></a>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.SchemaAux.html#lookup_type"><span class="id" title="definition">lookup_type</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">elim</span>: <a class="idref" href="GraphCoQL.Schema.html#type_definitions"><span class="id" title="projection">type_definitions</span></a> =&gt; //= <span class="id" title="var">tdef'</span> <span class="id" title="var">tdefs</span> <span class="id" title="var">IH</span>; <span class="id" title="tactic">case</span>: <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#ifP"><span class="id" title="lemma">ifP</span></a> =&gt; /= [<span class="id" title="var">_</span> | <span class="id" title="var">_</span> <span class="id" title="var">Hgf</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">case</span>=&gt; -&gt;; <span class="id" title="tactic">apply</span>: <span class="id" title="lemma">mem_head</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>: <a class="idref" href="Lib.SeqExtra.html#mem_tail"><span class="id" title="lemma">mem_tail</span></a>; <span class="id" title="tactic">apply</span>: <span class="id" title="var">IH</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that if looking up a type definition by name
+       returns a valid definition, then that definition's name is the same 
+       as the one used to look it up.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="lookup_type_name_wf"><span class="id" title="lemma">lookup_type_name_wf</span></a> <span class="id" title="var">ty</span> <span class="id" title="var">tdef</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaAux.html#lookup_type"><span class="id" title="definition">lookup_type</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#Aux.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#tdef"><span class="id" title="variable">tdef</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#tdef"><span class="id" title="variable">tdef</span></a>.(<a class="idref" href="GraphCoQL.SchemaAux.html#tdname"><span class="id" title="definition">tdname</span></a>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.SchemaAux.html#lookup_type"><span class="id" title="definition">lookup_type</span></a> =&gt; /<a class="idref" href="Lib.SeqExtra.html#get_first_pred"><span class="id" title="lemma">get_first_pred</span></a> /<span class="id" title="lemma">eqP</span> -&gt;.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#Aux.Lookup"><span class="id" title="section">Lookup</span></a>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab29"></a><h3 class="section">Subtyping</h3>
+<hr/>
+ 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a name="Aux.Subtypes"><span class="id" title="section">Subtypes</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+       This lemma states that if a type is an Object type, then its 
+       possible subtypes are only itself.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="get_possible_types_objectE"><span class="id" title="lemma">get_possible_types_objectE</span></a> <span class="id" title="var">ty</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaAux.html#is_object_type"><span class="id" title="definition">is_object_type</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#Aux.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaAux.html#get_possible_types"><span class="id" title="definition">get_possible_types</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#Aux.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="notation">[::</span> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#ty"><span class="id" title="variable">ty</span></a><span class="id" title="notation">]</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">simp</span> <span class="id" title="var">is_object_type</span>; <span class="id" title="var">simp</span> <span class="id" title="var">get_possible_types</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">case</span> <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_type"><span class="id" title="definition">lookup_type</span></a> =&gt; //; <span class="id" title="tactic">case</span>=&gt; //=.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that if a type <span class="inlinecode"><a class="idref" href="GraphCoQL.Schema.html#t"><span class="id" title="variable">t</span></a></span> is in
+       the possible types of <span class="inlinecode"><a class="idref" href="GraphCoQL.Schema.html#ty"><span class="id" title="variable">ty</span></a></span>, which is an Object type, then 
+       that <span class="inlinecode"><a class="idref" href="GraphCoQL.Schema.html#t"><span class="id" title="variable">t</span></a></span> is equal to <span class="inlinecode"><a class="idref" href="GraphCoQL.Schema.html#ty"><span class="id" title="variable">ty</span></a></span>.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="in_object_possible_types"><span class="id" title="lemma">in_object_possible_types</span></a> <span class="id" title="var">t</span> <span class="id" title="var">ty</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaAux.html#is_object_type"><span class="id" title="definition">is_object_type</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#Aux.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#t"><span class="id" title="variable">t</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#get_possible_types"><span class="id" title="definition">get_possible_types</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#Aux.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#t"><span class="id" title="variable">t</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#ty"><span class="id" title="variable">ty</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">move</span>/<a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#get_possible_types_objectE"><span class="id" title="lemma">get_possible_types_objectE</span></a> =&gt; -&gt;.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">mem_seq1</span> =&gt; /<span class="id" title="lemma">eqP</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#Aux.Subtypes"><span class="id" title="section">Subtypes</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#Aux"><span class="id" title="section">Aux</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab30"></a><h1 class="section">Well-Formedness</h1>
+<hr/>
+ 
+</div>
+<div class="code">
+<span class="id" title="keyword">Section</span> <a name="WellFormedness"><span class="id" title="section">WellFormedness</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Variable</span> (<a name="WellFormedness.s"><span class="id" title="variable">s</span></a> : <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#wfGraphQLSchema"><span class="id" title="record">wfGraphQLSchema</span></a>).<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Tactic to destroy a wf schema 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Ltac</span> <span class="id" title="var">wfschema</span> <span class="id" title="var">s</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">sch</span> := <span class="id" title="tactic">fresh</span> "s" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">Hhty</span> := <span class="id" title="tactic">fresh</span> "Hhty" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">Hqobj</span> := <span class="id" title="tactic">fresh</span> "Hqboj" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">Huniq</span> := <span class="id" title="tactic">fresh</span> "Huniq" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">Hok</span> := <span class="id" title="tactic">fresh</span> "Hok" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">case</span>: <span class="id" title="var">s</span> =&gt; <span class="id" title="var">sch</span>; <span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.SchemaWellFormedness.html#is_a_wf_schema"><span class="id" title="definition">is_a_wf_schema</span></a> =&gt; /=  /<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#and3P"><span class="id" title="lemma">and3P</span></a> [<span class="id" title="var">Hqobj</span> <span class="id" title="var">Huniq</span> /<span class="id" title="lemma">allP</span> <span class="id" title="var">Hok</span>].<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     This lemma states that the query type in a wf schema is an object type.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="query_has_object_type"><span class="id" title="lemma">query_has_object_type</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaAux.html#is_object_type"><span class="id" title="definition">is_object_type</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a>.(<a class="idref" href="GraphCoQL.Schema.html#query_type"><span class="id" title="projection">query_type</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="var">wfschema</span> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     Reflection lemma between <span class="inlinecode"><a class="idref" href="GraphCoQL.SchemaAux.html#is_object_type"><span class="id" title="definition">is_object_type</span></a></span> and its Prop counterpart.
+     It states that being an object type means looking that name up in the schema and getting an object type definition.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="is_object_type_wfP"><span class="id" title="lemma">is_object_type_wfP</span></a> <span class="id" title="var">ty</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#reflect"><span class="id" title="abbreviation">reflect</span></a> (<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#a883bdd010993579f99d60b3775bcf54"><span class="id" title="notation">exists</span></a> <span class="id" title="var">intfs</span> <span class="id" title="var">flds</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#a883bdd010993579f99d60b3775bcf54"><span class="id" title="notation">,</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_type"><span class="id" title="definition">lookup_type</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.Schema.html#ObjectTypeDefinition"><span class="id" title="constructor">ObjectTypeDefinition</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#intfs"><span class="id" title="variable">intfs</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#flds"><span class="id" title="variable">flds</span></a>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="GraphCoQL.SchemaAux.html#is_object_type"><span class="id" title="definition">is_object_type</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#ty"><span class="id" title="variable">ty</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span>: (<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#iffP"><span class="id" title="lemma">iffP</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#idP"><span class="id" title="lemma">idP</span></a>)=&gt; //.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.SchemaAux.html#is_object_type"><span class="id" title="definition">is_object_type</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">ty</span>) =&gt; // <span class="id" title="var">_</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">exists</span> <span class="id" title="var">interfaces</span>, <span class="id" title="var">fields0</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Heq</span>; <span class="id" title="tactic">move</span>/<a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#lookup_type_name_wf"><span class="id" title="lemma">lookup_type_name_wf</span></a>: <span class="id" title="var">Heq</span> =&gt;  -&gt; /=.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">by</span> <span class="id" title="tactic">move</span>=&gt; [<span class="id" title="var">intfs</span> [<span class="id" title="var">flds</span> <span class="id" title="var">Hlook</span>]]; <span class="id" title="var">simp</span> <span class="id" title="var">is_object_type</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Hlook</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     Reflection lemma between <span class="inlinecode"><a class="idref" href="GraphCoQL.SchemaAux.html#is_interface_type"><span class="id" title="definition">is_interface_type</span></a></span> and its Prop counterpart.
+     It states that being an interface type means looking that name up in the schema and getting an interface type definition.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="is_interface_type_wfP"><span class="id" title="lemma">is_interface_type_wfP</span></a> <span class="id" title="var">ty</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#reflect"><span class="id" title="abbreviation">reflect</span></a> (<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#a883bdd010993579f99d60b3775bcf54"><span class="id" title="notation">exists</span></a> <span class="id" title="var">flds</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#a883bdd010993579f99d60b3775bcf54"><span class="id" title="notation">,</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_type"><span class="id" title="definition">lookup_type</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.Schema.html#InterfaceTypeDefinition"><span class="id" title="constructor">InterfaceTypeDefinition</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#flds"><span class="id" title="variable">flds</span></a>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="GraphCoQL.SchemaAux.html#is_interface_type"><span class="id" title="definition">is_interface_type</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#ty"><span class="id" title="variable">ty</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span>: (<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#iffP"><span class="id" title="lemma">iffP</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#idP"><span class="id" title="lemma">idP</span></a>)=&gt; //.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.SchemaAux.html#is_interface_type"><span class="id" title="definition">is_interface_type</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">ty</span>) =&gt; // <span class="id" title="var">_</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">exists</span> <span class="id" title="var">fields1</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Heq</span>; <span class="id" title="tactic">move</span>/<a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#lookup_type_name_wf"><span class="id" title="lemma">lookup_type_name_wf</span></a>: <span class="id" title="var">Heq</span> =&gt;  -&gt; /=.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">by</span> <span class="id" title="tactic">move</span>=&gt; [<span class="id" title="var">flds</span> <span class="id" title="var">Hlook</span>]; <span class="id" title="var">simp</span> <span class="id" title="var">is_interface_type</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Hlook</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     Reflection lemma between <span class="inlinecode"><a class="idref" href="GraphCoQL.SchemaAux.html#is_union_type"><span class="id" title="definition">is_union_type</span></a></span> and its Prop counterpart.
+     It states that being a union type means looking that name up in the schema and getting a union type definition.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="is_union_type_wfP"><span class="id" title="lemma">is_union_type_wfP</span></a> <span class="id" title="var">ty</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#reflect"><span class="id" title="abbreviation">reflect</span></a> (<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#a883bdd010993579f99d60b3775bcf54"><span class="id" title="notation">exists</span></a> <span class="id" title="var">mbs</span><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#a883bdd010993579f99d60b3775bcf54"><span class="id" title="notation">,</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_type"><span class="id" title="definition">lookup_type</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.Schema.html#UnionTypeDefinition"><span class="id" title="constructor">UnionTypeDefinition</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#mbs"><span class="id" title="variable">mbs</span></a>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="GraphCoQL.SchemaAux.html#is_union_type"><span class="id" title="definition">is_union_type</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#ty"><span class="id" title="variable">ty</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span>: (<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#iffP"><span class="id" title="lemma">iffP</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#idP"><span class="id" title="lemma">idP</span></a>)=&gt; //.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.SchemaAux.html#is_union_type"><span class="id" title="definition">is_union_type</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">ty</span>) =&gt; // <span class="id" title="var">_</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">exists</span> <span class="id" title="var">members</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Heq</span>; <span class="id" title="tactic">move</span>/<a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#lookup_type_name_wf"><span class="id" title="lemma">lookup_type_name_wf</span></a>: <span class="id" title="var">Heq</span> =&gt;  -&gt; /=.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">by</span> <span class="id" title="tactic">move</span>=&gt; [<span class="id" title="var">mbs</span> <span class="id" title="var">Hlook</span>]; <span class="id" title="var">simp</span> <span class="id" title="var">is_union_type</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Hlook</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     This lemma states that if a type <span class="inlinecode"><a class="idref" href="GraphCoQL.Schema.html#t"><span class="id" title="variable">t</span></a></span> belongs to a union's members, then that type must be an Object type.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="union_has_objects"><span class="id" title="lemma">union_has_objects</span></a> <span class="id" title="var">ty</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">forall</span> <span class="id" title="var">t</span>, <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#t"><span class="id" title="variable">t</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#union_members"><span class="id" title="definition">union_members</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaAux.html#is_object_type"><span class="id" title="definition">is_object_type</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#t"><span class="id" title="variable">t</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">wfschema</span> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.SchemaAux.html#union_members"><span class="id" title="definition">union_members</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">case</span> <span class="id" title="var">Hlook</span>: <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_type"><span class="id" title="definition">lookup_type</span></a> =&gt; [<span class="id" title="var">tdef</span>|] //.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">case</span>: <span class="id" title="var">tdef</span> <span class="id" title="var">Hlook</span> =&gt; // <span class="id" title="var">u</span> <span class="id" title="var">mbs</span> /<a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#lookup_type_in_tdefs"><span class="id" title="lemma">lookup_type_in_tdefs</span></a> <span class="id" title="var">Hin</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="var">have</span> /= := (<span class="id" title="var">Hok</span> <span class="id" title="var">_</span> <span class="id" title="var">Hin</span>) =&gt; /<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#and3P"><span class="id" title="lemma">and3P</span></a> [<span class="id" title="var">_</span> <span class="id" title="var">_</span> /<span class="id" title="lemma">allP</span>].<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     This lemma states that if a list of type definitions has no duplicate names, 
+     then looking up the name of one of its members should return that same type definition.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="in_tdefs_get_first"><span class="id" title="lemma">in_tdefs_get_first</span></a> <span class="id" title="var">tdef</span> <span class="id" title="var">tdefs</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">uniq</span> <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#t"><span class="id" title="variable">t</span></a>.(<a class="idref" href="GraphCoQL.SchemaAux.html#tdname"><span class="id" title="definition">tdname</span></a>) <span class="id" title="notation">|</span> <span class="id" title="var">t</span> <span class="id" title="notation">&lt;-</span> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#tdefs"><span class="id" title="variable">tdefs</span></a><span class="id" title="notation">]</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#tdef"><span class="id" title="variable">tdef</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#tdefs"><span class="id" title="variable">tdefs</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Lib.SeqExtra.html#get_first"><span class="id" title="definition">get_first</span></a> (<span class="id" title="keyword">fun</span> <span class="id" title="var">t</span> =&gt; <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#t"><span class="id" title="variable">t</span></a>.(<a class="idref" href="GraphCoQL.SchemaAux.html#tdname"><span class="id" title="definition">tdname</span></a>) <span class="id" title="notation">==</span> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#tdef"><span class="id" title="variable">tdef</span></a>.(<a class="idref" href="GraphCoQL.SchemaAux.html#tdname"><span class="id" title="definition">tdname</span></a>)) <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#tdefs"><span class="id" title="variable">tdefs</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#tdef"><span class="id" title="variable">tdef</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">elim</span>: <span class="id" title="var">tdefs</span> =&gt; //= <span class="id" title="var">t</span> <span class="id" title="var">tdefs</span> <span class="id" title="var">IH</span> /<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#andP"><span class="id" title="lemma">andP</span></a> [<span class="id" title="var">Hnin</span> <span class="id" title="var">Huniq</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="definition">inE</span> =&gt; /<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#orP"><span class="id" title="lemma">orP</span></a> [/<span class="id" title="lemma">eqP</span> -&gt; | <span class="id" title="var">Hin</span>]; <span class="id" title="tactic">first</span> <span class="id" title="tactic">by</span> <span class="id" title="tactic">case</span>: <span class="id" title="lemma">eqP</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">move</span>/<span class="id" title="lemma">memPn</span>: <span class="id" title="var">Hnin</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">have</span> /(<span class="id" title="var">_</span> <span class="id" title="var">tdefs</span> <span class="id" title="var">tdef</span> <span class="id" title="var">Hin</span>) : <span class="id" title="keyword">forall</span> <span class="id" title="var">xs</span> <span class="id" title="var">x</span>, <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#x"><span class="id" title="variable">x</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#xs"><span class="id" title="variable">xs</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#x"><span class="id" title="variable">x</span></a>.(<a class="idref" href="GraphCoQL.SchemaAux.html#tdname"><span class="id" title="definition">tdname</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#y"><span class="id" title="variable">y</span></a>.(<a class="idref" href="GraphCoQL.SchemaAux.html#tdname"><span class="id" title="definition">tdname</span></a>) <span class="id" title="notation">|</span> <span class="id" title="var">y</span> <span class="id" title="notation">&lt;-</span> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#xs"><span class="id" title="variable">xs</span></a><span class="id" title="notation">]</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">elim</span>=&gt; //= <span class="id" title="var">hd</span> <span class="id" title="var">tl</span> <span class="id" title="var">IH'</span> <span class="id" title="var">x</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="definition">inE</span> =&gt; /<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#orP"><span class="id" title="lemma">orP</span></a> [/<span class="id" title="lemma">eqP</span> -&gt; | <span class="id" title="var">Hxin</span>]; <span class="id" title="tactic">first</span> <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>: <span class="id" title="lemma">mem_head</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>: <a class="idref" href="Lib.SeqExtra.html#mem_tail"><span class="id" title="lemma">mem_tail</span></a>; <span class="id" title="tactic">apply</span>: <span class="id" title="var">IH'</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">move</span>=&gt; <span class="id" title="var">Hnamein</span> /(<span class="id" title="var">_</span> <span class="id" title="var">tdef</span>.(<a class="idref" href="GraphCoQL.SchemaAux.html#tdname"><span class="id" title="definition">tdname</span></a>) <span class="id" title="var">Hnamein</span>) /<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#negbTE"><span class="id" title="lemma">negbTE</span></a>; <span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">eq_sym</span> =&gt; -&gt;.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>: <span class="id" title="var">IH</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     This lemma states that if a type definition belongs to a wf schema's
+     list of type definitions, then looking that definition's name should return
+     the same definition.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="in_tdefs_lookup"><span class="id" title="lemma">in_tdefs_lookup</span></a> <span class="id" title="var">tdef</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#tdef"><span class="id" title="variable">tdef</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a>.(<a class="idref" href="GraphCoQL.Schema.html#type_definitions"><span class="id" title="projection">type_definitions</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaAux.html#lookup_type"><span class="id" title="definition">lookup_type</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#tdef"><span class="id" title="variable">tdef</span></a>.(<a class="idref" href="GraphCoQL.SchemaAux.html#tdname"><span class="id" title="definition">tdname</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#tdef"><span class="id" title="variable">tdef</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.SchemaAux.html#lookup_type"><span class="id" title="definition">lookup_type</span></a> =&gt; *; <span class="id" title="tactic">apply</span>: <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#in_tdefs_get_first"><span class="id" title="lemma">in_tdefs_get_first</span></a> =&gt; //; <span class="id" title="var">wfschema</span> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     This lemma states that if a type <span class="inlinecode"><a class="idref" href="GraphCoQL.Schema.html#t"><span class="id" title="variable">t</span></a></span> belongs to the <span class="inlinecode"><a class="idref" href="GraphCoQL.SchemaAux.html#implementation"><span class="id" title="definition">implementation</span></a></span> of 
+     another type <span class="inlinecode"><a class="idref" href="GraphCoQL.Schema.html#ty"><span class="id" title="variable">ty</span></a></span>, then <span class="inlinecode"><a class="idref" href="GraphCoQL.Schema.html#t"><span class="id" title="variable">t</span></a></span> must be an object type. This is valid only
+     for well-formed schemas.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="in_implementation_is_object"><span class="id" title="lemma">in_implementation_is_object</span></a> <span class="id" title="var">ty</span> <span class="id" title="var">t</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#t"><span class="id" title="variable">t</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#implementation"><span class="id" title="definition">implementation</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaAux.html#is_object_type"><span class="id" title="definition">is_object_type</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#t"><span class="id" title="variable">t</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.SchemaAux.html#implementation"><span class="id" title="definition">implementation</span></a> -<a class="idref" href="Lib.SeqExtra.html#in_undup"><span class="id" title="lemma">in_undup</span></a> =&gt; /<span class="id" title="lemma">mapP</span> [<span class="id" title="var">tdef</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">mem_filter</span>; <span class="id" title="tactic">case</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#andP"><span class="id" title="lemma">andP</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.SchemaAux.html#tintfs"><span class="id" title="definition">tintfs</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">case</span>: <span class="id" title="var">tdef</span> =&gt; //= <span class="id" title="var">object_name</span> <span class="id" title="var">interfaces</span> <span class="id" title="var">fields</span> <span class="id" title="var">Hinintfs</span> <span class="id" title="var">Hintdefs</span> <span class="id" title="var">Heq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span>/<a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#is_object_type_wfP"><span class="id" title="lemma">is_object_type_wfP</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exists</span> <span class="id" title="var">interfaces</span>, <span class="id" title="var">fields</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">Heq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">have</span> -&gt; : <span class="id" title="var">object_name</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> (<a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">object</span></a> <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">(</span></a><span class="id" title="var">object_name</span><a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">)</span></a> <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">implements</span></a> <span class="id" title="var">interfaces</span> <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">{</span></a><span class="id" title="var">fields</span><a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">}</span></a>).(<a class="idref" href="GraphCoQL.SchemaAux.html#tdname"><span class="id" title="definition">tdname</span></a>) <span class="id" title="tactic">by</span> [].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>: <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#in_tdefs_lookup"><span class="id" title="lemma">in_tdefs_lookup</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     This lemma states that there are no duplicate names when getting the subtypes of another type <span class="inlinecode"><a class="idref" href="GraphCoQL.Schema.html#ty"><span class="id" title="variable">ty</span></a></span>.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="uniq_get_possible_types"><span class="id" title="lemma">uniq_get_possible_types</span></a> (<span class="id" title="var">ty</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">uniq</span> (<a class="idref" href="GraphCoQL.SchemaAux.html#get_possible_types"><span class="id" title="definition">get_possible_types</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#ty"><span class="id" title="variable">ty</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.SchemaAux.html#get_possible_types"><span class="id" title="definition">get_possible_types</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">ty</span>) =&gt; //=; <span class="id" title="tactic">first</span> <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>: <span class="id" title="lemma">undup_uniq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">move</span>: <span class="id" title="var">Heq</span>; <span class="id" title="var">wfschema</span> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a> =&gt; <span class="id" title="var">Heq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">move</span>: (<span class="id" title="var">Hok</span> <span class="id" title="var">_</span> (<a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#lookup_type_in_tdefs"><span class="id" title="lemma">lookup_type_in_tdefs</span></a> <span class="id" title="var">Heq</span>)) =&gt; /=; <span class="id" title="tactic">case</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#and3P"><span class="id" title="lemma">and3P</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     This lemma states that if a type <span class="inlinecode"><a class="idref" href="GraphCoQL.Schema.html#t"><span class="id" title="variable">t</span></a></span> belongs to the possible types 
+     of another type <span class="inlinecode"><a class="idref" href="GraphCoQL.Schema.html#ty"><span class="id" title="variable">ty</span></a></span>, then <span class="inlinecode"><a class="idref" href="GraphCoQL.Schema.html#t"><span class="id" title="variable">t</span></a></span> must be an object type. 
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="in_possible_types_is_object"><span class="id" title="lemma">in_possible_types_is_object</span></a> <span class="id" title="var">ty</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">forall</span> <span class="id" title="var">t</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#t"><span class="id" title="variable">t</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#get_possible_types"><span class="id" title="definition">get_possible_types</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaAux.html#is_object_type"><span class="id" title="definition">is_object_type</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#t"><span class="id" title="variable">t</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.SchemaAux.html#get_possible_types"><span class="id" title="definition">get_possible_types</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">ty</span>) =&gt; // <span class="id" title="var">t</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">mem_seq1</span> =&gt; /<span class="id" title="lemma">eqP</span> -&gt;.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="var">simp</span> <span class="id" title="var">is_object_type</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Heq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">by</span> <span class="id" title="tactic">move</span>/<a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#in_implementation_is_object"><span class="id" title="lemma">in_implementation_is_object</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="var">have</span> &lt;-: <a class="idref" href="GraphCoQL.SchemaAux.html#union_members"><span class="id" title="definition">union_members</span></a> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">ty</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="var">members</span> <span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.SchemaAux.html#union_members"><span class="id" title="definition">union_members</span></a> <span class="id" title="var">Heq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>: <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#union_has_objects"><span class="id" title="lemma">union_has_objects</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#WellFormedness"><span class="id" title="section">WellFormedness</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+    <div>
+        <a href='GraphCoQL.SchemaWellFormedness.html' class="btn btn-info" role='button'> Go Back ← Schema Well-Formedness </a>
+        <a href='GraphCoQL.Query.html' class="btn btn-info" role='button'>Continue Reading → Query </a>
+    </div>
+
+</div>
+<div class="code">
+
+<br/>
+&nbsp;&nbsp;&nbsp;</div>
+</div>
+<div id="footer">
+  Generated by <a href="http://coq.inria.fr/">coqdoc</a> and improved with <a href="https://github.com/tebbi/coqdocjs">CoqdocJS</a>
+</div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
+<script>
+  $(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+  })
+  </script>
+
+</body>
+
+</html>

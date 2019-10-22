@@ -1,0 +1,1128 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<link href="coqdocjs.css" rel="stylesheet" type="text/css"/>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<script type="text/javascript" src="config.js"></script>
+<script type="text/javascript" src="coqdocjs.js"></script>
+</head>
+
+<body onload="document.getElementById('content').focus()">
+  <div id="header">
+    <span class="left">
+      <span class="modulename"> <script> document.write(document.title) </script> </span>
+    </span>
+
+    <span class="button" id="toggle-proofs"></span>
+
+    <span class="right">
+      <a href="../">Project Page</a>
+      <a href="./indexpage.html"> Index </a>
+      <a href="./toc.html"> Table of Contents </a>
+    </span>
+</div>
+    <div id="content" tabindex="-1" onblur="document.getElementById('content').focus()">
+    <div id="main">
+<h1 class="libtitle">GraphCoQL.theory.QueryAuxLemmas</h1>
+
+<div class="code">
+
+<br/>
+</div>
+
+<div class="doc">
+   <div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">Query Aux Theory</h1>
+        <p class="lead">
+         This file contains lemmas about the auxiliary definitions used with GraphQL Queries.
+        </p>         
+        <p>
+        These are mostly auxiliary and bureaucratic lemmas, such as filter distributing over 
+        concatenation, queries size equals to 0 means empty list, etc. 
+        </p>
+        <p>
+        The most widely used are probably those related to showing that the queries size
+        is reduced after applying a certain function (filtering, finding, merging, etc.).
+        </p>
+  </div>
+</div>
+ 
+<div class="paragraph"> </div>
+
+
+<div class="paragraph"> </div>
+
+   This tactic breaks down a query and introduces its contents.
+ 
+</div>
+<div class="code">
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">case_selection</span> σ :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> <span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| [<span class="id" title="var">H</span> : <span class="id" title="keyword">context</span> [σ] |- <span class="id" title="var">_</span>] =&gt; <span class="id" title="tactic">move</span>: <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| [|- <span class="id" title="var">_</span>] =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">l</span> := <span class="id" title="tactic">fresh</span> "l" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">f</span> := <span class="id" title="tactic">fresh</span> "f" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">α</span> := <span class="id" title="tactic">fresh</span> "α" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">β</span> := <span class="id" title="tactic">fresh</span> "β" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">t</span> := <span class="id" title="tactic">fresh</span> "t" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">case</span>: σ =&gt; [<span class="id" title="var">f</span> <span class="id" title="var">α</span> | <span class="id" title="var">l</span> <span class="id" title="var">f</span> <span class="id" title="var">α</span> | <span class="id" title="var">f</span> <span class="id" title="var">α</span> <span class="id" title="var">β</span> | <span class="id" title="var">l</span> <span class="id" title="var">f</span> <span class="id" title="var">α</span> <span class="id" title="var">β</span> | <span class="id" title="var">t</span> <span class="id" title="var">β</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <a name="Theory"><span class="id" title="section">Theory</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Transparent</span> <a class="idref" href="GraphCoQL.QueryAux.html#qresponse_name"><span class="id" title="definition">qresponse_name</span></a> <a class="idref" href="GraphCoQL.QueryAux.html#is_field"><span class="id" title="definition">is_field</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Variable</span> (<a name="Theory.Scalar"><span class="id" title="variable">Scalar</span></a> : <span class="id" title="abbreviation">eqType</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Implicit</span> <span class="id" title="keyword">Type</span> σ<span class="id" title="var">s</span> : <span class="id" title="abbreviation">seq</span> (@<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Implicit</span> <span class="id" title="keyword">Type</span> σ : @<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab43"></a><h3 class="section">Other types of predicates</h3>
+<hr/>
+ 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a name="Theory.DefPreds"><span class="id" title="section">DefPreds</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Variable</span> (<a name="Theory.DefPreds.s"><span class="id" title="variable">s</span></a> : <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#wfGraphQLSchema"><span class="id" title="record">wfGraphQLSchema</span></a>).<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+       This lemma states that an object type <span class="inlinecode"><a class="idref" href="GraphCoQL.Schema.html#ty"><span class="id" title="variable">ty</span></a></span> always 
+       applies to itself.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="object_applies_to_itself"><span class="id" title="lemma">object_applies_to_itself</span></a> <span class="id" title="var">ty</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaAux.html#is_object_type"><span class="id" title="definition">is_object_type</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.DefPreds.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#does_fragment_type_apply"><span class="id" title="definition">does_fragment_type_apply</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.DefPreds.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ty"><span class="id" title="variable">ty</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.SchemaAux.html#is_object_type"><span class="id" title="definition">is_object_type</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.DefPreds.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">ty</span>) =&gt; //=.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.QueryAux.html#does_fragment_type_apply"><span class="id" title="definition">does_fragment_type_apply</span></a> <span class="id" title="var">Heq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">move</span>/<a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#lookup_type_name_wf"><span class="id" title="lemma">lookup_type_name_wf</span></a>: <span class="id" title="var">Heq</span> =&gt; -&gt;.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that an object type different to another
+       cannot apply to it.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="object_diff_name_N_applies"><span class="id" title="lemma">object_diff_name_N_applies</span></a> <span class="id" title="var">ty</span> <span class="id" title="var">ty'</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaAux.html#is_object_type"><span class="id" title="definition">is_object_type</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.DefPreds.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ty'"><span class="id" title="variable">ty'</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ty'"><span class="id" title="variable">ty'</span></a> <span class="id" title="notation">!=</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#does_fragment_type_apply"><span class="id" title="definition">does_fragment_type_apply</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.DefPreds.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ty'"><span class="id" title="variable">ty'</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#false"><span class="id" title="constructor">false</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.QueryAux.html#does_fragment_type_apply"><span class="id" title="definition">does_fragment_type_apply</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.SchemaAux.html#is_object_type"><span class="id" title="definition">is_object_type</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.DefPreds.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">ty'</span>) =&gt; //= <span class="id" title="var">_</span> /<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#negbTE"><span class="id" title="lemma">negbTE</span></a> <span class="id" title="var">Hneq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">case</span> <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_type"><span class="id" title="definition">lookup_type</span></a> =&gt; //=; <span class="id" title="tactic">case</span>=&gt; //=; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Heq</span> =&gt; <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">move</span>/<a class="idref" href="GraphCoQL.theory.SchemaLemmas.html#lookup_type_name_wf"><span class="id" title="lemma">lookup_type_name_wf</span></a>: <span class="id" title="var">Heq</span> =&gt; /= &lt;-.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">eq_sym</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.DefPreds"><span class="id" title="section">DefPreds</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab44"></a><h3 class="section">Selection size</h3>
+
+  <span class="comment">(**&nbsp;----&nbsp;*)</span><br/>
+
+<div class="paragraph"> </div>
+
+      In this section we define lemmas about selection size.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a name="Theory.Size"><span class="id" title="section">Size</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       Equality lemma for <span class="inlinecode"><a class="idref" href="GraphCoQL.QueryAux.html#selections_size"><span class="id" title="definition">selections_size</span></a></span> without Equations. 
+       It shows equality to the <span class="inlinecode"><span class="id" title="definition">sumn</span></span> function defined in SSreflect.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="selections_size_sumn"><span class="id" title="lemma">selections_size_sumn</span></a> σ<span class="id" title="var">s</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#selections_size"><span class="id" title="definition">selections_size</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="definition">sumn</span> <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="GraphCoQL.QueryAux.html#selection_size"><span class="id" title="definition">selection_size</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#3122c41ebe889f745cb9bbe1c92165c3"><span class="id" title="variable">σ</span></a> <span class="id" title="notation">|</span> σ <span class="id" title="notation">&lt;-</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a><span class="id" title="notation">]</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">elim</span>: σ<span class="id" title="var">s</span> =&gt; //= σ σ<span class="id" title="var">s</span> <span class="id" title="var">IH</span>; <span class="id" title="var">case_selection</span> σ; <span class="id" title="var">simp</span> <span class="id" title="var">selection_size</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">IH</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that <span class="inlinecode"><a class="idref" href="GraphCoQL.QueryAux.html#selections_size"><span class="id" title="definition">selections_size</span></a></span> distributes over list concatenation.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="selections_size_cat"><span class="id" title="lemma">selections_size_cat</span></a> σ<span class="id" title="var">s1</span> σ<span class="id" title="var">s2</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#selections_size"><span class="id" title="definition">selections_size</span></a> (<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#fb1b4dfbad339a3dd8a495b8e74793c6"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#fb1b4dfbad339a3dd8a495b8e74793c6"><span class="id" title="variable">s1</span></a> <span class="id" title="notation">++</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#821bc162055c0dcccac975578dcb8467"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#821bc162055c0dcccac975578dcb8467"><span class="id" title="variable">s2</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="GraphCoQL.QueryAux.html#selections_size"><span class="id" title="definition">selections_size</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#fb1b4dfbad339a3dd8a495b8e74793c6"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#fb1b4dfbad339a3dd8a495b8e74793c6"><span class="id" title="variable">s1</span></a> <span class="id" title="notation">+</span> <a class="idref" href="GraphCoQL.QueryAux.html#selections_size"><span class="id" title="definition">selections_size</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#821bc162055c0dcccac975578dcb8467"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#821bc162055c0dcccac975578dcb8467"><span class="id" title="variable">s2</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">elim</span>: σ<span class="id" title="var">s1</span> σ<span class="id" title="var">s2</span> =&gt; //= σ σ<span class="id" title="var">s1</span> <span class="id" title="var">IH</span> σ<span class="id" title="var">s2</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> (<span class="id" title="var">IH</span> σ<span class="id" title="var">s2</span>) <span class="id" title="lemma">addnA</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that if the size of queries is 0, that means the list is empty.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="selections_size_0_nil"><span class="id" title="lemma">selections_size_0_nil</span></a> (σ<span class="id" title="var">s</span> : <span class="id" title="abbreviation">seq</span> (@<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a>)) : <a class="idref" href="GraphCoQL.QueryAux.html#selections_size"><span class="id" title="definition">selections_size</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a> <span class="id" title="notation">==</span> 0 <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="notation">[::]</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">case</span>: σ<span class="id" title="var">s</span> =&gt; //=; <span class="id" title="tactic">case</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that if the size of queries is 0, that means the list is empty.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="selections_size_aux_0_nil"><span class="id" title="lemma">selections_size_aux_0_nil</span></a> (<span class="id" title="var">scoped_</span>σ<span class="id" title="var">s</span> : <span class="id" title="abbreviation">seq</span> (<a class="idref" href="GraphCoQL.Query.html#Name"><span class="id" title="abbreviation">Name</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> @<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a>)) : <a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">scoped_</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">s</span></a> <span class="id" title="notation">==</span> 0 <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">scoped_</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">s</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="notation">[::]</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">case</span>: <span class="id" title="var">scoped_</span>σ<span class="id" title="var">s</span> =&gt; //=; <span class="id" title="tactic">case</span>=&gt; <span class="id" title="var">ty</span>; <span class="id" title="tactic">case</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that <span class="inlinecode"><a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a></span> distributes over list concatenation.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="selections_size_aux_cat"><span class="id" title="lemma">selections_size_aux_cat</span></a> (σ<span class="id" title="var">s1</span> σ<span class="id" title="var">s2</span> : <span class="id" title="abbreviation">seq</span> (<a class="idref" href="GraphCoQL.Query.html#Name"><span class="id" title="abbreviation">Name</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> @<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a>)) : <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a> (<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#fb1b4dfbad339a3dd8a495b8e74793c6"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#fb1b4dfbad339a3dd8a495b8e74793c6"><span class="id" title="variable">s1</span></a> <span class="id" title="notation">++</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#821bc162055c0dcccac975578dcb8467"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#821bc162055c0dcccac975578dcb8467"><span class="id" title="variable">s2</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#fb1b4dfbad339a3dd8a495b8e74793c6"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#fb1b4dfbad339a3dd8a495b8e74793c6"><span class="id" title="variable">s1</span></a> <span class="id" title="notation">+</span> <a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#821bc162055c0dcccac975578dcb8467"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#821bc162055c0dcccac975578dcb8467"><span class="id" title="variable">s2</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">case</span>: σ<span class="id" title="var">s1</span> σ<span class="id" title="var">s2</span> =&gt; //= σ σ<span class="id" title="var">s1</span> σ<span class="id" title="var">s2</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a> /= <span class="id" title="lemma">map_cat</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#selections_size_cat"><span class="id" title="lemma">selections_size_cat</span></a> -?/(<a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a> <span class="id" title="var">_</span>) <span class="id" title="lemma">addnA</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that if the size of a selection set is less or equal to <span class="inlinecode"><a class="idref" href="GraphCoQL.SchemaAux.html#n"><span class="id" title="variable">n</span></a></span>, then
+       the size of the same selection, paired with a type, is also less or equal to <span class="inlinecode"><a class="idref" href="GraphCoQL.SchemaAux.html#n"><span class="id" title="variable">n</span></a></span>.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="selections_size_aux_tr"><span class="id" title="lemma">selections_size_aux_tr</span></a> (σ<span class="id" title="var">s</span> : <span class="id" title="abbreviation">seq</span> (@<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a>)) <span class="id" title="var">t</span> <span class="id" title="var">n</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#selections_size"><span class="id" title="definition">selections_size</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a> <span class="id" title="notation">&lt;=</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#n"><span class="id" title="variable">n</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a> <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#t"><span class="id" title="variable">t</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#3122c41ebe889f745cb9bbe1c92165c3"><span class="id" title="variable">σ</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a> <span class="id" title="notation">|</span> σ <span class="id" title="notation">&lt;-</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a><span class="id" title="notation">]</span> <span class="id" title="notation">&lt;=</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#n"><span class="id" title="variable">n</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a> -<span class="id" title="lemma">map_comp</span> /<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrfun.html#funcomp"><span class="id" title="definition">funcomp</span></a> /= <span class="id" title="lemma">map_id</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Size"><span class="id" title="section">Size</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab45"></a><h3 class="section">Find</h3>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+     Lemmas about functions used to find queries 
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a name="Theory.Find"><span class="id" title="section">Find</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Variable</span> (<a name="Theory.Find.s"><span class="id" title="variable">s</span></a> : <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#wfGraphQLSchema"><span class="id" title="record">wfGraphQLSchema</span></a>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+       This lemma states that the size of the selections found via <span class="inlinecode"><a class="idref" href="GraphCoQL.QueryAux.html#find_valid_fields_with_response_name"><span class="id" title="definition">find_valid_fields_with_response_name</span></a></span> is
+       less or equal to the original selection list.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="found_queries_leq_size"><span class="id" title="lemma">found_queries_leq_size</span></a> <span class="id" title="var">l</span> <span class="id" title="var">O__t</span> (σ<span class="id" title="var">s</span> : <span class="id" title="abbreviation">seq</span> (@<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#selections_size"><span class="id" title="definition">selections_size</span></a> (<a class="idref" href="GraphCoQL.QueryAux.html#find_valid_fields_with_response_name"><span class="id" title="definition">find_valid_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Find.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#l"><span class="id" title="variable">l</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#O__t"><span class="id" title="variable">O__t</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>) <span class="id" title="notation">&lt;=</span> <a class="idref" href="GraphCoQL.QueryAux.html#selections_size"><span class="id" title="definition">selections_size</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.QueryAux.html#find_valid_fields_with_response_name"><span class="id" title="definition">find_valid_fields_with_response_name</span></a> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> σ<span class="id" title="var">s</span>) =&gt; //=; <span class="id" title="var">simp</span> <span class="id" title="var">selection_size</span>; <span class="id" title="tactic">rewrite</span> ?<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#selections_size_cat"><span class="id" title="lemma">selections_size_cat</span></a>; <span class="id" title="var">ssromega</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+       This lemma states that the size of the selections found via <span class="inlinecode"><a class="idref" href="GraphCoQL.QueryAux.html#find_valid_pairs_with_response_name"><span class="id" title="definition">find_valid_pairs_with_response_name</span></a></span> is
+       less or equal to the original selection list.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="found_valid_pairs_leq_size"><span class="id" title="lemma">found_valid_pairs_leq_size</span></a> <span class="id" title="var">ts</span> <span class="id" title="var">rname</span> (σ<span class="id" title="var">s</span> : <span class="id" title="abbreviation">seq</span> (<a class="idref" href="GraphCoQL.Query.html#Name"><span class="id" title="abbreviation">Name</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> @<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a> (<a class="idref" href="GraphCoQL.QueryAux.html#find_valid_pairs_with_response_name"><span class="id" title="definition">find_valid_pairs_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Find.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ts"><span class="id" title="variable">ts</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>) <span class="id" title="notation">&lt;=</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.QueryAux.html#find_valid_pairs_with_response_name"><span class="id" title="definition">find_valid_pairs_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Find.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">ts</span> <span class="id" title="var">rname</span> σ<span class="id" title="var">s</span>) =&gt; //=;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a> /=; <span class="id" title="var">simp</span> <span class="id" title="var">selection_size</span> =&gt; /=; <span class="id" title="tactic">rewrite</span> -?<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#selections_size_cat"><span class="id" title="lemma">selections_size_cat</span></a> -?/(<a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a> <span class="id" title="var">_</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">do</span> ? <span class="id" title="var">ssromega</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a> /= -<span class="id" title="lemma">map_comp</span> /<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrfun.html#funcomp"><span class="id" title="definition">funcomp</span></a> /= <span class="id" title="lemma">map_id</span> -/(<a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a> <span class="id" title="var">_</span>) <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#selections_size_aux_cat"><span class="id" title="lemma">selections_size_aux_cat</span></a> -?/(<a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a> <span class="id" title="var">_</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="var">ssromega</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that that <span class="inlinecode"><a class="idref" href="GraphCoQL.QueryAux.html#find_valid_fields_with_response_name"><span class="id" title="definition">find_valid_fields_with_response_name</span></a></span> distributes over list concatenation.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="find_valid_fields_with_response_name_cat"><span class="id" title="lemma">find_valid_fields_with_response_name_cat</span></a> <span class="id" title="var">l</span> <span class="id" title="var">ty</span> (σ<span class="id" title="var">s1</span> σ<span class="id" title="var">s2</span> : <span class="id" title="abbreviation">seq</span> (@<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a>)):<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#find_valid_fields_with_response_name"><span class="id" title="definition">find_valid_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Find.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#l"><span class="id" title="variable">l</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ty"><span class="id" title="variable">ty</span></a> (<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#fb1b4dfbad339a3dd8a495b8e74793c6"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#fb1b4dfbad339a3dd8a495b8e74793c6"><span class="id" title="variable">s1</span></a> <span class="id" title="notation">++</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#821bc162055c0dcccac975578dcb8467"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#821bc162055c0dcccac975578dcb8467"><span class="id" title="variable">s2</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="GraphCoQL.QueryAux.html#find_valid_fields_with_response_name"><span class="id" title="definition">find_valid_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Find.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#l"><span class="id" title="variable">l</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#fb1b4dfbad339a3dd8a495b8e74793c6"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#fb1b4dfbad339a3dd8a495b8e74793c6"><span class="id" title="variable">s1</span></a> <span class="id" title="notation">++</span> <a class="idref" href="GraphCoQL.QueryAux.html#find_valid_fields_with_response_name"><span class="id" title="definition">find_valid_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Find.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#l"><span class="id" title="variable">l</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#821bc162055c0dcccac975578dcb8467"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#821bc162055c0dcccac975578dcb8467"><span class="id" title="variable">s2</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.QueryAux.html#find_valid_fields_with_response_name"><span class="id" title="definition">find_valid_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Find.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">l</span> <span class="id" title="var">ty</span> σ<span class="id" title="var">s1</span>) =&gt; //=.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span>: <span class="id" title="tactic">do</span> ? <span class="id" title="tactic">by</span> <span class="id" title="var">simp</span> <span class="id" title="var">find_valid_fields_with_response_name</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Heq</span> /= <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="var">simp</span> <span class="id" title="var">find_valid_fields_with_response_name</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Heq</span> /= <span class="id" title="var">H0</span> <span class="id" title="lemma">catA</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that the size of the queries found via <span class="inlinecode"><a class="idref" href="GraphCoQL.QueryAux.html#find_fields_with_response_name"><span class="id" title="definition">find_fields_with_response_name</span></a></span> is
+       less or equal to the original queries list.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="found_fields_leq_size"><span class="id" title="lemma">found_fields_leq_size</span></a> <span class="id" title="var">k</span> σ<span class="id" title="var">s</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#selections_size"><span class="id" title="definition">selections_size</span></a> (<a class="idref" href="GraphCoQL.QueryAux.html#find_fields_with_response_name"><span class="id" title="definition">find_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#k"><span class="id" title="variable">k</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>) <span class="id" title="notation">&lt;=</span> <a class="idref" href="GraphCoQL.QueryAux.html#selections_size"><span class="id" title="definition">selections_size</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.QueryAux.html#find_fields_with_response_name"><span class="id" title="definition">find_fields_with_response_name</span></a> <span class="id" title="var">k</span> σ<span class="id" title="var">s</span>) =&gt; //=; <span class="id" title="var">simp</span> <span class="id" title="var">selection_size</span>; <span class="id" title="tactic">do</span> ? <span class="id" title="var">ssromega</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#selections_size_cat"><span class="id" title="lemma">selections_size_cat</span></a>; <span class="id" title="var">ssromega</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that the size of the queries found via <span class="inlinecode"><a class="idref" href="GraphCoQL.QueryAux.html#find_pairs_with_response_name"><span class="id" title="definition">find_pairs_with_response_name</span></a></span> is
+       less or equal to the original queries list.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="found_pairs_with_response_name_leq"><span class="id" title="lemma">found_pairs_with_response_name_leq</span></a> <span class="id" title="var">rname</span> (σ<span class="id" title="var">s</span> : <span class="id" title="abbreviation">seq</span> (<a class="idref" href="GraphCoQL.Query.html#Name"><span class="id" title="abbreviation">Name</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> @<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a> (<a class="idref" href="GraphCoQL.QueryAux.html#find_pairs_with_response_name"><span class="id" title="definition">find_pairs_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>) <span class="id" title="notation">&lt;=</span> <a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.QueryAux.html#find_pairs_with_response_name"><span class="id" title="definition">find_pairs_with_response_name</span></a> <span class="id" title="var">rname</span> σ<span class="id" title="var">s</span>) =&gt; //=; <span class="id" title="var">simp</span> <span class="id" title="var">selection_size</span>; <span class="id" title="tactic">do</span> ? <span class="id" title="var">ssromega</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">map_cat</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#selections_size_cat"><span class="id" title="lemma">selections_size_cat</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> -<span class="id" title="lemma">map_comp</span> /<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrfun.html#funcomp"><span class="id" title="definition">funcomp</span></a> <span class="id" title="lemma">map_id</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>; <span class="id" title="var">ssromega</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that finding selections in fragments, whose contents are modified by a function <span class="inlinecode"><a class="idref" href="GraphCoQL.Schema.html#f"><span class="id" title="variable">f</span></a></span>, with
+       type conditions that do not apply to a given object type <span class="inlinecode"><a class="idref" href="GraphCoQL.Schema.html#t"><span class="id" title="variable">t</span></a></span>, result in an empty list.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="find_map_inline_nil_func"><span class="id" title="lemma">find_map_inline_nil_func</span></a> (<span class="id" title="var">f</span> : <a class="idref" href="GraphCoQL.Query.html#Name"><span class="id" title="abbreviation">Name</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <span class="id" title="abbreviation">seq</span> (@<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <span class="id" title="abbreviation">seq</span> (@<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a>)) <span class="id" title="var">rname</span> <span class="id" title="var">t</span> <span class="id" title="var">ptys</span> σ<span class="id" title="var">s</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">uniq</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ptys"><span class="id" title="variable">ptys</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">all</span> (<a class="idref" href="GraphCoQL.SchemaAux.html#is_object_type"><span class="id" title="definition">is_object_type</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Find.s"><span class="id" title="variable">s</span></a>) <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ptys"><span class="id" title="variable">ptys</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#t"><span class="id" title="variable">t</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#c1ad6bcc76a6221225111f87bc3b0c3d"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#c1ad6bcc76a6221225111f87bc3b0c3d"><span class="id" title="notation">notin</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ptys"><span class="id" title="variable">ptys</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#find_valid_fields_with_response_name"><span class="id" title="definition">find_valid_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Find.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#t"><span class="id" title="variable">t</span></a> <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="GraphCoQL.Query.html#InlineFragment"><span class="id" title="constructor">InlineFragment</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#t'"><span class="id" title="variable">t'</span></a> (<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#f"><span class="id" title="variable">f</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#t'"><span class="id" title="variable">t'</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>) <span class="id" title="notation">|</span> <span class="id" title="var">t'</span> <span class="id" title="notation">&lt;-</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ptys"><span class="id" title="variable">ptys</span></a><span class="id" title="notation">]</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="notation">[::]</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">elim</span>: <span class="id" title="var">ptys</span> =&gt; //= <span class="id" title="var">t'</span> <span class="id" title="var">ptys</span> <span class="id" title="var">IH</span> /<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#andP"><span class="id" title="lemma">andP</span></a> [<span class="id" title="var">Hnin</span> <span class="id" title="var">Huniq</span>] /<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#andP"><span class="id" title="lemma">andP</span></a> [<span class="id" title="var">Hobj</span> <span class="id" title="var">Hinobj</span>] <span class="id" title="var">Htnin</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">simp</span> <span class="id" title="var">find_valid_fields_with_response_name</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">have</span> -&gt; /= : <a class="idref" href="GraphCoQL.QueryAux.html#does_fragment_type_apply"><span class="id" title="definition">does_fragment_type_apply</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Find.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">t</span> <span class="id" title="var">t'</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#false"><span class="id" title="constructor">false</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>: <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#object_diff_name_N_applies"><span class="id" title="lemma">object_diff_name_N_applies</span></a> =&gt; //; <span class="id" title="tactic">move</span>/<span class="id" title="lemma">memPn</span>: <span class="id" title="var">Htnin</span> =&gt; /(<span class="id" title="var">_</span> <span class="id" title="var">t'</span> (<span class="id" title="lemma">mem_head</span> <span class="id" title="var">t'</span> <span class="id" title="var">ptys</span>)).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span>: <span class="id" title="var">IH</span> =&gt; //=.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">move</span>: <span class="id" title="var">Htnin</span>; <span class="id" title="tactic">rewrite</span> /<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#negb"><span class="id" title="definition">negb</span></a>; <span class="id" title="tactic">case</span>: <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#ifP"><span class="id" title="lemma">ifP</span></a> =&gt; //=; <span class="id" title="tactic">case</span>: <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#ifP"><span class="id" title="lemma">ifP</span></a> =&gt; //= <span class="id" title="var">Hcontr</span> &lt;- <span class="id" title="var">_</span>; <span class="id" title="tactic">apply</span>: <a class="idref" href="Lib.SeqExtra.html#mem_tail"><span class="id" title="lemma">mem_tail</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that finding selections in fragments with type conditions that
+       do not apply to a given object type <span class="inlinecode"><a class="idref" href="GraphCoQL.Schema.html#t"><span class="id" title="variable">t</span></a></span>, result in an empty list.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;Unused&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="find_map_inline_nil"><span class="id" title="lemma">find_map_inline_nil</span></a> <span class="id" title="var">rname</span> <span class="id" title="var">t</span> <span class="id" title="var">ptys</span> σ<span class="id" title="var">s</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">uniq</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ptys"><span class="id" title="variable">ptys</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">all</span> (<a class="idref" href="GraphCoQL.SchemaAux.html#is_object_type"><span class="id" title="definition">is_object_type</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Find.s"><span class="id" title="variable">s</span></a>) <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ptys"><span class="id" title="variable">ptys</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#t"><span class="id" title="variable">t</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#c1ad6bcc76a6221225111f87bc3b0c3d"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#c1ad6bcc76a6221225111f87bc3b0c3d"><span class="id" title="notation">notin</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ptys"><span class="id" title="variable">ptys</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#find_valid_fields_with_response_name"><span class="id" title="definition">find_valid_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Find.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#t"><span class="id" title="variable">t</span></a> <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="GraphCoQL.Query.html#InlineFragment"><span class="id" title="constructor">InlineFragment</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#t'"><span class="id" title="variable">t'</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a> <span class="id" title="notation">|</span> <span class="id" title="var">t'</span> <span class="id" title="notation">&lt;-</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ptys"><span class="id" title="variable">ptys</span></a><span class="id" title="notation">]</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="notation">[::]</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">elim</span>: <span class="id" title="var">ptys</span> =&gt; //= <span class="id" title="var">t'</span> <span class="id" title="var">ptys</span> <span class="id" title="var">IH</span> /<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#andP"><span class="id" title="lemma">andP</span></a> [<span class="id" title="var">Hnin</span> <span class="id" title="var">Huniq</span>] /<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#andP"><span class="id" title="lemma">andP</span></a> [<span class="id" title="var">Hobj</span> <span class="id" title="var">Hinobj</span>] <span class="id" title="var">Htnin</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">simp</span> <span class="id" title="var">find_valid_fields_with_response_name</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">have</span> -&gt; /= : <a class="idref" href="GraphCoQL.QueryAux.html#does_fragment_type_apply"><span class="id" title="definition">does_fragment_type_apply</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Find.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">t</span> <span class="id" title="var">t'</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#false"><span class="id" title="constructor">false</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>: <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#object_diff_name_N_applies"><span class="id" title="lemma">object_diff_name_N_applies</span></a> =&gt; //; <span class="id" title="tactic">move</span>/<span class="id" title="lemma">memPn</span>: <span class="id" title="var">Htnin</span> =&gt; /(<span class="id" title="var">_</span> <span class="id" title="var">t'</span> (<span class="id" title="lemma">mem_head</span> <span class="id" title="var">t'</span> <span class="id" title="var">ptys</span>)).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span>: <span class="id" title="var">IH</span> =&gt; //=.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">move</span>: <span class="id" title="var">Htnin</span>; <span class="id" title="tactic">rewrite</span> /<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#negb"><span class="id" title="definition">negb</span></a>; <span class="id" title="tactic">case</span>: <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#ifP"><span class="id" title="lemma">ifP</span></a> =&gt; //=; <span class="id" title="tactic">case</span>: <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#ifP"><span class="id" title="lemma">ifP</span></a> =&gt; //= <span class="id" title="var">Hcontr</span> &lt;- <span class="id" title="var">_</span>; <span class="id" title="tactic">apply</span>: <a class="idref" href="Lib.SeqExtra.html#mem_tail"><span class="id" title="lemma">mem_tail</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that if two response names are not equal, then you 
+       can swap the order of filtering and finding queries with each respective response name,
+       because they do not interfere between each other.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="find_filter_swap"><span class="id" title="lemma">find_filter_swap</span></a> <span class="id" title="var">rname1</span> <span class="id" title="var">rname2</span> <span class="id" title="var">ty</span> σ<span class="id" title="var">s</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname1"><span class="id" title="variable">rname1</span></a> <span class="id" title="notation">==</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname2"><span class="id" title="variable">rname2</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#false"><span class="id" title="constructor">false</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#find_valid_fields_with_response_name"><span class="id" title="definition">find_valid_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Find.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname1"><span class="id" title="variable">rname1</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ty"><span class="id" title="variable">ty</span></a> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname2"><span class="id" title="variable">rname2</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">(</span></a><a class="idref" href="GraphCoQL.QueryAux.html#find_valid_fields_with_response_name"><span class="id" title="definition">find_valid_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Find.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname1"><span class="id" title="variable">rname1</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">)</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">move</span>: {2}(<a class="idref" href="GraphCoQL.QueryAux.html#selections_size"><span class="id" title="definition">selections_size</span></a> <span class="id" title="var">_</span>) (<span class="id" title="lemma">leqnn</span> (<a class="idref" href="GraphCoQL.QueryAux.html#selections_size"><span class="id" title="definition">selections_size</span></a> σ<span class="id" title="var">s</span>)) =&gt; <span class="id" title="var">n</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">elim</span>: <span class="id" title="var">n</span> σ<span class="id" title="var">s</span> =&gt; /= [| <span class="id" title="var">n</span> <span class="id" title="var">IH</span>] σ<span class="id" title="var">s</span>; <span class="id" title="tactic">first</span> <span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">leqn0</span> =&gt; /<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#selections_size_0_nil"><span class="id" title="lemma">selections_size_0_nil</span></a> -&gt;.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">case</span>: σ<span class="id" title="var">s</span> =&gt; //= σ σ<span class="id" title="var">s</span>; <span class="id" title="var">case_selection</span> σ; <span class="id" title="var">simp</span> <span class="id" title="var">selection_size</span> =&gt; <span class="id" title="var">Hleq</span> <span class="id" title="var">Hneq</span>; <span class="id" title="var">simp</span> <span class="id" title="var">filter_fields_with_response_name</span>; <span class="id" title="var">simp</span> <span class="id" title="var">find_valid_fields_with_response_name</span> =&gt; /=; <span class="id" title="var">last</span> <span class="id" title="tactic">first</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">by</span> <span class="id" title="tactic">case</span> <a class="idref" href="GraphCoQL.QueryAux.html#does_fragment_type_apply"><span class="id" title="definition">does_fragment_type_apply</span></a> =&gt; /=; [<span class="id" title="var">congr</span> <span class="id" title="definition">cat</span>|]; <span class="id" title="tactic">apply</span>: <span class="id" title="var">IH</span> =&gt; //; <span class="id" title="var">ssromega</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span>: <span class="id" title="tactic">do</span> [<span class="id" title="tactic">case</span>: <span class="id" title="lemma">eqP</span> =&gt; /= [-&gt; | <span class="id" title="var">Hfneq</span>];<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ <span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">eq_sym</span> <span class="id" title="var">Hneq</span> /=; <span class="id" title="tactic">apply</span>: <span class="id" title="var">IH</span> =&gt; //; <span class="id" title="var">ssromega</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="tactic">by</span> <span class="id" title="tactic">case</span>: <span class="id" title="lemma">eqP</span> =&gt; //= [/<span class="id" title="lemma">eqP</span> <span class="id" title="var">Heq</span> | /<span class="id" title="lemma">eqP</span>-/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#negbTE"><span class="id" title="lemma">negbTE</span></a> <span class="id" title="var">Hfneq'</span>];<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">simp</span> <span class="id" title="var">find_valid_fields_with_response_name</span> =&gt; /=; <span class="id" title="tactic">rewrite</span> ?<span class="id" title="var">Heq</span> ?<span class="id" title="var">Hfneq'</span> /= <span class="id" title="var">IH</span> //; <span class="id" title="var">ssromega</span> ] ].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that if you try to find queries with a given response name after 
+       you filtered those queries, then the result is empty.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="find_queries_filter_nil"><span class="id" title="lemma">find_queries_filter_nil</span></a> <span class="id" title="var">rname</span> <span class="id" title="var">O__t</span> σ<span class="id" title="var">s</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#find_valid_fields_with_response_name"><span class="id" title="definition">find_valid_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Find.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#O__t"><span class="id" title="variable">O__t</span></a> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="notation">[::]</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <span class="id" title="var">rname</span> σ<span class="id" title="var">s</span>) =&gt; //=; <span class="id" title="tactic">do</span> ? <span class="id" title="tactic">by</span> <span class="id" title="var">simp</span> <span class="id" title="var">find_valid_fields_with_response_name</span>; <span class="id" title="tactic">move</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#negbTE"><span class="id" title="lemma">negbTE</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">Heq</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Heq</span> /=.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="var">simp</span> <span class="id" title="var">find_valid_fields_with_response_name</span>; <span class="id" title="tactic">case</span>: <a class="idref" href="GraphCoQL.QueryAux.html#does_fragment_type_apply"><span class="id" title="definition">does_fragment_type_apply</span></a> =&gt; //=; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">H</span> <span class="id" title="var">H0</span> /=.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that if you try to find every field with a given response name after 
+       you filtered those queries, then the result is empty.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="find_fields_filter_nil"><span class="id" title="lemma">find_fields_filter_nil</span></a> <span class="id" title="var">rname</span> σ<span class="id" title="var">s</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#find_fields_with_response_name"><span class="id" title="definition">find_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="notation">[::]</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <span class="id" title="var">rname</span> σ<span class="id" title="var">s</span>) =&gt; //=; <span class="id" title="tactic">do</span> ? <span class="id" title="tactic">by</span> <span class="id" title="var">simp</span> <span class="id" title="var">find_fields_with_response_name</span>; <span class="id" title="tactic">move</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#negbTE"><span class="id" title="lemma">negbTE</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">Heq</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Heq</span> /=.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="var">simp</span> <span class="id" title="var">find_fields_with_response_name</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">H</span> <span class="id" title="var">H0</span> /=.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that queries found via <span class="inlinecode"><a class="idref" href="GraphCoQL.QueryAux.html#find_valid_fields_with_response_name"><span class="id" title="definition">find_valid_fields_with_response_name</span></a></span> is a subsequence of 
+       the fields found via <span class="inlinecode"><a class="idref" href="GraphCoQL.QueryAux.html#find_fields_with_response_name"><span class="id" title="definition">find_fields_with_response_name</span></a></span>.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="find_queries_subseq_find_fields"><span class="id" title="lemma">find_queries_subseq_find_fields</span></a> <span class="id" title="var">ty</span> <span class="id" title="var">f</span> σ<span class="id" title="var">s</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">subseq</span> (<a class="idref" href="GraphCoQL.QueryAux.html#find_valid_fields_with_response_name"><span class="id" title="definition">find_valid_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Find.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#f"><span class="id" title="variable">f</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>) (<a class="idref" href="GraphCoQL.QueryAux.html#find_fields_with_response_name"><span class="id" title="definition">find_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#f"><span class="id" title="variable">f</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.QueryAux.html#find_valid_fields_with_response_name"><span class="id" title="definition">find_valid_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Find.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">f</span> <span class="id" title="var">ty</span> σ<span class="id" title="var">s</span>) =&gt; //=.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span>: <span class="id" title="tactic">do</span> ?[<span class="id" title="var">simp</span> <span class="id" title="var">find_fields_with_response_name</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Heq</span> /=; <span class="id" title="tactic">case</span>: <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#ifP"><span class="id" title="lemma">ifP</span></a> =&gt; //=; <span class="id" title="tactic">by</span> <span class="id" title="tactic">move</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#negbT"><span class="id" title="lemma">negbT</span></a>/<span class="id" title="lemma">eqP</span>].<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span>: <span class="id" title="tactic">do</span> ? <span class="id" title="tactic">by</span> <span class="id" title="var">simp</span> <span class="id" title="var">find_fields_with_response_name</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Heq</span> /=.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">by</span> <span class="id" title="var">simp</span> <span class="id" title="var">find_fields_with_response_name</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">cat_subseq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="var">simp</span> <span class="id" title="var">find_fields_with_response_name</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> -[<a class="idref" href="GraphCoQL.QueryAux.html#find_valid_fields_with_response_name"><span class="id" title="definition">find_valid_fields_with_response_name</span></a> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>]<span class="id" title="lemma">cat0s</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">cat_subseq</span> //=.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>: <span class="id" title="lemma">sub0seq</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that if no field is found via <span class="inlinecode"><a class="idref" href="GraphCoQL.QueryAux.html#find_fields_with_response_name"><span class="id" title="definition">find_fields_with_response_name</span></a></span> then
+       no field will be found via <span class="inlinecode"><a class="idref" href="GraphCoQL.QueryAux.html#find_valid_fields_with_response_name"><span class="id" title="definition">find_valid_fields_with_response_name</span></a></span> (because the latter is a subsequence of the former).
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="find_queries_nil_if_find_fields_nil"><span class="id" title="lemma">find_queries_nil_if_find_fields_nil</span></a> <span class="id" title="var">ty</span> <span class="id" title="var">rname</span> σ<span class="id" title="var">s</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#find_fields_with_response_name"><span class="id" title="definition">find_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="notation">[::]</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#find_valid_fields_with_response_name"><span class="id" title="definition">find_valid_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Find.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="notation">[::]</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">move</span>=&gt; <span class="id" title="var">Hnil</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">have</span> := (<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#find_queries_subseq_find_fields"><span class="id" title="lemma">find_queries_subseq_find_fields</span></a> <span class="id" title="var">ty</span> <span class="id" title="var">rname</span> σ<span class="id" title="var">s</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Hnil</span> <span class="id" title="lemma">subseq0</span> =&gt; /<span class="id" title="lemma">eqP</span> -&gt;.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that projecting the second element of each pair obtained
+       with <span class="inlinecode"><a class="idref" href="GraphCoQL.QueryAux.html#find_pairs_with_response_name"><span class="id" title="definition">find_pairs_with_response_name</span></a></span> is the same as first projecting the second element 
+       and then applying <span class="inlinecode"><a class="idref" href="GraphCoQL.QueryAux.html#find_fields_with_response_name"><span class="id" title="definition">find_fields_with_response_name</span></a></span>.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="find_pairs_spec"><span class="id" title="lemma">find_pairs_spec</span></a> <span class="id" title="var">rname</span> (<span class="id" title="var">scoped_</span>σ<span class="id" title="var">s</span> : <span class="id" title="abbreviation">seq</span> (<a class="idref" href="GraphCoQL.Query.html#Name"><span class="id" title="abbreviation">Name</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> @<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#3122c41ebe889f745cb9bbe1c92165c3"><span class="id" title="variable">σ</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrfun.html#675082cc4d4538da052b547bdc6ea4c9"><span class="id" title="notation">.2</span></a> <span class="id" title="notation">|</span> σ <span class="id" title="notation">&lt;-</span> <a class="idref" href="GraphCoQL.QueryAux.html#find_pairs_with_response_name"><span class="id" title="definition">find_pairs_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">scoped_</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">s</span></a><span class="id" title="notation">]</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="GraphCoQL.QueryAux.html#find_fields_with_response_name"><span class="id" title="definition">find_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#3122c41ebe889f745cb9bbe1c92165c3"><span class="id" title="variable">σ</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrfun.html#675082cc4d4538da052b547bdc6ea4c9"><span class="id" title="notation">.2</span></a> <span class="id" title="notation">|</span> σ <span class="id" title="notation">&lt;-</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">scoped_</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">s</span></a><span class="id" title="notation">]</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">move</span>: {2}(<a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a> <span class="id" title="var">_</span>) (<span class="id" title="lemma">leqnn</span> (<a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a> <span class="id" title="var">scoped_</span>σ<span class="id" title="var">s</span>)) =&gt; <span class="id" title="var">n</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">elim</span>: <span class="id" title="var">n</span> <span class="id" title="var">scoped_</span>σ<span class="id" title="var">s</span> =&gt; /= [| <span class="id" title="var">n</span> <span class="id" title="var">IH</span>] <span class="id" title="var">scoped_</span>σ<span class="id" title="var">s</span>; <span class="id" title="tactic">first</span> <span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">leqn0</span> =&gt; /<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#selections_size_aux_0_nil"><span class="id" title="lemma">selections_size_aux_0_nil</span></a> -&gt;.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">case</span>: <span class="id" title="var">scoped_</span>σ<span class="id" title="var">s</span> =&gt; //=; <span class="id" title="tactic">case</span>=&gt; /= <span class="id" title="var">ty</span> σ φ; <span class="id" title="var">case_selection</span> σ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a> /=; <span class="id" title="var">simp</span> <span class="id" title="var">selection_size</span> =&gt; <span class="id" title="var">Hleq</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">simp</span> <span class="id" title="var">find_pairs_with_response_name</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">simp</span> <span class="id" title="var">find_fields_with_response_name</span> =&gt; /=; <span class="id" title="tactic">do</span> ? <span class="id" title="tactic">case</span>: <span class="id" title="lemma">eqP</span> =&gt; //= <span class="id" title="var">_</span>; <span class="id" title="tactic">rewrite</span> ?<span class="id" title="var">IH</span> //; <span class="id" title="tactic">do</span> ? <span class="id" title="var">ssromega</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">map_cat</span>; <span class="id" title="var">congr</span> <span class="id" title="definition">cat</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">IH</span> //=; <span class="id" title="tactic">do</span> ? <span class="id" title="var">ssromega</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="var">have</span> -&gt; : <span class="id" title="keyword">forall</span> <span class="id" title="var">xs</span> <span class="id" title="var">y</span>, <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#x"><span class="id" title="variable">x</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrfun.html#675082cc4d4538da052b547bdc6ea4c9"><span class="id" title="notation">.2</span></a> <span class="id" title="notation">|</span> <span class="id" title="var">x</span> <span class="id" title="notation">&lt;-</span> <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#y"><span class="id" title="variable">y</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#q"><span class="id" title="variable">q</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a> <span class="id" title="notation">|</span> <span class="id" title="var">q</span> <span class="id" title="notation">&lt;-</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#xs"><span class="id" title="variable">xs</span></a><span class="id" title="notation">]</span> <span class="id" title="notation">]</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#xs"><span class="id" title="variable">xs</span></a> <span class="id" title="tactic">by</span> <span class="id" title="tactic">intros</span>; <span class="id" title="tactic">elim</span>: <span class="id" title="var">xs</span> =&gt; //= <span class="id" title="var">x</span> <span class="id" title="var">xs</span> -&gt;.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">have</span> -&gt; : <span class="id" title="keyword">forall</span> <span class="id" title="var">xs</span> <span class="id" title="var">y</span>, <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#x"><span class="id" title="variable">x</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrfun.html#675082cc4d4538da052b547bdc6ea4c9"><span class="id" title="notation">.2</span></a> <span class="id" title="notation">|</span> <span class="id" title="var">x</span> <span class="id" title="notation">&lt;-</span> <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#y"><span class="id" title="variable">y</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#q"><span class="id" title="variable">q</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a> <span class="id" title="notation">|</span> <span class="id" title="var">q</span> <span class="id" title="notation">&lt;-</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#xs"><span class="id" title="variable">xs</span></a><span class="id" title="notation">]</span> <span class="id" title="notation">]</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#xs"><span class="id" title="variable">xs</span></a> <span class="id" title="tactic">by</span> <span class="id" title="tactic">intros</span>; <span class="id" title="tactic">elim</span>: <span class="id" title="var">xs</span> =&gt; //= <span class="id" title="var">x</span> <span class="id" title="var">xs</span> -&gt;.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="var">ssromega</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that inlining queries with type conditions and then searching for
+       fragments with a type condition that was not in the original list of type conditions
+       results in a empty list.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="find_fragment_inlined_nil_func"><span class="id" title="lemma">find_fragment_inlined_nil_func</span></a> <span class="id" title="var">t</span> <span class="id" title="var">ptys</span> (<span class="id" title="var">f</span> : <a class="idref" href="GraphCoQL.Query.html#Name"><span class="id" title="abbreviation">Name</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <span class="id" title="abbreviation">seq</span> (@<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <span class="id" title="abbreviation">seq</span> (@<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a>)) σ<span class="id" title="var">s</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#t"><span class="id" title="variable">t</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#c1ad6bcc76a6221225111f87bc3b0c3d"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#c1ad6bcc76a6221225111f87bc3b0c3d"><span class="id" title="notation">notin</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ptys"><span class="id" title="variable">ptys</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#find_fragment_with_type_condition"><span class="id" title="definition">find_fragment_with_type_condition</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#t"><span class="id" title="variable">t</span></a> <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="GraphCoQL.Query.html#InlineFragment"><span class="id" title="constructor">InlineFragment</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#t'"><span class="id" title="variable">t'</span></a> (<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#f"><span class="id" title="variable">f</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#t'"><span class="id" title="variable">t'</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>) <span class="id" title="notation">|</span> <span class="id" title="var">t'</span> <span class="id" title="notation">&lt;-</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ptys"><span class="id" title="variable">ptys</span></a><span class="id" title="notation">]</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="notation">[::]</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">elim</span>: <span class="id" title="var">ptys</span> =&gt; //= <span class="id" title="var">t'</span> <span class="id" title="var">ptys</span> <span class="id" title="var">IH</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="definition">inE</span>; <span class="id" title="var">bcase</span>; <span class="id" title="var">simp</span> <span class="id" title="var">find_fragment_with_type_condition</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">move</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#negbTE"><span class="id" title="lemma">negbTE</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">Hb1</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Hb1</span> /=; <span class="id" title="tactic">apply</span>: <span class="id" title="var">IH</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that if every inline fragment in a list 
+       of inline fragments does not apply to a type <span class="inlinecode"><a class="idref" href="GraphCoQL.Schema.html#ty"><span class="id" title="variable">ty</span></a></span>, then 
+       <span class="inlinecode"><a class="idref" href="GraphCoQL.QueryAux.html#find_valid_fields_with_response_name"><span class="id" title="definition">find_valid_fields_with_response_name</span></a></span> will result in an empty list
+       if <span class="inlinecode"><a class="idref" href="GraphCoQL.Schema.html#ty"><span class="id" title="variable">ty</span></a></span> is used to search.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="find_fragment_not_applies_is_nil"><span class="id" title="lemma">find_fragment_not_applies_is_nil</span></a> <span class="id" title="var">rname</span> <span class="id" title="var">ty</span> σ<span class="id" title="var">s</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">all</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">q</span> =&gt; <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#q"><span class="id" title="variable">q</span></a>.(<a class="idref" href="GraphCoQL.QueryAux.html#is_inline_fragment"><span class="id" title="definition">is_inline_fragment</span></a>)) <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">all</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">q</span> =&gt; <span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#q"><span class="id" title="variable">q</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Query.html#ccb33ca3f1a560174215aee39fd888c4"><span class="id" title="notation">on</span></a> <a class="idref" href="GraphCoQL.Query.html#ccb33ca3f1a560174215aee39fd888c4"><span class="id" title="notation">(</span></a><span class="id" title="var">t</span><a class="idref" href="GraphCoQL.Query.html#ccb33ca3f1a560174215aee39fd888c4"><span class="id" title="notation">)</span></a> {(<span class="id" title="var">_</span>)} =&gt; <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b3ebd0deddd84fd60e149cb5ef719351"><span class="id" title="notation">~~</span></a> <a class="idref" href="GraphCoQL.QueryAux.html#does_fragment_type_apply"><span class="id" title="definition">does_fragment_type_apply</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Find.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ty"><span class="id" title="variable">ty</span></a> <span class="id" title="var">t</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> =&gt; <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#true"><span class="id" title="constructor">true</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>) <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#find_valid_fields_with_response_name"><span class="id" title="definition">find_valid_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Find.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="notation">[::]</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.QueryAux.html#find_valid_fields_with_response_name"><span class="id" title="definition">find_valid_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Find.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">rname</span> <span class="id" title="var">ty</span> σ<span class="id" title="var">s</span>) =&gt; //=; <span class="id" title="var">bcase</span>; [<span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Heq</span> <span class="id" title="tactic">in</span> <span class="id" title="var">Hb0</span> | <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span>: <span class="id" title="var">H</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Find"><span class="id" title="section">Find</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab46"></a><h3 class="section">Filter</h3>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+      Lemmas about filtering queries.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a name="Theory.Filter"><span class="id" title="section">Filter</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Hint Resolve</span> <span class="id" title="var">found_queries_leq_size</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+       This lemma states that filtering pairs and projecting the second element is the same as 
+       first projecting and then filtering.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="filter_pairs_spec"><span class="id" title="lemma">filter_pairs_spec</span></a> <span class="id" title="var">rname</span> (<span class="id" title="var">scoped_</span>σ<span class="id" title="var">s</span> : <span class="id" title="abbreviation">seq</span> (<a class="idref" href="GraphCoQL.Query.html#Name"><span class="id" title="abbreviation">Name</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> @<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#3122c41ebe889f745cb9bbe1c92165c3"><span class="id" title="variable">σ</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrfun.html#675082cc4d4538da052b547bdc6ea4c9"><span class="id" title="notation">.2</span></a> <span class="id" title="notation">|</span> σ <span class="id" title="notation">&lt;-</span> <a class="idref" href="GraphCoQL.QueryAux.html#filter_pairs_with_response_name"><span class="id" title="definition">filter_pairs_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">scoped_</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">s</span></a><span class="id" title="notation">]</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#3122c41ebe889f745cb9bbe1c92165c3"><span class="id" title="variable">σ</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrfun.html#675082cc4d4538da052b547bdc6ea4c9"><span class="id" title="notation">.2</span></a> <span class="id" title="notation">|</span> σ <span class="id" title="notation">&lt;-</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">scoped_</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">s</span></a><span class="id" title="notation">]</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">elim</span>: <span class="id" title="var">scoped_</span>σ<span class="id" title="var">s</span> =&gt; //= σ <span class="id" title="var">scoped_</span>σ<span class="id" title="var">s</span> <span class="id" title="var">IH</span>; <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">case</span>: σ =&gt; <span class="id" title="var">ty</span>; <span class="id" title="tactic">case</span>=&gt; //= [<span class="id" title="var">f</span> <span class="id" title="var">α</span> | <span class="id" title="var">l</span> <span class="id" title="var">f</span> <span class="id" title="var">α</span> | <span class="id" title="var">f</span> <span class="id" title="var">α</span> <span class="id" title="var">β</span> | <span class="id" title="var">l</span> <span class="id" title="var">f</span> <span class="id" title="var">α</span> <span class="id" title="var">β</span> | <span class="id" title="var">t</span> <span class="id" title="var">β</span>];<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">simp</span> <span class="id" title="var">filter_pairs_with_response_name</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">simp</span> <span class="id" title="var">filter_fields_with_response_name</span> =&gt; /=; <span class="id" title="tactic">do</span> ? <span class="id" title="tactic">case</span>: <span class="id" title="lemma">eqP</span> =&gt; //= <span class="id" title="var">_</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">IH</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that the size of filtered selections is less or 
+       equal than the size of the original list of selections.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="filter_fields_with_response_name_leq_size"><span class="id" title="lemma">filter_fields_with_response_name_leq_size</span></a> <span class="id" title="var">l</span> σ<span class="id" title="var">s</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#selections_size"><span class="id" title="definition">selections_size</span></a> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#l"><span class="id" title="variable">l</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>) <span class="id" title="notation">&lt;=</span> <a class="idref" href="GraphCoQL.QueryAux.html#selections_size"><span class="id" title="definition">selections_size</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <span class="id" title="var">l</span> σ<span class="id" title="var">s</span>) =&gt; //=; <span class="id" title="tactic">do</span> ?[<span class="id" title="var">simp</span> <span class="id" title="var">selection_size</span>; <span class="id" title="var">ssromega</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that the size of filtered selections is less or 
+       equal than the size of the original list of selections.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="filter_pairs_with_response_name_leq"><span class="id" title="lemma">filter_pairs_with_response_name_leq</span></a> <span class="id" title="var">rname</span> (<span class="id" title="var">scoped_</span>σ<span class="id" title="var">s</span> : <span class="id" title="abbreviation">seq</span> (<a class="idref" href="GraphCoQL.Query.html#Name"><span class="id" title="abbreviation">Name</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> @<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_pairs_with_response_name"><span class="id" title="definition">filter_pairs_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">scoped_</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">s</span></a>) <span class="id" title="notation">&lt;=</span> <a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">scoped_</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">s</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_pairs_with_response_name"><span class="id" title="definition">filter_pairs_with_response_name</span></a> <span class="id" title="var">rname</span> <span class="id" title="var">scoped_</span>σ<span class="id" title="var">s</span>) =&gt; //=; <span class="id" title="var">simp</span> <span class="id" title="var">selection_size</span>; <span class="id" title="tactic">do</span> ? [<span class="id" title="var">ssromega</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">have</span> <span class="id" title="var">Hfleq</span> := (<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#filter_fields_with_response_name_leq_size"><span class="id" title="lemma">filter_fields_with_response_name_leq_size</span></a> <span class="id" title="var">response_name</span> <span class="id" title="var">subselections2</span>); <span class="id" title="var">ssromega</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that <span class="inlinecode"><a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a></span> distributes over list concatenation.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="filter_fields_with_response_name_cat"><span class="id" title="lemma">filter_fields_with_response_name_cat</span></a> <span class="id" title="var">l</span> (σ<span class="id" title="var">s1</span> σ<span class="id" title="var">s2</span> : <span class="id" title="abbreviation">seq</span> (@<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#l"><span class="id" title="variable">l</span></a> (<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#fb1b4dfbad339a3dd8a495b8e74793c6"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#fb1b4dfbad339a3dd8a495b8e74793c6"><span class="id" title="variable">s1</span></a> <span class="id" title="notation">++</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#821bc162055c0dcccac975578dcb8467"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#821bc162055c0dcccac975578dcb8467"><span class="id" title="variable">s2</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#l"><span class="id" title="variable">l</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#fb1b4dfbad339a3dd8a495b8e74793c6"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#fb1b4dfbad339a3dd8a495b8e74793c6"><span class="id" title="variable">s1</span></a> <span class="id" title="notation">++</span> <a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#l"><span class="id" title="variable">l</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#821bc162055c0dcccac975578dcb8467"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#821bc162055c0dcccac975578dcb8467"><span class="id" title="variable">s2</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">elim</span>: σ<span class="id" title="var">s1</span>  =&gt; //= σ σ<span class="id" title="var">s1</span> <span class="id" title="var">IH</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">case</span>: σ =&gt; //=; <span class="id" title="tactic">intros</span>; <span class="id" title="var">simp</span> <span class="id" title="var">filter_fields_with_response_name</span>; <span class="id" title="tactic">do</span> ?[<span class="id" title="tactic">by</span> <span class="id" title="tactic">case</span>: <span class="id" title="lemma">eqP</span> =&gt; //= <span class="id" title="var">Heq</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">IH</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="var">IH</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that the order of filtering with two response names does not affect the result.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="filter_swap"><span class="id" title="lemma">filter_swap</span></a> <span class="id" title="var">rname1</span> <span class="id" title="var">rname2</span> (σ<span class="id" title="var">s</span> : <span class="id" title="abbreviation">seq</span> (@<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname1"><span class="id" title="variable">rname1</span></a> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname2"><span class="id" title="variable">rname2</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname2"><span class="id" title="variable">rname2</span></a> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname1"><span class="id" title="variable">rname1</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <span class="id" title="var">rname1</span> σ<span class="id" title="var">s</span>) =&gt; //=; <span class="id" title="tactic">do</span> ? <span class="id" title="tactic">by</span> <span class="id" title="var">simp</span> <span class="id" title="var">filter_fields_with_response_name</span>; <span class="id" title="tactic">case</span>: <span class="id" title="lemma">eqP</span> =&gt; //= <span class="id" title="var">_</span>; <span class="id" title="var">simp</span> <span class="id" title="var">filter_fields_with_response_name</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Heq</span> /= <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="var">simp</span> <span class="id" title="var">filter_fields_with_response_name</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">H</span> <span class="id" title="var">H0</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that filtering twice with the same response name is the same 
+       as filtering once.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="filter_filter_absorb"><span class="id" title="lemma">filter_filter_absorb</span></a> <span class="id" title="var">rname</span> (σ<span class="id" title="var">s</span> : <span class="id" title="abbreviation">seq</span> (@<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <span class="id" title="var">rname</span> σ<span class="id" title="var">s</span>) =&gt; //=; <span class="id" title="var">simp</span> <span class="id" title="var">filter_fields_with_response_name</span>; <span class="id" title="tactic">do</span> ? <span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Heq</span> /= <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="var">H</span> <span class="id" title="var">H0</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that filtering a list of inline fragments is the same as filtering
+       each fragments's subselections, even when they are modified by a function <span class="inlinecode"><a class="idref" href="GraphCoQL.Schema.html#f"><span class="id" title="variable">f</span></a></span>.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="filter_map_inline_func"><span class="id" title="lemma">filter_map_inline_func</span></a> (<span class="id" title="var">f</span> : <a class="idref" href="GraphCoQL.Query.html#Name"><span class="id" title="abbreviation">Name</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <span class="id" title="abbreviation">seq</span> (@<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <span class="id" title="abbreviation">seq</span> <a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a>) <span class="id" title="var">rname</span> σ<span class="id" title="var">s</span> <span class="id" title="var">ptys</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="GraphCoQL.Query.html#InlineFragment"><span class="id" title="constructor">InlineFragment</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#t"><span class="id" title="variable">t</span></a> (<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#f"><span class="id" title="variable">f</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#t"><span class="id" title="variable">t</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>) <span class="id" title="notation">|</span> <span class="id" title="var">t</span> <span class="id" title="notation">&lt;-</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ptys"><span class="id" title="variable">ptys</span></a><span class="id" title="notation">]</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[</span><span class="id" title="notation">seq</span> @<a class="idref" href="GraphCoQL.Query.html#InlineFragment"><span class="id" title="constructor">InlineFragment</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#t"><span class="id" title="variable">t</span></a> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> (<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#f"><span class="id" title="variable">f</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#t"><span class="id" title="variable">t</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>)) <span class="id" title="notation">|</span> <span class="id" title="var">t</span> <span class="id" title="notation">&lt;-</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ptys"><span class="id" title="variable">ptys</span></a><span class="id" title="notation">]</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">elim</span>: <span class="id" title="var">ptys</span> =&gt; //= <span class="id" title="var">t</span> <span class="id" title="var">ptys</span> <span class="id" title="var">IH</span>; <span class="id" title="var">simp</span> <span class="id" title="var">filter_fields_with_response_name</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">IH</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;Unused&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="filter_map_inline"><span class="id" title="lemma">filter_map_inline</span></a> <span class="id" title="var">rname</span> σ<span class="id" title="var">s</span> <span class="id" title="var">ptys</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="GraphCoQL.Query.html#InlineFragment"><span class="id" title="constructor">InlineFragment</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#t"><span class="id" title="variable">t</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a> <span class="id" title="notation">|</span> <span class="id" title="var">t</span> <span class="id" title="notation">&lt;-</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ptys"><span class="id" title="variable">ptys</span></a><span class="id" title="notation">]</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="GraphCoQL.Query.html#InlineFragment"><span class="id" title="constructor">InlineFragment</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#t"><span class="id" title="variable">t</span></a> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>) <span class="id" title="notation">|</span> <span class="id" title="var">t</span> <span class="id" title="notation">&lt;-</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ptys"><span class="id" title="variable">ptys</span></a><span class="id" title="notation">]</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">elim</span>: <span class="id" title="var">ptys</span> =&gt; //= <span class="id" title="var">t</span> <span class="id" title="var">ptys</span> <span class="id" title="var">IH</span>; <span class="id" title="var">simp</span> <span class="id" title="var">filter_fields_with_response_name</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">IH</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This states that filtering a list of field selections by a response name <span class="inlinecode"><a class="idref" href="GraphCoQL.QueryAux.html#rname"><span class="id" title="variable">rname</span></a></span> 
+       results in the same list, if no field has that response name.
+
+<div class="paragraph"> </div>
+
+       This is not valid if there is an inline fragment, because filtering may 
+       remove some of its subselections.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="filter_find_fields_nil_is_nil"><span class="id" title="lemma">filter_find_fields_nil_is_nil</span></a> <span class="id" title="var">rname</span> σ<span class="id" title="var">s</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">all</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">q</span> =&gt; <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#q"><span class="id" title="variable">q</span></a>.(<a class="idref" href="GraphCoQL.QueryAux.html#is_field"><span class="id" title="definition">is_field</span></a>)) <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#find_fields_with_response_name"><span class="id" title="definition">find_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="notation">[::]</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <span class="id" title="var">rname</span> σ<span class="id" title="var">s</span>) =&gt; //; <span class="id" title="var">simp</span> <span class="id" title="var">find_fields_with_response_name</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span>: <span class="id" title="tactic">do</span> ? [<span class="id" title="tactic">by</span> <span class="id" title="tactic">move</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#negbTE"><span class="id" title="lemma">negbTE</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">Heq</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Heq</span> /=; <span class="id" title="tactic">intros</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">H</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span>: <span class="id" title="tactic">do</span> ? [<span class="id" title="tactic">by</span> <span class="id" title="tactic">move</span>/<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#negbFE"><span class="id" title="lemma">negbFE</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">Heq</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Heq</span> /=;<span class="id" title="tactic">intros</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">H</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that filtering fields in inline fragments 
+       preserves the fact that they are all inline fragments.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="filter_preserves_inlines"><span class="id" title="lemma">filter_preserves_inlines</span></a> <span class="id" title="var">rname</span> σ<span class="id" title="var">s</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">all</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">q</span> =&gt; <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#q"><span class="id" title="variable">q</span></a>.(<a class="idref" href="GraphCoQL.QueryAux.html#is_inline_fragment"><span class="id" title="definition">is_inline_fragment</span></a>)) <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">all</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">q</span> =&gt; <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#q"><span class="id" title="variable">q</span></a>.(<a class="idref" href="GraphCoQL.QueryAux.html#is_inline_fragment"><span class="id" title="definition">is_inline_fragment</span></a>)) (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <span class="id" title="var">rname</span> σ<span class="id" title="var">s</span>) =&gt; //=.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Variable</span> (<a name="Theory.Filter.s"><span class="id" title="variable">s</span></a> : <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#wfGraphQLSchema"><span class="id" title="record">wfGraphQLSchema</span></a>).<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that if every inline fragment in a list <span class="inlinecode">σ<a class="idref" href="GraphCoQL.theory.QuerySemanticsLemmas.html#Theory.s"><span class="id" title="variable">s</span></a></span> does 
+       not apply to a type <span class="inlinecode"><a class="idref" href="GraphCoQL.Schema.html#ty"><span class="id" title="variable">ty</span></a></span>, then filtering that list will preserve 
+       the fact that inline fragments do not apply to <span class="inlinecode"><a class="idref" href="GraphCoQL.Schema.html#ty"><span class="id" title="variable">ty</span></a></span>.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="filter_preserves_fragment_not_applies"><span class="id" title="lemma">filter_preserves_fragment_not_applies</span></a> <span class="id" title="var">ty</span> <span class="id" title="var">rname</span> σ<span class="id" title="var">s</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">all</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">q</span> : <a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> =&gt; <span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#q"><span class="id" title="variable">q</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Query.html#ccb33ca3f1a560174215aee39fd888c4"><span class="id" title="notation">on</span></a> <a class="idref" href="GraphCoQL.Query.html#ccb33ca3f1a560174215aee39fd888c4"><span class="id" title="notation">(</span></a><span class="id" title="var">t</span><a class="idref" href="GraphCoQL.Query.html#ccb33ca3f1a560174215aee39fd888c4"><span class="id" title="notation">)</span></a> {(<span class="id" title="var">_</span>)} =&gt; <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b3ebd0deddd84fd60e149cb5ef719351"><span class="id" title="notation">~~</span></a> <a class="idref" href="GraphCoQL.QueryAux.html#does_fragment_type_apply"><span class="id" title="definition">does_fragment_type_apply</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Filter.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ty"><span class="id" title="variable">ty</span></a> <span class="id" title="var">t</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> =&gt; <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#true"><span class="id" title="constructor">true</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>) <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">all</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">q</span> : <a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> =&gt; <span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#q"><span class="id" title="variable">q</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Query.html#ccb33ca3f1a560174215aee39fd888c4"><span class="id" title="notation">on</span></a> <a class="idref" href="GraphCoQL.Query.html#ccb33ca3f1a560174215aee39fd888c4"><span class="id" title="notation">(</span></a><span class="id" title="var">t</span><a class="idref" href="GraphCoQL.Query.html#ccb33ca3f1a560174215aee39fd888c4"><span class="id" title="notation">)</span></a> {(<span class="id" title="var">_</span>)} =&gt; <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b3ebd0deddd84fd60e149cb5ef719351"><span class="id" title="notation">~~</span></a> <a class="idref" href="GraphCoQL.QueryAux.html#does_fragment_type_apply"><span class="id" title="definition">does_fragment_type_apply</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Filter.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ty"><span class="id" title="variable">ty</span></a> <span class="id" title="var">t</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> =&gt; <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#true"><span class="id" title="constructor">true</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>) (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <span class="id" title="var">rname</span> σ<span class="id" title="var">s</span>) =&gt; //=; <span class="id" title="var">bcase</span>; <span class="id" title="tactic">do</span> ? <span class="id" title="tactic">by</span> <span class="id" title="tactic">intros</span>; <span class="id" title="tactic">apply</span>: <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="var">apply_andP</span>; <span class="id" title="tactic">apply</span>: <span class="id" title="var">H0</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that if there is no field with response name <span class="inlinecode"><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname1"><span class="id" title="variable">rname1</span></a></span>, 
+       then filtering will preserve the fact that there is no selection with 
+       response name <span class="inlinecode"><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname1"><span class="id" title="variable">rname1</span></a></span>.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="filter_preserves_find_fields_nil"><span class="id" title="lemma">filter_preserves_find_fields_nil</span></a> <span class="id" title="var">rname1</span> <span class="id" title="var">rname2</span> σ<span class="id" title="var">s</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#find_fields_with_response_name"><span class="id" title="definition">find_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname1"><span class="id" title="variable">rname1</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="notation">[::]</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#find_fields_with_response_name"><span class="id" title="definition">find_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname1"><span class="id" title="variable">rname1</span></a> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname2"><span class="id" title="variable">rname2</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="notation">[::]</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <span class="id" title="var">rname2</span> σ<span class="id" title="var">s</span>) =&gt; //=; <span class="id" title="var">simp</span> <span class="id" title="var">find_fields_with_response_name</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">move</span>/<a class="idref" href="Lib.SeqExtra.html#cat_nil"><span class="id" title="lemma">cat_nil</span></a>=&gt; [<span class="id" title="var">Hnil1</span> <span class="id" title="var">Hnil2</span>]; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">H</span> // <span class="id" title="var">H0</span> //.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span>: <span class="id" title="tactic">do</span> [<span class="id" title="tactic">by</span> <span class="id" title="tactic">case</span>: <span class="id" title="lemma">eqP</span> =&gt; //= <span class="id" title="var">_</span>; <span class="id" title="tactic">apply</span>: <span class="id" title="var">H</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that if there is no inline fragment that matches the type condition <span class="inlinecode"><a class="idref" href="GraphCoQL.Schema.html#t"><span class="id" title="variable">t</span></a></span> then 
+       <span class="inlinecode"><a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a></span> will preserve this fact.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="filter_preserves_find_frags_nil"><span class="id" title="lemma">filter_preserves_find_frags_nil</span></a> <span class="id" title="var">rname</span> <span class="id" title="var">ty</span> σ<span class="id" title="var">s</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#find_fragment_with_type_condition"><span class="id" title="definition">find_fragment_with_type_condition</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="notation">[::]</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#find_fragment_with_type_condition"><span class="id" title="definition">find_fragment_with_type_condition</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#ty"><span class="id" title="variable">ty</span></a> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#rname"><span class="id" title="variable">rname</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="notation">[::]</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.QueryAux.html#filter_fields_with_response_name"><span class="id" title="definition">filter_fields_with_response_name</span></a> <span class="id" title="var">rname</span> σ<span class="id" title="var">s</span>) =&gt; //=; <span class="id" title="var">simp</span> <span class="id" title="var">find_fragment_with_type_condition</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">case</span>: <span class="id" title="lemma">eqP</span> =&gt; //= <span class="id" title="var">_</span>; <span class="id" title="tactic">apply</span>: <span class="id" title="var">H0</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Filter"><span class="id" title="section">Filter</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab47"></a><h3 class="section">Merging</h3>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+      Lemmas about merging subqueries of queries.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a name="Theory.Merging"><span class="id" title="section">Merging</span></a>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that <span class="inlinecode"><a class="idref" href="GraphCoQL.QueryAux.html#merge_selection_sets"><span class="id" title="definition">merge_selection_sets</span></a></span> distributes over list concatenation.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="merge_selection_sets_cat"><span class="id" title="lemma">merge_selection_sets_cat</span></a> (σ<span class="id" title="var">s1</span> σ<span class="id" title="var">s2</span> : <span class="id" title="abbreviation">seq</span> (@<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#merge_selection_sets"><span class="id" title="definition">merge_selection_sets</span></a> (<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#fb1b4dfbad339a3dd8a495b8e74793c6"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#fb1b4dfbad339a3dd8a495b8e74793c6"><span class="id" title="variable">s1</span></a> <span class="id" title="notation">++</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#821bc162055c0dcccac975578dcb8467"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#821bc162055c0dcccac975578dcb8467"><span class="id" title="variable">s2</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="GraphCoQL.QueryAux.html#merge_selection_sets"><span class="id" title="definition">merge_selection_sets</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#fb1b4dfbad339a3dd8a495b8e74793c6"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#fb1b4dfbad339a3dd8a495b8e74793c6"><span class="id" title="variable">s1</span></a> <span class="id" title="notation">++</span> <a class="idref" href="GraphCoQL.QueryAux.html#merge_selection_sets"><span class="id" title="definition">merge_selection_sets</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#821bc162055c0dcccac975578dcb8467"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#821bc162055c0dcccac975578dcb8467"><span class="id" title="variable">s2</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.QueryAux.html#merge_selection_sets"><span class="id" title="definition">merge_selection_sets</span></a> <span class="id" title="lemma">map_cat</span> <span class="id" title="lemma">flatten_cat</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that the size of queries obtained via <span class="inlinecode"><a class="idref" href="GraphCoQL.QueryAux.html#merge_selection_sets"><span class="id" title="definition">merge_selection_sets</span></a></span>
+       is less or equal than the size of the original list of queries.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="merged_selections_leq"><span class="id" title="lemma">merged_selections_leq</span></a> σ<span class="id" title="var">s</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#selections_size"><span class="id" title="definition">selections_size</span></a> (<a class="idref" href="GraphCoQL.QueryAux.html#merge_selection_sets"><span class="id" title="definition">merge_selection_sets</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>) <span class="id" title="notation">&lt;=</span> <a class="idref" href="GraphCoQL.QueryAux.html#selections_size"><span class="id" title="definition">selections_size</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#de308430625c7ffbe07e237caf36c338"><span class="id" title="variable">s</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.QueryAux.html#merge_selection_sets"><span class="id" title="definition">merge_selection_sets</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="tactic">elim</span>: σ<span class="id" title="var">s</span> =&gt; //=; <span class="id" title="tactic">case</span>=&gt; //= *; <span class="id" title="var">simp</span> <span class="id" title="var">selection_size</span>; <span class="id" title="tactic">rewrite</span> ?<a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#selections_size_cat"><span class="id" title="lemma">selections_size_cat</span></a>; <span class="id" title="var">ssromega</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Variable</span> (<a name="Theory.Merging.s"><span class="id" title="variable">s</span></a> : <a class="idref" href="GraphCoQL.SchemaWellFormedness.html#wfGraphQLSchema"><span class="id" title="record">wfGraphQLSchema</span></a>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       This lemma states that the size of queries obtained via <span class="inlinecode"><a class="idref" href="GraphCoQL.QueryAux.html#merge_pairs_selection_sets"><span class="id" title="definition">merge_pairs_selection_sets</span></a></span>
+       is less or equal than the size of the original list of queries.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a name="merge_pair_selections_leq"><span class="id" title="lemma">merge_pair_selections_leq</span></a> (<span class="id" title="var">scoped_</span>σ<span class="id" title="var">s</span> : <span class="id" title="abbreviation">seq</span> (<a class="idref" href="GraphCoQL.Query.html#Name"><span class="id" title="abbreviation">Name</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">*</span></a> @<a class="idref" href="GraphCoQL.Query.html#Selection"><span class="id" title="inductive">Selection</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Scalar"><span class="id" title="variable">Scalar</span></a>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a> (<a class="idref" href="GraphCoQL.QueryAux.html#merge_pairs_selection_sets"><span class="id" title="definition">merge_pairs_selection_sets</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Merging.s"><span class="id" title="variable">s</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">scoped_</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">s</span></a>) <span class="id" title="notation">&lt;=</span> <a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">scoped_</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">σ</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#07026d0270448b15f36b7ff2e1246b60"><span class="id" title="variable">s</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<a class="idref" href="GraphCoQL.QueryAux.html#selections_size_aux"><span class="id" title="definition">selections_size_aux</span></a>; <span class="id" title="var">funelim</span> (<a class="idref" href="GraphCoQL.QueryAux.html#merge_pairs_selection_sets"><span class="id" title="definition">merge_pairs_selection_sets</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Merging.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">scoped_</span>σ<span class="id" title="var">s</span>) =&gt; //=; <span class="id" title="var">simp</span> <span class="id" title="var">selection_size</span>; <span class="id" title="tactic">do</span> ? <span class="id" title="var">ssromega</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">have</span> <span class="id" title="var">Hpeq</span> : <span class="id" title="keyword">forall</span> <span class="id" title="var">xs</span> <span class="id" title="var">y</span>, <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#x"><span class="id" title="variable">x</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrfun.html#675082cc4d4538da052b547bdc6ea4c9"><span class="id" title="notation">.2</span></a> <span class="id" title="notation">|</span> <span class="id" title="var">x</span> <span class="id" title="notation">&lt;-</span> <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a><a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#y"><span class="id" title="variable">y</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#q"><span class="id" title="variable">q</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">)</span></a> <span class="id" title="notation">|</span> <span class="id" title="var">q</span> <span class="id" title="notation">&lt;-</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#xs"><span class="id" title="variable">xs</span></a><span class="id" title="notation">]</span> <span class="id" title="notation">]</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#xs"><span class="id" title="variable">xs</span></a> <span class="id" title="tactic">by</span> <span class="id" title="tactic">intros</span>; <span class="id" title="tactic">elim</span>: <span class="id" title="var">xs</span> =&gt; //= <span class="id" title="var">x</span> <span class="id" title="var">xs</span> -&gt;.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span>: <span class="id" title="tactic">do</span> ? [<span class="id" title="tactic">by</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">map_cat</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#selections_size_cat"><span class="id" title="lemma">selections_size_cat</span></a> <span class="id" title="var">Hpeq</span>; <span class="id" title="var">ssromega</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory.Merging"><span class="id" title="section">Merging</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.theory.QueryAuxLemmas.html#Theory"><span class="id" title="section">Theory</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+    <div>
+        <a href='GraphCoQL.QueryAux.html' class="btn btn-light" role='button'> Previous ← Query Aux </a>
+        <a href='GraphCoQL.QueryConformance.html' class="btn btn-info" role='button'>Next → Query Conformance</a>
+    </div>
+ 
+</div>
+<div class="code">
+</div>
+</div>
+<div id="footer">
+  Generated by <a href="http://coq.inria.fr/">coqdoc</a> and improved with <a href="https://github.com/tebbi/coqdocjs">CoqdocJS</a>
+</div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
+<script>
+  $(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+  })
+  </script>
+
+</body>
+
+</html>

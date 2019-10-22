@@ -1,0 +1,707 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<link href="coqdocjs.css" rel="stylesheet" type="text/css"/>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<script type="text/javascript" src="config.js"></script>
+<script type="text/javascript" src="coqdocjs.js"></script>
+</head>
+
+<body onload="document.getElementById('content').focus()">
+  <div id="header">
+    <span class="left">
+      <span class="modulename"> <script> document.write(document.title) </script> </span>
+    </span>
+
+    <span class="button" id="toggle-proofs"></span>
+
+    <span class="right">
+      <a href="../">Project Page</a>
+      <a href="./indexpage.html"> Index </a>
+      <a href="./toc.html"> Table of Contents </a>
+    </span>
+</div>
+    <div id="content" tabindex="-1" onblur="document.getElementById('content').focus()">
+    <div id="main">
+<h1 class="libtitle">GraphCoQL.SchemaAux</h1>
+
+<div class="code">
+
+<br/>
+</div>
+
+<div class="doc">
+   <div class="jumbotron">
+      <div class="container">
+        <h1 class="display-4">GraphQL Schema Auxiliary</h1>
+        <p class="lead">
+         This file contains auxiliary definitions used with a GraphQL Schema.
+        </p>
+
+        <p>
+         Some of these are: extractors for type definitions, lookup functions, subtype relation, etc.
+        </p>
+  </div>
+</div>
+ 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Section</span> <a name="SchemaAux"><span class="id" title="section">SchemaAux</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a name="SchemaAux.TypeDefExtractors"><span class="id" title="section">TypeDefExtractors</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab11"></a><h3 class="section">Extractors for type definitions</h3>
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+ Get type definition's name 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="tdname"><span class="id" title="definition">tdname</span></a> <span class="id" title="var">tdef</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.SchemaAux.html#tdef"><span class="id" title="variable">tdef</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Schema.html#39c6dd05b4549ac7479c94fe9cba1a12"><span class="id" title="notation">scalar</span></a> <span class="id" title="var">name</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">object</span></a> <span class="id" title="var">name</span> <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">implements</span></a> <span class="id" title="var">_</span> { <span class="id" title="var">_</span> }<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Schema.html#ce0c37d1f6b5642e2e0ed8a4275975df"><span class="id" title="notation">interface</span></a> <span class="id" title="var">name</span> { <span class="id" title="var">_</span> }<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Schema.html#9ccffccefc7814fff468e3da30938090"><span class="id" title="notation">union</span></a> <span class="id" title="var">name</span> { <span class="id" title="var">_</span> }<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Schema.html#8e2a60c2c99876bfbd87dbddb2381d4f"><span class="id" title="notation">enum</span></a> <span class="id" title="var">name</span> { <span class="id" title="var">_</span> } =&gt; <span class="id" title="var">name</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+  Get type definition's field 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="tfields"><span class="id" title="definition">tfields</span></a> <span class="id" title="var">tdef</span> : <span class="id" title="abbreviation">seq</span> <a class="idref" href="GraphCoQL.Schema.html#FieldDefinition"><span class="id" title="record">FieldDefinition</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.SchemaAux.html#tdef"><span class="id" title="variable">tdef</span></a> <span class="id" title="keyword">with</span> <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">object</span></a> <span class="id" title="var">_</span> <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">implements</span></a> <span class="id" title="var">_</span> { <span class="id" title="var">flds</span> }<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Schema.html#ce0c37d1f6b5642e2e0ed8a4275975df"><span class="id" title="notation">interface</span></a> <span class="id" title="var">_</span> { <span class="id" title="var">flds</span> } =&gt; <span class="id" title="var">flds</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> =&gt; <span class="id" title="notation">[::]</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+  Get type definition's declared interfaces 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="tintfs"><span class="id" title="definition">tintfs</span></a> <span class="id" title="var">tdef</span> : <span class="id" title="abbreviation">seq</span> <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.SchemaAux.html#tdef"><span class="id" title="variable">tdef</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">object</span></a> <span class="id" title="var">_</span> <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">implements</span></a> <span class="id" title="var">intfs</span> { <span class="id" title="var">_</span> } =&gt; <span class="id" title="var">intfs</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> =&gt; <span class="id" title="notation">[::]</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+  Get type definition's members (empty for anything else than union) 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="tmbs"><span class="id" title="definition">tmbs</span></a> <span class="id" title="var">tdef</span> : <span class="id" title="abbreviation">seq</span> <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.SchemaAux.html#tdef"><span class="id" title="variable">tdef</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Schema.html#9ccffccefc7814fff468e3da30938090"><span class="id" title="notation">union</span></a> <span class="id" title="var">_</span> { <span class="id" title="var">mbs</span> }=&gt; <span class="id" title="var">mbs</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> =&gt; <span class="id" title="notation">[::]</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+  Get type definition's members (empty for anything else than enum) 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="tenums"><span class="id" title="definition">tenums</span></a> <span class="id" title="var">tdef</span> : <span class="id" title="abbreviation">seq</span> <a class="idref" href="GraphCoQL.Schema.html#EnumValue"><span class="id" title="abbreviation">EnumValue</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.SchemaAux.html#tdef"><span class="id" title="variable">tdef</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Schema.html#8e2a60c2c99876bfbd87dbddb2381d4f"><span class="id" title="notation">enum</span></a> <span class="id" title="var">_</span> { <span class="id" title="var">enums</span> } =&gt; <span class="id" title="var">enums</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> =&gt; <span class="id" title="notation">[::]</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Variable</span> <a name="SchemaAux.TypeDefExtractors.schema"><span class="id" title="variable">schema</span></a> : <a class="idref" href="GraphCoQL.Schema.html#graphQLSchema"><span class="id" title="record">graphQLSchema</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+  Get all type definitions' names from a schema 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="type_names"><span class="id" title="definition">type_names</span></a> : <span class="id" title="abbreviation">seq</span> <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a> := <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="GraphCoQL.SchemaAux.html#tdef"><span class="id" title="variable">tdef</span></a>.(<a class="idref" href="GraphCoQL.SchemaAux.html#tdname"><span class="id" title="definition">tdname</span></a>) <span class="id" title="notation">|</span> <span class="id" title="var">tdef</span> <span class="id" title="notation">&lt;-</span> <a class="idref" href="GraphCoQL.SchemaAux.html#SchemaAux.TypeDefExtractors.schema"><span class="id" title="variable">schema</span></a>.(<a class="idref" href="GraphCoQL.Schema.html#type_definitions"><span class="id" title="projection">type_definitions</span></a>)<span class="id" title="notation">]</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.SchemaAux.html#SchemaAux.TypeDefExtractors"><span class="id" title="section">TypeDefExtractors</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab12"></a><h3 class="section">General purpose predicates</h3>
+<hr/>
+ 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a name="SchemaAux.Predicates"><span class="id" title="section">Predicates</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Variable</span> <a name="SchemaAux.Predicates.schema"><span class="id" title="variable">schema</span></a> : <a class="idref" href="GraphCoQL.Schema.html#graphQLSchema"><span class="id" title="record">graphQLSchema</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+  Checks whether the given type definition has the given name 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="has_name"><span class="id" title="definition">has_name</span></a> (<span class="id" title="var">name</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>) (<span class="id" title="var">tdef</span> : <a class="idref" href="GraphCoQL.Schema.html#TypeDefinition"><span class="id" title="inductive">TypeDefinition</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaAux.html#name"><span class="id" title="variable">name</span></a> <span class="id" title="notation">==</span> <a class="idref" href="GraphCoQL.SchemaAux.html#tdef"><span class="id" title="variable">tdef</span></a>.(<a class="idref" href="GraphCoQL.SchemaAux.html#tdname"><span class="id" title="definition">tdname</span></a>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+  Checks whether a given name is declared in the schema, as a type definition 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="is_declared"><span class="id" title="definition">is_declared</span></a> (<span class="id" title="var">name</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> := <a class="idref" href="GraphCoQL.SchemaAux.html#name"><span class="id" title="variable">name</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#SchemaAux.Predicates.schema"><span class="id" title="variable">schema</span></a>.(<a class="idref" href="GraphCoQL.SchemaAux.html#type_names"><span class="id" title="definition">type_names</span></a>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+  Checks whether the field definition has the given name 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="has_field_name"><span class="id" title="definition">has_field_name</span></a> (<span class="id" title="var">name</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>) (<span class="id" title="var">fld</span> : <a class="idref" href="GraphCoQL.Schema.html#FieldDefinition"><span class="id" title="record">FieldDefinition</span></a>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaAux.html#name"><span class="id" title="variable">name</span></a> <span class="id" title="notation">==</span> <a class="idref" href="GraphCoQL.SchemaAux.html#fld"><span class="id" title="variable">fld</span></a>.(<a class="idref" href="GraphCoQL.Schema.html#fname"><span class="id" title="projection">fname</span></a>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.SchemaAux.html#SchemaAux.Predicates"><span class="id" title="section">Predicates</span></a>.<br/>
+
+<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Variable</span> <a name="SchemaAux.schema"><span class="id" title="variable">schema</span></a> : <a class="idref" href="GraphCoQL.Schema.html#graphQLSchema"><span class="id" title="record">graphQLSchema</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab13"></a><h3 class="section">Lookup functions</h3>
+<hr/>
+ 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a name="SchemaAux.Lookup"><span class="id" title="section">Lookup</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+       Looks up for a type definition with the given name.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="lookup_type"><span class="id" title="definition">lookup_type</span></a> (<span class="id" title="var">ty</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Lib.SeqExtra.html#get_first"><span class="id" title="definition">get_first</span></a> (<span class="id" title="keyword">fun</span> <span class="id" title="var">tdef</span> =&gt; <a class="idref" href="GraphCoQL.SchemaAux.html#tdef"><span class="id" title="variable">tdef</span></a>.(<a class="idref" href="GraphCoQL.SchemaAux.html#tdname"><span class="id" title="definition">tdname</span></a>) <span class="id" title="notation">==</span> <a class="idref" href="GraphCoQL.SchemaAux.html#ty"><span class="id" title="variable">ty</span></a>) <a class="idref" href="GraphCoQL.SchemaAux.html#SchemaAux.schema"><span class="id" title="variable">schema</span></a>.(<a class="idref" href="GraphCoQL.Schema.html#type_definitions"><span class="id" title="projection">type_definitions</span></a>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     Gets the first field definition from a given type that matches the given field name. 
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="lookup_field_in_type"><span class="id" title="definition">lookup_field_in_type</span></a> (<span class="id" title="var">ty</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>) (<span class="id" title="var">fname</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#option"><span class="id" title="inductive">option</span></a> <a class="idref" href="GraphCoQL.Schema.html#FieldDefinition"><span class="id" title="record">FieldDefinition</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">if</span> <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_type"><span class="id" title="definition">lookup_type</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#ty"><span class="id" title="variable">ty</span></a> <span class="id" title="keyword">is</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <span class="id" title="var">tdef</span> <span class="id" title="keyword">then</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Lib.SeqExtra.html#get_first"><span class="id" title="definition">get_first</span></a> (<a class="idref" href="GraphCoQL.SchemaAux.html#has_field_name"><span class="id" title="definition">has_field_name</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#fname"><span class="id" title="variable">fname</span></a>) <span class="id" title="var">tdef</span>.(<a class="idref" href="GraphCoQL.SchemaAux.html#tfields"><span class="id" title="definition">tfields</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">else</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#None"><span class="id" title="constructor">None</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+      Gets the type of the first field definition from a given type that matches the given field name. 
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="lookup_field_type"><span class="id" title="definition">lookup_field_type</span></a> (<span class="id" title="var">ty</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>) (<span class="id" title="var">fname</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>)  : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#option"><span class="id" title="inductive">option</span></a> <a class="idref" href="GraphCoQL.Schema.html#type"><span class="id" title="inductive">type</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_field_in_type"><span class="id" title="definition">lookup_field_in_type</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#fname"><span class="id" title="variable">fname</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <span class="id" title="var">fld</span> =&gt; <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <span class="id" title="var">fld</span>.(<a class="idref" href="GraphCoQL.Schema.html#ftype"><span class="id" title="projection">ftype</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#None"><span class="id" title="constructor">None</span></a> =&gt; <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#None"><span class="id" title="constructor">None</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+     Gets the first argument definition that matches the given argument name, from the
+     given type and field. 
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="lookup_argument_in_type_and_field"><span class="id" title="definition">lookup_argument_in_type_and_field</span></a> (<span class="id" title="var">ty</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>) (<span class="id" title="var">fname</span> <span class="id" title="var">aname</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#option"><span class="id" title="inductive">option</span></a> <a class="idref" href="GraphCoQL.Schema.html#FieldArgumentDefinition"><span class="id" title="record">FieldArgumentDefinition</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_field_in_type"><span class="id" title="definition">lookup_field_in_type</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#fname"><span class="id" title="variable">fname</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.Schema.html#Field"><span class="id" title="constructor">Field</span></a> <span class="id" title="var">fname</span> <span class="id" title="var">args</span> <span class="id" title="var">_</span>) =&gt; <a class="idref" href="Lib.SeqExtra.html#get_first"><span class="id" title="definition">get_first</span></a> (<span class="id" title="keyword">fun</span> <span class="id" title="var">arg</span> =&gt; <a class="idref" href="GraphCoQL.SchemaAux.html#arg"><span class="id" title="variable">arg</span></a>.(<a class="idref" href="GraphCoQL.Schema.html#argname"><span class="id" title="projection">argname</span></a>) <span class="id" title="notation">==</span> <a class="idref" href="GraphCoQL.SchemaAux.html#aname"><span class="id" title="variable">aname</span></a>) <span class="id" title="var">args</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> =&gt; <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#None"><span class="id" title="constructor">None</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       Gets the list of fields declared in an object or interface type definition
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="fields"><span class="id" title="definition">fields</span></a> (<span class="id" title="var">ty</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>) : <span class="id" title="abbreviation">seq</span> <a class="idref" href="GraphCoQL.Schema.html#FieldDefinition"><span class="id" title="record">FieldDefinition</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_type"><span class="id" title="definition">lookup_type</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#ty"><span class="id" title="variable">ty</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">object</span></a> <span class="id" title="var">_</span> <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">implements</span></a> <span class="id" title="var">_</span> { <span class="id" title="var">flds</span> })<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.Schema.html#ce0c37d1f6b5642e2e0ed8a4275975df"><span class="id" title="notation">interface</span></a> <span class="id" title="var">_</span> { <span class="id" title="var">flds</span> }) =&gt; <span class="id" title="var">flds</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> =&gt; <span class="id" title="notation">[::]</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.SchemaAux.html#SchemaAux.Lookup"><span class="id" title="section">Lookup</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab14"></a><h3 class="section">Predicates about types</h3>
+<hr/>
+ 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a name="SchemaAux.TypePredicates"><span class="id" title="section">TypePredicates</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+  Checks whether the given type is defined as a scalar in the Schema 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="is_scalar_type"><span class="id" title="definition">is_scalar_type</span></a> (<span class="id" title="var">ty</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_type"><span class="id" title="definition">lookup_type</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#ty"><span class="id" title="variable">ty</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.Schema.html#39c6dd05b4549ac7479c94fe9cba1a12"><span class="id" title="notation">scalar</span></a> <span class="id" title="var">_</span>) =&gt; <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#true"><span class="id" title="constructor">true</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> =&gt; <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#false"><span class="id" title="constructor">false</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+  Checks whether the given type is defined as an object in the Schema 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Equations</span> <a name="is_object_type"><span class="id" title="definition">is_object_type</span></a> (<span class="id" title="var">ty</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaAux.html#is_object_type"><span class="id" title="definition">is_object_type</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#ty"><span class="id" title="variable">ty</span></a> <span class="id" title="keyword">with</span> <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_type"><span class="id" title="definition">lookup_type</span></a> <span class="id" title="var">ty</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">(</span></a><a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">object</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">_</span></a> <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">implements</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">_</span></a> <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">{</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">_</span></a> <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">}</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">)</span></a> := <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#true"><span class="id" title="constructor">true</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> := <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#false"><span class="id" title="constructor">false</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+  Checks whether the given type is defined as an interface in the Schema 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Equations</span> <a name="is_interface_type"><span class="id" title="definition">is_interface_type</span></a> (<span class="id" title="var">ty</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaAux.html#is_interface_type"><span class="id" title="definition">is_interface_type</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#ty"><span class="id" title="variable">ty</span></a> <span class="id" title="keyword">with</span> <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_type"><span class="id" title="definition">lookup_type</span></a> <span class="id" title="var">ty</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">(</span></a><a class="idref" href="GraphCoQL.Schema.html#ce0c37d1f6b5642e2e0ed8a4275975df"><span class="id" title="notation">interface</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">_</span></a> <a class="idref" href="GraphCoQL.Schema.html#ce0c37d1f6b5642e2e0ed8a4275975df"><span class="id" title="notation">{</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">_</span></a> <a class="idref" href="GraphCoQL.Schema.html#ce0c37d1f6b5642e2e0ed8a4275975df"><span class="id" title="notation">}</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">)</span></a> := <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#true"><span class="id" title="constructor">true</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> := <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#false"><span class="id" title="constructor">false</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+  Checks whether the given type is defined as a union in the Schema 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Equations</span> <a name="is_union_type"><span class="id" title="definition">is_union_type</span></a> (<span class="id" title="var">ty</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaAux.html#is_union_type"><span class="id" title="definition">is_union_type</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#ty"><span class="id" title="variable">ty</span></a> <span class="id" title="keyword">with</span> <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_type"><span class="id" title="definition">lookup_type</span></a> <span class="id" title="var">ty</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">(</span></a><a class="idref" href="GraphCoQL.Schema.html#9ccffccefc7814fff468e3da30938090"><span class="id" title="notation">union</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">_</span></a> <a class="idref" href="GraphCoQL.Schema.html#9ccffccefc7814fff468e3da30938090"><span class="id" title="notation">{</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">_</span></a> <a class="idref" href="GraphCoQL.Schema.html#9ccffccefc7814fff468e3da30938090"><span class="id" title="notation">}</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">)</span></a> := <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#true"><span class="id" title="constructor">true</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> := <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#false"><span class="id" title="constructor">false</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+  Checks whether the given type is defined as an enum in the Schema 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="is_enum_type"><span class="id" title="definition">is_enum_type</span></a> (<span class="id" title="var">ty</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_type"><span class="id" title="definition">lookup_type</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#ty"><span class="id" title="variable">ty</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.Schema.html#8e2a60c2c99876bfbd87dbddb2381d4f"><span class="id" title="notation">enum</span></a> <span class="id" title="var">_</span> { <span class="id" title="var">_</span> }) =&gt; <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#true"><span class="id" title="constructor">true</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> =&gt; <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#false"><span class="id" title="constructor">false</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+  Checks whether the given type is a list type. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="is_list_type"><span class="id" title="definition">is_list_type</span></a> (<span class="id" title="var">ty</span> : <a class="idref" href="GraphCoQL.Schema.html#type"><span class="id" title="inductive">type</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.SchemaAux.html#ty"><span class="id" title="variable">ty</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Schema.html#1e2518ff2e78f907c94429897ac7861a"><span class="id" title="notation">[</span></a> <span class="id" title="var">ty'</span> <a class="idref" href="GraphCoQL.Schema.html#1e2518ff2e78f907c94429897ac7861a"><span class="id" title="notation">]</span></a> =&gt; <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#true"><span class="id" title="constructor">true</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> =&gt; <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#false"><span class="id" title="constructor">false</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       Checks whether the given type is an abstract type.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="is_abstract_type"><span class="id" title="definition">is_abstract_type</span></a> (<span class="id" title="var">ty</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaAux.html#is_interface_type"><span class="id" title="definition">is_interface_type</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#081ff67d3116402bb680e8692aa39185"><span class="id" title="notation">||</span></a>  <a class="idref" href="GraphCoQL.SchemaAux.html#is_union_type"><span class="id" title="definition">is_union_type</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#ty"><span class="id" title="variable">ty</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       Checks whether the given type is a composite type.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="is_composite_type"><span class="id" title="definition">is_composite_type</span></a> (<span class="id" title="var">ty</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#6e3f5b731a46299b833a2834f381d536"><span class="id" title="notation">[||</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#is_object_type"><span class="id" title="definition">is_object_type</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#ty"><span class="id" title="variable">ty</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#6e3f5b731a46299b833a2834f381d536"><span class="id" title="notation">,</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#is_interface_type"><span class="id" title="definition">is_interface_type</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#6e3f5b731a46299b833a2834f381d536"><span class="id" title="notation">|</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#is_union_type"><span class="id" title="definition">is_union_type</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#ty"><span class="id" title="variable">ty</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#6e3f5b731a46299b833a2834f381d536"><span class="id" title="notation">]</span></a>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       Checks whether the given type is a leaf type.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="is_leaf_type"><span class="id" title="definition">is_leaf_type</span></a> (<span class="id" title="var">ty</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaAux.html#is_scalar_type"><span class="id" title="definition">is_scalar_type</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#081ff67d3116402bb680e8692aa39185"><span class="id" title="notation">||</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#is_enum_type"><span class="id" title="definition">is_enum_type</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#ty"><span class="id" title="variable">ty</span></a>.<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.SchemaAux.html#SchemaAux.TypePredicates"><span class="id" title="section">TypePredicates</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab15"></a><h3 class="section">Predicates about types</h3>
+<hr/>
+ 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a name="SchemaAux.ValuePredicates"><span class="id" title="section">ValuePredicates</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Variables</span> (<a name="SchemaAux.ValuePredicates.Scalar"><span class="id" title="variable">Scalar</span></a> : <span class="id" title="abbreviation">eqType</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a name="SchemaAux.ValuePredicates.s"><span class="id" title="variable">s</span></a> : <a class="idref" href="GraphCoQL.Schema.html#graphQLSchema"><span class="id" title="record">graphQLSchema</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a name="SchemaAux.ValuePredicates.check_scalar"><span class="id" title="variable">check_scalar</span></a> : <a class="idref" href="GraphCoQL.Schema.html#graphQLSchema"><span class="id" title="record">graphQLSchema</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#Scalar"><span class="id" title="variable">Scalar</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Logic.html#1c93e43e07fbeaeb6a625cb6614beb5d"><span class="id" title="notation">-&gt;</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       Checks whether the given value matches the expected type in the schema. 
+       To determine scalar values, the <span class="inlinecode"><a class="idref" href="GraphCoQL.examples.OtherExamples.html#check_scalar"><span class="id" title="definition">check_scalar</span></a></span> predicate must be 
+       provided.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Equations</span> <a name="is_valid_value"><span class="id" title="definition">is_valid_value</span></a> (<span class="id" title="var">ty</span> : <a class="idref" href="GraphCoQL.Schema.html#type"><span class="id" title="inductive">type</span></a>) (<span class="id" title="var">value</span> : @<a class="idref" href="GraphCoQL.Value.html#Value"><span class="id" title="inductive">Value</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#SchemaAux.ValuePredicates.Scalar"><span class="id" title="variable">Scalar</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaAux.html#is_valid_value"><span class="id" title="definition">is_valid_value</span></a> (<a class="idref" href="GraphCoQL.Schema.html#NamedType"><span class="id" title="constructor">NamedType</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#n"><span class="id" title="variable">n</span></a>) (<a class="idref" href="GraphCoQL.Value.html#SValue"><span class="id" title="constructor">SValue</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#value"><span class="id" title="variable">value</span></a>) := <a class="idref" href="GraphCoQL.SchemaAux.html#SchemaAux.ValuePredicates.check_scalar"><span class="id" title="variable">check_scalar</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#SchemaAux.ValuePredicates.s"><span class="id" title="variable">s</span></a> <span class="id" title="var">n</span> <span class="id" title="var">value</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaAux.html#is_valid_value"><span class="id" title="definition">is_valid_value</span></a> (<a class="idref" href="GraphCoQL.Schema.html#ListType"><span class="id" title="constructor">ListType</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#wty"><span class="id" title="variable">wty</span></a>) (<a class="idref" href="GraphCoQL.Value.html#LValue"><span class="id" title="constructor">LValue</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#ls"><span class="id" title="variable">ls</span></a>) := <span class="id" title="definition">all</span> (<a class="idref" href="GraphCoQL.SchemaAux.html#is_valid_value"><span class="id" title="definition">is_valid_value</span></a> <span class="id" title="var">wty</span>) <span class="id" title="var">ls</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaAux.html#is_valid_value"><span class="id" title="definition">is_valid_value</span></a> <span class="id" title="var">_</span> <span class="id" title="var">_</span> := <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#false"><span class="id" title="constructor">false</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.SchemaAux.html#SchemaAux.ValuePredicates"><span class="id" title="section">ValuePredicates</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="var">Arguments</span> <a class="idref" href="GraphCoQL.SchemaAux.html#is_valid_value"><span class="id" title="definition">is_valid_value</span></a> [<span class="id" title="var">Scalar</span>].<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab16"></a><h3 class="section">Definitions related to subtyping</h3>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+      This includes the definition of the subtyping relation.
+   
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a name="SchemaAux.Subtypes"><span class="id" title="section">Subtypes</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a name="lab17"></a><h4 class="section">Subtyping relation.</h4>
+
+<hr/>
+
+
+<div class="paragraph"> </div>
+
+        Some observations:
+
+<div class="paragraph"> </div>
+
+<ul class="doclist">
+<li> Subtyping is strictly between objects and interfaces.
+          There cannot be an object that is subtype of another, as well as an
+          interface implementing another interface.
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> Because of the previous limitation, there is no need to specify or worry about transitivity of the relation.
+
+</li>
+</ul>
+    
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Reserved</span> <span class="id" title="keyword">Infix</span> "&lt;:" (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 60).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <a name="is_subtype"><span class="id" title="definition">is_subtype</span></a> (<span class="id" title="var">ty</span> <span class="id" title="var">ty'</span> : <a class="idref" href="GraphCoQL.Schema.html#type"><span class="id" title="inductive">type</span></a>) : <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.SchemaAux.html#ty"><span class="id" title="variable">ty</span></a>, <a class="idref" href="GraphCoQL.SchemaAux.html#ty'"><span class="id" title="variable">ty'</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Schema.html#NamedType"><span class="id" title="constructor">NamedType</span></a> <span class="id" title="var">name</span>, <a class="idref" href="GraphCoQL.Schema.html#NamedType"><span class="id" title="constructor">NamedType</span></a> <span class="id" title="var">name'</span> =&gt; <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_type"><span class="id" title="definition">lookup_type</span></a> <span class="id" title="var">name</span>, <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_type"><span class="id" title="definition">lookup_type</span></a> <span class="id" title="var">name'</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.Schema.html#39c6dd05b4549ac7479c94fe9cba1a12"><span class="id" title="notation">scalar</span></a> <span class="id" title="var">name</span>), <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.Schema.html#39c6dd05b4549ac7479c94fe9cba1a12"><span class="id" title="notation">scalar</span></a> <span class="id" title="var">name'</span>) =&gt; <span class="id" title="var">name</span> <span class="id" title="notation">==</span> <span class="id" title="var">name'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.Schema.html#8e2a60c2c99876bfbd87dbddb2381d4f"><span class="id" title="notation">enum</span></a> <span class="id" title="var">name</span> { <span class="id" title="var">_</span> }), <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.Schema.html#8e2a60c2c99876bfbd87dbddb2381d4f"><span class="id" title="notation">enum</span></a> <span class="id" title="var">name'</span> { <span class="id" title="var">_</span> }) =&gt; <span class="id" title="var">name</span> <span class="id" title="notation">==</span> <span class="id" title="var">name'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">object</span></a> <span class="id" title="var">name</span> <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">implements</span></a> <span class="id" title="var">_</span> { <span class="id" title="var">_</span> }), <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">object</span></a> <span class="id" title="var">name'</span> <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">implements</span></a> <span class="id" title="var">_</span> { <span class="id" title="var">_</span> }) =&gt; <span class="id" title="var">name</span> <span class="id" title="notation">==</span> <span class="id" title="var">name'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.Schema.html#ce0c37d1f6b5642e2e0ed8a4275975df"><span class="id" title="notation">interface</span></a> <span class="id" title="var">name</span> { <span class="id" title="var">_</span> }), <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.Schema.html#ce0c37d1f6b5642e2e0ed8a4275975df"><span class="id" title="notation">interface</span></a> <span class="id" title="var">name'</span> { <span class="id" title="var">_</span> }) =&gt; <span class="id" title="var">name</span> <span class="id" title="notation">==</span> <span class="id" title="var">name'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.Schema.html#9ccffccefc7814fff468e3da30938090"><span class="id" title="notation">union</span></a> <span class="id" title="var">name</span> { <span class="id" title="var">_</span> }), <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.Schema.html#9ccffccefc7814fff468e3da30938090"><span class="id" title="notation">union</span></a> <span class="id" title="var">name'</span> { <span class="id" title="var">_</span> }) =&gt; <span class="id" title="var">name</span> <span class="id" title="notation">==</span> <span class="id" title="var">name'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">object</span></a> <span class="id" title="var">name</span> <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">implements</span></a> <span class="id" title="var">interfaces</span> { <span class="id" title="var">_</span> }), <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.Schema.html#ce0c37d1f6b5642e2e0ed8a4275975df"><span class="id" title="notation">interface</span></a> <span class="id" title="var">name'</span> { <span class="id" title="var">_</span> }) =&gt; <span class="id" title="var">name'</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <span class="id" title="var">interfaces</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">object</span></a> <span class="id" title="var">name</span> <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">implements</span></a> <span class="id" title="var">_</span> { <span class="id" title="var">_</span> }), <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.Schema.html#9ccffccefc7814fff468e3da30938090"><span class="id" title="notation">union</span></a> <span class="id" title="var">name'</span> { <span class="id" title="var">members</span> }) =&gt; <span class="id" title="var">name</span> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <span class="id" title="var">members</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span>, <span class="id" title="var">_</span> =&gt; <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#false"><span class="id" title="constructor">false</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="GraphCoQL.Schema.html#ListType"><span class="id" title="constructor">ListType</span></a> <span class="id" title="var">ty1</span>, <a class="idref" href="GraphCoQL.Schema.html#ListType"><span class="id" title="constructor">ListType</span></a> <span class="id" title="var">ty2</span> =&gt; (<span class="id" title="var">ty1</span> <a class="idref" href="GraphCoQL.SchemaAux.html#e760ea0c3d2da4057c46661e33acb8ba"><span class="id" title="notation">&lt;:</span></a> <span class="id" title="var">ty2</span>)<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span>, <span class="id" title="var">_</span> =&gt; <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#false"><span class="id" title="constructor">false</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">where</span> <a name="e760ea0c3d2da4057c46661e33acb8ba"><span class="id" title="notation">&quot;</span></a>ty1 &lt;: ty2" := (<a class="idref" href="GraphCoQL.SchemaAux.html#is_subtype"><span class="id" title="definition">is_subtype</span></a> <span class="id" title="var">ty1</span> <span class="id" title="var">ty2</span>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       Gets the union's members.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="union_members"><span class="id" title="definition">union_members</span></a> (<span class="id" title="var">ty</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>) : <span class="id" title="abbreviation">seq</span> <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_type"><span class="id" title="definition">lookup_type</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#ty"><span class="id" title="variable">ty</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> (<a class="idref" href="GraphCoQL.Schema.html#9ccffccefc7814fff468e3da30938090"><span class="id" title="notation">union</span></a> <span class="id" title="var">_</span> { <span class="id" title="var">mbs</span> }) =&gt; <span class="id" title="var">mbs</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> =&gt; <span class="id" title="notation">[::]</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       Gets all object types that implement the given interface.
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a name="implementation"><span class="id" title="definition">implementation</span></a> (<span class="id" title="var">ty</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>) : <span class="id" title="abbreviation">seq</span> <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">undup</span> <span class="id" title="notation">[</span><span class="id" title="notation">seq</span> <a class="idref" href="GraphCoQL.SchemaAux.html#tdef"><span class="id" title="variable">tdef</span></a>.(<a class="idref" href="GraphCoQL.SchemaAux.html#tdname"><span class="id" title="definition">tdname</span></a>) <span class="id" title="notation">|</span> <span class="id" title="var">tdef</span> <span class="id" title="notation">&lt;-</span> <a class="idref" href="GraphCoQL.SchemaAux.html#SchemaAux.schema"><span class="id" title="variable">schema</span></a>.(<a class="idref" href="GraphCoQL.Schema.html#type_definitions"><span class="id" title="projection">type_definitions</span></a>) <span class="id" title="notation">&amp;</span> <a class="idref" href="GraphCoQL.SchemaAux.html#ty"><span class="id" title="variable">ty</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">\</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.ssr.ssrbool.html#b09457274bcb94927e289b8a9e9cd3f7"><span class="id" title="notation">in</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#tdef"><span class="id" title="variable">tdef</span></a>.(<a class="idref" href="GraphCoQL.SchemaAux.html#tintfs"><span class="id" title="definition">tintfs</span></a>)<span class="id" title="notation">]</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+       Gets "possible" types from a given type (cf. <a href='https://graphql.github.io/graphql-spec/June2018/#GetPossibleTypes()'><span>&#167;</span>5.5.2.3</a>)
+
+<div class="paragraph"> </div>
+
+       If the type is:
+<ul class="doclist">
+<li> object : Possible types are only the type itself.
+
+</li>
+<li> interface : Possible types are all types that declare implementation of this interface.
+
+</li>
+<li> union : Possible types are all members of the union.    
+
+</li>
+</ul>
+     
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Equations</span> <a name="get_possible_types"><span class="id" title="definition">get_possible_types</span></a> (<span class="id" title="var">ty</span> : <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a>) : <span class="id" title="abbreviation">seq</span> <a class="idref" href="GraphCoQL.Schema.html#Name"><span class="id" title="abbreviation">Name</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="GraphCoQL.SchemaAux.html#get_possible_types"><span class="id" title="definition">get_possible_types</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#ty"><span class="id" title="variable">ty</span></a> <span class="id" title="keyword">with</span> <a class="idref" href="GraphCoQL.SchemaAux.html#lookup_type"><span class="id" title="definition">lookup_type</span></a> <span class="id" title="var">ty</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">(</span></a><a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">object</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">_</span></a> <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">implements</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">_</span></a> <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">{</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">_</span></a> <a class="idref" href="GraphCoQL.Schema.html#befb36e3e0eefc400a117bd2e71ec8f2"><span class="id" title="notation">}</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">)</span></a> =&gt; <span class="id" title="notation">[::</span> <span class="id" title="var">ty</span><span class="id" title="notation">]</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">(</span></a><a class="idref" href="GraphCoQL.Schema.html#ce0c37d1f6b5642e2e0ed8a4275975df"><span class="id" title="notation">interface</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#iname"><span class="id" title="variable">iname</span></a> <a class="idref" href="GraphCoQL.Schema.html#ce0c37d1f6b5642e2e0ed8a4275975df"><span class="id" title="notation">{</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">_</span></a> <a class="idref" href="GraphCoQL.Schema.html#ce0c37d1f6b5642e2e0ed8a4275975df"><span class="id" title="notation">}</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">)</span></a> =&gt; <a class="idref" href="GraphCoQL.SchemaAux.html#implementation"><span class="id" title="definition">implementation</span></a> <span class="id" title="var">iname</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">(</span></a><a class="idref" href="GraphCoQL.Schema.html#9ccffccefc7814fff468e3da30938090"><span class="id" title="notation">union</span></a> <a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">_</span></a> <a class="idref" href="GraphCoQL.Schema.html#9ccffccefc7814fff468e3da30938090"><span class="id" title="notation">{</span></a> <a class="idref" href="GraphCoQL.SchemaAux.html#mbs"><span class="id" title="variable">mbs</span></a> <a class="idref" href="GraphCoQL.Schema.html#9ccffccefc7814fff468e3da30938090"><span class="id" title="notation">}</span></a><a class="idref" href="http://coq.inria.fr/distrib/V8.9.1/stdlib//Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">)</span></a> =&gt; <span class="id" title="var">mbs</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> =&gt; <span class="id" title="notation">[::]</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.SchemaAux.html#SchemaAux.Subtypes"><span class="id" title="section">Subtypes</span></a>.<br/>
+
+<br/>
+
+<br/>
+
+<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="GraphCoQL.SchemaAux.html#SchemaAux"><span class="id" title="section">SchemaAux</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Notation</span> <a name="8b3377c8e53ee4e40bbd5b6ae2a85a44"><span class="id" title="notation">&quot;</span></a>s ⊢ ty1 &lt;: ty2" := (<a class="idref" href="GraphCoQL.SchemaAux.html#is_subtype"><span class="id" title="definition">is_subtype</span></a> <span class="id" title="var">s</span> <span class="id" title="var">ty1</span> <span class="id" title="var">ty2</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 50, <span class="id" title="var">ty1</span> <span class="id" title="tactic">at</span> <span class="id" title="var">next</span> <span class="id" title="keyword">level</span>) : <span class="id" title="var">schema_scope</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<hr/>
+ 
+<div class="paragraph"> </div>
+
+
+<div class="paragraph"> </div>
+
+    <div>
+        <a href='GraphCoQL.Schema.html' class="btn btn-light" role='button'> Previous ← Schema  </a>
+        <a href='GraphCoQL.SchemaWellFormedness.html' class="btn btn-info" role='button'>Next → Schema Well-Formedness </a>
+    </div>
+
+</div>
+<div class="code">
+</div>
+</div>
+<div id="footer">
+  Generated by <a href="http://coq.inria.fr/">coqdoc</a> and improved with <a href="https://github.com/tebbi/coqdocjs">CoqdocJS</a>
+</div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
+<script>
+  $(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+  })
+  </script>
+
+</body>
+
+</html>
