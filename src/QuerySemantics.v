@@ -103,7 +103,7 @@ Section QuerySemantic.
       ⟦ f[[α]] :: σs ⟧ˢ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
-        | Some fdef := (f, complete_value fdef.(ftype) (property u (Label f α)))
+        | Some fdef := (f, complete_value fdef.(ftype) (u.(property) (Label f α)))
                         :: ⟦ filter_fields_with_response_name f σs ⟧ˢ in u;
 
         | _ := ⟦ σs ⟧ˢ in u (* Should throw error *)
@@ -112,7 +112,7 @@ Section QuerySemantic.
       ⟦ l:f[[α]] :: σs ⟧ˢ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
-        | Some fdef := (l, complete_value fdef.(ftype) (property u (Label f α)))
+        | Some fdef := (l, complete_value fdef.(ftype) (u.(property) (Label f α)))
                         :: ⟦ filter_fields_with_response_name l σs ⟧ˢ in u;
 
         | _ := ⟦ σs ⟧ˢ in u (* Should throw error *)
@@ -125,12 +125,12 @@ Section QuerySemantic.
         | Some fld
             with fld.(ftype) :=
             {
-            | [ _ ] := (f, Array [seq {- (⟦ βs ++ merge_selection_sets (find_valid_fields_with_response_name s f u.(ntype) σs) ⟧ˢ in v) -} | v <- neighbors_with_label g u (Label f α)])
+            | [ _ ] := (f, Array [seq Object (⟦ βs ++ merge_selection_sets (find_valid_fields_with_response_name s f u.(ntype) σs) ⟧ˢ in v) | v <- neighbors_with_label g u (Label f α)])
                               :: ⟦ filter_fields_with_response_name f σs ⟧ˢ in u;
             | NamedType _
                 with ohead (neighbors_with_label g u (Label f α)) :=
                 {
-                | Some v => (f, {- (⟦ βs ++ merge_selection_sets (find_valid_fields_with_response_name s f u.(ntype) σs) ⟧ˢ in v) -}) :: ⟦ filter_fields_with_response_name f σs ⟧ˢ in u;
+                | Some v => (f, Object (⟦ βs ++ merge_selection_sets (find_valid_fields_with_response_name s f u.(ntype) σs) ⟧ˢ in v)) :: ⟦ filter_fields_with_response_name f σs ⟧ˢ in u;
                 
                 | _ =>  (f, Leaf None) :: ⟦ filter_fields_with_response_name f σs ⟧ˢ in u
                 }
@@ -145,12 +145,12 @@ Section QuerySemantic.
         | Some fld
             with fld.(ftype) :=
             {
-            | [ _ ] := (l, Array [seq {- (⟦ βs ++ merge_selection_sets (find_valid_fields_with_response_name s l u.(ntype) σs) ⟧ˢ in v) -} | v <- neighbors_with_label g u (Label f α)])
+            | [ _ ] := (l, Array [seq Object (⟦ βs ++ merge_selection_sets (find_valid_fields_with_response_name s l u.(ntype) σs) ⟧ˢ in v) | v <- neighbors_with_label g u (Label f α)])
                               :: ⟦ filter_fields_with_response_name l σs ⟧ˢ in u;
             | NamedType _
                 with ohead (neighbors_with_label g u (Label f α)) :=
                 {
-                | Some v => (l, {- (⟦ βs ++ merge_selection_sets (find_valid_fields_with_response_name s l u.(ntype) σs) ⟧ˢ in v) -}) :: ⟦ filter_fields_with_response_name l σs ⟧ˢ in u;
+                | Some v => (l, Object (⟦ βs ++ merge_selection_sets (find_valid_fields_with_response_name s l u.(ntype) σs) ⟧ˢ in v)) :: ⟦ filter_fields_with_response_name l σs ⟧ˢ in u;
                 
                 | _ =>  (l, Leaf None) :: ⟦ filter_fields_with_response_name l σs ⟧ˢ in u
                 }
@@ -206,7 +206,7 @@ Section QuerySemantic.
       ≪ f[[α]] :: σs ≫ in u
         with lookup_field_in_type s u.(ntype) f :=
         {
-          | Some fdef := (f, complete_value fdef.(ftype) (property u (Label f α)))
+          | Some fdef := (f, complete_value fdef.(ftype) (u.(property) (Label f α)))
                           :: ≪ σs ≫ in u;
           
           | _ := ≪ σs ≫ in u (* Should throw error *)
@@ -215,7 +215,7 @@ Section QuerySemantic.
       ≪ l:f[[α]] :: σs ≫ in u
         with lookup_field_in_type s u.(ntype) f :=
             {
-            | Some fdef := (l, complete_value fdef.(ftype) (property u (Label f α)))
+            | Some fdef := (l, complete_value fdef.(ftype) (u.(property) (Label f α)))
                             :: ≪ σs ≫ in u;
             
             | _ := ≪ σs ≫ in u (* Should throw error *)
@@ -228,12 +228,12 @@ Section QuerySemantic.
         | Some fld
             with fld.(ftype) :=
             {
-            | ListType _ => (f, Array [seq {- ≪ βs ≫ in v -} | v <- neighbors_with_label g u (Label f α)]) :: ≪ σs ≫ in u;
+            | ListType _ => (f, Array [seq Object (≪ βs ≫ in v) | v <- neighbors_with_label g u (Label f α)]) :: ≪ σs ≫ in u;
         
             | NamedType ty
                 with ohead (neighbors_with_label g u (Label f α)) :=
                 {
-                | Some v => (f, {- ≪ βs ≫ in v -}) :: ≪ σs ≫ in u;
+                | Some v => (f, Object (≪ βs ≫ in v)) :: ≪ σs ≫ in u;
                 
                 | _ =>  (f, Leaf None) :: ≪ σs ≫ in u
                 }
@@ -247,12 +247,12 @@ Section QuerySemantic.
         | Some fld
             with fld.(ftype) :=
             {
-            | ListType _ => (l, Array [seq {- ≪ βs ≫ in v -} | v <- neighbors_with_label g u (Label f α)]) :: ≪ σs ≫ in u;
+            | ListType _ => (l, Array [seq Object (≪ βs ≫ in v) | v <- neighbors_with_label g u (Label f α)]) :: ≪ σs ≫ in u;
         
             | NamedType ty
                 with ohead (neighbors_with_label g u (Label f α)) :=
                 {
-                | Some v => (l, {- ≪ βs ≫ in v -}) :: ≪ σs ≫ in u;
+                | Some v => (l, Object (≪ βs ≫ in v)) :: ≪ σs ≫ in u;
                 
                 | _ =>  (l, Leaf None) :: ≪ σs ≫ in u
                 }
