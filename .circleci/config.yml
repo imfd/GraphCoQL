@@ -1,0 +1,52 @@
+version: 2
+jobs:
+  build:
+    shell: /bin/bash --login
+    docker:
+    - image: coqorg/coq:8.9.1
+    steps:
+    - checkout
+    - run:
+        name: Install Equations
+        command: |
+          opam install coq-equations.1.2+8.9
+    - run:
+        name: Install Mathematical Components
+        command: |
+          opam install coq-mathcomp-ssreflect.1.9.0
+    - run:
+        name: Update opam env
+        command: |
+          eval $(opam env)        
+    - run:
+        name: Build the project
+        command: |
+          make
+workflows:
+  version: 2
+  workflow:
+    jobs:
+    - build
+
+# Original config.yml file:
+# version: 2.1
+# jobs:
+#   build:
+#     docker:
+#       - image: coqorg/coq:8.9.1
+#     steps:
+#       - checkout
+#       - run:
+#           name: Install Equations
+#           command: |
+#             opam install coq-equations.1.2+8.9
+# 
+#       - run:
+#           name: Install Mathematical Components
+#           command: |
+#             opam install coq-mathcomp-ssreflect.1.9.0
+# 
+#       - run:
+#           name: Build the project
+#           command: |
+#             cd GraphCoqL/ && make% 
